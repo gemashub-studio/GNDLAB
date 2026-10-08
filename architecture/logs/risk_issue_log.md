@@ -32,3 +32,7 @@
 | ISS-012 | `rnd_param_def` tipe choice tanpa pilihan lolos (CHECK NULL = lulus) | `tests/rnd_integrity_test.sql` | CHECK ditulis eksplisit dengan CASE | Selesai |
 | ISS-013 | Parameter produk R&D belum ada | Permintaan owner | Template CSV + empty-state di UI; menunggu owner | Terbuka (menunggu owner) |
 | ISS-009 | Kopra asalan belum punya benchmark muat container | Research log | Golden case bertanda "perlu data lapangan" | Terbuka (butuh data) |
+| ISS-014 | Golden jambul membulatkan (`round` → 22.230) sedangkan calc_spec §3.2 memakai `floor` (engine 22.229) | Implementasi M1 | Selisih 0,004%, dalam toleransi; engine tetap `floor` (tidak menjanjikan butir yang tak muat) | Diterima |
+| ISS-015 | `floor` dalam meter rentan galat floating-point (pembagian pas jadi x,9999999) | Implementasi M1 | `floorDiv` dengan epsilon 1e-9 + uji regresi | Selesai |
+| ISS-016 | calc_spec §8 vs ARD §6 berbeda bentuk `trace` | Implementasi M1 | DEC-015 | Selesai |
+| ISS-017 | Uji DB lokal belum jalan: PostgreSQL 16 terpasang tetapi password superuser hanya diketahui owner | Setup M1 | Owner mengisi pgpass/PGPASSWORD sebelum M2 | Terbuka (menunggu owner) |

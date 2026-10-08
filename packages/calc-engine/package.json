@@ -1,0 +1,20 @@
+{
+  "name": "@gemas/calc-engine",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Engine kalkulasi gemasSTUDIO — fungsi murni TypeScript, satuan SI, tanpa I/O (ADR-001).",
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8"
+  }
+}

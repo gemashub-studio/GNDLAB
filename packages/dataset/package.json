@@ -1,0 +1,25 @@
+{
+  "name": "@gemas/dataset",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Dataset referensi gemasSTUDIO: salinan JSON terkunci + skema Zod + loader SI (ADR-002, ADR-004).",
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "build": "node scripts/sync-dataset.mjs",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@gemas/calc-engine": "workspace:*",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8"
+  }
+}

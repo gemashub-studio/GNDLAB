@@ -6,12 +6,16 @@ Kebutuhan → desain → implementasi acuan → bukti uji.
 |---|---|---|---|---|
 | FR-01 Katalog komoditas | ERD `COMMODITY`, `COMMODITY_FORM` | `seed.sql` | Seed termuat di PostgreSQL 16 | ✅ |
 | FR-02 Katalog container | ERD `CONTAINER_TYPE` | dataset `containers[]` | Validator SCHEMA `container.*.volume` | ✅ |
-| FR-03 Mode BULK/PIECE/PACKAGE | ADR-005, calc_spec §3 | golden_cases.json | 17 golden cases | ✅ spes. · ⏳ engine |
-| FR-04 Batas pengikat | calc_spec §3.1 | golden `expect_binding` | `arang_..._40HC` = WEIGHT, lainnya VOLUME | ✅ spes. |
-| FR-05 Kalkulator gudang | calc_spec §4 | golden `warehouse_floor_area` | 61,54 m² | ✅ spes. |
-| FR-06 Konverter | calc_spec §5 | – | validator `jambul.circumference`, `asalan.copra_per_nut` | ✅ spes. |
-| FR-07 Koreksi kadar air | calc_spec §5 | golden `moisture_correction` | 904,26 kg | ✅ spes. |
-| FR-08 Mode rentang | ADR-003, calc_spec §2 | Validator RANGE | 0 pelanggaran min ≤ typ ≤ max | ✅ |
+| FR-03 Mode BULK/PIECE/PACKAGE | ADR-005, calc_spec §3 | packages/calc-engine/src/container.ts, grid.ts | golden.test.ts 17/17 (±0,5%) + container.test.ts 17 uji + paket dataset 28 uji (golden lewat dataset) | ✅ M1 |
+| FR-04 Batas pengikat | calc_spec §3.1 | container.ts `binding` | golden `expect_binding` (arang lump & karung 40HC = WEIGHT) | ✅ M1 |
+| FR-05 Kalkulator gudang | calc_spec §4 | packages/calc-engine/src/warehouse.ts | golden `warehouse_floor_area` 61,54 m² + 9 uji (kemasan, beban lantai, zona) | ✅ M1 |
+| FR-06 Konverter | calc_spec §5 | packages/calc-engine/src/convert.ts, units.ts | misc.test.ts: butir↔kg↔t↔m³↔karung, inch keliling, stowage factor, butir→kopra, batok→arang | ✅ M1 |
+| FR-07 Koreksi kadar air | calc_spec §5 | packages/calc-engine/src/moisture.ts | golden `moisture_correction` 904,26 kg + tolak w ≥ 1 / w < 0 | ✅ M1 |
+| FR-08 Mode rentang | ADR-003, calc_spec §2 | packages/calc-engine/src/range.ts (evaluasi sudut 2^k, k ≤ 8) | range.test.ts 9 uji; override di luar [min·0,5, max·2] → OVERRIDE_OUT_OF_RANGE | ✅ M1 |
+| Kode peringatan calc_spec §6 | calc_spec §6 | packages/calc-engine/src/warnings.ts | 10/10 kode terimplementasi & teruji | ✅ M1 |
+| NFR-01 < 50 ms per skenario | ADR-001 | engine murni TS | container.test.ts (rata-rata 100 run) | ✅ M1 |
+| NFR-02 Akurasi engine | calc_spec §7 | golden.test.ts membaca fixture langsung | 17/17 lulus; kasus tak dikenal = gagal | ✅ M1 |
+| Loader dataset ↔ seed | ERD §3, ADR-004 | packages/dataset/src/loader.ts | 102 tuple parameter identik dengan seed.sql; profil keyakinan A6/B9/C30 | ✅ M1 |
 | FR-09 Simulator | ux_spec §3.3 | – | – | ⏳ M3 |
 | FR-10 Skenario & ekspor | ERD `SCENARIO`, ARD §6 | `schema.sql` | IR-05, cek container wajib | ✅ skema |
 | FR-11 Sampling & kalibrasi | ADR-002, ERD `MEASUREMENT`, `CALIBRATION_PROPOSAL` | `schema.sql` | IR-07 (3 uji) | ✅ skema |

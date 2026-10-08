@@ -16,7 +16,15 @@ Semua riset, data, desain, skema database, dan kontrak uji **sudah selesai dan t
 - Parameter R&D adalah DATA di `rnd_param_def`, jangan pernah di-hardcode.
 - Kerjakan per fase M1 → M5. Selesai tiap fase: perbarui `architecture/logs/`, jalankan `bash architecture/scripts/run_all_checks.sh`, lalu berhenti dan laporkan.
 
+## Memori bersama (otak kedua)
+- `brain/` adalah memori lintas agent: baca `brain/plan.md` + entri terakhir `brain/sessions.md` di awal sesi, catat temuan di `brain/findings.md`, tutup sesi dengan entri di `brain/sessions.md`. Protokol: `brain/README.md`.
+
 ## Perintah validasi
+```bash
+pnpm test        # golden 17/17 + unit test engine & dataset
+pnpm typecheck
+```
+
 ```bash
 bash architecture/scripts/run_all_checks.sh
 PGURL=postgresql://postgres@localhost:5432/postgres bash architecture/scripts/run_all_checks.sh   # + uji database
