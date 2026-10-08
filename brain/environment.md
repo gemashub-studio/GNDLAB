@@ -17,10 +17,9 @@ Turbo mengirim telemetri anonim secara default; agent menjalankan dengan `TURBO_
 
 ## PostgreSQL (dibutuhkan mulai M2)
 - psql: `C:\Program Files\PostgreSQL\16\bin\psql.exe` (belum di PATH).
-- Superuser `postgres` memakai password yang diset installer. **Owner** (bukan agent) mengisi salah satu:
-  - `%APPDATA%\postgresql\pgpass.conf` berisi `localhost:5432:*:postgres:<password>`, atau
-  - variabel `PGPASSWORD` di sesi terminalnya sendiri.
-- Lalu: `PGURL=postgresql://postgres@localhost:5432/postgres bash architecture/scripts/run_all_checks.sh`.
+- ✅ Password sudah di-reset (2026-10-08) lewat `scripts/windows/reset-postgres-password.ps1` dan tersimpan di `%APPDATA%\postgresql\pgpass.conf`. Agent tidak perlu (dan tidak boleh) membaca password-nya; libpq membacanya otomatis.
+- URL: `postgresql://postgres@localhost:5432/postgres`.
+- Uji DB: `PGURL=… bash architecture/scripts/run_all_checks.sh` dengan PATH bash memuat Python312 & PostgreSQL bin (FND-012). Hasil terakhir: 18/18 integritas, seed OK, R&D 21/21.
 
 ## Git
 Identitas lokal repo: `masciosa <masciosa@gmail.com>` (bisa diganti owner). Branch `main`. Belum ada remote.

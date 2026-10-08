@@ -41,4 +41,10 @@ Berat bersih karung (`bag_net_kg`) & utilisasi volume default (0,8/0,9) tidak be
 calc_spec §8 menulis `trace: Record<param, …>`; ARD §6 memakai `{datasetVersion, params}`. Dipilih bentuk ARD + `engineVersion` (untuk kolom `calc_result.engine_version`). DEC-015.
 
 ### FND-010 · 2026-10-08 · PostgreSQL lokal butuh password superuser
-Installer winget PostgreSQL 16 berjalan sebagai service `postgresql-x64-16` dan meminta password (`fe_sendauth`). Agent **tidak boleh menebak**. Owner mengisi `%APPDATA%\postgresql\pgpass.conf` atau `PGPASSWORD` sendiri. Lihat `environment.md`.
+Installer winget PostgreSQL 16 (unattended) menyetel password yang tidak diketahui owner. Agent **tidak boleh menebak**. Solusi: owner menjalankan `scripts/windows/reset-postgres-password.ps1` (minta UAC, trust sementara → password acak → pg_hba dikembalikan di `finally` → simpan ke `%APPDATA%\postgresql\pgpass.conf`). Sudah dijalankan 2026-10-08; koneksi `postgresql://postgres@localhost:5432/postgres` kini tanpa password di URL.
+
+### FND-011 · 2026-10-08 · psql Windows tidak mempermutasi argumen
+`psql "$URL" -c "…"` di Windows mengabaikan `-c` (opsi setelah argumen posisi). Selalu tulis `psql -d "$URL" -c …`. Berlaku juga untuk skrip M2 (migrasi, seed). ISS-018.
+
+### FND-012 · 2026-10-08 · Menjalankan bash dari PowerShell 5.1
+`bash.exe -c '…'` dengan path berspasi bisa menelan output. Pola andal: tulis skrip `.sh` (scratchpad) lalu `& "C:\Program Files\Git\bin\bash.exe" path\skrip.sh`. PATH bash harus memuat `/c/Users/user/AppData/Local/Programs/Python/Python312` (alias Microsoft Store `python` menghalangi) dan `/c/Program Files/PostgreSQL/16/bin`.

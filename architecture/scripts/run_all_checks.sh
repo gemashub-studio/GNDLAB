@@ -26,16 +26,22 @@ $PY scripts/gen_data_dictionary.py || fail=1
 
 echo; echo "== 3. Uji database =="
 if [ -n "${PGURL:-}" ] && command -v psql >/dev/null; then
-  for db in coco_ci_integrity coco_ci_seed; do
-    psql "$PGURL" -qc "DROP DATABASE IF EXISTS $db" -c "CREATE DATABASE $db"
+  # Alamat DB lewat -d: psql di Windows tidak mempermutasi argumen, jadi opsi setelah
+  # argumen posisi diabaikan (ISS-018).
+  for db in coco_ci_integrity coco_ci_seed coco_ci_rnd; do
+    psql -d "$PGURL" -qc "DROP DATABASE IF EXISTS $db" -c "CREATE DATABASE $db" || fail=1
   done
   base="${PGURL%/*}"
-  psql "$base/coco_ci_integrity" -v ON_ERROR_STOP=1 -q -f 03-data/schema.sql -f tests/schema_integrity_test.sql 2>&1 \
-    | grep -E "PASS|FAIL|SELESAI" | sed 's/.*NOTICE:  //' || fail=1
-  psql "$base/coco_ci_seed" -v ON_ERROR_STOP=1 -q -f 03-data/schema.sql -f 03-data/seed.sql && echo "seed.sql termuat OK" || fail=1
-  psql "$PGURL" -qc "DROP DATABASE IF EXISTS coco_ci_rnd" -c "CREATE DATABASE coco_ci_rnd"
-  psql "$base/coco_ci_rnd" -v ON_ERROR_STOP=1 -q -f 03-data/schema.sql -f 07-rnd/schema_rnd.sql -f tests/rnd_integrity_test.sql 2>&1 \
-    | grep -E "PASS|FAIL|SELESAI|ERROR" | sed 's/.*NOTICE:  //' || fail=1
+  # Baris FAIL dari uji SQL juga menggagalkan skrip, bukan hanya error psql.
+  run_sql_test() {
+    local out
+    out=$(psql -d "$1" -v ON_ERROR_STOP=1 -q "${@:2}" 2>&1) || fail=1
+    printf '%s\n' "$out" | grep -E "PASS|FAIL|SELESAI|ERROR" | sed 's/.*NOTICE:  //' || true
+    if printf '%s\n' "$out" | grep -qE "FAIL|ERROR"; then fail=1; fi
+  }
+  run_sql_test "$base/coco_ci_integrity" -f 03-data/schema.sql -f tests/schema_integrity_test.sql
+  psql -d "$base/coco_ci_seed" -v ON_ERROR_STOP=1 -q -f 03-data/schema.sql -f 03-data/seed.sql && echo "seed.sql termuat OK" || fail=1
+  run_sql_test "$base/coco_ci_rnd" -f 03-data/schema.sql -f 07-rnd/schema_rnd.sql -f tests/rnd_integrity_test.sql
 else
   echo "Lewati (set PGURL dan pastikan psql tersedia untuk menjalankan uji DB)"
 fi
