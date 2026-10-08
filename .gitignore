@@ -1,0 +1,15 @@
+node_modules/
+.pnpm-store/
+dist/
+.next/
+out/
+coverage/
+.turbo/
+*.tsbuildinfo
+.env
+.env.local
+playwright-report/
+test-results/
+__pycache__/
+*.pyc
+packages/dataset/src/generated/

@@ -1,0 +1,24 @@
+/* globals.css — gemasSTUDIO Punk Skate Lab (pakai bersama tailwind.preset.ts) */
+@import url('https://fonts.googleapis.com/css2?family=Bowlby+One&family=Archivo:wght@400;500;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html { color-scheme: light; }
+  body { @apply bg-paper bg-lab-grid bg-[length:24px_24px] text-ink font-sans antialiased; }
+  h1, h2, h3 { @apply font-display uppercase leading-[0.95]; }
+  :focus-visible { outline: 3px solid #FF5A1F; outline-offset: 2px; }
+}
+
+@layer components {
+  .card        { @apply bg-surface border-3 border-ink shadow-hard p-[22px]; }
+  .card-ink    { @apply bg-ink text-paper border-3 border-ink shadow-hard-safety p-[22px]; }
+  .btn         { @apply inline-flex items-center justify-center gap-2 min-h-touch px-5 border-3 border-ink font-extrabold uppercase tracking-wide; }
+  .btn-primary { @apply btn bg-safety text-ink shadow-hard-sm active:translate-x-[2px] active:translate-y-[2px] active:shadow-none; }
+  .btn-acid    { @apply btn bg-acid text-ink shadow-hard-sm; }
+  .tag-mono    { @apply font-mono text-xs font-bold tracking-[0.12em] bg-ink text-acid px-2.5 py-1; }
+  .badge-conf  { @apply inline-flex items-center justify-center w-7 h-7 border-2 border-ink font-mono font-bold text-ink; }
+  .bar         { @apply h-4 border-2 border-ink bg-surface; }
+  .num         { @apply font-mono tabular-nums; }
+}

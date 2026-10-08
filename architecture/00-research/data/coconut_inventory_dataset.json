@@ -1,0 +1,820 @@
+{
+  "meta": {
+    "title": "Dataset Dimensi & Densitas Komoditas Kelapa untuk Kalkulator Inventory",
+    "version": "1.0.4",
+    "compiled": "2026-10-08",
+    "units": {
+      "length": "cm",
+      "mass_unit": "g",
+      "mass_bulk": "kg",
+      "volume": "m3",
+      "density": "kg/m3"
+    },
+    "value_convention": "Setiap angka berbentuk {min, typ, max}. 'typ' = nilai default kalkulator. Semua nilai bisa di-override user.",
+    "confidence_scale": {
+      "A": "Data jurnal/standar resmi (terukur)",
+      "B": "Data dagang/eksportir (banyak sumber konsisten)",
+      "C": "Estimasi engineering turunan dari data A/B — WAJIB diverifikasi sampling lapangan"
+    }
+  },
+  "containers": [
+    {
+      "id": "20GP",
+      "name": "20ft Dry/General Purpose",
+      "inner_cm": {
+        "L": 589.8,
+        "W": 235.2,
+        "H": 239.3
+      },
+      "volume_m3": 33.2,
+      "payload_kg": 28200,
+      "confidence": "B"
+    },
+    {
+      "id": "40GP",
+      "name": "40ft Dry/General Purpose",
+      "inner_cm": {
+        "L": 1203.2,
+        "W": 235.2,
+        "H": 239.3
+      },
+      "volume_m3": 67.7,
+      "payload_kg": 26700,
+      "confidence": "B"
+    },
+    {
+      "id": "40HC",
+      "name": "40ft High Cube",
+      "inner_cm": {
+        "L": 1203.2,
+        "W": 235.2,
+        "H": 269.8
+      },
+      "volume_m3": 76.3,
+      "payload_kg": 26500,
+      "confidence": "B"
+    }
+  ],
+  "commodities": [
+    {
+      "id": "kelapa_jambul",
+      "name_id": "Kelapa tua jambul (semi-husked)",
+      "name_en": "Semi-husked mature coconut",
+      "description": "Kelapa tua, sabut dikupas kecuali jambul/sisa sabut di bagian mata (germination pores).",
+      "unit_type": "piece",
+      "geometry": {
+        "shape": "prolate_ellipsoid_with_tuft",
+        "body_cm": {
+          "length_polar": {
+            "min": 9.0,
+            "typ": 10.5,
+            "max": 12.5
+          },
+          "diameter_equatorial": {
+            "min": 8.5,
+            "typ": 9.5,
+            "max": 11.5
+          }
+        },
+        "tuft_extra_length_cm": {
+          "min": 2.0,
+          "typ": 3.0,
+          "max": 5.0
+        },
+        "bounding_box_cm": {
+          "L": {
+            "min": 11.0,
+            "typ": 13.5,
+            "max": 17.5
+          },
+          "W": {
+            "min": 8.5,
+            "typ": 9.5,
+            "max": 11.5
+          },
+          "H": {
+            "min": 8.5,
+            "typ": 9.5,
+            "max": 11.5
+          }
+        },
+        "circumference_cm": {
+          "min": 30,
+          "typ": 33,
+          "max": 36,
+          "note": "Spek dagang '12-14 inch' adalah keliling, bukan diameter"
+        },
+        "solid_volume_cm3": {
+          "min": 350,
+          "typ": 500,
+          "max": 865,
+          "formula": "(pi/6) * L_polar * D_eq^2"
+        },
+        "sphericity": 0.9,
+        "confidence": "A/C",
+        "note": "Body dari data dehusked coconut (ICAR: panjang ~9.9 cm, diameter ~9.0-9.2 cm). Kelapa Dalam Indonesia cenderung sedikit lebih besar -> typ dinaikkan. Ukuran jambul = estimasi."
+      },
+      "mass_per_unit_g": {
+        "min": 450,
+        "typ": 575,
+        "max": 850,
+        "confidence": "B",
+        "note": "Grade standar ekspor 500-650 g; premium 700-850 g"
+      },
+      "true_density_kg_m3": {
+        "min": 930,
+        "typ": 998,
+        "max": 1070,
+        "confidence": "A"
+      },
+      "bulk_density_kg_m3": {
+        "loose_pile": {
+          "min": 445,
+          "typ": 483,
+          "max": 520,
+          "confidence": "A",
+          "note": "Dehusked coconut, ICAR"
+        },
+        "bagged_in_container": {
+          "min": 360,
+          "typ": 385,
+          "max": 410,
+          "confidence": "C",
+          "note": "Dihitung balik dari 22.500 butir x 0,57 kg / 33,2 m3"
+        }
+      },
+      "packing_fraction_random": {
+        "min": 0.45,
+        "typ": 0.48,
+        "max": 0.55,
+        "confidence": "A/C",
+        "note": "bulk/true density"
+      },
+      "packaging": [
+        {
+          "type": "PP_net_bag",
+          "pcs_per_bag": 25,
+          "bag_net_kg": {
+            "min": 13.0,
+            "typ": 14.0,
+            "max": 14.5
+          },
+          "bag_dims_cm_filled": {
+            "L": 49,
+            "W": 34,
+            "H": 21,
+            "confidence": "C",
+            "note": "Diturunkan balik dari benchmark 900-1000 karung/20GP (grid fit = 924). Karung jaring lentur; ukur ulang di lapangan."
+          },
+          "bag_flat_cm": {
+            "W": 50,
+            "L": 80,
+            "confidence": "C",
+            "note": "Karung jaring 25 butir; ukuran datar tipikal"
+          },
+          "density_ref": null
+        }
+      ],
+      "container_benchmarks": [
+        {
+          "container": "20GP",
+          "bags": {
+            "min": 900,
+            "max": 1000
+          },
+          "pcs": 22500,
+          "source_ids": [
+            "S06",
+            "S07",
+            "S08"
+          ]
+        },
+        {
+          "container": "40GP",
+          "bags": {
+            "min": 1800,
+            "max": 1950
+          },
+          "pcs": {
+            "min": 45000,
+            "max": 47500
+          },
+          "source_ids": [
+            "S06",
+            "S08"
+          ]
+        },
+        {
+          "container": "20GP",
+          "pcs": {
+            "min": 10000,
+            "max": 11000
+          },
+          "note": "Satu sumber menyebut angka jauh lebih rendah; kemungkinan reefer/palletized atau nut besar. Dijadikan skenario konservatif.",
+          "source_ids": [
+            "S05"
+          ]
+        }
+      ],
+      "storage": {
+        "shelf_life_days": {
+          "ambient": "30-45",
+          "cold_10_15C": "≤60",
+          "from_loading": "≈75"
+        },
+        "max_stack_height_m": {
+          "typ": 1.8,
+          "confidence": "C"
+        }
+      }
+    },
+    {
+      "id": "arang_batok_belah2",
+      "name_id": "Arang batok kelapa belah 2 (utuh setengah tempurung)",
+      "name_en": "Coconut shell charcoal, half-shell form",
+      "unit_type": "piece",
+      "geometry": {
+        "shape": "hemispherical_cap_shell",
+        "raw_half_shell_cm": {
+          "rim_diameter": {
+            "min": 8.0,
+            "typ": 9.5,
+            "max": 14.0
+          },
+          "depth": {
+            "min": 4.0,
+            "typ": 5.0,
+            "max": 6.5
+          },
+          "wall_thickness": {
+            "min": 0.3,
+            "typ": 0.4,
+            "max": 0.6
+          }
+        },
+        "linear_shrinkage_on_carbonization": {
+          "min": 0.08,
+          "typ": 0.12,
+          "max": 0.18,
+          "confidence": "C"
+        },
+        "charcoal_half_cm": {
+          "rim_diameter": {
+            "min": 6.6,
+            "typ": 8.4,
+            "max": 12.9
+          },
+          "depth": {
+            "min": 3.3,
+            "typ": 4.4,
+            "max": 6.0
+          },
+          "wall_thickness": {
+            "min": 0.25,
+            "typ": 0.35,
+            "max": 0.55
+          }
+        },
+        "bounding_box_cm": {
+          "L": 8.4,
+          "W": 8.4,
+          "H": 4.4
+        },
+        "nestable": true,
+        "nest_pitch_cm": {
+          "min": 0.8,
+          "typ": 1.2,
+          "max": 2.0,
+          "confidence": "C",
+          "note": "Penambahan tinggi per 1 batok bila ditumpuk bersarang (nested)"
+        },
+        "confidence": "B/C",
+        "note": "Raw half shell 8-14 cm (data dagang Indonesia). Dimensi arang dihitung: min=raw_min*(1-shrink_max), typ=raw_typ*(1-shrink_typ), max=raw_max*(1-shrink_min)."
+      },
+      "mass_per_unit_g": {
+        "raw_half_shell": {
+          "min": 60,
+          "typ": 85,
+          "max": 120,
+          "confidence": "C"
+        },
+        "charcoal_half": {
+          "min": 15,
+          "typ": 25,
+          "max": 42,
+          "confidence": "C"
+        }
+      },
+      "charcoal_yield_mass_fraction": {
+        "min": 0.25,
+        "typ": 0.3,
+        "max": 0.35,
+        "confidence": "C"
+      },
+      "bulk_density_kg_m3": {
+        "raw_halves_loose": {
+          "min": 150,
+          "typ": 195,
+          "max": 240,
+          "confidence": "B",
+          "note": "Turunan 5-8 MT per 20ft (shell hollow, volume-limited)"
+        },
+        "charcoal_halves_loose": {
+          "min": 50,
+          "typ": 85,
+          "max": 155,
+          "confidence": "C",
+          "derivation": "rho_raw_halves * yield / (1 - shrinkage)^3 ; min = raw.min*y.min/(1-s.min)^3, max = raw.max*y.max/(1-s.max)^3",
+          "note": "Turunan fisik dari batok mentah belah (B). Belum ada data publik terukur — WAJIB uji kotak/ember di gudang (ASM-01)."
+        },
+        "charcoal_halves_nested": {
+          "min": 85,
+          "typ": 145,
+          "max": 270,
+          "confidence": "C",
+          "note": "Asumsi susun bersarang ~1,7x lebih padat dari lepas (ASM-02)."
+        },
+        "charcoal_broken_lumps": {
+          "min": 400,
+          "typ": 475,
+          "max": 550,
+          "confidence": "B",
+          "note": "Arang batok pecah/lump (yang umum diperdagangkan)"
+        }
+      },
+      "packaging": [
+        {
+          "type": "PP_woven_bag",
+          "bag_net_kg": {
+            "min": 20,
+            "typ": 25,
+            "max": 50
+          },
+          "bag_flat_cm": {
+            "W": 56,
+            "L": 90,
+            "confidence": "B",
+            "source_ids": [
+              "S23"
+            ]
+          },
+          "bag_dims_cm_filled": {
+            "L": 64,
+            "W": 45,
+            "H": 21,
+            "confidence": "C",
+            "note": "Dimensi efektif terisi (kotak pembatas), diturunkan dari volume isi = berat/densitas dan dikalibrasi grid-fit ke benchmark container. Ukur ulang di lapangan. Grid: 495 karung/20GP (≈12,4 t), 40HC dibatasi berat."
+          },
+          "density_ref": "charcoal_broken_lumps"
+        },
+        {
+          "type": "jumbo_bag",
+          "bag_net_kg": {
+            "min": 500,
+            "typ": 550,
+            "max": 600
+          },
+          "bag_dims_cm_filled": {
+            "L": 95,
+            "W": 95,
+            "H": 130,
+            "confidence": "C",
+            "note": "Jumbo bag 500-600 kg arang lump butuh ~1,16 m3. Jumbo standar 90x90x100 cm (0,81 m3) hanya memuat ~385 kg arang lump."
+          },
+          "reference_standard_cm": {
+            "L": 90,
+            "W": 90,
+            "H": 100,
+            "source_ids": [
+              "S24"
+            ]
+          },
+          "density_ref": "charcoal_broken_lumps"
+        }
+      ],
+      "container_benchmarks": [
+        {
+          "container": "20GP",
+          "form": "arang lump/pecah",
+          "net_t": {
+            "min": 12.0,
+            "max": 13.0
+          },
+          "source_ids": [
+            "S12",
+            "S13"
+          ]
+        },
+        {
+          "container": "40HC",
+          "form": "arang lump/pecah",
+          "net_t": 26.0,
+          "source_ids": [
+            "S12",
+            "S13"
+          ]
+        },
+        {
+          "container": "20GP",
+          "form": "batok mentah belah (bukan arang)",
+          "net_t": {
+            "min": 5,
+            "max": 8
+          },
+          "source_ids": [
+            "S14"
+          ]
+        },
+        {
+          "container": "40HC",
+          "form": "batok mentah belah (bukan arang)",
+          "net_t": {
+            "min": 10,
+            "max": 16
+          },
+          "source_ids": [
+            "S14"
+          ]
+        }
+      ],
+      "properties": {
+        "moisture_pct_max": 7,
+        "ash_pct": "2-5",
+        "fixed_carbon_pct": "75-85",
+        "calorific_kcal_kg": "6500-7500"
+      },
+      "storage": {
+        "hazard": "Mudah terbakar, debu karbon; jauhkan dari kelembapan & sumber api",
+        "limiting_factor": "VOLUME (bentuk belah 2), BERAT (bentuk lump)"
+      }
+    },
+    {
+      "id": "kopra_asalan",
+      "name_id": "Kopra asalan (kopra asap/campur, mutu petani)",
+      "name_en": "Ungraded / smoked milling copra",
+      "unit_type": "bulk",
+      "geometry": {
+        "shape": "irregular_curved_slab",
+        "piece_cm": {
+          "length": {
+            "min": 4,
+            "typ": 8,
+            "max": 14
+          },
+          "width": {
+            "min": 3,
+            "typ": 5,
+            "max": 9
+          },
+          "thickness": {
+            "min": 0.8,
+            "typ": 1.1,
+            "max": 1.6
+          }
+        },
+        "confidence": "C",
+        "note": "Daging 1/2 butir dicungkil lalu pecah 2-4 bagian saat pengeringan/handling"
+      },
+      "mass_per_piece_g": {
+        "min": 25,
+        "typ": 60,
+        "max": 130,
+        "confidence": "C"
+      },
+      "yield": {
+        "nuts_per_kg_copra": {
+          "min": 3.5,
+          "typ": 4.0,
+          "max": 5.0
+        },
+        "copra_per_nut_g": {
+          "min": 200,
+          "typ": 250,
+          "max": 285
+        },
+        "confidence": "B"
+      },
+      "moisture_pct": {
+        "min": 8,
+        "typ": 12,
+        "max": 22,
+        "confidence": "A",
+        "note": "Kopra asap tradisional sering 15-22%; standar ekspor ≤6%"
+      },
+      "oil_content_pct": {
+        "min": 55,
+        "typ": 60,
+        "max": 65
+      },
+      "bulk_density_kg_m3": {
+        "loose_bulk": {
+          "min": 440,
+          "typ": 500,
+          "max": 545,
+          "confidence": "A",
+          "note": "Stowage factor 1.84-2.27 m3/t; BIMCO 500 kg/m3"
+        },
+        "bagged_jute": {
+          "min": 400,
+          "typ": 440,
+          "max": 460,
+          "confidence": "A",
+          "note": "Karung goni 65 kg = 2.27 m3/t"
+        }
+      },
+      "packaging": [
+        {
+          "type": "jute_or_PP_bag",
+          "bag_net_kg": {
+            "min": 25,
+            "typ": 50,
+            "max": 65
+          },
+          "bag_flat_cm": {
+            "W": 70,
+            "L": 110,
+            "confidence": "B",
+            "source_ids": [
+              "S23"
+            ],
+            "note": "Karung goni 80-100 kg kelas 70-75 x 109-115 cm; dipakai untuk kopra 50 kg karena kopra asalan bervolume besar"
+          },
+          "bag_dims_cm_filled": {
+            "L": 88,
+            "W": 55,
+            "H": 27,
+            "confidence": "C",
+            "note": "Dimensi efektif terisi (kotak pembatas), diturunkan dari volume isi = berat/densitas dan dikalibrasi grid-fit ke benchmark container. Ukur ulang di lapangan. Belum ada benchmark muat container."
+          },
+          "density_ref": "bagged_jute"
+        },
+        {
+          "type": "loose_bulk",
+          "note": "Muatan curah: ikuti IMSBC Code (UN 1363 – self-heating)"
+        }
+      ],
+      "storage": {
+        "hazard": "Self-heating jika kadar air tinggi; debu mudah terbakar; bau tajam mencemari muatan lain",
+        "max_pile_height_m": {
+          "typ": 2.5,
+          "confidence": "C"
+        },
+        "ventilation_required": true
+      }
+    },
+    {
+      "id": "kopra_edible",
+      "name_id": "Kopra edible (kopra putih mangkok/cup)",
+      "name_en": "Edible (white) copra – cups",
+      "unit_type": "bulk",
+      "geometry": {
+        "shape": "hemispherical_cup_or_half_slab",
+        "piece_cm": {
+          "rim_diameter_or_length": {
+            "min": 4,
+            "typ": 8,
+            "max": 10
+          },
+          "depth_or_width": {
+            "min": 2.5,
+            "typ": 4,
+            "max": 6
+          },
+          "thickness": {
+            "min": 0.8,
+            "typ": 1.2,
+            "max": 1.6
+          }
+        },
+        "buyer_spec_example": "Edible small: cup ≤ 9 cm",
+        "confidence": "B"
+      },
+      "mass_per_piece_g": {
+        "min": 15,
+        "typ": 80,
+        "max": 180,
+        "confidence": "C",
+        "note": "Chip kecil ~15 g; cup utuh 1/2 butir 100-150 g"
+      },
+      "moisture_pct": {
+        "min": 4,
+        "typ": 5,
+        "max": 6,
+        "confidence": "A",
+        "note": "SNI 01-3946-1995 kopra putih kadar air maks 5%; APCC maks 6%"
+      },
+      "quality": {
+        "ffa_pct_max": 2,
+        "oil_pct_min": 60,
+        "moldy_cups": "nil",
+        "germinated_broken_wrinkled_pct_max": 1
+      },
+      "bulk_density_kg_m3": {
+        "loose_cups": {
+          "min": 300,
+          "typ": 350,
+          "max": 420,
+          "confidence": "C"
+        },
+        "bagged_in_container": {
+          "min": 300,
+          "typ": 320,
+          "max": 355,
+          "confidence": "B",
+          "note": "Turunan 10-11 MT per 20ft dalam karung 25 kg"
+        }
+      },
+      "packaging": [
+        {
+          "type": "PP_or_jute_net_bag",
+          "bag_net_kg": {
+            "min": 25,
+            "typ": 25,
+            "max": 50
+          },
+          "bag_flat_cm": {
+            "W": 60,
+            "L": 100,
+            "confidence": "B",
+            "source_ids": [
+              "S23"
+            ]
+          },
+          "bag_dims_cm_filled": {
+            "L": 79,
+            "W": 53,
+            "H": 18,
+            "confidence": "C",
+            "note": "Dimensi efektif terisi (kotak pembatas), diturunkan dari volume isi = berat/densitas dan dikalibrasi grid-fit ke benchmark container. Ukur ulang di lapangan. Grid: 429 karung/20GP (≈10,7 t), 975/40HC (≈24,4 t)."
+          },
+          "density_ref": "loose_cups"
+        }
+      ],
+      "container_benchmarks": [
+        {
+          "container": "20GP",
+          "net_t": {
+            "min": 10,
+            "max": 11
+          },
+          "packing": "karung 25 kg",
+          "source_ids": [
+            "S20"
+          ]
+        },
+        {
+          "container": "40HC",
+          "net_t": {
+            "min": 24,
+            "max": 27
+          },
+          "source_ids": [
+            "S19"
+          ]
+        }
+      ],
+      "storage": {
+        "hazard": "Jamur & serangga bila RH tinggi; jangan campur dengan kopra asalan (bau asap)",
+        "temperature_C": "15-30",
+        "max_stack_height_bags": {
+          "typ": 10,
+          "confidence": "C"
+        }
+      }
+    }
+  ],
+  "sources": [
+    {
+      "id": "S01",
+      "title": "Characterization of Attributes in Dehusked Coconut (ICAR JAE)",
+      "url": "https://epubs.icar.org.in/index.php/JAE/article/view/79035",
+      "grade": "A"
+    },
+    {
+      "id": "S02",
+      "title": "Physical characterization of coconut fruit – DSSC",
+      "url": "https://repository.dssc.edu.ph/items/628b2432-2d76-4fe4-9ada-9abd7c04b218/full",
+      "grade": "A"
+    },
+    {
+      "id": "S03",
+      "title": "Pembuatan Mesin Pengupas Sabut Kelapa – Polije",
+      "url": "https://sipora.polije.ac.id/51724/",
+      "grade": "A"
+    },
+    {
+      "id": "S05",
+      "title": "Semi Husked Coconut – freshdi",
+      "url": "https://freshdi.com/product/Semi-Husked-Coconut-SoNzcD",
+      "grade": "B"
+    },
+    {
+      "id": "S06",
+      "title": "RR Semi Husked Coconut – ExportersIndia",
+      "url": "https://www.exportersindia.com/product-detail/semi-husked-coconut-678582.htm",
+      "grade": "B"
+    },
+    {
+      "id": "S07",
+      "title": "Varshaa Semi Husked Coconut – ExportersIndia",
+      "url": "https://www.exportersindia.com/product-detail/semi-husked-coconut-476350.htm",
+      "grade": "B"
+    },
+    {
+      "id": "S08",
+      "title": "Premium Indian Brown Matured Semi Husked Coconuts – Globy",
+      "url": "https://globy.com/b2bmarket/listing/products/semi-husk-coconut-2e38f3",
+      "grade": "B"
+    },
+    {
+      "id": "S10",
+      "title": "Exploring the potential of coconut shell biomass for charcoal production",
+      "url": "https://khub.utp.edu.my/scholars/17905",
+      "grade": "A"
+    },
+    {
+      "id": "S11",
+      "title": "Coconut Shell Charcoal spec – GlobalLinker",
+      "url": "https://www.globallinker.com/products/coconut-shell-charcoal-8571517",
+      "grade": "B"
+    },
+    {
+      "id": "S12",
+      "title": "Coconut Shell Charcoal Organic Bulk Export – Globy",
+      "url": "https://globy.com/b2bmarket/listing/products/coconut-shell-charcoal-organic-bulk-export-2cbb99",
+      "grade": "B"
+    },
+    {
+      "id": "S13",
+      "title": "100% Coconut Shell Charcoal – b2usa",
+      "url": "https://b2usa.com/hotsite/dinayens/best-quality-hot-sale-price-100-coconut-",
+      "grade": "B"
+    },
+    {
+      "id": "S14",
+      "title": "Raw Coconut Shell (half-cut) – freshdi",
+      "url": "https://freshdi.com/product/Coconut-Shell-Raw",
+      "grade": "B"
+    },
+    {
+      "id": "S15",
+      "title": "Copra – TIS GDV (Transport Information Service)",
+      "url": "https://www.tis-gdv.de/tis_e/ware/oelsaat/kopra/kopra-htm/",
+      "grade": "A"
+    },
+    {
+      "id": "S16",
+      "title": "Copra (dry) UN 1363 – BIMCO",
+      "url": "https://bimco.org/Cargo/Solid bulk cargo/Solid bulk cargo database/Solid_cargo_database 0723/Copra_dry_UN_No1363",
+      "grade": "A"
+    },
+    {
+      "id": "S17",
+      "title": "Optimasi Pengeringan Kopra Putih (SNI 01-3946-1995) – Agrointek",
+      "url": "https://journal.trunojoyo.ac.id/agrointek/article/download/2009/1639",
+      "grade": "A"
+    },
+    {
+      "id": "S18",
+      "title": "Belerang terhadap mutu kopra putih – UNISI",
+      "url": "https://ejournal.unisi.ac.id/index.php/jtp/article/download/941/620",
+      "grade": "A"
+    },
+    {
+      "id": "S19",
+      "title": "Edible copra suppliers – go4WorldBusiness",
+      "url": "https://www.go4worldbusiness.com/suppliers/asia/edible-copra.html",
+      "grade": "B"
+    },
+    {
+      "id": "S20",
+      "title": "Copra buying leads – freshdi",
+      "url": "https://freshdi.com/buyer-category/Copra",
+      "grade": "B"
+    },
+    {
+      "id": "S21",
+      "title": "Kopra & konversi butir – Kontainer Indonesia",
+      "url": "https://kontainerindonesia.co.id/blog/?p=10193",
+      "grade": "B"
+    },
+    {
+      "id": "S22",
+      "title": "Spesifikasi container 20/40ft – Kontainer Indonesia",
+      "url": "https://kontainerindonesia.co.id/blog/?p=11333",
+      "grade": "B"
+    },
+    {
+      "id": "S23",
+      "title": "Harga & ukuran karung goni (25/50/80-100/500 kg) – harga.web.id",
+      "url": "https://harga.web.id/info-harga-karung-goni-dalam-berbagai-ukuran-di-pasaran.info",
+      "grade": "B"
+    },
+    {
+      "id": "S24",
+      "title": "FIBC jumbo bag 90x90x90 / 90x90x100 cm 1000 kg – Made-in-China",
+      "url": "https://es.made-in-china.com/category23_Packaging-Printing/Square-Container-Bag_13.html",
+      "grade": "B"
+    }
+  ]
+}

@@ -1,0 +1,246 @@
+{
+  "generated_from_version": "1.0.4",
+  "cases": [
+    {
+      "case": "jambul_20GP",
+      "commodity": "kelapa_jambul",
+      "container": "20GP",
+      "rho_eff_kg_m3": 385,
+      "unit_mass_g": 575,
+      "expect_pcs": 22230,
+      "expect_binding": "VOLUME",
+      "accept_range": [
+        22500,
+        22500
+      ]
+    },
+    {
+      "case": "jambul_40GP",
+      "commodity": "kelapa_jambul",
+      "container": "40GP",
+      "rho_eff_kg_m3": 385,
+      "unit_mass_g": 575,
+      "expect_pcs": 45330,
+      "expect_binding": "VOLUME",
+      "accept_range": [
+        45000,
+        47500
+      ]
+    },
+    {
+      "case": "arang_charcoal_broken_lumps_20GP",
+      "commodity": "arang_batok_belah2",
+      "form": "charcoal_broken_lumps",
+      "container": "20GP",
+      "rho_eff_kg_m3": 475,
+      "volume_util": 0.8,
+      "expect_t": 12.62,
+      "expect_binding": "VOLUME",
+      "accept_range_t": [
+        12.0,
+        13.0
+      ]
+    },
+    {
+      "case": "arang_charcoal_broken_lumps_40HC",
+      "commodity": "arang_batok_belah2",
+      "form": "charcoal_broken_lumps",
+      "container": "40HC",
+      "rho_eff_kg_m3": 475,
+      "volume_util": 0.8,
+      "expect_t": 26.5,
+      "expect_binding": "WEIGHT",
+      "accept_range_t": [
+        26.0,
+        26.0
+      ]
+    },
+    {
+      "case": "arang_raw_halves_loose_20GP",
+      "commodity": "arang_batok_belah2",
+      "form": "raw_halves_loose",
+      "container": "20GP",
+      "rho_eff_kg_m3": 195,
+      "volume_util": 1.0,
+      "expect_t": 6.47,
+      "expect_binding": "VOLUME",
+      "accept_range_t": [
+        5,
+        8
+      ]
+    },
+    {
+      "case": "arang_raw_halves_loose_40HC",
+      "commodity": "arang_batok_belah2",
+      "form": "raw_halves_loose",
+      "container": "40HC",
+      "rho_eff_kg_m3": 195,
+      "volume_util": 1.0,
+      "expect_t": 14.88,
+      "expect_binding": "VOLUME",
+      "accept_range_t": [
+        10,
+        16
+      ]
+    },
+    {
+      "case": "edible_20GP",
+      "commodity": "kopra_edible",
+      "container": "20GP",
+      "rho_eff_kg_m3": 320,
+      "expect_t": 10.62,
+      "expect_binding": "VOLUME",
+      "accept_range_t": [
+        10,
+        11
+      ]
+    },
+    {
+      "case": "edible_40HC",
+      "commodity": "kopra_edible",
+      "container": "40HC",
+      "rho_eff_kg_m3": 320,
+      "expect_t": 24.42,
+      "expect_binding": "VOLUME",
+      "accept_range_t": [
+        24,
+        27
+      ]
+    },
+    {
+      "case": "asalan_bagged_20GP",
+      "commodity": "kopra_asalan",
+      "container": "20GP",
+      "rho_eff_kg_m3": 440,
+      "volume_util": 0.9,
+      "expect_t": 13.15,
+      "expect_binding": "VOLUME",
+      "accept_range_t": null,
+      "note": "Tanpa benchmark dagang langsung; diturunkan dari stowage factor TIS-GDV"
+    },
+    {
+      "case": "moisture_correction",
+      "formula": "M2 = M1*(1-w1)/(1-w2)",
+      "input": {
+        "M1_kg": 1000,
+        "w1": 0.15,
+        "w2": 0.06
+      },
+      "expect": {
+        "M2_kg": 904.26
+      }
+    },
+    {
+      "case": "nested_stack_count",
+      "formula": "n = floor((H - h_cup)/pitch) + 1",
+      "input": {
+        "H_cm": 100,
+        "h_cup_cm": 4.4,
+        "pitch_cm": 1.2
+      },
+      "expect": {
+        "n": 80
+      }
+    },
+    {
+      "case": "grid_fit_bags_20GP",
+      "formula": "floor(L/l)*floor(W/w)*floor(H/h) (orientasi terbaik)",
+      "input": {
+        "container": "20GP",
+        "bag_cm": {
+          "l": 49,
+          "w": 34,
+          "h": 21
+        }
+      },
+      "expect": {
+        "bags": 924
+      }
+    },
+    {
+      "case": "grid_fit_arang_batok_belah2_bag_20GP",
+      "formula": "grid-fit karung, berat dibatasi payload",
+      "input": {
+        "container": "20GP",
+        "bag_cm": {
+          "l": 64,
+          "w": 45,
+          "h": 21
+        },
+        "bag_net_kg": 25
+      },
+      "expect": {
+        "bags_geom": 495,
+        "load_t": 12.38,
+        "binding": "VOLUME"
+      }
+    },
+    {
+      "case": "grid_fit_arang_batok_belah2_bag_40HC",
+      "formula": "grid-fit karung, berat dibatasi payload",
+      "input": {
+        "container": "40HC",
+        "bag_cm": {
+          "l": 64,
+          "w": 45,
+          "h": 21
+        },
+        "bag_net_kg": 25
+      },
+      "expect": {
+        "bags_geom": 1144,
+        "load_t": 26.5,
+        "binding": "WEIGHT"
+      }
+    },
+    {
+      "case": "grid_fit_kopra_edible_bag_20GP",
+      "formula": "grid-fit karung, berat dibatasi payload",
+      "input": {
+        "container": "20GP",
+        "bag_cm": {
+          "l": 79,
+          "w": 53,
+          "h": 18
+        },
+        "bag_net_kg": 25
+      },
+      "expect": {
+        "bags_geom": 429,
+        "load_t": 10.72,
+        "binding": "VOLUME"
+      }
+    },
+    {
+      "case": "grid_fit_kopra_edible_bag_40HC",
+      "formula": "grid-fit karung, berat dibatasi payload",
+      "input": {
+        "container": "40HC",
+        "bag_cm": {
+          "l": 79,
+          "w": 53,
+          "h": 18
+        },
+        "bag_net_kg": 25
+      },
+      "expect": {
+        "bags_geom": 975,
+        "load_t": 24.38,
+        "binding": "VOLUME"
+      }
+    },
+    {
+      "case": "warehouse_floor_area",
+      "formula": "A = V/(h_stack*phi) / u_floor",
+      "input": {
+        "mass_kg": 50000,
+        "rho_kg_m3": 500,
+        "h_stack_m": 2.5,
+        "u_floor": 0.65
+      },
+      "expect": {
+        "A_m2": 61.54
+      }
+    }
+  ]
+}

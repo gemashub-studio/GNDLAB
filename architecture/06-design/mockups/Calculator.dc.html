@@ -1,0 +1,226 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<title>gemasSTUDIO — Kalkulator Container</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bowlby+One&amp;family=Archivo:wght@400;500;700;800&amp;family=JetBrains+Mono:wght@400;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#EFEDE4}
+a{color:#111111}a:hover{color:#FF5A1F}
+.lab-paper{background-color:#EFEDE4;background-image:linear-gradient(#DAD6C8 1px,transparent 1px),linear-gradient(90deg,#DAD6C8 1px,transparent 1px);background-size:24px 24px}
+button{font:inherit;cursor:pointer}
+button:focus-visible,a:focus-visible{outline:3px solid #FF5A1F;outline-offset:2px}
+</style>
+</helmet>
+<div class="lab-paper" style="min-height: 100vh; color: #111111; font-family: 'Archivo', system-ui, sans-serif; padding: 32px 40px 56px; box-sizing: border-box">
+  <div style="max-width: 1200px; margin: 0 auto; display: flex; flex-direction: column; gap: 28px">
+
+    <header style="display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 16px">
+      <div style="display: flex; flex-direction: column; gap: 10px">
+        <a href="Main.dc.html" style="align-self: flex-start; display: inline-flex; align-items: center; gap: 6px; min-height: 36px; font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 700; text-decoration: none">← gemasSTUDIO / RINGKASAN</a>
+        <h1 style="margin: 0; font-family: 'Bowlby One', sans-serif; font-size: 52px; line-height: 0.95; text-transform: uppercase">Muat<br>Container</h1>
+      </div>
+      <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 700; background: #111111; color: #C6F135; padding: 6px 10px; transform: rotate(-1.5deg)">EXP-CALC // DATASET v1.0.4</span>
+    </header>
+
+    <div style="display: flex; flex-wrap: wrap; gap: 24px; align-items: flex-start">
+
+      <section aria-labelledby="in-h" style="flex: 1 1 340px; min-width: 0; background: #FFFFFF; border: 3px solid #111111; box-shadow: 6px 6px 0 #111111; padding: 22px; display: flex; flex-direction: column; gap: 22px">
+        <h2 id="in-h" style="margin: 0; font-family: 'Bowlby One', sans-serif; font-size: 22px; text-transform: uppercase">Input</h2>
+        <fieldset style="border: 0; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px">
+          <legend style="font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 700; letter-spacing: 0.08em; margin-bottom: 10px">01 / KOMODITAS</legend>
+          <sc-for list="{{commodities}}" as="c" hint-placeholder-count="5">
+            <button type="button" onClick="{{c.pick}}" aria-pressed="{{c.pressed}}" style="display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 48px; padding: 0 14px; text-align: left; border: 3px solid #111111; background: {{c.bg}}; color: #111111; font-weight: 800; text-transform: uppercase; font-size: 14px; box-shadow: {{c.shadow}}">
+              <span>{{c.label}}</span>
+              <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 700; border: 2px solid #111111; padding: 2px 6px; background: {{c.confBg}}">{{c.conf}}</span>
+            </button>
+          </sc-for>
+        </fieldset>
+        <fieldset style="border: 0; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px">
+          <legend style="font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 700; letter-spacing: 0.08em; margin-bottom: 10px">02 / CONTAINER</legend>
+          <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px">
+            <sc-for list="{{containers}}" as="k" hint-placeholder-count="3">
+              <button type="button" onClick="{{k.pick}}" aria-pressed="{{k.pressed}}" style="min-height: 64px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; border: 3px solid #111111; background: {{k.bg}}; color: {{k.fg}}; box-shadow: {{k.shadow}}">
+                <span style="font-family: 'Bowlby One', sans-serif; font-size: 20px">{{k.id}}</span>
+                <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 600">{{k.vol}}</span>
+              </button>
+            </sc-for>
+          </div>
+        </fieldset>
+        <div style="border: 2px dashed #111111; padding: 12px; display: flex; flex-direction: column; gap: 6px; font-family: 'JetBrains Mono', monospace; font-size: 12px">
+          <span style="font-weight: 700; letter-spacing: 0.08em">03 / PARAMETER (DATASET)</span>
+          <span>ρ efektif: {{p.rho}}</span>
+          <span>Utilisasi volume: {{p.util}}</span>
+          <span>Massa unit: {{p.unit}}</span>
+          <span>Kemasan: {{p.pack}}</span>
+        </div>
+      </section>
+
+      <section aria-labelledby="out-h" style="flex: 2 1 520px; min-width: 0; display: flex; flex-direction: column; gap: 24px">
+        <div style="background: #C6F135; border: 3px solid #111111; box-shadow: 6px 6px 0 #111111; padding: 24px; display: flex; flex-direction: column; gap: 18px">
+          <div style="display: flex; flex-wrap: wrap; justify-content: space-between; gap: 10px; align-items: center">
+            <h2 id="out-h" style="margin: 0; font-family: 'JetBrains Mono', monospace; font-size: 13px; font-weight: 700; letter-spacing: 0.1em">HASIL · {{r.title}}</h2>
+            <span style="font-weight: 800; text-transform: uppercase; font-size: 13px; background: {{r.bindBg}}; color: {{r.bindFg}}; padding: 6px 10px; border: 2px solid #111111; transform: rotate(1.5deg)">Batas: {{r.binding}}</span>
+          </div>
+          <div style="display: flex; flex-wrap: wrap; align-items: baseline; gap: 12px">
+            <span style="font-family: 'Bowlby One', sans-serif; font-size: 72px; line-height: 0.9">{{r.main}}</span>
+            <span style="font-family: 'JetBrains Mono', monospace; font-size: 18px; font-weight: 700">{{r.mainUnit}}</span>
+          </div>
+          <span style="font-family: 'JetBrains Mono', monospace; font-size: 14px; font-weight: 600">{{r.sub}}</span>
+          <div style="display: flex; flex-direction: column; gap: 6px">
+            <div style="display: flex; justify-content: space-between; font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 700"><span>MIN {{r.min}}</span><span>MAX {{r.max}}</span></div>
+            <div style="position: relative; height: 18px; border: 2px solid #111111; background: #FFFFFF">
+              <div style="position: absolute; top: 0; bottom: 0; left: {{r.bandLeft}}; width: {{r.bandWidth}}; background: #111111"></div>
+              <div style="position: absolute; top: -6px; bottom: -6px; left: {{r.typLeft}}; width: 4px; background: #FF5A1F"></div>
+            </div>
+            <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px">Pita = rentang min–max (evaluasi sudut parameter) · garis oranye = typ</span>
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px">
+          <div style="background: #FFFFFF; border: 3px solid #111111; box-shadow: 6px 6px 0 #111111; padding: 18px; display: flex; flex-direction: column; gap: 12px; font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 700">
+            <span style="letter-spacing: 0.08em">ISI CONTAINER</span>
+            <div style="display: flex; flex-direction: column; gap: 4px">
+              <div style="display: flex; justify-content: space-between"><span>VOLUME</span><span>{{r.volPct}}</span></div>
+              <div style="height: 16px; border: 2px solid #111111"><div style="height: 12px; width: {{r.volPct}}; background: #111111"></div></div>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 4px">
+              <div style="display: flex; justify-content: space-between"><span>BERAT</span><span>{{r.wtPct}}</span></div>
+              <div style="height: 16px; border: 2px solid #111111"><div style="height: 12px; width: {{r.wtPct}}; background: #FF5A1F"></div></div>
+            </div>
+          </div>
+          <div style="background: #FFFFFF; border: 3px solid #111111; box-shadow: 6px 6px 0 #111111; padding: 18px; display: flex; flex-direction: column; gap: 8px">
+            <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 700; letter-spacing: 0.08em">BENCHMARK PASAR</span>
+            <span style="font-family: 'Bowlby One', sans-serif; font-size: 26px">{{r.bench}}</span>
+            <span style="font-size: 13px">{{r.benchNote}}</span>
+          </div>
+        </div>
+
+        <div style="background: #FFFFFF; border: 3px solid #111111; box-shadow: 6px 6px 0 #111111; padding: 18px; display: flex; flex-direction: column; gap: 12px">
+          <div style="display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; align-items: baseline">
+            <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 700; letter-spacing: 0.08em">SIMULASI · TAMPAK SAMPING</span>
+            <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px">representasi grid, bukan posisi fisik eksak</span>
+          </div>
+          <div class="lab-paper" style="display: grid; grid-template-columns: repeat(20, minmax(0, 1fr)); gap: 3px; border: 3px solid #111111; padding: 6px">
+            <sc-for list="{{cells}}" as="cell" hint-placeholder-count="60">
+              <div style="height: 22px; border: 2px solid #111111; background: {{cell.bg}}"></div>
+            </sc-for>
+          </div>
+        </div>
+
+        <sc-if value="{{r.hasWarn}}" hint-placeholder-val="{{ true }}">
+          <div style="background: #111111; color: #EFEDE4; border: 3px solid #111111; box-shadow: 6px 6px 0 #FF5A1F; padding: 16px; display: flex; gap: 12px; align-items: flex-start">
+            <span style="flex: 0 0 auto; display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; background: #FF5A1F; color: #111111">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" aria-hidden="true"><path d="M12 3l10 18H2z"></path><path d="M12 10v5M12 18v.5"></path></svg>
+            </span>
+            <div style="display: flex; flex-direction: column; gap: 4px">
+              <span style="font-weight: 800">{{r.warnTitle}}</span>
+              <span style="font-size: 13px; color: #CFCCC0">{{r.warnBody}}</span>
+              <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #FF5A1F; font-weight: 700">{{r.warnCode}}</span>
+            </div>
+          </div>
+        </sc-if>
+      </section>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1100}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { c: 'edible', k: '40HC' };
+  }
+  renderVals() {
+    var self = this;
+    var C = {
+      jambul:  { label: 'Kelapa jambul', rho: [360, 385, 410], u: 1, m: [0.45, 0.575, 0.85], unit: 'butir', conf: 'C', pack: 'Jaring 25 butir · 49×34×21 cm',
+                 bench: { '20GP': ['22.500 butir', '3 sumber eksportir (900–1000 karung)'], '40GP': ['45.000–47.500 butir', '1.800–1.950 karung'] },
+                 warn: ['Umur simpan 30–45 hari', 'Kelapa jambul ambien. Jadwalkan muat sebelum hari ke-45.', 'SHELF_LIFE'] },
+      lump:    { label: 'Arang batok lump', rho: [400, 475, 550], u: 0.8, m: null, conf: 'B', pack: 'PP woven 25 kg · 64×45×21 cm',
+                 bench: { '20GP': ['12–13 t', 'Karung 25 kg, tanpa palet'], '40HC': ['26 t', 'Karung 25 kg'] },
+                 warn: ['Mudah terbakar', 'Jauhkan dari api & kelembapan; kadar air maks 7%.', 'FLAMMABLE'] },
+      belah2:  { label: 'Arang belah 2 utuh', rho: [50, 85, 155], u: 1, m: [0.015, 0.025, 0.042], unit: 'keping', conf: 'C', pack: 'Curah / karung (dimensi belum diukur)',
+                 bench: {}, warn: ['Densitas masih estimasi (C)', 'Rentang 50–155 kg/m³. Uji kotak volume ≥ 0,2 m³ sebelum pesan container.', 'LOW_CONFIDENCE_PARAM'] },
+      asalan:  { label: 'Kopra asalan', rho: [400, 440, 460], u: 0.9, m: null, conf: 'A', pack: 'Goni 50 kg · 88×55×27 cm',
+                 bench: {}, warn: ['Cek kadar air sebelum muat', 'Di atas 10% risiko panas sendiri (UN 1363). Belum ada benchmark muat pasar.', 'SELF_HEATING_RISK'] },
+      edible:  { label: 'Kopra edible', rho: [300, 320, 355], u: 1, m: null, conf: 'B', pack: 'Jaring/goni 25 kg · 79×53×18 cm',
+                 bench: { '20GP': ['10–11 t', 'Karung 25 kg'], '40HC': ['24–27 t', 'MOQ pembeli umum'] },
+                 warn: null }
+    };
+    var K = { '20GP': { v: 33.2, p: 28200 }, '40GP': { v: 67.7, p: 26700 }, '40HC': { v: 76.3, p: 26500 } };
+    var confBg = { A: '#C6F135', B: '#FFFFFF', C: '#FF5A1F' };
+    var c = C[this.state.c], k = K[this.state.k];
+    var fmt = function (x, d) { return Number(x).toLocaleString('id-ID', { minimumFractionDigits: d || 0, maximumFractionDigits: d || 0 }); };
+    var massAt = function (rho) { return Math.min(k.v * c.u * rho, k.p); };
+    var mMin = massAt(c.rho[0]), mTyp = massAt(c.rho[1]), mMax = massAt(c.rho[2]);
+    var volLimit = k.v * c.u * c.rho[1];
+    var binding = volLimit > k.p ? 'BERAT' : 'VOLUME';
+    var r = {};
+    if (c.m) {
+      var nMin = Math.floor(mMin / c.m[2]), nTyp = Math.floor(mTyp / c.m[1]), nMax = Math.floor(mMax / c.m[0]);
+      r.main = fmt(nTyp); r.mainUnit = c.unit.toUpperCase();
+      r.sub = '≈ ' + fmt(mTyp / 1000, 2) + ' t muatan bersih';
+      r.min = fmt(nMin); r.max = fmt(nMax);
+      var lo = nMin, hi = nMax, ty = nTyp;
+    } else {
+      r.main = fmt(mTyp / 1000, 2); r.mainUnit = 'TON';
+      r.sub = fmt(mTyp) + ' kg muatan bersih';
+      r.min = fmt(mMin / 1000, 2) + ' t'; r.max = fmt(mMax / 1000, 2) + ' t';
+      var lo = mMin, hi = mMax, ty = mTyp;
+    }
+    var scale = hi * 1.1;
+    r.bandLeft = (lo / scale * 100).toFixed(1) + '%';
+    r.bandWidth = ((hi - lo) / scale * 100).toFixed(1) + '%';
+    r.typLeft = (ty / scale * 100).toFixed(1) + '%';
+    r.title = c.label.toUpperCase() + ' @ ' + this.state.k;
+    r.binding = binding;
+    r.bindBg = binding === 'VOLUME' ? '#111111' : '#FF5A1F';
+    r.bindFg = binding === 'VOLUME' ? '#C6F135' : '#111111';
+    var volPct = Math.min(100, mTyp / volLimit * 100), wtPct = mTyp / k.p * 100;
+    r.volPct = Math.round(volPct) + '%'; r.wtPct = Math.round(wtPct) + '%';
+    var b = c.bench[this.state.k];
+    r.bench = b ? b[0] : 'Belum ada';
+    r.benchNote = b ? b[1] : 'Tidak ada data muat pasar untuk kombinasi ini — catat realisasi stuffing pertama.';
+    r.hasWarn = !!c.warn;
+    if (c.warn) { r.warnTitle = c.warn[0]; r.warnBody = c.warn[1]; r.warnCode = c.warn[2]; }
+    var filled = Math.round(Math.min(volPct, 100) / 100 * 60);
+    var cells = [];
+    for (var i = 0; i < 60; i++) {
+      var col = i % 20, row = Math.floor(i / 20);
+      var order = col * 3 + (2 - row);
+      cells.push({ bg: order < filled ? (wtPct >= 99 ? '#FF5A1F' : '#C6F135') : '#FFFFFF' });
+    }
+    return {
+      commodities: Object.keys(C).map(function (id) {
+        var on = id === self.state.c;
+        return { label: C[id].label, conf: C[id].conf, confBg: confBg[C[id].conf], pressed: on ? 'true' : 'false',
+                 bg: on ? '#C6F135' : '#FFFFFF', shadow: on ? '4px 4px 0 #111111' : 'none',
+                 pick: function () { self.setState({ c: id }); } };
+      }),
+      containers: Object.keys(K).map(function (id) {
+        var on = id === self.state.k;
+        return { id: id, vol: K[id].v.toLocaleString('id-ID') + ' m³', pressed: on ? 'true' : 'false',
+                 bg: on ? '#111111' : '#FFFFFF', fg: on ? '#C6F135' : '#111111', shadow: on ? '4px 4px 0 #FF5A1F' : 'none',
+                 pick: function () { self.setState({ k: id }); } };
+      }),
+      p: {
+        rho: c.rho[1] + ' kg/m³ (' + c.rho[0] + '–' + c.rho[2] + ')',
+        util: Math.round(c.u * 100) + '%',
+        unit: c.m ? (c.m[1] * 1000) + ' g (' + (c.m[0] * 1000) + '–' + (c.m[2] * 1000) + ')' : '— (curah/karung)',
+        pack: c.pack
+      },
+      r: r,
+      cells: cells
+    };
+  }
+}
+</script>
+</body>
+</html>

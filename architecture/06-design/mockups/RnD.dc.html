@@ -1,0 +1,228 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<title>gemasSTUDIO — R&amp;D Lab</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bowlby+One&amp;family=Archivo:wght@400;500;700;800&amp;family=JetBrains+Mono:wght@400;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#EFEDE4}
+a{color:#111111}a:hover{color:#FF5A1F}
+.lab-paper{background-color:#EFEDE4;background-image:linear-gradient(#DAD6C8 1px,transparent 1px),linear-gradient(90deg,#DAD6C8 1px,transparent 1px);background-size:24px 24px}
+button,input,select,textarea{font:inherit}
+button{cursor:pointer}
+button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:3px solid #FF5A1F;outline-offset:2px}
+</style>
+</helmet>
+<div class="lab-paper" style="min-height: 100vh; color: #111111; font-family: 'Archivo', system-ui, sans-serif; padding: 32px 40px 56px; box-sizing: border-box">
+  <div style="max-width: 1240px; margin: 0 auto; display: flex; flex-direction: column; gap: 26px">
+
+    <header style="display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 16px">
+      <div style="display: flex; flex-direction: column; gap: 10px">
+        <a href="Main.dc.html" style="align-self: flex-start; display: inline-flex; align-items: center; min-height: 36px; font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 700; text-decoration: none">← gemasSTUDIO / RINGKASAN</a>
+        <h1 style="margin: 0; font-family: 'Bowlby One', sans-serif; font-size: 56px; line-height: 0.92; text-transform: uppercase">R&amp;D<br><span style="background: #111111; color: #C6F135; padding: 0 10px">Lab Book</span></h1>
+      </div>
+      <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 8px">
+        <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 700; background: #FF5A1F; padding: 6px 10px; border: 2px solid #111111; transform: rotate(2deg)">PARAMETER: MENYUSUL DARI OWNER</span>
+        <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px">Pencatatan batch produk turunan kelapa</span>
+      </div>
+    </header>
+
+    <div role="tablist" aria-label="Produk" style="display: flex; flex-wrap: wrap; gap: 12px">
+      <sc-for list="{{tabs}}" as="t" hint-placeholder-count="4">
+        <button type="button" role="tab" aria-selected="{{t.selected}}" onClick="{{t.pick}}" style="min-height: 52px; padding: 0 18px; display: inline-flex; align-items: center; gap: 10px; border: 3px solid #111111; background: {{t.bg}}; color: {{t.fg}}; box-shadow: {{t.shadow}}; font-weight: 800; text-transform: uppercase; font-size: 15px; letter-spacing: 0.02em">
+          <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; border: 2px solid currentColor; padding: 1px 5px">{{t.code}}</span>
+          {{t.label}}
+        </button>
+      </sc-for>
+    </div>
+
+    <div style="display: flex; flex-wrap: wrap; gap: 24px; align-items: flex-start">
+
+      <div style="flex: 3 1 560px; min-width: 0; display: flex; flex-direction: column; gap: 24px">
+
+        <section aria-labelledby="flow-h" style="background: #FFFFFF; border: 3px solid #111111; box-shadow: 6px 6px 0 #111111; padding: 22px; display: flex; flex-direction: column; gap: 16px">
+          <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 8px">
+            <h2 id="flow-h" style="margin: 0; font-family: 'Bowlby One', sans-serif; font-size: 24px; text-transform: uppercase">Alur Proses · {{p.label}}</h2>
+            <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 600">TEMPLATE · BISA DIEDIT</span>
+          </div>
+          <p style="margin: 0; font-size: 14px; max-width: 70ch">{{p.desc}}</p>
+          <ol style="list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 10px">
+            <sc-for list="{{p.stages}}" as="s" hint-placeholder-count="6">
+              <li style="display: flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 12px; border: 2px solid #111111; background: #EFEDE4; font-weight: 700; font-size: 14px">
+                <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; background: #111111; color: #C6F135; padding: 2px 6px">{{s.n}}</span>
+                {{s.name}}
+              </li>
+            </sc-for>
+          </ol>
+        </section>
+
+        <section aria-labelledby="param-h" style="background: #FFFFFF; border: 3px solid #111111; box-shadow: 6px 6px 0 #111111; padding: 22px; display: flex; flex-direction: column; gap: 16px">
+          <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 8px">
+            <h2 id="param-h" style="margin: 0; font-family: 'Bowlby One', sans-serif; font-size: 24px; text-transform: uppercase">Slot Parameter</h2>
+            <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 700; background: #FF5A1F; padding: 3px 8px; border: 2px solid #111111">MENYUSUL</span>
+          </div>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px">
+            <sc-for list="{{p.groups}}" as="g" hint-placeholder-count="3">
+              <div style="border: 2px dashed #111111; padding: 14px; display: flex; flex-direction: column; gap: 10px">
+                <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 700; letter-spacing: 0.08em">{{g.name}}</span>
+                <sc-for list="{{g.slots}}" as="sl" hint-placeholder-count="3">
+                  <div style="display: flex; justify-content: space-between; gap: 8px; align-items: center; min-height: 36px; padding: 0 10px; background: #EFEDE4; border: 2px solid #111111; font-size: 13px">
+                    <span>{{sl.name}}</span>
+                    <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #55534B">[satuan]</span>
+                  </div>
+                </sc-for>
+              </div>
+            </sc-for>
+          </div>
+          <span style="font-size: 13px">Setiap parameter nanti punya: nama, satuan, tipe (angka/teks/pilihan), batas target min–max, dan tahap proses tempat diukur.</span>
+        </section>
+
+        <section aria-labelledby="batch-h" style="background: #FFFFFF; border: 3px solid #111111; box-shadow: 6px 6px 0 #111111; padding: 22px; display: flex; flex-direction: column; gap: 14px">
+          <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 10px">
+            <h2 id="batch-h" style="margin: 0; font-family: 'Bowlby One', sans-serif; font-size: 24px; text-transform: uppercase">Log Batch · {{p.code}}</h2>
+            <button type="button" onClick="{{addBatch}}" style="min-height: 44px; padding: 0 16px; border: 3px solid #111111; background: #C6F135; box-shadow: 4px 4px 0 #111111; font-weight: 800; text-transform: uppercase; font-size: 13px">+ Buka batch baru</button>
+          </div>
+          <sc-if value="{{noBatch}}" hint-placeholder-val="{{ true }}">
+            <div class="lab-paper" style="border: 3px dashed #111111; padding: 28px; display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center">
+              <span style="font-family: 'Bowlby One', sans-serif; font-size: 22px; text-transform: uppercase">Belum ada batch</span>
+              <span style="font-size: 14px; max-width: 46ch">Tekan "Buka batch baru" untuk mulai mencatat percobaan {{p.label}}. Kode batch dibuat otomatis.</span>
+            </div>
+          </sc-if>
+          <sc-if value="{{hasBatch}}" hint-placeholder-val="{{ false }}">
+            <div style="overflow-x: auto">
+              <table style="width: 100%; min-width: 560px; border-collapse: collapse; font-size: 14px">
+                <thead>
+                  <tr style="text-align: left; font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.08em; background: #111111; color: #EFEDE4">
+                    <th scope="col" style="padding: 10px">KODE</th>
+                    <th scope="col" style="padding: 10px">MULAI</th>
+                    <th scope="col" style="padding: 10px">TAHAP</th>
+                    <th scope="col" style="padding: 10px">PARAMETER</th>
+                    <th scope="col" style="padding: 10px">STATUS</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <sc-for list="{{batches}}" as="b" hint-placeholder-count="2">
+                    <tr style="border-bottom: 2px solid #111111">
+                      <th scope="row" style="padding: 12px 10px; text-align: left; font-family: 'JetBrains Mono', monospace; font-weight: 700">{{b.code}}</th>
+                      <td style="padding: 12px 10px; font-family: 'JetBrains Mono', monospace">{{b.date}}</td>
+                      <td style="padding: 12px 10px">{{b.stage}}</td>
+                      <td style="padding: 12px 10px; font-family: 'JetBrains Mono', monospace; font-size: 12px">0 / {{b.slots}} terisi</td>
+                      <td style="padding: 12px 10px"><span style="font-weight: 800; font-size: 12px; text-transform: uppercase; border: 2px solid #111111; padding: 3px 8px; background: #C6F135">Rencana</span></td>
+                    </tr>
+                  </sc-for>
+                </tbody>
+              </table>
+            </div>
+          </sc-if>
+        </section>
+      </div>
+
+      <aside aria-labelledby="form-h" style="flex: 2 1 340px; min-width: 0; background: #111111; color: #EFEDE4; border: 3px solid #111111; box-shadow: 6px 6px 0 #FF5A1F; padding: 22px; display: flex; flex-direction: column; gap: 16px">
+        <h2 id="form-h" style="margin: 0; font-family: 'Bowlby One', sans-serif; font-size: 24px; text-transform: uppercase; color: #C6F135">Catat Batch</h2>
+        <div style="display: flex; flex-direction: column; gap: 6px">
+          <label for="f-code" style="font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 700">KODE BATCH</label>
+          <input id="f-code" type="text" value="{{nextCode}}" readonly style="min-height: 44px; padding: 0 12px; border: 2px solid #EFEDE4; background: #222222; color: #C6F135; font-family: 'JetBrains Mono', monospace; font-weight: 700">
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px">
+          <div style="display: flex; flex-direction: column; gap: 6px">
+            <label for="f-date" style="font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 700">TANGGAL MULAI</label>
+            <input id="f-date" type="date" value="2026-10-08" style="min-height: 44px; padding: 0 10px; border: 2px solid #EFEDE4; background: #FFFFFF; color: #111111">
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 6px">
+            <label for="f-op" style="font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 700">OPERATOR</label>
+            <input id="f-op" type="text" placeholder="Nama" style="min-height: 44px; padding: 0 10px; border: 2px solid #EFEDE4; background: #FFFFFF; color: #111111">
+          </div>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 6px">
+          <label for="f-lot" style="font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 700">LOT BAHAN BAKU</label>
+          <input id="f-lot" type="text" placeholder="mis. lot kelapa / air kelapa asal" style="min-height: 44px; padding: 0 10px; border: 2px solid #EFEDE4; background: #FFFFFF; color: #111111">
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 6px">
+          <label for="f-stage" style="font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 700">TAHAP</label>
+          <select id="f-stage" style="min-height: 44px; padding: 0 10px; border: 2px solid #EFEDE4; background: #FFFFFF; color: #111111">
+            <sc-for list="{{p.stages}}" as="s" hint-placeholder-count="6">
+              <option>{{s.n}} · {{s.name}}</option>
+            </sc-for>
+          </select>
+        </div>
+        <fieldset style="border: 2px dashed #FF5A1F; margin: 0; padding: 12px; display: flex; flex-direction: column; gap: 8px">
+          <legend style="font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 700; color: #FF5A1F; padding: 0 6px">PARAMETER ({{p.slotCount}} SLOT · MENYUSUL)</legend>
+          <span style="font-size: 13px; color: #CFCCC0">Field angka & satuan akan muncul otomatis setelah parameter {{p.label}} didefinisikan.</span>
+        </fieldset>
+        <div style="display: flex; flex-direction: column; gap: 6px">
+          <label for="f-obs" style="font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 700">OBSERVASI</label>
+          <textarea id="f-obs" rows="3" placeholder="Warna, aroma, tekstur, kendala…" style="padding: 10px; border: 2px solid #EFEDE4; background: #FFFFFF; color: #111111; resize: vertical"></textarea>
+        </div>
+        <div style="display: flex; flex-wrap: wrap; gap: 10px">
+          <button type="button" style="flex: 1 1 140px; min-height: 48px; border: 3px solid #EFEDE4; background: transparent; color: #EFEDE4; font-weight: 800; text-transform: uppercase; font-size: 13px">+ Foto</button>
+          <button type="button" onClick="{{addBatch}}" style="flex: 2 1 160px; min-height: 48px; border: 3px solid #111111; background: #C6F135; color: #111111; box-shadow: 4px 4px 0 #FF5A1F; font-weight: 800; text-transform: uppercase; font-size: 13px">Simpan batch</button>
+        </div>
+      </aside>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1320}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { tab: 'KE', batches: { KE: [], KA: [], BL: [], CK: [] } };
+  }
+  renderVals() {
+    var self = this;
+    var P = {
+      KE: { label: 'Kopra Edible', desc: 'Kopra putih untuk konsumsi: kadar air rendah, bersih, tanpa bau asap.',
+            stages: ['Terima kelapa', 'Belah & buang air', 'Pengeringan', 'Cungkil & sortir', 'Kemas'],
+            groups: [['BAHAN BAKU', 3], ['PROSES', 3], ['HASIL / QC', 3]] },
+      KA: { label: 'Kopra Asalan', desc: 'Kopra mutu umum untuk minyak; dikeringkan dengan asap atau jemur.',
+            stages: ['Terima kelapa', 'Belah', 'Asap / jemur', 'Cungkil', 'Kering lanjut', 'Karungkan'],
+            groups: [['BAHAN BAKU', 2], ['PROSES', 3], ['HASIL / QC', 3]] },
+      BL: { label: 'Bioleather', desc: 'Lembaran selulosa hasil fermentasi air kelapa, diolah menjadi material mirip kulit.',
+            stages: ['Siapkan media', 'Inokulasi starter', 'Fermentasi lembaran', 'Panen & cuci', 'Pemurnian', 'Plastisasi', 'Pengeringan', 'Finishing'],
+            groups: [['MEDIA & STARTER', 3], ['FERMENTASI', 3], ['MATERIAL / QC', 4]] },
+      CK: { label: 'Cuka Kelapa', desc: 'Cuka dari air kelapa atau nira melalui fermentasi alkohol lalu asetat.',
+            stages: ['Saring bahan', 'Fermentasi alkohol', 'Fermentasi asetat', 'Penuaan', 'Saring', 'Pasteurisasi', 'Botolkan'],
+            groups: [['BAHAN BAKU', 2], ['FERMENTASI', 4], ['PRODUK / QC', 3]] }
+    };
+    var tab = this.state.tab, p = P[tab];
+    var slotCount = p.groups.reduce(function (a, g) { return a + g[1]; }, 0);
+    var list = this.state.batches[tab];
+    var seq = String(list.length + 1).padStart(3, '0');
+    var nextCode = tab + '-2610-' + seq;
+    return {
+      tabs: Object.keys(P).map(function (k) {
+        var on = k === tab;
+        return { code: k, label: P[k].label, selected: on ? 'true' : 'false',
+                 bg: on ? '#111111' : '#FFFFFF', fg: on ? '#C6F135' : '#111111', shadow: on ? '5px 5px 0 #FF5A1F' : '4px 4px 0 #111111',
+                 pick: function () { self.setState({ tab: k }); } };
+      }),
+      p: {
+        code: tab, label: p.label, desc: p.desc, slotCount: slotCount,
+        stages: p.stages.map(function (s, i) { return { n: String(i + 1).padStart(2, '0'), name: s }; }),
+        groups: p.groups.map(function (g) {
+          var slots = [];
+          for (var i = 0; i < g[1]; i++) slots.push({ name: 'Parameter ' + (i + 1) + ' · menyusul' });
+          return { name: g[0], slots: slots };
+        })
+      },
+      nextCode: nextCode,
+      batches: list,
+      noBatch: list.length === 0,
+      hasBatch: list.length > 0,
+      addBatch: function () {
+        var b = Object.assign({}, self.state.batches);
+        b[tab] = list.concat([{ code: nextCode, date: '08.10.2026', stage: '01 · ' + p.stages[0], slots: slotCount }]);
+        self.setState({ batches: b });
+      }
+    };
+  }
+}
+</script>
+</body>
+</html>

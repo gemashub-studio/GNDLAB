@@ -1,0 +1,2 @@
+product_code,stage_seq,group_name,key,label,unit,data_type,choices,target_min,target_max,decimals,required,note
+KE,3,HASIL / QC,contoh_param,Contoh parameter (hapus baris ini),%,number,,,,2,false,"product_code: KE|KA|BL|CK · stage_seq: nomor tahap (kosong = semua tahap) · key: huruf_kecil_tanpa_spasi · data_type: number|text|choice|boolean · choices (untuk choice): A;B;C"

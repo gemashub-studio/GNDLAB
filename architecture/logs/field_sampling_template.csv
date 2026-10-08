@@ -1,0 +1,2 @@
+measured_at,location,lot_ref,commodity_code,form_code,parameter_key,value,unit,method,officer,note
+2026-10-15T09:00:00+07:00,Gudang Depok,LOT-001,kelapa_jambul,bagged,mass_per_unit,0.612,kg,timbang,Nama Petugas,contoh baris - hapus

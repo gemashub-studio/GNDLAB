@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<title>gemasSTUDIO — Hitung Cepat Gudang</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bowlby+One&amp;family=Archivo:wght@400;500;700;800&amp;family=JetBrains+Mono:wght@400;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#111111}a:hover{color:#FF5A1F}
+.lab-paper{background-color:#EFEDE4;background-image:linear-gradient(#DAD6C8 1px,transparent 1px),linear-gradient(90deg,#DAD6C8 1px,transparent 1px);background-size:20px 20px}
+button,input{font:inherit}
+</style>
+</helmet>
+<div class="lab-paper" style="width: 390px; height: 844px; box-sizing: border-box; color: #111111; font-family: 'Archivo', system-ui, sans-serif; display: flex; flex-direction: column; overflow: hidden">
+
+  <header style="background: #111111; color: #EFEDE4; padding: 18px 18px 16px; display: flex; align-items: center; justify-content: space-between; gap: 10px">
+    <span style="font-family: 'Bowlby One', sans-serif; font-size: 20px">gemas<span style="color: #C6F135">STUDIO</span></span>
+    <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 700; border: 2px solid #C6F135; color: #C6F135; padding: 3px 6px">OFFLINE · v1.0.4</span>
+  </header>
+
+  <main style="flex: 1 1 auto; padding: 18px; display: flex; flex-direction: column; gap: 16px; overflow: hidden">
+    <h1 style="margin: 0; font-family: 'Bowlby One', sans-serif; font-size: 30px; line-height: 0.95; text-transform: uppercase">Hitung<br>Cepat</h1>
+
+    <div role="radiogroup" aria-label="Komoditas" style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px">
+      <button type="button" role="radio" aria-checked="false" style="min-height: 44px; border: 3px solid #111111; background: #FFFFFF; font-weight: 800; font-size: 13px; text-transform: uppercase">Jambul</button>
+      <button type="button" role="radio" aria-checked="false" style="min-height: 44px; border: 3px solid #111111; background: #FFFFFF; font-weight: 800; font-size: 13px; text-transform: uppercase">Arang</button>
+      <button type="button" role="radio" aria-checked="true" style="min-height: 44px; border: 3px solid #111111; background: #C6F135; box-shadow: 3px 3px 0 #111111; font-weight: 800; font-size: 13px; text-transform: uppercase">Kopra asalan</button>
+      <button type="button" role="radio" aria-checked="false" style="min-height: 44px; border: 3px solid #111111; background: #FFFFFF; font-weight: 800; font-size: 13px; text-transform: uppercase">Kopra edible</button>
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px">
+      <div style="display: flex; flex-direction: column; gap: 4px">
+        <label for="m-qty" style="font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 700">JUMLAH KARUNG</label>
+        <input id="m-qty" type="number" value="120" style="min-height: 48px; padding: 0 10px; border: 3px solid #111111; background: #FFFFFF; font-family: 'JetBrains Mono', monospace; font-size: 20px; font-weight: 700; box-sizing: border-box; width: 100%">
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 4px">
+        <label for="m-mc" style="font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 700">KADAR AIR %</label>
+        <input id="m-mc" type="number" value="14" style="min-height: 48px; padding: 0 10px; border: 3px solid #111111; background: #FFFFFF; font-family: 'JetBrains Mono', monospace; font-size: 20px; font-weight: 700; box-sizing: border-box; width: 100%">
+      </div>
+    </div>
+
+    <section aria-label="Hasil" style="background: #FFFFFF; border: 3px solid #111111; box-shadow: 5px 5px 0 #111111; padding: 14px; display: flex; flex-direction: column; gap: 10px">
+      <div style="display: flex; align-items: baseline; gap: 8px">
+        <span style="font-family: 'Bowlby One', sans-serif; font-size: 40px; line-height: 1">6.000</span>
+        <span style="font-family: 'JetBrains Mono', monospace; font-weight: 700">KG</span>
+      </div>
+      <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; font-family: 'JetBrains Mono', monospace; font-size: 12px">
+        <div style="display: flex; flex-direction: column; gap: 2px; border: 2px solid #111111; padding: 8px"><span>VOLUME</span><span style="font-size: 16px; font-weight: 700">13,6 m³</span></div>
+        <div style="display: flex; flex-direction: column; gap: 2px; border: 2px solid #111111; padding: 8px"><span>LANTAI</span><span style="font-size: 16px; font-weight: 700">8,4 m²</span></div>
+        <div style="display: flex; flex-direction: column; gap: 2px; border: 2px solid #111111; padding: 8px; grid-column: 1 / span 2; background: #C6F135"><span>BERAT SETARA KERING 6%</span><span style="font-size: 16px; font-weight: 700">5.489 kg</span></div>
+      </div>
+      <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px">ρ 440 kg/m³ · tumpuk 2,5 m · util lantai 0,65</span>
+    </section>
+
+    <div style="background: #111111; color: #EFEDE4; padding: 12px; display: flex; gap: 10px; align-items: flex-start; border: 3px solid #111111; box-shadow: 5px 5px 0 #FF5A1F">
+      <span style="flex: 0 0 auto; display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; background: #FF5A1F; color: #111111">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" aria-hidden="true"><path d="M12 3l10 18H2z"></path><path d="M12 10v5M12 18v.5"></path></svg>
+      </span>
+      <span style="font-size: 13px"><strong>Kadar air &gt; 10%.</strong> Risiko panas sendiri — taruh di zona berventilasi.</span>
+    </div>
+  </main>
+
+  <nav aria-label="Menu bawah" style="flex: 0 0 auto; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border-top: 3px solid #111111; background: #FFFFFF">
+    <a href="Main.dc.html" style="min-height: 60px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; text-decoration: none; font-family: 'JetBrains Mono', monospace; font-size: 10px; font-weight: 700">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><rect x="3" y="3" width="7" height="9"></rect><rect x="14" y="3" width="7" height="5"></rect><rect x="14" y="12" width="7" height="9"></rect><rect x="3" y="16" width="7" height="5"></rect></svg>STOK</a>
+    <a href="Mobile.dc.html" style="min-height: 60px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; text-decoration: none; font-family: 'JetBrains Mono', monospace; font-size: 10px; font-weight: 700; background: #C6F135">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><rect x="4" y="2" width="16" height="20"></rect><path d="M8 6h8M8 11h2M14 11h2M8 15h2M14 15h2"></path></svg>HITUNG</a>
+    <a href="Calculator.dc.html" style="min-height: 60px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; text-decoration: none; font-family: 'JetBrains Mono', monospace; font-size: 10px; font-weight: 700">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><rect x="2" y="7" width="20" height="12"></rect><path d="M6 7v12M10 7v12M14 7v12M18 7v12"></path></svg>MUAT</a>
+    <a href="RnD.dc.html" style="min-height: 60px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; text-decoration: none; font-family: 'JetBrains Mono', monospace; font-size: 10px; font-weight: 700">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M9 3h6M10 3v6l-5 9a2 2 0 0 0 1.7 3h10.6a2 2 0 0 0 1.7-3l-5-9V3"></path></svg>LAB</a>
+  </nav>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
