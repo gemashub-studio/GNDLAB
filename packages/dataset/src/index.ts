@@ -3,6 +3,7 @@ import provenance from './generated/provenance.json';
 import { loadDataset, type DatasetSI } from './loader.ts';
 
 export * from './loader.ts';
+export * from './scenario.ts';
 export * from './schema.ts';
 export { rawDataset, provenance };
 

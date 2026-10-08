@@ -1,0 +1,400 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model app_user {
+  id                   String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email                String                 @unique
+  role                 user_role              @default(viewer)
+  created_at           DateTime               @default(now()) @db.Timestamptz(6)
+  audit_log            audit_log[]
+  calibration_proposal calibration_proposal[]
+  container_type       container_type[]
+  measurement          measurement[]
+  scenario             scenario[]
+  warehouse            warehouse[]
+}
+
+model audit_log {
+  id        BigInt       @id @default(autoincrement())
+  actor_id  String?      @db.Uuid
+  entity    String
+  entity_id String?      @db.Uuid
+  action    audit_action
+  before    Json?
+  after     Json?
+  at        DateTime     @default(now()) @db.Timestamptz(6)
+  app_user  app_user?    @relation(fields: [actor_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([entity, entity_id, at(sort: Desc)], map: "ix_audit_entity")
+}
+
+model auth_verification_token {
+  identifier String
+  token      String
+  expires    DateTime @db.Timestamptz(6)
+
+  @@id([identifier, token])
+  @@index([expires], map: "ix_auth_token_expires")
+}
+
+model benchmark_source {
+  benchmark_id        String              @db.Uuid
+  source_id           String              @db.Uuid
+  container_benchmark container_benchmark @relation(fields: [benchmark_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  source              source              @relation(fields: [source_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([benchmark_id, source_id])
+}
+
+model calc_result {
+  id             String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  scenario_id    String       @db.Uuid
+  engine_version String
+  binding        binding_kind
+  result_min     Json
+  result_typ     Json
+  result_max     Json
+  warnings       Json         @default("[]")
+  trace          Json
+  computed_at    DateTime     @default(now()) @db.Timestamptz(6)
+  scenario       scenario     @relation(fields: [scenario_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model calibration_proposal {
+  id                   String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  parameter_id         String                 @db.Uuid
+  proposed_min         Decimal                @db.Decimal
+  proposed_typ         Decimal                @db.Decimal
+  proposed_max         Decimal                @db.Decimal
+  sample_n             Int
+  status               proposal_status        @default(PENDING)
+  reviewed_by          String?                @db.Uuid
+  resulting_version_id String?                @db.Uuid
+  created_at           DateTime               @default(now()) @db.Timestamptz(6)
+  parameter            parameter              @relation(fields: [parameter_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  dataset_version      dataset_version?       @relation(fields: [resulting_version_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  app_user             app_user?              @relation(fields: [reviewed_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  proposal_measurement proposal_measurement[]
+}
+
+model commodity {
+  id                 String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  dataset_version_id String           @db.Uuid
+  code               String
+  name_id            String
+  name_en            String?
+  unit_type          unit_type
+  description        String?
+  dataset_version    dataset_version  @relation(fields: [dataset_version_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  commodity_form     commodity_form[]
+
+  @@unique([dataset_version_id, code])
+}
+
+model commodity_form {
+  id                  String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  commodity_id        String                @db.Uuid
+  code                String
+  shape               shape_type
+  calc_mode_default   calc_mode
+  nestable            Boolean               @default(false)
+  commodity           commodity             @relation(fields: [commodity_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  container_benchmark container_benchmark[]
+  measurement         measurement[]
+  packaging_type      packaging_type[]
+  parameter           parameter[]
+  scenario            scenario[]
+
+  @@unique([commodity_id, code])
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model container_benchmark {
+  id                String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  commodity_form_id String             @db.Uuid
+  container_type_id String             @db.Uuid
+  pcs_min           Decimal?           @db.Decimal
+  pcs_max           Decimal?           @db.Decimal
+  packs_min         Decimal?           @db.Decimal
+  packs_max         Decimal?           @db.Decimal
+  net_t_min         Decimal?           @db.Decimal
+  net_t_max         Decimal?           @db.Decimal
+  conservative      Boolean            @default(false)
+  note              String?
+  benchmark_source  benchmark_source[]
+  commodity_form    commodity_form     @relation(fields: [commodity_form_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  container_type    container_type     @relation(fields: [container_type_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model container_type {
+  id                  String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  dataset_version_id  String?               @db.Uuid
+  owner_id            String?               @db.Uuid
+  code                String
+  name                String
+  inner_l_m           Decimal               @db.Decimal
+  inner_w_m           Decimal               @db.Decimal
+  inner_h_m           Decimal               @db.Decimal
+  payload_kg          Decimal               @db.Decimal
+  is_custom           Boolean               @default(false)
+  confidence          confidence_grade      @default(B)
+  container_benchmark container_benchmark[]
+  dataset_version     dataset_version?      @relation(fields: [dataset_version_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  app_user            app_user?             @relation(fields: [owner_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  scenario            scenario[]
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model dataset_version {
+  id                    String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  semver                String                 @unique
+  status                dataset_status         @default(DRAFT)
+  is_active             Boolean                @default(false)
+  parent_version_id     String?                @db.Uuid
+  published_at          DateTime?              @db.Timestamptz(6)
+  changelog             String?
+  calibration_proposal  calibration_proposal[]
+  commodity             commodity[]
+  container_type        container_type[]
+  dataset_version       dataset_version?       @relation("dataset_versionTodataset_version", fields: [parent_version_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  other_dataset_version dataset_version[]      @relation("dataset_versionTodataset_version")
+  scenario              scenario[]
+  source                source[]
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model measurement {
+  id                   String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id              String                 @db.Uuid
+  commodity_form_id    String                 @db.Uuid
+  parameter_id         String                 @db.Uuid
+  value                Decimal                @db.Decimal
+  unit                 param_unit
+  method               String
+  location             String?
+  lot_ref              String?
+  measured_at          DateTime               @default(now()) @db.Timestamptz(6)
+  commodity_form       commodity_form         @relation(fields: [commodity_form_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  parameter            parameter              @relation(fields: [parameter_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  app_user             app_user               @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  proposal_measurement proposal_measurement[]
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model packaging_type {
+  id                String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  commodity_form_id String            @db.Uuid
+  code              String
+  pcs_per_pack      Int?
+  net_kg_min        Decimal           @db.Decimal
+  net_kg_typ        Decimal           @db.Decimal
+  net_kg_max        Decimal           @db.Decimal
+  dim_l_m           Decimal?          @db.Decimal
+  dim_w_m           Decimal?          @db.Decimal
+  dim_h_m           Decimal?          @db.Decimal
+  deformable        Boolean           @default(true)
+  dims_confidence   confidence_grade?
+  commodity_form    commodity_form    @relation(fields: [commodity_form_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([commodity_form_id, code])
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model parameter {
+  id                   String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  commodity_form_id    String                 @db.Uuid
+  key                  String
+  unit                 param_unit
+  v_min                Decimal                @db.Decimal
+  v_typ                Decimal                @db.Decimal
+  v_max                Decimal                @db.Decimal
+  confidence           confidence_grade
+  note                 String?
+  calibration_proposal calibration_proposal[]
+  measurement          measurement[]
+  commodity_form       commodity_form         @relation(fields: [commodity_form_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  parameter_source     parameter_source[]
+  scenario_override    scenario_override[]
+
+  @@unique([commodity_form_id, key])
+}
+
+model parameter_source {
+  parameter_id String    @db.Uuid
+  source_id    String    @db.Uuid
+  parameter    parameter @relation(fields: [parameter_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  source       source    @relation(fields: [source_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([parameter_id, source_id])
+}
+
+model proposal_measurement {
+  proposal_id          String               @db.Uuid
+  measurement_id       String               @db.Uuid
+  measurement          measurement          @relation(fields: [measurement_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  calibration_proposal calibration_proposal @relation(fields: [proposal_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([proposal_id, measurement_id])
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model scenario {
+  id                 String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id            String?             @db.Uuid
+  dataset_version_id String              @db.Uuid
+  commodity_form_id  String              @db.Uuid
+  container_type_id  String?             @db.Uuid
+  storage_zone_id    String?             @db.Uuid
+  calc_kind          calc_kind
+  calc_mode          calc_mode
+  input              Json                @default("{}")
+  share_slug         String?             @unique
+  created_at         DateTime            @default(now()) @db.Timestamptz(6)
+  calc_result        calc_result[]
+  commodity_form     commodity_form      @relation(fields: [commodity_form_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  container_type     container_type?     @relation(fields: [container_type_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  dataset_version    dataset_version     @relation(fields: [dataset_version_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  storage_zone       storage_zone?       @relation(fields: [storage_zone_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  app_user           app_user?           @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  scenario_override  scenario_override[]
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model scenario_override {
+  id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  scenario_id  String    @db.Uuid
+  parameter_id String    @db.Uuid
+  v_min        Decimal   @db.Decimal
+  v_typ        Decimal   @db.Decimal
+  v_max        Decimal   @db.Decimal
+  reason       String?
+  parameter    parameter @relation(fields: [parameter_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  scenario     scenario  @relation(fields: [scenario_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([scenario_id, parameter_id])
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model source {
+  id                 String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  dataset_version_id String             @db.Uuid
+  code               String
+  title              String
+  url                String
+  grade              confidence_grade
+  accessed_at        DateTime?          @db.Date
+  benchmark_source   benchmark_source[]
+  parameter_source   parameter_source[]
+  dataset_version    dataset_version    @relation(fields: [dataset_version_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([dataset_version_id, code])
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model storage_zone {
+  id            String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  warehouse_id  String     @db.Uuid
+  name          String
+  length_m      Decimal    @db.Decimal
+  width_m       Decimal    @db.Decimal
+  max_stack_h_m Decimal    @db.Decimal
+  floor_util    Decimal    @default(0.65) @db.Decimal
+  ventilated    Boolean    @default(false)
+  scenario      scenario[]
+  warehouse     warehouse  @relation(fields: [warehouse_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model warehouse {
+  id               String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  owner_id         String         @db.Uuid
+  name             String
+  length_m         Decimal        @db.Decimal
+  width_m          Decimal        @db.Decimal
+  clear_height_m   Decimal        @db.Decimal
+  floor_load_kg_m2 Decimal?       @db.Decimal
+  storage_zone     storage_zone[]
+  app_user         app_user       @relation(fields: [owner_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+enum audit_action {
+  CREATE
+  UPDATE
+  DELETE
+  PUBLISH
+  APPROVE
+  REJECT
+}
+
+enum binding_kind {
+  VOLUME
+  WEIGHT
+  NONE
+}
+
+enum calc_kind {
+  CONTAINER
+  WAREHOUSE
+  CONVERT
+}
+
+enum calc_mode {
+  BULK
+  PIECE
+  PACKAGE
+}
+
+enum confidence_grade {
+  A
+  B
+  C
+}
+
+enum dataset_status {
+  DRAFT
+  PUBLISHED
+  DEPRECATED
+}
+
+enum param_unit {
+  m
+  kg
+  m3
+  kg_m3
+  fraction
+  pct
+  count
+}
+
+enum proposal_status {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum shape_type {
+  prolate_ellipsoid_with_tuft
+  hemispherical_cap_shell
+  irregular_curved_slab
+  hemispherical_cup_or_half_slab
+  bulk
+}
+
+enum unit_type {
+  piece
+  bulk
+}
+
+enum user_role {
+  viewer
+  editor
+  data_admin
+}

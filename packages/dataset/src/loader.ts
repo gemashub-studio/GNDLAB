@@ -7,11 +7,8 @@ import {
   cmToM,
   kg,
   m3,
-  overrideParam,
-  type Benchmark,
   type CalcMode,
   type Confidence,
-  type ContainerInput,
   type ContainerSpec,
   type Dim3,
   type Param,
@@ -213,6 +210,7 @@ function buildForm(cm: RawCommodity, code: string, cfg: FormConfig): FormSI {
       confidence: confidence ?? 'C', // tanpa label → anggap estimasi (seed)
       sourceIds: [],
       source: 'dataset',
+      ...(range.note && { note: range.note }),
     };
   }
 
@@ -336,62 +334,6 @@ export function getForm(ds: DatasetSI, commodityId: string, formCode: string): F
 export function moistureFraction(form: FormSI): Range | undefined {
   const p = form.params.moisture;
   return p && { min: p.min / 100, typ: p.typ / 100, max: p.max / 100 };
-}
-
-export interface ContainerScenario {
-  commodityId: string;
-  formCode: string;
-  containerId: string;
-  mode?: CalcMode;
-  packagingIndex?: number;
-  /** Utilisasi volume (0–1); default dari DEFAULT_VOLUME_UTIL. */
-  volumeUtil?: number;
-  /** Override per skenario: key parameter → nilai (ARD §9 berlaku). */
-  overrides?: Record<string, number | Range>;
-}
-
-/** Rakit ContainerInput engine dari dataset + skenario. Override divalidasi lewat overrideParam. */
-export function buildContainerInput(ds: DatasetSI, s: ContainerScenario): ContainerInput {
-  const form = getForm(ds, s.commodityId, s.formCode);
-  const params: Record<string, Param> = { ...form.params };
-  for (const [key, value] of Object.entries(s.overrides ?? {})) {
-    const p = params[key];
-    if (!p) throw new DatasetError(`override: parameter ${key} tidak ada di ${s.commodityId}.${s.formCode}`);
-    params[key] = overrideParam(p, value);
-  }
-  const mode = s.mode ?? form.calcModeDefault;
-  const container = getContainer(ds, s.containerId);
-  const moisture = moistureFraction(form);
-  const benchmarks: Benchmark[] = form.benchmarks
-    .filter((b) => b.containerId === s.containerId)
-    .map((b) => ({
-      conservative: b.conservative,
-      ...(b.pieces && { pieces: b.pieces }),
-      ...(b.massKg && { massKg: b.massKg }),
-    }));
-
-  const formInput: ContainerInput['form'] = { mode, rho: params.bulk_density! };
-  if (mode === 'PIECE') {
-    const m = form.unitMassKey && params[form.unitMassKey];
-    if (!m) throw new DatasetError(`${s.commodityId}.${s.formCode} tidak punya massa per unit untuk mode PIECE`);
-    formInput.unitMass = m;
-  }
-  if (mode === 'PACKAGE') {
-    const pk = form.packaging[s.packagingIndex ?? 0];
-    if (!pk?.dims) throw new DatasetError(`${s.commodityId}.${s.formCode} tidak punya dimensi kemasan terisi`);
-    formInput.pack = { ...pk.dims, netKg: pk.netKg, ...(pk.pcsPerPack !== undefined && { pcs: pk.pcsPerPack }) };
-  }
-  const util = s.volumeUtil ?? form.volumeUtilDefault;
-  return {
-    container,
-    form: formInput,
-    ...(util !== 1 && {
-      // Default utilisasi = asumsi engineering calc_spec §3.1, tidak berlabel → C (aturan seed).
-      volumeUtil: { key: 'volume_util', unit: 'fraction', min: util, typ: util, max: util, confidence: 'C', sourceIds: [], source: s.volumeUtil === undefined ? 'dataset' : 'override' },
-    }),
-    context: { commodityCode: s.commodityId, ...(moisture && { moisture }), benchmarks },
-    datasetVersion: ds.version,
-  };
 }
 
 /** Profil keyakinan parameter unik per komoditas (metrik PRD §8; sama dengan validator). */

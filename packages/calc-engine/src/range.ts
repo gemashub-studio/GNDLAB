@@ -14,6 +14,8 @@ export interface Param extends Range {
   sourceIds: string[];
   /** Default 'dataset'. Override pengguna dianggap pasti bila nilai tunggal. */
   source?: ParamSource;
+  /** Catatan asal-usul dari dataset (ditampilkan di Data & Sumber). */
+  note?: string;
 }
 
 /** Batas jumlah parameter tak pasti (≤ 256 evaluasi). */

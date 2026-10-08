@@ -21,7 +21,7 @@ Dependensi: `web → dataset → calc-engine`. Engine tidak bergantung pada apa 
 |---|---|---|---|
 | M0 | Data, validator, skema | ✅ (handoff) | run_all_checks: 105 PASS |
 | M1 | Engine + dataset loader | ✅ 2026-10-08 | 99/99 test (17/17 golden), tsc bersih |
-| M2 | Web, DB, API, kalkulator, PWA | ⏳ berikutnya | – |
+| M2 | Web, DB, API, kalkulator, PWA | 🟡 sedang (dijeda 2026-10-08) | lihat sessions.md |
 | M3 | Simulator 2D SVG + 3D r3f | ⏳ | – |
 | M4 | Sampling, kalibrasi, approval | ⏳ | – |
 | M5 | R&D Lab | ⏳ (parameter owner menyusul) | – |
