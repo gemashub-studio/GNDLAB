@@ -23,7 +23,7 @@ Dependensi: `web → dataset → calc-engine`. Engine tidak bergantung pada apa 
 | M1 | Engine + dataset loader | ✅ 2026-10-08 | 99/99 test (17/17 golden), tsc bersih |
 | M2 | Web, DB, API, kalkulator, PWA | ✅ 2026-10-09 (offline nav: ISS-025 terbuka) | 131 unit + 13 E2E, run_all_checks LULUS |
 | M3 | Simulator 2D SVG + 3D r3f | ✅ 2026-10-09 | engine 93 (layout 11), E2E simulator 10 (1.892 karung ±48 fps) |
-| M4 | Sampling, kalibrasi, approval | ✅ | 2026-10-09 |
+| M4 | Sampling, kalibrasi, approval | ✅ 2026-10-09 | web 32 + 11 DB kalibrasi, E2E kalibrasi 2, run_all_checks LULUS |
 | M5 | R&D Lab | ⏳ (parameter owner menyusul) | – |
 
 ## M2 — rencana rinci (belum dikerjakan)
