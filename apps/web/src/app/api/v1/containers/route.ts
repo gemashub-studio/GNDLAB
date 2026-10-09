@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server';
-import { datasetFor } from '@/server/datasets';
+import { datasetOrBundled } from '@/server/datasets';
 import { handle } from '@/server/http';
 
 export const GET = handle(async (req: Request) => {
-  const ds = datasetFor(new URL(req.url).searchParams.get('version'));
+  const ds = await datasetOrBundled(new URL(req.url).searchParams.get('version'));
   return NextResponse.json({
     version: ds.version,
     containers: ds.containers.map((c) => ({

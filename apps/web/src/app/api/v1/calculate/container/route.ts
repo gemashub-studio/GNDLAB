@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { ContainerStateSchema, runContainer } from '@/lib/scenario';
-import { datasetFor } from '@/server/datasets';
+import { datasetOrBundled } from '@/server/datasets';
 import { handle, parseBody } from '@/server/http';
 
 /** ARD §6: `{commodityId, form, containerId, overrides?, mode}` (+ opsional custom, volumeUtil, packagingIndex, version). */
@@ -19,7 +19,7 @@ const Body = z.object({
 
 export const POST = handle(async (req: Request) => {
   const b = await parseBody(req, Body);
-  const ds = datasetFor(b.version);
+  const ds = await datasetOrBundled(b.version);
   const state = ContainerStateSchema.parse({
     kind: 'CONTAINER',
     commodityId: b.commodityId,

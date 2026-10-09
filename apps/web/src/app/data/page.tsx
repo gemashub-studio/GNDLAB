@@ -1,5 +1,6 @@
 import type { Unit } from '@gemas/calc-engine';
-import { bundledDataset, confidenceProfile, rawDataset } from '@gemas/dataset';
+import { confidenceProfile, rawDataset } from '@gemas/dataset';
+import { datasetOrBundled } from '@/server/datasets';
 import type { Metadata } from 'next';
 import { ConfidenceBadge } from '@/components/ui/badges';
 import { Hint } from '@/components/ui/Hint';
@@ -25,8 +26,10 @@ function unitLabel(unit: Unit, v: number): string {
   return { m: 'cm', kg: v < 1 ? 'g' : 'kg', m3: 'cm³', kg_m3: 'kg/m³', fraction: 'fraksi', pct: '%', count: '', h: 'jam' }[unit];
 }
 
-export default function DataPage() {
-  const ds = bundledDataset();
+export const dynamic = 'force-dynamic';
+
+export default async function DataPage() {
+  const ds = await datasetOrBundled();
   const p = confidenceProfile(rawDataset);
   return (
     <>

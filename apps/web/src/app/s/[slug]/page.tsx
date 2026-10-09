@@ -5,7 +5,7 @@ import { ConfidenceBadge } from '@/components/ui/badges';
 import { WarningList } from '@/components/ui/Warnings';
 import { reportRows } from '@/lib/report';
 import { encodeState } from '@/lib/scenario';
-import { datasetFor } from '@/server/datasets';
+import { datasetForVersion } from '@/server/datasets';
 import { getScenario, type StoredScenario } from '@/server/scenarios';
 
 export const dynamic = 'force-dynamic';
@@ -21,7 +21,7 @@ export default async function Shared({ params }: { params: Promise<{ slug: strin
   } catch {
     notFound();
   }
-  const ds = datasetFor(s.datasetVersion);
+  const { ds } = await datasetForVersion(s.datasetVersion);
   const rows = reportRows(ds, s.state, s.output).filter((r) => r.section !== 'Peringatan');
   return (
     <>

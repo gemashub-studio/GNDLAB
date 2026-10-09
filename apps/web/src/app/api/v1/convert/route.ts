@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { defaultFormCode } from '@/lib/defaults';
 import { ConvertStateSchema, runConvert } from '@/lib/scenario';
-import { datasetFor } from '@/server/datasets';
+import { datasetOrBundled } from '@/server/datasets';
 import { handle, parseBody } from '@/server/http';
 
 /** ARD §6: `{commodityId, from:{unit,value}, to}` (+ opsional form, overrides, version). */
@@ -17,7 +17,7 @@ const Body = z.object({
 
 export const POST = handle(async (req: Request) => {
   const b = await parseBody(req, Body);
-  const ds = datasetFor(b.version);
+  const ds = await datasetOrBundled(b.version);
   const state = ConvertStateSchema.parse({
     kind: 'CONVERT',
     commodityId: b.commodityId,

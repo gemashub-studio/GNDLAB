@@ -95,7 +95,7 @@ Desain kunci (dicatat sebagai ADR-008 saat K5):
 
 Checklist (centang + commit per langkah):
 - [x] K1 Murni: `stats.ts` di calc-engine (n, mean, SD, min, max, P5/median/P95) + `applyParameterOverrides`/`diffParameters` di dataset + test.
-- [ ] K2 Server versi: dataset per versi dari DB (async), endpoint calculate pakai versi aktif, `/datasets/active` kirim override, client `useDataset` pakai override (+ cache offline).
+- [x] K2 Server versi: dataset per versi dari DB (async), endpoint calculate pakai versi aktif, `/datasets/active` kirim override, client `useDataset` pakai override (+ cache offline).
 - [ ] K3 Sampling: parser CSV (format persis template) + validasi per baris, service & API `POST /measurements`, statistik, usulan otomatis n ≥ 10.
 - [ ] K4 Approval: service setujui/tolak (data_admin) → versi patch baru PUBLISHED, versi lama utuh (IR-02), audit actor; API; test integrasi DB alur penuh + skenario lama tetap.
 - [ ] K5 UI: /sampling (form + impor CSV + statistik + prioritas ASM), /kalibrasi (review), realisasi stuffing.

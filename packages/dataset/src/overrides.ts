@@ -60,3 +60,25 @@ export function applyParameterOverrides(base: DatasetSI, version: string, overri
     })),
   };
 }
+
+/**
+ * Profil keyakinan parameter unik per komoditas dari dataset SI (metrik PRD §8).
+ * Parameter tingkat-komoditas direplikasi ke tiap form → dihitung sekali; `bulk_density` per form.
+ * Untuk dataset basis hasilnya sama dengan `confidenceProfile(raw)` (45: A6 · B9 · C30).
+ */
+export function profileOf(ds: DatasetSI): Record<Confidence, number> {
+  const prof: Record<Confidence, number> = { A: 0, B: 0, C: 0 };
+  for (const c of ds.commodities) {
+    const seen = new Map<string, Confidence>();
+    for (const f of c.forms) {
+      for (const p of Object.values(f.params)) {
+        const k = p.key === 'bulk_density' ? `bulk_density.${f.densityKey}` : p.key;
+        // Ambil keyakinan terkuat bila form berbeda (kalibrasi bisa mengenai satu form saja).
+        const prev = seen.get(k);
+        seen.set(k, prev && prev < p.confidence ? prev : p.confidence);
+      }
+    }
+    for (const v of seen.values()) prof[v]++;
+  }
+  return prof;
+}

@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import { Archivo, Bowlby_One, JetBrains_Mono } from 'next/font/google';
-import { bundledDataset, confidenceProfile, rawDataset } from '@gemas/dataset';
+import { profileOf } from '@gemas/dataset';
+import { datasetOrBundled } from '@/server/datasets';
 import { Shell } from '@/components/shell/Shell';
 import { Tour } from '@/components/tour/Tour';
 import './globals.css';
@@ -19,9 +20,9 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = { themeColor: '#111111', width: 'device-width', initialScale: 1 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
-  const ds = bundledDataset();
-  const p = confidenceProfile(rawDataset);
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const ds = await datasetOrBundled();
+  const p = profileOf(ds);
   const profile = `${p.A + p.B + p.C} param · A${p.A} · B${p.B} · C${p.C}`;
   return (
     <html lang="id" className={`${display.variable} ${sans.variable} ${mono.variable}`}>

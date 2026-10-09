@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { runWarehouse, WarehouseStateSchema } from '@/lib/scenario';
-import { datasetFor } from '@/server/datasets';
+import { datasetOrBundled } from '@/server/datasets';
 import { handle, parseBody } from '@/server/http';
 
 /** ARD §6: `{commodityId, form, massKg | pieces, stackHeightM, floorUtil, overrides?}` (+ packs, zona, dst.). */
@@ -28,7 +28,7 @@ const Body = z
 
 export const POST = handle(async (req: Request) => {
   const { form, massKg, pieces, packs, version, ...rest } = await parseBody(req, Body);
-  const ds = datasetFor(version);
+  const ds = await datasetOrBundled(version);
   const stock = massKg !== undefined ? { massKg } : pieces !== undefined ? { pieces } : { packs: packs! };
   const state = WarehouseStateSchema.parse({ kind: 'WAREHOUSE', formCode: form, stock, ...rest });
   return NextResponse.json(runWarehouse(ds, state));

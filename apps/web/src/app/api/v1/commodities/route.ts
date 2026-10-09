@@ -1,11 +1,11 @@
 import { availableModes } from '@gemas/dataset';
 import { NextResponse } from 'next/server';
-import { datasetFor } from '@/server/datasets';
+import { datasetOrBundled } from '@/server/datasets';
 import { handle } from '@/server/http';
 
 /** Daftar komoditas + form + parameter (SI). `?version=` opsional (404 bila tak dikenal). */
 export const GET = handle(async (req: Request) => {
-  const ds = datasetFor(new URL(req.url).searchParams.get('version'));
+  const ds = await datasetOrBundled(new URL(req.url).searchParams.get('version'));
   return NextResponse.json({
     version: ds.version,
     commodities: ds.commodities.map((c) => ({

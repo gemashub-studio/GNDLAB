@@ -1,5 +1,6 @@
 import type { CalcMode, CalcWarning } from '@gemas/calc-engine';
-import { bundledDataset, getContainer, getForm } from '@gemas/dataset';
+import { getContainer, getForm } from '@gemas/dataset';
+import { datasetOrBundled } from '@/server/datasets';
 import Link from 'next/link';
 import { benchmarkText } from '@/lib/present';
 import { ConfidenceBadge } from '@/components/ui/badges';
@@ -21,8 +22,10 @@ const ROWS: { commodityId: string; formCode: string; mode: CalcMode }[] = [
 ];
 const COLS = ['20GP', '40HC'] as const;
 
-export default function Home() {
-  const ds = bundledDataset();
+export const dynamic = 'force-dynamic';
+
+export default async function Home() {
+  const ds = await datasetOrBundled();
   const st = (r: (typeof ROWS)[number], containerId: string): ContainerState => ({ kind: 'CONTAINER', ...r, containerId });
 
   const table = ROWS.map((r) => {

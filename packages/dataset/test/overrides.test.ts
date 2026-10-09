@@ -35,3 +35,20 @@ describe('override parameter versi kalibrasi', () => {
     expect(() => applyParameterOverrides(base, 'x', [{ ...o, min: 500 }])).toThrow(DatasetError);
   });
 });
+
+describe('profileOf', () => {
+  it('dataset basis = profil validator (A6 · B9 · C30)', async () => {
+    const { profileOf, confidenceProfile, rawDataset } = await import('../src/index.ts');
+    expect(profileOf(base)).toEqual(confidenceProfile(rawDataset));
+  });
+  it('kalibrasi 1 parameter C → A: C turun 1, A naik 1', async () => {
+    const { profileOf } = await import('../src/index.ts');
+    const v = applyParameterOverrides(base, '1.0.5', [
+      { commodityId: 'kelapa_jambul', formCode: 'bagged', key: 'bulk_density', min: 390, typ: 400, max: 415, confidence: 'A' },
+    ]);
+    const a = profileOf(base);
+    const b = profileOf(v);
+    expect(b.C).toBe(a.C - 1);
+    expect(b.A).toBe(a.A + 1);
+  });
+});

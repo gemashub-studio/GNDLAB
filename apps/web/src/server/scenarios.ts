@@ -3,7 +3,7 @@ import { randomBytes } from 'node:crypto';
 import { Prisma } from '@prisma/client';
 import { z } from 'zod';
 import { runScenario, ScenarioStateSchema, type ScenarioOutput, type ScenarioState } from '@/lib/scenario';
-import { activeDataset, datasetFor } from './datasets';
+import { activeDataset, datasetForVersion } from './datasets';
 import { prisma } from './db';
 import { ApiError, notFound } from './http';
 import type { SessionUser } from './auth';
@@ -49,7 +49,7 @@ export async function saveScenario(user: SessionUser, input: SaveScenarioInput) 
     if (!existing) return undefined;
     if (existing.user_id !== user.id) throw new ApiError(409, 'CONFLICT', 'ID skenario sudah dipakai');
     const stored = ScenarioStateSchema.parse((existing.input as { state?: unknown }).state);
-    return { id: existing.id, shareSlug: existing.share_slug!, created: false, out: runScenario(datasetFor(existing.dataset_version.semver), stored) };
+    return { id: existing.id, shareSlug: existing.share_slug!, created: false, out: runScenario((await datasetForVersion(existing.dataset_version.semver)).ds, stored) };
   };
   const found = await existingResult();
   if (found) return found;
@@ -170,7 +170,7 @@ export async function getScenario(idOrSlug: string, ownerId?: string): Promise<S
   if (!sc) throw notFound('Skenario tidak ditemukan');
   const input = sc.input as { name?: string; state?: unknown };
   const state = ScenarioStateSchema.parse(input.state);
-  const ds = datasetFor(sc.dataset_version.semver);
+  const { ds } = await datasetForVersion(sc.dataset_version.semver);
   return {
     id: sc.id,
     name: input.name ?? 'Skenario',
