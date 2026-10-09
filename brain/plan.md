@@ -81,3 +81,22 @@ Checklist (centang + commit per langkah; kalau sesi putus, lanjut dari yang belu
       mode arang belah 2 bersarang (kolom).
 - [x] S5 Test: unit layout + E2E angka simulator == kartu hasil untuk golden kemasan; ukur fps 1.200 karung.
 - [x] S6 Logs (traceability FR-09, decision, risk) + run_all_checks + commit "Fase M3 selesai".
+
+## Fase M4 — Sampling lapangan & kalibrasi (mulai 2026-10-09)
+
+Spesifikasi: `architecture/CLAUDE_CODE_PROMPT.md` §4, PRD US-08, ADR-002, ERD MEASUREMENT/CALIBRATION_PROPOSAL/AUDIT_LOG,
+`architecture/logs/assumption_register.md` (prioritas ASM-01, ASM-02, ASM-06), `field_sampling_template.csv`.
+
+Desain kunci (dicatat sebagai ADR-008 saat K5):
+- Versi dataset baru = salinan baris versi aktif + nilai parameter yang disetujui (confidence → A, "terukur sendiri").
+- Engine untuk versi X = dataset ter-bundle (basis v1.0.4) + override parameter dari DB versi X (patch hanya mengubah nilai).
+- Client mengambil override versi aktif saat online & menyimpannya untuk offline; server selalu pakai DB.
+- Realisasi stuffing → densitas efektif tersirat → disimpan sebagai sampel `bulk_density` (method realisasi_stuffing) + selisih vs prediksi (target ≤ 10%, PRD §8).
+
+Checklist (centang + commit per langkah):
+- [ ] K1 Murni: `stats.ts` di calc-engine (n, mean, SD, min, max, P5/median/P95) + `applyParameterOverrides`/`diffParameters` di dataset + test.
+- [ ] K2 Server versi: dataset per versi dari DB (async), endpoint calculate pakai versi aktif, `/datasets/active` kirim override, client `useDataset` pakai override (+ cache offline).
+- [ ] K3 Sampling: parser CSV (format persis template) + validasi per baris, service & API `POST /measurements`, statistik, usulan otomatis n ≥ 10.
+- [ ] K4 Approval: service setujui/tolak (data_admin) → versi patch baru PUBLISHED, versi lama utuh (IR-02), audit actor; API; test integrasi DB alur penuh + skenario lama tetap.
+- [ ] K5 UI: /sampling (form + impor CSV + statistik + prioritas ASM), /kalibrasi (review), realisasi stuffing.
+- [ ] K6 E2E alur penuh (sesi uji via JWT), logs (ADR-008, traceability FR-11/US-08), run_all_checks, commit "Fase M4 selesai".
