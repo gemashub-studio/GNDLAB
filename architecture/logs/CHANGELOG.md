@@ -3,6 +3,16 @@
 Format: [Keep a Changelog](https://keepachangelog.com/id/1.1.0/) · Versi dataset mengikuti SemVer (ADR-002).
 Waktu dalam WIB (UTC+7).
 
+## [aplikasi M4] — 2026-10-09
+### Ditambahkan
+- Sampling lapangan (`/sampling`): form cepat, impor CSV format template (semua-atau-tidak), kartu prioritas ASM-06/01/02, statistik n/rata-rata/SD/P5/median/P95.
+- Usulan kalibrasi otomatis (n ≥ 10) dan review `data_admin` (`/kalibrasi`) → versi dataset patch baru di database (ADR-008). File dataset repo tidak berubah.
+- Realisasi muat: selisih aktual vs prediksi (target ≤ 10 %) + densitas tersirat sebagai sampel.
+- API: `POST /api/v1/measurements`, `GET /api/v1/measurements/stats`, `GET /api/v1/proposals`, `POST /api/v1/proposals/{id}`.
+- Database test terpisah `gemas_test` untuk uji yang mengubah versi aktif.
+### Diperbaiki
+- `/icon.svg` 500 di dev karena berkas duplikat di `public/` (ISS-032).
+
 ## [arsitektur 1.1.0] — 2026-10-08
 ### Ditambahkan
 - Nama aplikasi resmi **gemasSTUDIO** (keputusan owner).

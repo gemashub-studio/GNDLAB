@@ -18,7 +18,9 @@ Kebutuhan → desain → implementasi acuan → bukti uji.
 | Loader dataset ↔ seed | ERD §3, ADR-004 | packages/dataset/src/loader.ts | 102 tuple parameter identik dengan seed.sql; profil keyakinan A6/B9/C30 | ✅ M1 |
 | FR-09 Simulator | ux_spec §3.3, ADR-005 | calc-engine/layout.ts; apps/web /simulator (Plan2D SVG, Sim3D three.js InstancedMesh) | layout.test 11 uji (posisi = packs engine utk semua golden kemasan); E2E simulator 10 uji (angka simulator == kartu hasil 5 golden kemasan; 1.892 karung @ ±48 fps headless) | ✅ M3 |
 | FR-10 Skenario & ekspor | ERD `SCENARIO`, ARD §6, ADR-006 | apps/web: /api/v1/scenarios, IndexedDB, /s/[slug], CSV/PDF | scenarios.db.test.ts 8 uji + E2E US-10 | ✅ M2 |
-| FR-11 Sampling & kalibrasi | ADR-002, ERD `MEASUREMENT`, `CALIBRATION_PROPOSAL` | `schema.sql` | IR-07 (3 uji) | ✅ skema |
+| FR-11 Sampling & kalibrasi | ADR-002, ADR-008, ERD `MEASUREMENT`, `CALIBRATION_PROPOSAL` | calc-engine/stats.ts; apps/web server/calibration.ts, approval.ts; API /measurements, /measurements/stats, /proposals; /sampling, /kalibrasi | IR-07 (3 uji); engine stats; sampling.test 6; calibration.db.test 11 (DB test: usulan n≥10, approval data_admin → patch, versi lama utuh, audit actor, skenario lama tetap) | ✅ M4 |
+| US-08 Input sampling → usulan → approval | PRD §5, ux_spec §3.5 | SamplingWorkbench (form, impor CSV, prioritas ASM-06/01/02), ProposalReview | E2E e2e/calibration.spec.ts: CSV 10 sampel → usulan → setujui → versi baru aktif; skenario baru pakai nilai baru, skenario lama tidak berubah | ✅ M4 |
+| PRD §8 Realisasi muat ≤ 10 % | ADR-008 §5 | lib/realization.ts; tab "Realisasi muat" | realization.test 5; E2E realisasi | ✅ M4 |
 | NFR-05 Traceability | ERD `PARAMETER_SOURCE`, `trace` | dataset `source_ids` | Validator SCHEMA source_id terdaftar | ✅ |
 | NFR-06 Audit | ERD `AUDIT_LOG`, IR-08 | trigger `audit_row` | IR-08 (7 baris tercatat) | ✅ |
 | NFR-07 Satuan SI | ADR-004 | `seed_from_dataset.py` | Pengaman fraksi & massa (ISS-005) | ✅ |

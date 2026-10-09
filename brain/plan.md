@@ -23,7 +23,7 @@ Dependensi: `web → dataset → calc-engine`. Engine tidak bergantung pada apa 
 | M1 | Engine + dataset loader | ✅ 2026-10-08 | 99/99 test (17/17 golden), tsc bersih |
 | M2 | Web, DB, API, kalkulator, PWA | ✅ 2026-10-09 (offline nav: ISS-025 terbuka) | 131 unit + 13 E2E, run_all_checks LULUS |
 | M3 | Simulator 2D SVG + 3D r3f | ✅ 2026-10-09 | engine 93 (layout 11), E2E simulator 10 (1.892 karung ±48 fps) |
-| M4 | Sampling, kalibrasi, approval | ⏳ | – |
+| M4 | Sampling, kalibrasi, approval | ✅ | 2026-10-09 |
 | M5 | R&D Lab | ⏳ (parameter owner menyusul) | – |
 
 ## M2 — rencana rinci (belum dikerjakan)
@@ -101,4 +101,4 @@ Checklist (centang + commit per langkah):
   - Selesai: `server/calibration.ts`, `server/approval.ts`, API `POST /measurements`, `GET /measurements/stats`, `GET /proposals`, `POST /proposals/[id]`; uji `test/calibration.db.test.ts` (11) di DB `gemas_test`. Uji kalibrasi hanya jalan di DB test segar → owner menjalankan `scripts/windows/reset-test-db.ps1` untuk mengulang (FND-020).
 - [x] K5 UI: /sampling (form + impor CSV + statistik + prioritas ASM), /kalibrasi (review), realisasi stuffing.
   - Selesai: `app/sampling`, `app/kalibrasi`, `components/sampling/SamplingWorkbench.tsx`, `components/calibration/ProposalReview.tsx`, `lib/realization.ts` (+5 unit test), menu "Sampling". E2E `e2e/calibration.spec.ts` (2) via `playwright.calib.config.ts` → dev server port 3100 + DB test + folder `.next-calib` (teardown memulihkan next-env.d.ts/tsconfig).
-- [ ] K6 E2E alur penuh (sesi uji via JWT), logs (ADR-008, traceability FR-11/US-08), run_all_checks, commit "Fase M4 selesai".
+- [x] K6 E2E alur penuh (sesi uji via JWT), logs (ADR-008, traceability FR-11/US-08), run_all_checks, commit "Fase M4 selesai".

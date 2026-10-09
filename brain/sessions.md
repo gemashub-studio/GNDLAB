@@ -56,3 +56,11 @@
 - Angka simulator == kartu hasil (5 golden kemasan, E2E). 1.892 karung ±48 fps headless (≥30 fps ✅).
 - Test: engine 93, dataset 51, web 21, E2E 28 (+1 fixme ISS-025). run_all_checks LULUS.
 - Berikutnya: M4 (sampling & kalibrasi) → M5 (R&D Lab). Tanyakan owner bila ada prioritas lain.
+
+### 2026-10-09 · Fase M4 SELESAI
+- Sampling lapangan `/sampling` (form, impor CSV semua-atau-tidak, prioritas ASM-06/01/02, statistik), usulan otomatis n ≥ 10 (P5/median/P95), review `/kalibrasi` (setujui/tolak hanya data_admin) → versi dataset patch baru di DB, versi lama utuh (ADR-008, DEC-032..034).
+- Realisasi muat: selisih vs prediksi (target ≤ 10%) + densitas tersirat → sampel.
+- Test: engine 100 (golden 17/17), dataset 57, web 32 (+11 kalibrasi DB, jalan hanya di DB test segar), E2E utama 28 (+1 fixme ISS-025), E2E kalibrasi 2 (`playwright.calib.config.ts`, port 3100, DB `gemas_test`). run_all_checks + uji DB LULUS.
+- Catatan: Prisma menolak `migrate reset` dari agen (FND-020/ISS-031) → owner mereset DB test via `scripts/windows/reset-test-db.ps1` bila ingin mengulang 11 uji kalibrasi DB. E2E kalibrasi bisa diulang tanpa reset.
+- DB test `gemas_test` kini punya versi 1.0.5+ hasil uji (wajar). DB dev TIDAK tersentuh (tetap v1.0.4).
+- Berikutnya: M5 R&D Lab (parameter owner via `07-rnd/parameter_template.csv` masih menunggu → mulai dengan empty-state).
