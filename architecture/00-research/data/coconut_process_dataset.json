@@ -1,0 +1,90 @@
+{
+  "meta": {
+    "title": "Dataset Parameter Alur Proses Kelapa (loading, kupas sabut, belah, jemur, cungkil, batok, arang)",
+    "version": "1.0.0",
+    "compiled": "2026-10-09",
+    "requires_inventory_dataset": "1.0.4",
+    "value_convention": "Setiap angka berbentuk {min, typ, max}. Fraksi = bagian dari massa BUAH UTUH BERSABUT (basis basah). Air kelapa TIDAK disimpan: dihitung sebagai sisa 1 - sabut - batok - daging. Parameter yang sudah ada di dataset inventory (kopra per butir, rendemen arang, kadar air produk, diameter mulut batok, kemasan) DIRUJUK, tidak disalin.",
+    "units": { "mass": "kg", "duration": "h", "fraction": "0-1", "moisture": "pct", "altitude": "m dpl" },
+    "confidence_scale": {
+      "A": "Jurnal/standar resmi (terukur)",
+      "B": "Lembaga/dagang (beberapa sumber konsisten)",
+      "C": "Estimasi, turunan, atau satu studi kecil — WAJIB diverifikasi sampling"
+    },
+    "report": "architecture/00-research/process_research.md"
+  },
+  "origins": [
+    {
+      "id": "dataran_rendah",
+      "name_id": "Dataran rendah",
+      "altitude_m": { "max": 500 },
+      "note": "Gabungan ekologi pasang surut (0-10), rendah (10-100) dan sedang (100-500 m dpl) dari studi Jambi.",
+      "whole_fruit_mass_kg": { "min": 1.73, "typ": 1.75, "max": 1.8, "confidence": "C", "source_ids": ["P07"], "note": "Rata-rata 3 ekologi: 1,73 / 1,80 / 1,73 kg (n = 3 petani per ekologi)." },
+      "husk_fraction": { "min": 0.406, "typ": 0.42, "max": 0.439, "confidence": "C", "source_ids": ["P07"], "note": "1 - (buah tanpa sabut / buah bersabut) per ekologi." }
+    },
+    {
+      "id": "dataran_tinggi",
+      "name_id": "Dataran tinggi",
+      "altitude_m": { "min": 500 },
+      "note": "Buah lebih kecil & ringan (fotosintesis lebih rendah). Satu titik data; nilai tanpa sabut di jurnal tidak dipakai (anomali).",
+      "whole_fruit_mass_kg": { "min": 1.45, "typ": 1.45, "max": 1.45, "confidence": "C", "source_ids": ["P07", "P08"], "note": "Satu nilai rata-rata studi Jambi (>500 m dpl). Ukur sendiri per lot." },
+      "husk_fraction": { "min": 0.33, "typ": 0.35, "max": 0.5, "confidence": "C", "source_ids": ["P01", "P03", "P04"], "note": "Belum ada data khusus dataran tinggi; memakai rentang umum." }
+    }
+  ],
+  "fruit_composition": {
+    "shell_fraction": { "min": 0.12, "typ": 0.12, "max": 0.2, "confidence": "B", "source_ids": ["P01", "P03", "P05", "P06"] },
+    "kernel_fraction": { "min": 0.25, "typ": 0.28, "max": 0.28, "confidence": "B", "source_ids": ["P01", "P03"] },
+    "coir_fibre_per_nut_kg": { "min": 0.08, "typ": 0.085, "max": 0.09, "confidence": "B", "source_ids": ["P04"], "note": "Serat sabut (coir) yang dapat diambil per butir." }
+  },
+  "kernel": {
+    "fresh_moisture_pct": { "min": 45, "typ": 50, "max": 55, "confidence": "A", "source_ids": ["P10", "P03", "P11"] }
+  },
+  "drying_methods": [
+    {
+      "id": "sun",
+      "name_id": "Jemur matahari langsung",
+      "duration_h": { "min": 120, "typ": 168, "max": 240, "confidence": "B", "source_ids": ["P12", "P10", "P03", "P11"], "note": "5-10 hari jemur (hanya siang); rentan hujan, debu, jamur." },
+      "weather_dependent": true
+    },
+    {
+      "id": "greenhouse",
+      "name_id": "Greenhouse / pengering surya",
+      "duration_h": { "min": 52, "typ": 84, "max": 96, "confidence": "B", "source_ids": ["P03", "P10", "P13", "P11"], "note": "±50% lebih cepat dari jemur langsung; terlindung hujan & debu." },
+      "weather_dependent": true
+    },
+    {
+      "id": "oven",
+      "name_id": "Oven / kiln udara panas",
+      "duration_h": { "min": 24, "typ": 36, "max": 62, "confidence": "B", "source_ids": ["P03", "P10", "P12"], "note": "Suhu 60-90 °C; bahan bakar bisa batok/sabut." },
+      "temperature_c": { "min": 60, "typ": 70, "max": 90, "confidence": "A", "source_ids": ["P14", "P15"] },
+      "weather_dependent": false
+    }
+  ],
+  "rack": {
+    "halves_per_m2_per_tier": {
+      "derivation": "1 / d^2 dengan d = diameter mulut batok mentah dari dataset inventory (arang_batok_belah2.geometry.raw_half_shell.rim_diameter); satu lapis, grid persegi. min = 1/d_max^2, max = 1/d_min^2.",
+      "confidence": "C"
+    }
+  },
+  "charcoal_kiln": {
+    "drum_batch_shell_kg": { "min": 15, "typ": 25, "max": 25, "confidence": "C", "source_ids": ["P16"], "note": "Drum 200 L; 25 kg = isi penuh paling efisien." },
+    "burn_h": { "min": 4, "typ": 5, "max": 6, "confidence": "C", "source_ids": ["P16"] },
+    "cooling_h": { "min": 1, "typ": 1, "max": 1, "confidence": "C", "source_ids": ["P16"] }
+  },
+  "sources": [
+    { "id": "P01", "title": "FAO Tropical Palms — Table 9-10 Components of Whole Coconut (Phil. Coco. Auth. 1979)", "url": "https://www.fao.org/4/i1590e/i1590e10.pdf", "grade": "A" },
+    { "id": "P03", "title": "TNAU Agritech — Coconut processing & post-harvest", "url": "http://www.agritech.tnau.ac.in/expert_system/coconut/coconut/coconut_harvest_postharvest.html", "grade": "B" },
+    { "id": "P04", "title": "FAO — Coconut: Tree of Life", "url": "https://www.fao.org/4/Y3612E/y3612e03.htm", "grade": "A" },
+    { "id": "P05", "title": "Vieira et al. 2024 — Coconut Waste, Sustainability 16(7):3066", "url": "https://www.mdpi.com/2071-1050/16/7/3066", "grade": "A" },
+    { "id": "P06", "title": "Coconut Weight and Water Content Analysis", "url": "https://www.scribd.com/document/880532501/Coconut-1", "grade": "C" },
+    { "id": "P07", "title": "Hartawan & Sarjono 2016 — Karakteristik Fisik dan Produksi Kelapa Dalam di Berbagai Ekologi Lahan, J. Media Pertanian 1(2):45-54", "url": "https://jagro.unbari.ac.id/index.php/agro/article/view/15", "grade": "A" },
+    { "id": "P08", "title": "Morphological Characteristics of Cocos nucifera Origin Bone and Selayar (JUATIKA 2021)", "url": "https://ejournal.uniks.ac.id/index.php/JUATIKA/article/view/1503", "grade": "A" },
+    { "id": "P10", "title": "CPCRI Technical Bulletin 15 — Solar and electrical copra dryers", "url": "https://cpcri.gov.in/filemgr/webfs/publication/tb15.pdf", "grade": "A" },
+    { "id": "P11", "title": "Mohanraj & Chandrasekar 2008 — Drying of copra in a forced convection solar drier", "url": "https://www.sciencedirect.com/science/article/abs/pii/S1537511007003583", "grade": "A" },
+    { "id": "P12", "title": "Thanaraj et al. 2007 — Copra in CRI improved kiln vs sun drying", "url": "https://www.sciencedirect.com/science/article/abs/pii/S0260877406000616", "grade": "A" },
+    { "id": "P13", "title": "Sai Krishna 2018 — Development of a solar dryer for copra (thesis)", "url": "http://14.139.181.140:8080/xmlui/bitstream/handle/123456789/395/T400.pdf?sequence=1", "grade": "B" },
+    { "id": "P14", "title": "Guarte et al. 1996 — Drying characteristics of copra", "url": "https://www.sciencedirect.com/science/article/abs/pii/S0925521496000324", "grade": "A" },
+    { "id": "P15", "title": "Dharmasena 2007 — Solar hybrid dryer vs improved copra kiln", "url": "https://fileserver-az.core.ac.uk/download/52172577.pdf", "grade": "A" },
+    { "id": "P16", "title": "Arief et al. 2023 — Coconut shell carbonization process using smokeless kiln", "url": "https://www.cabidigitallibrary.org/doi/pdf/10.5555/20230241177", "grade": "A" }
+  ]
+}

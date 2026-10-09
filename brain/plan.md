@@ -53,7 +53,7 @@ Aturan yang tetap berlaku: angka TIDAK boleh dikarang → parameter proses baru 
 terpisah ber-sumber & ber-keyakinan (A/B/C), atau berupa input pengguna yang jelas ditandai.
 
 Checklist (centang saat selesai + commit per langkah):
-- [ ] P1 Riset parameter proses (komposisi buah: sabut/batok/daging/air; beda dataran tinggi vs rendah;
+- [x] P1 Riset parameter proses (komposisi buah: sabut/batok/daging/air; beda dataran tinggi vs rendah;
       kadar air daging segar; muatan rak (kg/m²) & lama jemur per metode; rendemen arang sudah ada di
       dataset utama) → `architecture/00-research/data/coconut_process_dataset.json` + catatan sumber
       `architecture/00-research/process_research.md` + ADR-007.

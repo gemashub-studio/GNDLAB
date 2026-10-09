@@ -56,3 +56,7 @@ Waktu dalam WIB (UTC+7).
 - Seed: sufiks satuan dibuang dari key parameter (`mass_per_unit_g` → `mass_per_unit`, satuan di kolom `unit`) (ISS-006).
 - Skema: trigger `forbid_published_mutation` & `audit_row` ditulis ulang dengan percabangan `TG_OP`/`TG_TABLE_NAME` eksplisit (akses field `NEW` pada tabel/operasi yang salah akan error saat runtime) (ISS-007).
 - PRD: baseline metrik keyakinan C dikoreksi dari "22" (perkiraan) menjadi **30 dari 45** (dihitung otomatis) (ISS-008).
+
+## Dataset proses v1.0.0 — 2026-10-09
+- Baru: `00-research/data/coconut_process_dataset.json` (komposisi buah, asal dataran rendah/tinggi, kadar air daging segar, 3 metode pengeringan, drum arang). Riset & sumber: `00-research/process_research.md`. Keputusan: ADR-007.
+- Dataset inventory v1.0.4 TIDAK berubah.
