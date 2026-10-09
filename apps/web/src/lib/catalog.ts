@@ -53,3 +53,58 @@ export const PACK_UI: Record<string, string> = {
   jute_or_PP_bag: 'Karung goni / PP',
   PP_or_jute_net_bag: 'Karung jaring PP / goni',
 };
+
+/** Label parameter berbahasa gudang (hanya teks; nilai dari dataset). */
+const PARAM_UI: Record<string, string> = {
+  bulk_density: 'Densitas curah',
+  true_density: 'Densitas padat',
+  moisture: 'Kadar air',
+  oil_content: 'Kadar minyak',
+  mass_per_unit: 'Berat per butir',
+  'mass_per_unit.raw_half_shell': 'Berat per batok mentah',
+  'mass_per_unit.charcoal_half': 'Berat per keping arang',
+  mass_per_piece: 'Berat per potong',
+  charcoal_yield_mass_fraction: 'Rendemen arang (berat)',
+  packing_fraction_random: 'Fraksi isi acak',
+  'yield.nuts_per_kg_copra': 'Butir per kg kopra',
+  'yield.copra_per_nut': 'Kopra per butir',
+  'geometry.nest_pitch': 'Jarak susun bersarang',
+  'geometry.linear_shrinkage_on_carbonization': 'Susut dimensi saat dibakar',
+  'geometry.tuft_extra_length': 'Panjang jambul',
+  'geometry.body.length_polar': 'Panjang buah',
+  'geometry.body.diameter_equatorial': 'Diameter buah',
+  'geometry.circumference': 'Keliling buah',
+  'geometry.solid_volume': 'Volume padat per butir',
+};
+const GEOM_PART: Record<string, string> = {
+  raw_half_shell: 'batok mentah',
+  charcoal_half: 'keping arang',
+  piece: 'potongan',
+};
+const GEOM_DIM: Record<string, string> = {
+  wall_thickness: 'Tebal dinding',
+  rim_diameter: 'Diameter bibir',
+  depth: 'Kedalaman',
+  thickness: 'Tebal',
+  width: 'Lebar',
+  length: 'Panjang',
+  rim_diameter_or_length: 'Diameter / panjang',
+  depth_or_width: 'Kedalaman / lebar',
+};
+
+export function paramLabel(key: string): string {
+  if (PARAM_UI[key]) return PARAM_UI[key];
+  const m = /^geometry\.(raw_half_shell|charcoal_half|piece)\.(.+)$/.exec(key);
+  if (m && GEOM_DIM[m[2]!]) return `${GEOM_DIM[m[2]!]} ${GEOM_PART[m[1]!]}`;
+  return key;
+}
+
+/**
+ * Prioritas sampling (CLAUDE_CODE_PROMPT §4 M4, logs/assumption_register.md): risiko tertinggi dulu.
+ * Kunci alami `komoditas|bentuk|parameter`; cara ukur = teks register (bukan angka).
+ */
+export const SAMPLING_PRIORITY: { asm: string; key: string; how: string; method: string }[] = [
+  { asm: 'ASM-06', key: 'kelapa_jambul|bagged|bulk_density', how: 'Catat realisasi muat tiap container (jumlah butir/karung & berat).', method: 'realisasi_stuffing' },
+  { asm: 'ASM-01', key: 'arang_batok_belah2|halves_loose|bulk_density', how: 'Isi kotak/ember bervolume terukur (≥ 0,2 m³) dengan keping lepas, timbang, ulangi.', method: 'ember_1m3' },
+  { asm: 'ASM-02', key: 'arang_batok_belah2|halves_nested|bulk_density', how: 'Susun keping bersarang dalam kotak, timbang, ulangi.', method: 'ember_1m3' },
+];

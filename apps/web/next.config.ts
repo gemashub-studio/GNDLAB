@@ -14,6 +14,8 @@ const nextConfig: NextConfig = {
   transpilePackages: ['@gemas/calc-engine', '@gemas/dataset'],
   typedRoutes: false,
   poweredByHeader: false,
+  // E2E kalibrasi menjalankan dev server kedua (DB test, port 3100) → folder build terpisah.
+  ...(process.env.NEXT_DIST_DIR && { distDir: process.env.NEXT_DIST_DIR }),
 };
 
 export default withSerwist(nextConfig);

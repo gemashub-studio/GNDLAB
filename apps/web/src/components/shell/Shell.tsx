@@ -23,12 +23,14 @@ export const NAV: NavItem[] = [
   { href: '/simulator', label: 'Simulator', short: 'Simulasi', icon: 'cube' },
   { href: '/konversi', label: 'Konversi', short: 'Konversi', icon: 'convert' },
   { href: '/skenario', label: 'Skenario', short: 'Simpan', icon: 'saved' },
+  { href: '/sampling', label: 'Sampling', short: 'Sampling', icon: 'scale' },
   { href: '/data', label: 'Data & Sumber', short: 'Data', icon: 'data' },
   { href: '/panduan', label: 'Panduan', short: 'Panduan', icon: 'help', mobile: true },
   { href: '/lab', label: 'R&D Lab', short: 'Lab', icon: 'lab', soon: true },
 ];
 
-const isActive = (path: string, href: string) => (href === '/' ? path === '/' : path.startsWith(href));
+const isActive = (path: string, href: string) =>
+  href === '/' ? path === '/' : path.startsWith(href) || (href === '/sampling' && path.startsWith('/kalibrasi'));
 
 function useOnline() {
   const [online, setOnline] = useState(true);

@@ -58,6 +58,12 @@ export const Icon = {
       <path d="M3 7l9 5 9-5M12 12v10" />
     </svg>
   ),
+  scale: () => (
+    <svg {...P}>
+      <path d="M12 3v18M7 21h10M4 7h16" />
+      <path d="M4 7l-2.5 6a3 3 0 0 0 5 0zM20 7l-2.5 6a3 3 0 0 0 5 0z" />
+    </svg>
+  ),
   lab: () => (
     <svg {...P}>
       <path d="M9 3h6M10 3v6l-5 9a2 2 0 0 0 1.7 3h10.6a2 2 0 0 0 1.7-3l-5-9V3" />

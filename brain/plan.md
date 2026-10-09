@@ -99,5 +99,6 @@ Checklist (centang + commit per langkah):
 - [x] K3 Sampling: parser CSV (format persis template) + validasi per baris, service & API `POST /measurements`, statistik, usulan otomatis n ≥ 10.
 - [x] K4 Approval: service setujui/tolak (data_admin) → versi patch baru PUBLISHED, versi lama utuh (IR-02), audit actor; API; test integrasi DB alur penuh + skenario lama tetap.
   - Selesai: `server/calibration.ts`, `server/approval.ts`, API `POST /measurements`, `GET /measurements/stats`, `GET /proposals`, `POST /proposals/[id]`; uji `test/calibration.db.test.ts` (11) di DB `gemas_test`. Uji kalibrasi hanya jalan di DB test segar → owner menjalankan `scripts/windows/reset-test-db.ps1` untuk mengulang (FND-020).
-- [ ] K5 UI: /sampling (form + impor CSV + statistik + prioritas ASM), /kalibrasi (review), realisasi stuffing.
+- [x] K5 UI: /sampling (form + impor CSV + statistik + prioritas ASM), /kalibrasi (review), realisasi stuffing.
+  - Selesai: `app/sampling`, `app/kalibrasi`, `components/sampling/SamplingWorkbench.tsx`, `components/calibration/ProposalReview.tsx`, `lib/realization.ts` (+5 unit test), menu "Sampling". E2E `e2e/calibration.spec.ts` (2) via `playwright.calib.config.ts` → dev server port 3100 + DB test + folder `.next-calib` (teardown memulihkan next-env.d.ts/tsconfig).
 - [ ] K6 E2E alur penuh (sesi uji via JWT), logs (ADR-008, traceability FR-11/US-08), run_all_checks, commit "Fase M4 selesai".

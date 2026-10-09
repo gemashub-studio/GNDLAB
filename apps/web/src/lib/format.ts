@@ -27,3 +27,7 @@ export function parseNum(raw: string): number {
   if (/^[1-9]\d{0,2}(\.\d{3})+$/.test(s)) return Number(s.replace(/\./g, ''));
   return Number(s);
 }
+
+/** Angka hasil ukur: bulat tanpa desimal; < 10 → 2 desimal; < 100 → 1 desimal. */
+export const fmtMeasure = (v: number): string =>
+  Number.isInteger(v) ? fmt(v) : fmt(v, Math.abs(v) < 10 ? 2 : Math.abs(v) < 100 ? 1 : 0);

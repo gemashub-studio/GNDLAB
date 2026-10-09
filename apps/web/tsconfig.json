@@ -26,13 +26,13 @@
     "esModuleInterop": true
   },
   "include": [
-    "next-env.d.ts",
-    "src",
-    "test",
-    "e2e",
     ".next/types/**/*.ts",
+    "e2e",
+    "next-env.d.ts",
     "next.config.ts",
     "playwright.config.ts",
+    "src",
+    "test",
     "vitest.config.ts"
   ],
   "exclude": [
