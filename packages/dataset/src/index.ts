@@ -8,6 +8,7 @@ export * from './loader.ts';
 export * from './scenario.ts';
 export * from './schema.ts';
 export * from './process.ts';
+export * from './overrides.ts';
 export { rawDataset, rawProcessDataset, provenance };
 
 let cached: DatasetSI | undefined;

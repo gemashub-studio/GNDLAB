@@ -19,3 +19,4 @@ export * from './nesting.ts';
 export * from './convert.ts';
 export * from './process.ts';
 export * from './layout.ts';
+export * from './stats.ts';

@@ -23,3 +23,8 @@ Turbo mengirim telemetri anonim secara default; agent menjalankan dengan `TURBO_
 
 ## Git
 Identitas lokal repo: `masciosa <masciosa@gmail.com>` (bisa diganti owner). Branch `main`. Belum ada remote.
+
+## Catatan menjalankan test (2026-10-09)
+- `pnpm turbo …` / `pnpm exec playwright …` dari **Git Bash** kadang menggantung tanpa output. Andal dari **PowerShell**:
+  - unit: `node ..\..\node_modules\vitest\vitest.mjs run` di folder paket; typecheck: `node ..\..\node_modules\typescript\bin\tsc --noEmit`
+  - E2E: `node node_modules/@playwright/test/cli.js test` di `apps/web` (Edge terpasang, tanpa unduh browser).
