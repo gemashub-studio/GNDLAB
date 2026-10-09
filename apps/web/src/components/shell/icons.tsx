@@ -52,6 +52,12 @@ export const Icon = {
       <path d="M9 11l6-4M9 13l6 4" />
     </svg>
   ),
+  cube: () => (
+    <svg {...P}>
+      <path d="M12 2l9 5v10l-9 5-9-5V7z" />
+      <path d="M3 7l9 5 9-5M12 12v10" />
+    </svg>
+  ),
   lab: () => (
     <svg {...P}>
       <path d="M9 3h6M10 3v6l-5 9a2 2 0 0 0 1.7 3h10.6a2 2 0 0 0 1.7-3l-5-9V3" />

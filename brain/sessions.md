@@ -46,3 +46,7 @@
 - Bahasa UI santai (DEC-027). Test: engine 82, dataset 51, web 21, E2E 18 (+1 fixme ISS-025).
 - Terbuka: ISS-025 (offline nav emulasi), ISS-026 (data dataran tinggi), ISS-027 (rendemen arang), ISS-028 (simpan skenario proses), dark mode (DEC-021).
 - Berikutnya (menunggu owner): M3 simulator 3D, M4 sampling & kalibrasi, M5 R&D Lab.
+
+### 2026-10-09 · Fase M3 (berjalan)
+- S1 ✅ engine layout (commit ef551ae). S2–S3 ✅ Plan2D.tsx, Sim3D.tsx (three + R3F, InstancedMesh). S4 dikodekan: /simulator + tombol "Buka simulator" + menu — BELUM diverifikasi visual/E2E.
+- Lanjutan: verifikasi /simulator (2D/3D, gudang, arang bersarang), E2E S5 (angka simulator == kartu hasil golden kemasan, fps 1.200 karung), lalu S6 logs.

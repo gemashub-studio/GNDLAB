@@ -19,6 +19,7 @@
     "@gemas/dataset": "workspace:*",
     "@prisma/client": "6.19.3",
     "@react-pdf/renderer": "4.9.0",
+    "@react-three/fiber": "9.8.1",
     "@serwist/next": "9.5.13",
     "idb": "8.0.4",
     "next": "15.5.27",
@@ -27,6 +28,7 @@
     "react": "19.1.9",
     "react-dom": "19.1.9",
     "server-only": "0.0.1",
+    "three": "0.186.1",
     "zod": "^3.24.1"
   },
   "devDependencies": {
@@ -35,6 +37,7 @@
     "@types/nodemailer": "^6.4.17",
     "@types/react": "^19.1.0",
     "@types/react-dom": "^19.1.0",
+    "@types/three": "0.186.0",
     "autoprefixer": "^10.4.20",
     "postcss": "^8.4.49",
     "prisma": "6.19.3",

@@ -116,6 +116,11 @@ export function ScenarioActions({ state }: { state: ScenarioState }) {
           PDF
         </button>
       </div>
+      {state.kind !== 'CONVERT' && (
+        <a href={`/simulator?s=${encodeState(state)}`} className="btn-acid self-start no-underline" data-testid="open-sim">
+          Buka simulator 2D/3D →
+        </a>
+      )}
       {msg && (
         <p role="status" className="border-l-4 border-acid bg-paper px-3 py-2 text-[13px]" data-testid="action-msg">
           {msg}

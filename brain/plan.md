@@ -74,10 +74,10 @@ Checklist (centang + commit per langkah; kalau sesi putus, lanjut dari yang belu
 - [x] S1 Engine `layout.ts`: posisi kemasan dalam container (urutan muat belakang→depan, bawah→atas,
       dari `bestGridFit`), tata letak tumpukan gudang di zona (lorong), kolom bersarang arang; unit test
       (jumlah posisi = `containerCapacity().packs` untuk semua golden kemasan).
-- [ ] S2 Denah 2D SVG: tampak atas & samping container; denah zona gudang dengan lorong diarsir; hover isi tumpukan.
-- [ ] S3 3D (three.js + @react-three/fiber, tanpa drei): kotak transparan, karung = InstancedMesh, slider
+- [x] S2 Denah 2D SVG: tampak atas & samping container; denah zona gudang dengan lorong diarsir; hover isi tumpukan.
+- [x] S3 3D (three.js + @react-three/fiber, tanpa drei): kotak transparan, karung = InstancedMesh, slider
       "isi %", orbit; dimuat dinamis (tanpa SSR); label "representasi grid".
-- [ ] S4 Halaman `/simulator` (baca `?s=` dari kalkulator/gudang) + tombol "Buka simulator" di kalkulator & gudang;
+- [~] S4 Halaman `/simulator` (baca `?s=` dari kalkulator/gudang) + tombol "Buka simulator" di kalkulator & gudang;
       mode arang belah 2 bersarang (kolom).
 - [ ] S5 Test: unit layout + E2E angka simulator == kartu hasil untuk golden kemasan; ukur fps 1.200 karung.
 - [ ] S6 Logs (traceability FR-09, decision, risk) + run_all_checks + commit "Fase M3 selesai".

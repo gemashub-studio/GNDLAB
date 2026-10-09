@@ -20,6 +20,7 @@ export const NAV: NavItem[] = [
   { href: '/proses', label: 'Alur Proses', short: 'Proses', icon: 'process', mobile: true },
   { href: '/muat', label: 'Muat Container', short: 'Muat', icon: 'container', mobile: true },
   { href: '/gudang', label: 'Gudang', short: 'Gudang', icon: 'warehouse', mobile: true },
+  { href: '/simulator', label: 'Simulator', short: 'Simulasi', icon: 'cube' },
   { href: '/konversi', label: 'Konversi', short: 'Konversi', icon: 'convert' },
   { href: '/skenario', label: 'Skenario', short: 'Simpan', icon: 'saved' },
   { href: '/data', label: 'Data & Sumber', short: 'Data', icon: 'data' },
