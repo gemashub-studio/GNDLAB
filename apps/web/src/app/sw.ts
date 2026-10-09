@@ -19,7 +19,7 @@ declare const self: ServiceWorkerGlobalScope;
 
 const PAGES_CACHE = 'gemas-pages-v1';
 /** Halaman yang harus tersedia offline sejak kunjungan pertama. */
-const OFFLINE_PAGES = ['/', '/muat', '/gudang', '/konversi', '/panduan', '/data'];
+const OFFLINE_PAGES = ['/', '/proses', '/muat', '/gudang', '/konversi', '/panduan', '/data'];
 const PAGE_MATCH: CacheQueryOptions = { ignoreSearch: true, ignoreVary: true };
 
 const serwist = new Serwist({

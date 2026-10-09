@@ -59,8 +59,8 @@ Checklist (centang saat selesai + commit per langkah):
       `architecture/00-research/process_research.md` + ADR-007.
 - [x] P2 Paket dataset: skema Zod + loader dataset proses + test sumber/rentang.
 - [x] P3 Engine `packages/calc-engine/src/process.ts` (fungsi murni, rentang, trace) + unit test.
-- [ ] P4 UI `/proses`: tahapan bernomor, 2 jalur asal, kalkulator rak (3 metode), batok→arang,
+- [x] P4 UI `/proses`: tahapan bernomor, 2 jalur asal, kalkulator rak (3 metode), batok→arang,
       ringkasan produk jadi; bahasa santai.
-- [ ] P5 Simulasi container: kelapa = lingkaran (SVG), ukuran container ditampilkan dalam ft/in.
+- [x] P5 Simulasi container: kelapa = lingkaran (SVG), ukuran container ditampilkan dalam ft/in.
 - [ ] P6 Pass bahasa santai di seluruh UI (glosarium, hint, peringatan, tur, panduan).
 - [ ] P7 E2E + run_all_checks + logs (decision/risk/traceability) + commit "Fase P selesai".

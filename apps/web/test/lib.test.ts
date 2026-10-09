@@ -19,6 +19,18 @@ describe('migrasi 0001 = architecture/03-data/schema.sql apa adanya', () => {
   });
 });
 
+describe('satuan imperial (tampilan)', () => {
+  it('meter → ft/in; nama container dalam ft', async () => {
+    const { ftIn, containerFtName } = await import('@/lib/imperial');
+    expect(ftIn(5.898)).toBe('19 ft 4 in');
+    expect(ftIn(2.393)).toBe('7 ft 10 in');
+    expect(ftIn(0.3048)).toBe('1 ft');
+    expect(containerFtName('20GP')).toBe('20 ft');
+    expect(containerFtName('40HC')).toBe('40 ft High Cube');
+    expect(containerFtName('CUSTOM')).toBe('CUSTOM');
+  });
+});
+
 describe('format angka Indonesia', () => {
   it('fmt memakai titik ribuan & koma desimal', () => {
     expect(fmt(22229)).toBe('22.229');
@@ -77,7 +89,7 @@ describe('laporan & CSV', () => {
   const rows = reportRows(ds, s, runScenario(ds, s));
 
   it('baris memuat input, hasil, jejak versi', () => {
-    expect(rows.find((r) => r.label === 'Container')?.value).toBe('40HC');
+    expect(rows.find((r) => r.label === 'Container')?.value).toBe('40 ft High Cube (40HC)');
     expect(rows.find((r) => r.label === 'Jumlah karung')?.value).toMatch(/^975 /);
     expect(rows.find((r) => r.label === 'Versi dataset')?.value).toBe(ds.version);
   });

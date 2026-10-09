@@ -44,6 +44,14 @@ export const Icon = {
       <path d="M9.5 9a2.5 2.5 0 1 1 3.5 2.3c-.7.3-1 .9-1 1.7M12 17v.5" />
     </svg>
   ),
+  process: () => (
+    <svg {...P}>
+      <circle cx="6" cy="12" r="3" />
+      <circle cx="18" cy="6" r="3" />
+      <circle cx="18" cy="18" r="3" />
+      <path d="M9 11l6-4M9 13l6 4" />
+    </svg>
+  ),
   lab: () => (
     <svg {...P}>
       <path d="M9 3h6M10 3v6l-5 9a2 2 0 0 0 1.7 3h10.6a2 2 0 0 0 1.7-3l-5-9V3" />

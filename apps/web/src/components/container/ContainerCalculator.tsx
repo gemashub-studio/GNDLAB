@@ -16,6 +16,8 @@ import { useDataset } from '@/lib/useDataset';
 import { useUrlState } from '@/lib/useUrlState';
 import { ContainerResultView } from './ContainerResult';
 import { GridStrip } from './GridStrip';
+import { ContainerCircleSim } from '@/components/sim/ContainerCircleSim';
+import { containerFtName, ftIn } from '@/lib/imperial';
 
 const CUSTOM = 'CUSTOM';
 
@@ -59,7 +61,7 @@ export function ContainerCalculator({ initial, startWizard }: { initial?: Contai
     () => Object.fromEntries(ds.commodities.map((c) => [c.id, runContainer(ds, initialContainerState(ds, c.id)).confidence])),
     [ds],
   );
-  const containerName = s.custom ? 'CUSTOM' : s.containerId!;
+  const containerName = s.custom ? 'CUSTOM' : containerFtName(s.containerId!).toUpperCase();
   const title = `${(COMMODITY_UI[s.commodityId]?.short ?? commodity.nameId).toUpperCase()} @ ${containerName}`;
   const benchmarks = s.custom ? [] : form.benchmarks.filter((b) => b.containerId === s.containerId);
 
@@ -131,7 +133,7 @@ export function ContainerCalculator({ initial, startWizard }: { initial?: Contai
       <fieldset className="flex flex-col gap-2.5">
         <legend className="label-mono mb-2.5">03 / CONTAINER</legend>
         <div role="radiogroup" className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
-          {[...ds.containers.map((c) => ({ id: c.id, sub: `${fmt(c.volumeM3 ?? 0, 1)} m³` })), { id: CUSTOM, sub: 'ukuran sendiri' }].map((k) => {
+          {[...ds.containers.map((c) => ({ id: c.id, sub: `${c.id} · ${fmt(c.volumeM3 ?? 0, 1)} m³` })), { id: CUSTOM, sub: 'ukuran sendiri' }].map((k) => {
             const on = k.id === (s.custom ? CUSTOM : s.containerId);
             return (
               <button
@@ -146,13 +148,21 @@ export function ContainerCalculator({ initial, startWizard }: { initial?: Contai
                   on ? 'bg-ink text-acid shadow-[4px_4px_0_#FF5A1F]' : 'bg-surface'
                 }`}
               >
-                <span className="font-display text-lg">{k.id === CUSTOM ? 'CUSTOM' : k.id}</span>
+                <span className="font-display text-lg">{k.id === CUSTOM ? 'CUSTOM' : containerFtName(k.id).replace(' High Cube', ' HC')}</span>
                 <span className="font-mono text-[11px] font-semibold">{k.sub}</span>
               </button>
             );
           })}
         </div>
       </fieldset>
+      {!s.custom && (() => {
+        const c = ds.containers.find((x) => x.id === s.containerId)!;
+        return (
+          <p className="font-mono text-xs" data-testid="container-ft">
+            Ruang dalam: {ftIn(c.L)} × {ftIn(c.W)} × {ftIn(c.H)} · muatan maks {fmt(c.payloadKg)} kg
+          </p>
+        );
+      })()}
       {s.custom && (
         <div className="grid grid-cols-2 gap-3 border-2 border-dashed border-ink p-3">
           <NumberField label="Panjang dalam" unit="cm" value={s.custom.lengthM * 100} min={1} max={2000}
@@ -382,7 +392,19 @@ export function ContainerCalculator({ initial, startWizard }: { initial?: Contai
           <section aria-label="Hasil" className="flex min-w-0 flex-[2_1_520px] flex-col gap-6">
             {resultBlock}
             {result.ok && result.out.binding !== 'NONE' && (
-              <GridStrip volumeFill={result.out.result.typ.volumeFill} weightFill={result.out.result.typ.weightFill} />
+              s.commodityId === 'kelapa_jambul' && s.mode !== 'BULK' && result.out.result.typ.pieces !== undefined ? (
+                // Kelapa digambar sebagai lingkaran; kapasitas = isi penuh volume (pieces ÷ isi volume).
+                <div className="card p-[18px]">
+                  <ContainerCircleSim
+                    containerId={s.custom ? 'CUSTOM' : s.containerId!}
+                    innerM={s.custom ? { L: s.custom.lengthM, W: s.custom.widthM, H: s.custom.heightM } : (() => { const c = ds.containers.find((x) => x.id === s.containerId)!; return { L: c.L, W: c.W, H: c.H }; })()}
+                    capacity={Math.round(result.out.result.typ.pieces / Math.max(result.out.result.typ.volumeFill, 1e-9))}
+                    segments={[{ count: result.out.result.typ.pieces, label: 'Kelapa jambul', tone: 'acid' }]}
+                  />
+                </div>
+              ) : (
+                <GridStrip volumeFill={result.out.result.typ.volumeFill} weightFill={result.out.result.typ.weightFill} />
+              )
             )}
             <ScenarioActions state={s} />
           </section>

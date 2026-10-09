@@ -126,7 +126,7 @@ test('wizard panduan: 4 langkah sampai hasil', async ({ page }) => {
   await page.getByTestId('wizard-next').click();
   await page.getByTestId('container-40HC').click();
   await page.getByTestId('wizard-next').click();
-  await expect(page.getByTestId('container-result')).toContainText('KOPRA EDIBLE @ 40HC');
+  await expect(page.getByTestId('container-result')).toContainText('KOPRA EDIBLE @ 40 FT HIGH CUBE');
 });
 
 test('API: server menghitung ulang & menolak input buruk (ARD §9)', async ({ request }) => {

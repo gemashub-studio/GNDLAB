@@ -8,6 +8,7 @@ import { Hint } from '@/components/ui/Hint';
 import { WarningList } from '@/components/ui/Warnings';
 import { COMMODITY_UI, formLabel } from '@/lib/catalog';
 import { fmt, fmtTon } from '@/lib/format';
+import { containerFtName } from '@/lib/imperial';
 import { encodeState, runContainer, type ContainerState } from '@/lib/scenario';
 
 /** Baris tabel kapasitas (mockup Main "Kapasitas Container"). Bentuk & mode = pilihan tampilan, angka dari engine. */
@@ -105,7 +106,7 @@ export default function Home() {
                 <span className="font-display text-[40px] leading-none">
                   {piece ? fmt(o20.result.typ.pieces ?? 0) : fmt(o20.result.typ.massKg / 1000, 1)}
                 </span>
-                <span className="font-mono text-sm font-semibold">{piece ? ui.pieceUnit.toUpperCase() : 'TON'} / 20GP</span>
+                <span className="font-mono text-sm font-semibold">{piece ? ui.pieceUnit.toUpperCase() : 'TON'} / 20 FT</span>
               </div>
               <div className="grid grid-cols-2 gap-2 font-mono text-xs">
                 <div className="flex flex-col gap-0.5">
@@ -137,7 +138,7 @@ export default function Home() {
                 <tr className="bg-ink text-left font-mono text-[11px] tracking-[0.08em] text-paper">
                   <th scope="col" className="p-2.5 font-bold">KOMODITAS</th>
                   {COLS.map((k) => (
-                    <th key={k} scope="col" className="p-2.5 font-bold">{k}</th>
+                    <th key={k} scope="col" className="p-2.5 font-bold">{containerFtName(k).toUpperCase()}</th>
                   ))}
                   <th scope="col" className="p-2.5 font-bold">BATAS</th>
                   <th scope="col" className="p-2.5 font-bold">DATA</th>
@@ -158,7 +159,7 @@ export default function Home() {
                       </td>
                     ))}
                     <td className="p-2.5 text-[13px]">
-                      {r.cells.map((c) => `${c.out.binding === 'VOLUME' ? 'Volume' : 'Berat'} @${c.k}`).join(' · ')}
+                      {r.cells.map((c) => `${c.out.binding === 'VOLUME' ? 'Volume' : 'Berat'} @${containerFtName(c.k)}`).join(' · ')}
                     </td>
                     <td className="p-2.5">
                       <ConfidenceBadge c={r.cells[0]!.out.confidence} />
@@ -181,7 +182,7 @@ export default function Home() {
       <section aria-labelledby="plan-h" className="flex flex-col gap-3.5 border-3 border-ink bg-acid p-[22px] shadow-hard sm:max-w-xl">
         <span className="tag-mono self-start">CONTOH RENCANA</span>
         <h2 id="plan-h" className="text-[26px] leading-none">
-          1 × 40HC
+          1 × 40 ft HC
           <br />
           Kopra Edible
         </h2>

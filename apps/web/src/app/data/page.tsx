@@ -22,7 +22,7 @@ function display(unit: Unit, v: number): string {
   }
 }
 function unitLabel(unit: Unit, v: number): string {
-  return { m: 'cm', kg: v < 1 ? 'g' : 'kg', m3: 'cm³', kg_m3: 'kg/m³', fraction: 'fraksi', pct: '%', count: '' }[unit];
+  return { m: 'cm', kg: v < 1 ? 'g' : 'kg', m3: 'cm³', kg_m3: 'kg/m³', fraction: 'fraksi', pct: '%', count: '', h: 'jam' }[unit];
 }
 
 export default function DataPage() {

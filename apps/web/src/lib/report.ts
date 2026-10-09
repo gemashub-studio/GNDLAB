@@ -5,6 +5,7 @@ import type { DatasetSI } from '@gemas/dataset';
 import { getCommodity } from '@gemas/dataset';
 import { COMMODITY_UI, MODE_UI, formLabel } from './catalog';
 import { fmt, fmtM2, fmtM3, fmtPct } from './format';
+import { containerFtName } from './imperial';
 import type { ScenarioOutput, ScenarioState } from './scenario';
 
 export interface ReportRow {
@@ -26,7 +27,7 @@ export function reportRows(ds: DatasetSI, s: ScenarioState, o: ScenarioOutput): 
   if (s.kind === 'CONTAINER' && o.kind === 'CONTAINER') {
     const r = o.out.result;
     rows.push(
-      { section: 'Input', label: 'Container', value: s.custom ? `Custom ${fmt(s.custom.lengthM * 100)}×${fmt(s.custom.widthM * 100)}×${fmt(s.custom.heightM * 100)} cm, ${fmt(s.custom.payloadKg)} kg` : s.containerId! },
+      { section: 'Input', label: 'Container', value: s.custom ? `Custom ${fmt(s.custom.lengthM * 100)}×${fmt(s.custom.widthM * 100)}×${fmt(s.custom.heightM * 100)} cm, ${fmt(s.custom.payloadKg)} kg` : `${containerFtName(s.containerId!)} (${s.containerId})` },
       { section: 'Input', label: 'Cara hitung', value: MODE_UI[s.mode].label },
     );
     if (r.typ.pieces !== undefined) rows.push({ section: 'Hasil', label: 'Jumlah butir', value: rng(r.min.pieces!, r.typ.pieces, r.max.pieces!, (v) => fmt(v)) });

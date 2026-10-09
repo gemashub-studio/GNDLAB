@@ -17,9 +17,10 @@ interface NavItem {
 
 export const NAV: NavItem[] = [
   { href: '/', label: 'Ringkasan', short: 'Beranda', icon: 'home', mobile: true },
+  { href: '/proses', label: 'Alur Proses', short: 'Proses', icon: 'process', mobile: true },
   { href: '/muat', label: 'Muat Container', short: 'Muat', icon: 'container', mobile: true },
   { href: '/gudang', label: 'Gudang', short: 'Gudang', icon: 'warehouse', mobile: true },
-  { href: '/konversi', label: 'Konversi', short: 'Konversi', icon: 'convert', mobile: true },
+  { href: '/konversi', label: 'Konversi', short: 'Konversi', icon: 'convert' },
   { href: '/skenario', label: 'Skenario', short: 'Simpan', icon: 'saved' },
   { href: '/data', label: 'Data & Sumber', short: 'Data', icon: 'data' },
   { href: '/panduan', label: 'Panduan', short: 'Panduan', icon: 'help', mobile: true },
