@@ -16,6 +16,8 @@ export const WARNING_MESSAGES = {
   FLOOR_OVERLOAD: 'Beban lantai melebihi kapasitas.',
   OVERRIDE_OUT_OF_RANGE: 'Nilai override di luar rentang wajar.',
   CONSERVATIVE_BENCHMARK_GAP: 'Satu sumber pasar melaporkan muat jauh lebih rendah.',
+  WATER_REMAINDER_CLAMPED: 'Kombinasi sabut + batok + daging melebihi 100% — air kelapa dihitung 0.',
+  WEATHER_DEPENDENT: 'Lama jemur tergantung cuaca; hujan menambah hari & risiko jamur.',
 } as const;
 
 export type WarningCode = keyof typeof WARNING_MESSAGES;

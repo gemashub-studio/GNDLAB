@@ -57,8 +57,8 @@ Checklist (centang saat selesai + commit per langkah):
       kadar air daging segar; muatan rak (kg/m²) & lama jemur per metode; rendemen arang sudah ada di
       dataset utama) → `architecture/00-research/data/coconut_process_dataset.json` + catatan sumber
       `architecture/00-research/process_research.md` + ADR-007.
-- [ ] P2 Paket dataset: skema Zod + loader dataset proses + test sumber/rentang.
-- [ ] P3 Engine `packages/calc-engine/src/process.ts` (fungsi murni, rentang, trace) + unit test.
+- [x] P2 Paket dataset: skema Zod + loader dataset proses + test sumber/rentang.
+- [x] P3 Engine `packages/calc-engine/src/process.ts` (fungsi murni, rentang, trace) + unit test.
 - [ ] P4 UI `/proses`: tahapan bernomor, 2 jalur asal, kalkulator rak (3 metode), batok→arang,
       ringkasan produk jadi; bahasa santai.
 - [ ] P5 Simulasi container: kelapa = lingkaran (SVG), ukuran container ditampilkan dalam ft/in.

@@ -11,8 +11,11 @@ export type M3 = Brand<number, 'm3'>;
 export type KgPerM3 = Brand<number, 'kg/m3'>;
 export type Fraction = Brand<number, 'fraction'>;
 
-/** Satuan parameter — sama dengan enum `param_unit` di schema.sql. */
-export type Unit = 'm' | 'kg' | 'm3' | 'kg_m3' | 'fraction' | 'pct' | 'count';
+/**
+ * Satuan parameter — sama dengan enum `param_unit` di schema.sql, ditambah `h` (jam) untuk
+ * parameter alur proses (dataset proses, tidak disimpan di tabel `parameter`; ADR-007).
+ */
+export type Unit = 'm' | 'kg' | 'm3' | 'kg_m3' | 'fraction' | 'pct' | 'count' | 'h';
 
 export const meters = (v: number): Meters => v as Meters;
 export const kg = (v: number): Kg => v as Kg;
