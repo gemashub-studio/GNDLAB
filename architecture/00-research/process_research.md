@@ -8,7 +8,7 @@ related: [data/coconut_process_dataset.json, data/coconut_inventory_dataset.json
 
 # Riset Parameter Alur Proses (Fase P)
 
-Permintaan owner (2026-10-09): kalkulator alur proses dari kelapa masuk sampai produk jadi, dipisah per asal (dataran tinggi / rendah). Dataset utama `coconut_inventory_dataset.json` fokus pada **dimensi & muat**, tidak memuat parameter proses. Laporan ini mendokumentasikan riset tambahan; angka masuk ke `data/coconut_process_dataset.json` (terpisah & ber-versi, ADR-007). Parameter yang SUDAH ada di dataset utama (massa kopra per butir, rendemen arang, kadar air produk, kemasan) **dirujuk, tidak disalin**.
+Permintaan owner (2026-10-09): kalkulator alur proses dari kelapa masuk sampai produk jadi, dipisah per asal (dataran tinggi / rendah). Dataset utama `data/coconut_inventory_dataset.json` fokus pada **dimensi & muat**, tidak memuat parameter proses. Laporan ini mendokumentasikan riset tambahan; angka masuk ke `data/coconut_process_dataset.json` (terpisah & ber-versi, ADR-007). Parameter yang SUDAH ada di dataset utama (massa kopra per butir, rendemen arang, kadar air produk, kemasan) **dirujuk, tidak disalin**.
 
 Skala keyakinan sama dengan dataset utama: **A** jurnal/standar terukur, **B** data dagang/lembaga konsisten, **C** estimasi/turunan/satu studi kecil — wajib diverifikasi sampling.
 
