@@ -41,3 +41,26 @@ Dependensi: `web → dataset → calc-engine`. Engine tidak bergantung pada apa 
 - **M3:** `bestGridFit().grid {nx,ny,nz}` & `orientation` sudah tersedia untuk simulator; `nestedCapacity()` untuk kolom arang bersarang. InstancedMesh untuk ≥1.200 karung. Test: angka simulator == kartu hasil untuk semua golden kemasan.
 - **M4:** statistik n/mean/min/max/SD; n ≥ 10 → proposal (P5/median/P95); approval `data_admin` → versi patch baru; skenario lama tetap pakai versinya.
 - **M5:** `schema_rnd.sql` apa adanya; form dibangkitkan dari `rnd_param_def`; impor CSV dengan preview & alasan penolakan per baris; kode batch `XX-YYMM-NNN` lewat sequence; offline-first.
+
+## Fase P — Alur Proses Kelapa (permintaan owner 2026-10-09, dikerjakan otonom)
+
+Permintaan: bahasa UI lebih santai; simulasi kelapa digambar lingkaran; ukuran container dalam ft;
+alur proses lengkap: **loading masuk → kupas serabut → belah → jemur (matahari langsung / greenhouse /
+oven) → cungkil daging → produk jadi (kopra)**, plus **batok dikumpulkan → arang**; setiap kelapa
+dipisah per **asal: dataran tinggi vs dataran rendah**.
+
+Aturan yang tetap berlaku: angka TIDAK boleh dikarang → parameter proses baru masuk dataset proses
+terpisah ber-sumber & ber-keyakinan (A/B/C), atau berupa input pengguna yang jelas ditandai.
+
+Checklist (centang saat selesai + commit per langkah):
+- [ ] P1 Riset parameter proses (komposisi buah: sabut/batok/daging/air; beda dataran tinggi vs rendah;
+      kadar air daging segar; muatan rak (kg/m²) & lama jemur per metode; rendemen arang sudah ada di
+      dataset utama) → `architecture/00-research/data/coconut_process_dataset.json` + catatan sumber
+      `architecture/00-research/process_research.md` + ADR-007.
+- [ ] P2 Paket dataset: skema Zod + loader dataset proses + test sumber/rentang.
+- [ ] P3 Engine `packages/calc-engine/src/process.ts` (fungsi murni, rentang, trace) + unit test.
+- [ ] P4 UI `/proses`: tahapan bernomor, 2 jalur asal, kalkulator rak (3 metode), batok→arang,
+      ringkasan produk jadi; bahasa santai.
+- [ ] P5 Simulasi container: kelapa = lingkaran (SVG), ukuran container ditampilkan dalam ft/in.
+- [ ] P6 Pass bahasa santai di seluruh UI (glosarium, hint, peringatan, tur, panduan).
+- [ ] P7 E2E + run_all_checks + logs (decision/risk/traceability) + commit "Fase P selesai".
