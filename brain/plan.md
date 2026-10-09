@@ -62,5 +62,5 @@ Checklist (centang saat selesai + commit per langkah):
 - [x] P4 UI `/proses`: tahapan bernomor, 2 jalur asal, kalkulator rak (3 metode), batok→arang,
       ringkasan produk jadi; bahasa santai.
 - [x] P5 Simulasi container: kelapa = lingkaran (SVG), ukuran container ditampilkan dalam ft/in.
-- [ ] P6 Pass bahasa santai di seluruh UI (glosarium, hint, peringatan, tur, panduan).
-- [ ] P7 E2E + run_all_checks + logs (decision/risk/traceability) + commit "Fase P selesai".
+- [x] P6 Pass bahasa santai di seluruh UI (glosarium, hint, peringatan, tur, panduan).
+- [x] P7 E2E + run_all_checks + logs (decision/risk/traceability) + commit "Fase P selesai".

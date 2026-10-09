@@ -74,17 +74,18 @@ export default function Home() {
       </header>
 
       {/* Mulai cepat — orientasi tugas untuk pengguna baru */}
-      <section aria-label="Mulai cepat" className="grid gap-5 sm:grid-cols-3">
+      <section aria-label="Mulai cepat" className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
         {[
-          { href: '/muat?wizard=1', n: '01', t: 'Berapa muat di container?', d: 'Panduan 4 langkah: barang → bentuk → container → hasil.' },
-          { href: '/gudang', n: '02', t: 'Butuh lantai gudang berapa?', d: 'Masukkan stok & tinggi tumpuk, dapat luas lantai & beban.' },
-          { href: '/konversi', n: '03', t: 'Butir ↔ kg ↔ karung?', d: 'Konversi satuan dua arah, lengkap dengan rentang.' },
+          { href: '/proses', n: '01', t: 'Kelapa masuk, jadi apa aja?', d: 'Dari kupas sabut sampai kopra & arang — lengkap rak jemur & dipisah per asal kelapa.' },
+          { href: '/muat?wizard=1', n: '02', t: 'Muat berapa di container?', d: 'Tinggal pilih barang, bentuk, dan container — langsung ketemu jawabannya.' },
+          { href: '/gudang', n: '03', t: 'Gudangnya cukup nggak?', d: 'Isi jumlah stok & tinggi tumpukan, keluar luas lantai yang dibutuhkan.' },
+          { href: '/konversi', n: '04', t: 'Butir ↔ kg ↔ karung?', d: 'Ubah satuan bolak-balik, lengkap dengan rentangnya.' },
         ].map((x) => (
           <Link key={x.href} href={x.href} className="card group flex flex-col gap-2 p-[18px] no-underline hover:bg-acid">
             <span className="font-mono text-xs font-bold">{x.n}</span>
             <span className="text-lg font-extrabold uppercase leading-tight">{x.t}</span>
             <span className="text-[13px]">{x.d}</span>
-            <span className="mt-auto font-mono text-xs font-bold group-hover:underline">MULAI →</span>
+            <span className="mt-auto font-mono text-xs font-bold group-hover:underline">YUK MULAI →</span>
           </Link>
         ))}
       </section>

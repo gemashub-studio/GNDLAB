@@ -150,7 +150,7 @@ export function Converter({ initial }: { initial?: ConvertState }) {
               <ScenarioActions state={s} />
             </>
           ) : (
-            <div role="alert" className="card"><h2 className="text-xl">Belum bisa dikonversi</h2><p className="mt-2">{result.message}</p></div>
+            <div role="alert" className="card"><h2 className="text-xl">Hmm, belum bisa dikonversi</h2><p className="mt-2">{result.message}</p></div>
           )}
         </section>
       </div>

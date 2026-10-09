@@ -24,14 +24,14 @@ export default async function Masuk({ searchParams }: { searchParams: Promise<Re
         {user ? (
           <>
             <p>
-              Anda masuk sebagai <b>{user.email}</b> (peran: <span className="font-mono">{user.role}</span>).
+              Kamu masuk sebagai <b>{user.email}</b> (peran: <span className="font-mono">{user.role}</span>).
             </p>
             <a href="/api/auth/signout" className="btn-ghost self-start no-underline">Keluar</a>
           </>
         ) : sp.cek ? (
           <>
-            <h2 className="text-2xl">Cek email Anda</h2>
-            <p>Kami mengirim tautan masuk. Buka tautan itu di perangkat ini (berlaku 15 menit).</p>
+            <h2 className="text-2xl">Cek email kamu</h2>
+            <p>Tautan masuk sudah dikirim. Buka dari perangkat ini ya (berlaku 15 menit).</p>
             <p className="text-[13px] text-muted">
               Mode pengembangan tanpa server email: tautan dicetak di terminal tempat aplikasi berjalan.
             </p>

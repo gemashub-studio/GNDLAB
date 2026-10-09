@@ -63,7 +63,7 @@ export function ContainerResultView({
 
         {empty ? (
           <p className="text-lg font-bold">
-            Kemasan tidak muat di orientasi mana pun. Periksa ukuran karung atau pilih container lebih besar.
+            Karungnya nggak muat diputar ke arah mana pun. Cek ukuran karungnya atau pilih container yang lebih besar.
           </p>
         ) : (
           <>
@@ -120,7 +120,7 @@ export function ContainerResultView({
               <>
                 <span className="font-display text-[26px]">Belum ada</span>
                 <span className="text-[13px]">
-                  Tidak ada data muat pasar untuk kombinasi ini — catat realisasi stuffing pertama Anda.
+                  Belum ada data muat dari pasar buat kombinasi ini — catat hasil muat pertamamu biar jadi pembanding.
                 </span>
               </>
             )}

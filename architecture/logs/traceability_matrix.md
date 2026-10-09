@@ -28,6 +28,8 @@ Kebutuhan → desain → implementasi acuan → bukti uji.
 | NFR-03 Offline-first | ARD AR-07, DEC-024 | Serwist sw.ts + IndexedDB | SW + cache halaman terbukti (log SW); kalkulator di halaman terbuka jalan offline; navigasi offline belum stabil di emulasi (ISS-025) | 🟡 M2 sebagian |
 | NFR-04 Mobile 360 px | ux_spec §1 | Shell menu bawah, target ≥ 44 px | E2E @mobile | ✅ M2 |
 | Skema DB via Prisma | ERD, schema.sql | migrasi 0001 = schema.sql apa adanya + 0002_auth | schema_integrity_test 18/18 pada DB hasil migrasi; lib.test byte-equal | ✅ M2 |
+| Fase P — alur proses (owner 2026-10-09) | ADR-007, `00-research/process_research.md` | dataset proses v1.0.0, calc-engine/process.ts, dataset/process.ts, /proses | engine 11 uji proses, dataset 11 uji (cek silang kopra/butir), E2E 5 uji alur proses | ✅ P |
+| Simulasi kelapa lingkaran + ukuran ft | DEC-028, DEC-029, ADR-005 | ContainerCircleSim, lib/imperial.ts | E2E load-sim (ft, lingkaran), lib.test imperial | ✅ P |
 | RD-01..04 Batch, tahap, nilai parameter | `07-rnd/PRD_RnD.md`, `schema_rnd.sql` | trigger `rnd_check_measurement` | 21/21 uji `rnd_integrity_test.sql` | ✅ skema · ⏳ app |
 | RD-05/06 Impor & versi parameter | PRD_RnD RFR-03, `def_version` | `parameter_template.csv` | – | ⏳ M5 (parameter menunggu owner) |
 | Immutable dataset | ADR-002, IR-02 | trigger `forbid_published_mutation` | IR-02 (3 uji) | ✅ |

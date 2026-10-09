@@ -84,7 +84,7 @@ test('US-10 simpan di perangkat, buka dari daftar, tautan bagikan, ekspor CSV', 
   await openState(page, { kind: 'CONTAINER', commodityId: 'kopra_edible', formCode: 'bagged', containerId: '40HC', mode: 'PACKAGE' });
   const value = await primary(page);
   await page.getByTestId('save').click();
-  await expect(page.getByTestId('action-msg')).toContainText('Tersimpan di perangkat');
+  await expect(page.getByTestId('action-msg')).toContainText('tersimpan di perangkat');
 
   await page.getByTestId('share').click();
   const url = await page.evaluate(() => navigator.clipboard.readText());

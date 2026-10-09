@@ -37,3 +37,12 @@
 - ADR-006, DEC-020..025, ISS-019..025, FND-013..019.
 - Terbuka: ISS-025 navigasi offline di emulasi; dark mode menunggu owner (DEC-021).
 - **Owner minta pekerjaan baru (otonom):** bahasa lebih santai; simulasi kelapa (lingkaran) + container dalam ft; alur proses: loading masuk → kupas serabut → belah → rak jemur (matahari / greenhouse / oven) → cungkil → batok → arang + kalkulator produk jadi; kelapa dipisah per asal (dataran tinggi / rendah). Rencana: lihat plan.md bagian "Fase P".
+
+### 2026-10-09 · Claude Code (Opus 5.5) · Fase P SELESAI (otonom, atas permintaan owner)
+- Riset 18 sumber → dataset proses v1.0.0 (ADR-007): asal dataran rendah/tinggi, komposisi buah, kadar air daging, jemur matahari/greenhouse/oven, drum arang.
+- Engine `process.ts` + loader proses (rujuk dataset inventory, cek kompatibilitas versi).
+- UI `/proses` 6 tahap + rak jemur + banding 3 metode + arang + produk jadi (karung & container).
+- Simulasi kelapa lingkaran + ukuran container ft/in (juga di Muat Container, Beranda, CSV/PDF).
+- Bahasa UI santai (DEC-027). Test: engine 82, dataset 51, web 21, E2E 18 (+1 fixme ISS-025).
+- Terbuka: ISS-025 (offline nav emulasi), ISS-026 (data dataran tinggi), ISS-027 (rendemen arang), ISS-028 (simpan skenario proses), dark mode (DEC-021).
+- Berikutnya (menunggu owner): M3 simulator 3D, M4 sampling & kalibrasi, M5 R&D Lab.

@@ -51,7 +51,7 @@ export function ScenarioList({ loggedIn, server }: { loggedIn: boolean; server: 
 
       {loggedIn && (
         <section aria-labelledby="srv-h" className="card flex flex-col gap-3">
-          <h2 id="srv-h" className="text-2xl">Di akun Anda</h2>
+          <h2 id="srv-h" className="text-2xl">Di akunmu</h2>
           {server.length === 0 ? (
             <p className="text-sm">Belum ada. Tekan &quot;Simpan&quot; di kalkulator mana pun.</p>
           ) : (
@@ -71,7 +71,7 @@ export function ScenarioList({ loggedIn, server }: { loggedIn: boolean; server: 
 
       <section aria-labelledby="loc-h" className="card flex flex-col gap-3">
         <h2 id="loc-h" className="text-2xl">Di perangkat ini</h2>
-        <p className="text-[13px] text-muted">Tersimpan di browser (tetap ada saat offline). Menghapus data browser akan menghapus daftar ini.</p>
+        <p className="text-[13px] text-muted">Tersimpan di browser HP/laptop ini (tetap ada walau offline). Kalau data browser dihapus, daftar ini ikut hilang.</p>
         {local === undefined ? (
           <p className="font-mono text-sm">Memuat…</p>
         ) : local.length === 0 ? (

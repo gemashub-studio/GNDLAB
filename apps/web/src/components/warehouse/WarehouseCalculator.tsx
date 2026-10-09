@@ -307,7 +307,7 @@ export function WarehouseCalculator({ initial }: { initial?: WarehouseState }) {
               <ScenarioActions state={s} />
             </>
           ) : (
-            <div role="alert" className="card"><h2 className="text-xl">Belum bisa dihitung</h2><p className="mt-2">{!result.ok && result.message}</p></div>
+            <div role="alert" className="card"><h2 className="text-xl">Hmm, belum bisa dihitung</h2><p className="mt-2">{!result.ok && result.message}</p></div>
           )}
         </section>
       </div>

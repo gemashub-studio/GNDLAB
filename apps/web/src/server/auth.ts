@@ -100,7 +100,7 @@ export const authOptions: NextAuthOptions = {
           to: identifier,
           from: provider.from,
           subject: 'Masuk ke gemasSTUDIO',
-          text: `Klik tautan ini untuk masuk ke gemasSTUDIO (berlaku 15 menit):\n${url}\n\nAbaikan email ini bila Anda tidak memintanya.`,
+          text: `Klik tautan ini untuk masuk ke gemasSTUDIO (berlaku 15 menit):\n${url}\n\nKalau kamu nggak merasa minta, abaikan saja email ini.`,
         });
       },
     }),

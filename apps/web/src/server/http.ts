@@ -17,7 +17,7 @@ export class ApiError extends Error {
 }
 
 export const notFound = (msg: string) => new ApiError(404, 'NOT_FOUND', msg);
-export const unauthorized = () => new ApiError(401, 'UNAUTHORIZED', 'Masuk (login) diperlukan untuk aksi ini');
+export const unauthorized = () => new ApiError(401, 'UNAUTHORIZED', 'Masuk (login) dulu ya untuk aksi ini');
 
 export async function parseBody<T>(req: Request, schema: ZodType<T>): Promise<T> {
   let json: unknown;

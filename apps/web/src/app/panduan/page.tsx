@@ -7,37 +7,51 @@ export const metadata: Metadata = { title: 'Panduan' };
 
 const FLOWS = [
   {
-    tag: 'EKSPORTIR',
-    q: 'Berapa butir kelapa muat di 40HC?',
-    steps: ['Buka Muat Container → mode Panduan.', 'Pilih Kelapa jambul → Dalam karung jaring.', 'Pilih 40HC. Baca angka besar & label Batas.', 'Bandingkan dengan Benchmark pasar di bawahnya.'],
+    tag: 'PROSES',
+    q: 'Kelapa datang 7.000 butir — jadinya berapa kopra & arang?',
+    steps: ['Buka Alur Proses.', 'Isi jumlah kelapa dari dataran rendah & dataran tinggi (dipisah ya).', 'Klik tiap tahap: kupas → belah → jemur → cungkil.', 'Di "Produk jadi", lihat kopra, arang, karung, sampai container-nya.'],
+    href: '/proses',
+  },
+  {
+    tag: 'RAK JEMUR',
+    q: 'Rak jemur saya cukup nggak? Lebih cepat pakai apa?',
+    steps: ['Buka Alur Proses → tahap Jemur di rak.', 'Isi luas 1 susun rak, jumlah susun, dan jumlah rak yang ada.', 'Pilih cara jemur: matahari, greenhouse, atau oven.', 'Lihat tabel "Bandingkan 3 cara jemur" di bawahnya.'],
+    href: '/proses',
+  },
+  {
+    tag: 'EKSPOR',
+    q: 'Berapa butir kelapa muat di container 40 ft HC?',
+    steps: ['Buka Muat Container → mode Panduan.', 'Pilih Kelapa jambul → Dalam karung jaring.', 'Pilih 40 ft HC. Lihat angka paling besar & label Batas.', 'Bandingkan dengan pembanding pasar di bawahnya.'],
     href: '/muat?wizard=1',
   },
   {
     tag: 'GUDANG',
     q: 'Gudang saya muat berapa ton kopra?',
-    steps: ['Buka Gudang → pilih Kopra asalan.', 'Isi jumlah stok & kadar air saat ini.', 'Atur tinggi tumpuk & utilisasi lantai.', 'Isi ukuran zona (opsional) → lihat "Zona terpakai".'],
+    steps: ['Buka Gudang → pilih Kopra asalan.', 'Isi jumlah stok & kadar air sekarang.', 'Atur tinggi tumpukan & lantai yang terpakai.', 'Isi ukuran zona (boleh dilewati) → lihat "Zona terpakai".'],
     href: '/gudang',
   },
   {
     tag: 'ARANG',
-    q: 'Belah 2 utuh atau dipecah — beda berapa ton?',
-    steps: ['Buka Muat Container → Arang batok.', 'Bandingkan bentuk "Lump / pecah" dengan "Belah 2 utuh".', 'Perhatikan badge C: densitas belah 2 masih estimasi.', 'Uji kotak volume dulu sebelum memesan container.'],
+    q: 'Arang belah 2 vs dipecah — beda berapa ton?',
+    steps: ['Buka Muat Container → Arang batok.', 'Bandingkan "Lump / pecah" dengan "Belah 2 utuh".', 'Lihat huruf C: angka belah 2 masih kira-kira.', 'Coba isi ember/kotak lalu timbang dulu sebelum pesan container.'],
     href: '/muat',
   },
   {
     tag: 'DATA SENDIRI',
-    q: 'Saya sudah menimbang sendiri — bagaimana memakainya?',
-    steps: ['Di kalkulator, buka "+ Ubah angka".', 'Isi densitas / berat per butir hasil ukur Anda.', 'Hasil diberi tanda override; dataset asli tidak berubah.', 'Simpan skenario agar bisa dibuka lagi.'],
+    q: 'Saya sudah nimbang sendiri — gimana makainya?',
+    steps: ['Di kalkulator, buka "+ Ubah angka".', 'Isi kepadatan / berat per butir hasil ukurmu.', 'Hasilnya dapat tanda CUSTOM; data asli nggak ikut berubah.', 'Simpan biar bisa dibuka lagi kapan-kapan.'],
     href: '/muat',
   },
 ];
 
 const FAQ = [
-  ['Kenapa hasilnya rentang, bukan satu angka?', 'Barang alam bervariasi: berat kelapa, ukuran keping, kepadatan tumpukan. Rentang menunjukkan hasil terkecil & terbesar yang masuk akal; angka besar adalah nilai tipikal.'],
-  ['Hasil berbeda dengan benchmark pasar — mana yang benar?', 'Benchmark adalah laporan pedagang (bisa beda ukuran butir, karung, atau container). Kalau selisih besar, ukur sendiri lalu pakai "Ubah angka", dan catat realisasi stuffing Anda.'],
-  ['Apakah bisa dipakai tanpa internet?', 'Ya. Kalkulator & dataset tersimpan di perangkat setelah dibuka sekali. Skenario yang disimpan offline akan disinkronkan saat online & login.'],
-  ['Kenapa gambar susunan tidak persis seperti di container?', 'Gambar adalah representasi grid — perkiraan rapi untuk visual, bukan posisi muat sebenarnya.'],
-  ['Kenapa kopra asalan dan kopra edible tidak boleh satu ruang?', 'Bau asap kopra asalan meresap ke kopra edible dan bisa membuat pembeli menolak barang.'],
+  ['Kenapa hasilnya rentang, bukan satu angka?', 'Kelapa kan nggak ada yang persis sama — beratnya, ukurannya, kepadatan tumpukannya. Rentang itu hasil paling sedikit sampai paling banyak; angka besar itu yang paling sering terjadi.'],
+  ['Hasilnya beda sama pembanding pasar — mana yang bener?', 'Pembanding pasar itu laporan pedagang (bisa beda ukuran butir, karung, atau jenis container). Kalau bedanya jauh, ukur sendiri lalu pakai "Ubah angka", dan catat hasil muat pertamamu.'],
+  ['Kenapa kelapa dataran tinggi dipisah?', 'Buahnya cenderung lebih kecil & ringan, jadi kopra per butirnya beda. Dipisah biar hitungan & mutunya bisa dibandingkan.'],
+  ['Data dataran tinggi kok masih C?', 'Datanya baru dari satu penelitian kecil. Timbang 30 butir per kiriman, nanti angkanya bisa disesuaikan.'],
+  ['Bisa dipakai tanpa internet?', 'Bisa. Setelah sekali dibuka, kalkulatornya tersimpan di HP. Hitungan yang disimpan waktu offline bakal dikirim ke akun begitu ada sinyal & kamu sudah login.'],
+  ['Kenapa gambar susunannya nggak persis kayak di container?', 'Gambarnya perkiraan yang dirapikan supaya gampang dibaca — bukan posisi barang yang sebenarnya.'],
+  ['Kenapa kopra asalan & kopra edible nggak boleh satu ruangan?', 'Bau asap kopra asalan bisa nempel ke kopra edible — pembeli bisa nolak barangnya.'],
 ];
 
 export default function Panduan() {
@@ -52,7 +66,7 @@ export default function Panduan() {
       </header>
 
       <section aria-labelledby="flow-h" className="flex flex-col gap-4">
-        <h2 id="flow-h" className="text-2xl">Cara pakai — per kebutuhan</h2>
+        <h2 id="flow-h" className="text-2xl">Mau ngapain hari ini?</h2>
         <div className="grid gap-5 md:grid-cols-2">
           {FLOWS.map((f) => (
             <article key={f.tag} className="card flex flex-col gap-3 p-[18px]">
@@ -73,7 +87,7 @@ export default function Panduan() {
       </section>
 
       <section aria-labelledby="gl-h" className="card flex flex-col gap-4">
-        <h2 id="gl-h" className="text-2xl">Kamus istilah</h2>
+        <h2 id="gl-h" className="text-2xl">Kamus istilah (versi santai)</h2>
         <dl className="grid gap-4 md:grid-cols-2">
           {Object.entries(GLOSSARY).map(([k, g]) => (
             <div key={k} className="border-l-4 border-acid pl-3">
@@ -86,7 +100,7 @@ export default function Panduan() {
       </section>
 
       <section aria-labelledby="faq-h" className="card flex flex-col gap-3">
-        <h2 id="faq-h" className="text-2xl">Pertanyaan umum</h2>
+        <h2 id="faq-h" className="text-2xl">Yang sering ditanya</h2>
         {FAQ.map(([q, a]) => (
           <details key={q} className="border-2 border-ink">
             <summary className="cursor-pointer bg-paper p-3 font-bold">{q}</summary>

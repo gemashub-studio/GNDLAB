@@ -292,17 +292,17 @@ export function ContainerCalculator({ initial, startWizard }: { initial?: Contai
     <ContainerResultView out={result.out} mode={s.mode} commodityId={s.commodityId} title={title} benchmarks={benchmarks} compact={wizard} customContainer={!!s.custom} />
   ) : (
     <div role="alert" className="card border-safety">
-      <h2 className="text-xl">Belum bisa dihitung</h2>
-      <p className="mt-2">{result.field ? `Angka yang Anda ubah ${result.message.toLowerCase()}.` : result.message}</p>
+      <h2 className="text-xl">Hmm, belum bisa dihitung</h2>
+      <p className="mt-2">{result.field ? `Angka yang kamu ubah ${result.message.toLowerCase()}. Cek lagi, mungkin salah ketik.` : result.message}</p>
     </div>
   );
 
   // ------------------------------------------------------------ wizard
   const steps = [
     { title: 'Barang apa yang dimuat?', body: commodityChoices, tip: COMMODITY_UI[s.commodityId]?.blurb },
-    { title: 'Bentuk & kemasannya?', body: formChoices, tip: 'Bentuk menentukan kepadatan muatan. Tidak yakin? Pakai pilihan pertama — itu yang punya data pasar.' },
-    { title: 'Container apa?', body: containerChoices, tip: '40HC lebih tinggi dari 40GP. Barang ringan (kelapa, arang belah 2) untung di 40HC; barang padat cepat kena batas berat.' },
-    { title: 'Hasilnya', body: resultBlock, tip: 'Angka besar = jawaban utama. Lihat label "Batas" untuk tahu apa yang habis duluan.' },
+    { title: 'Bentuk & kemasannya?', body: formChoices, tip: 'Bentuknya ngaruh ke seberapa padat muatannya. Ragu? Pakai pilihan yang sudah terpilih — itu yang ada data pasarnya.' },
+    { title: 'Container apa?', body: containerChoices, tip: '40 ft High Cube lebih tinggi dari 40 ft biasa. Barang ringan (kelapa, arang belah 2) untung di High Cube; barang padat cepat mentok beratnya.' },
+    { title: 'Hasilnya', body: resultBlock, tip: 'Angka paling besar itu jawabannya. Label "Batas" kasih tahu apa yang habis duluan.' },
   ];
 
   return (

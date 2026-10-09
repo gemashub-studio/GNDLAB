@@ -150,7 +150,7 @@ export function ProcessCalculator() {
       </nav>
 
       {!calc.ok ? (
-        <div role="alert" className="card"><h2 className="text-xl">Belum bisa dihitung</h2><p className="mt-2">{calc.message}</p></div>
+        <div role="alert" className="card"><h2 className="text-xl">Hmm, belum bisa dihitung</h2><p className="mt-2">{calc.message}</p></div>
       ) : (
         <StepBody
           step={step}

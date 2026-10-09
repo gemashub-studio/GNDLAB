@@ -46,7 +46,7 @@ export default function DataPage() {
 
       <p className="max-w-3xl text-[15px]">
         Semua angka default berasal dari dataset riset terkunci versi {ds.version}. Parameter <b>C</b> adalah estimasi
-        engineering — ukur di gudang Anda sendiri, lalu pakai &quot;Ubah angka&quot; di kalkulator. Fitur sampling & kalibrasi
+        engineering — ukur sendiri di gudangmu, lalu pakai &quot;Ubah angka&quot; di kalkulator. Fitur sampling & kalibrasi
         resmi hadir di fase M4.
       </p>
 

@@ -1,6 +1,6 @@
 /**
- * Glosarium untuk hint "?" & halaman Panduan. Bahasa gudang, bukan rumus (ux_spec §1.4).
- * Angka ambang diambil dari konstanta engine, bukan diketik ulang.
+ * Glosarium untuk hint "?" & halaman Panduan. Bahasa santai ala obrolan di gudang (DEC-027),
+ * bukan rumus. Angka ambang diambil dari konstanta engine, bukan diketik ulang.
  */
 import { CEILING_CLEARANCE_M, DEFAULT_FLOOR_UTIL, SELF_HEATING_MOISTURE } from '@gemas/calc-engine';
 import { fmt } from './format';
@@ -17,57 +17,57 @@ export interface GlossaryEntry {
 export const GLOSSARY = {
   binding: {
     term: 'Batas pengikat',
-    short: 'Apa yang habis duluan: RUANG (volume) atau BERAT (payload).',
-    long: 'Kalau VOLUME, container sudah penuh tapi masih kuat menampung berat — barang ringan seperti kelapa & arang belah 2. Kalau BERAT, ruang masih tersisa tetapi batas muatan container/jalan sudah tercapai — barang padat seperti arang lump di 40HC.',
+    short: 'Mana yang habis duluan: ruangnya penuh, atau beratnya sudah mentok.',
+    long: 'VOLUME = container sudah penuh sesak tapi masih kuat — biasa terjadi di barang ringan kayak kelapa & arang belah 2. BERAT = ruang masih sisa tapi muatan sudah sampai batas maksimal container — biasa di arang lump yang padat.',
   },
   confidence: {
-    term: 'Keyakinan data A/B/C',
-    short: 'A = terukur (jurnal/standar) · B = data dagang · C = estimasi, wajib dicek di lapangan.',
-    long: 'Setiap angka default punya tingkat keyakinan. Hasil memakai tingkat yang paling lemah dari angka yang dipakai. Kalau C, anggap sebagai perkiraan awal dan lakukan sampling sebelum memesan container.',
+    term: 'Huruf A / B / C',
+    short: 'Seberapa yakin angkanya: A diukur, B dari pedagang, C masih kira-kira.',
+    long: 'Hasil hitungan ikut huruf yang paling lemah dari angka yang dipakai. Kalau dapat C, anggap sebagai perkiraan awal — timbang/ukur sendiri dulu sebelum pesan container.',
   },
   range: {
     term: 'Rentang min–maks',
-    short: 'Hasil terkecil & terbesar yang masuk akal, karena barang alam bervariasi.',
-    long: 'Aplikasi menghitung semua kombinasi ujung rentang (berat butir terberat/teringan, densitas terpadat/terlonggar). Pita hitam = rentang, garis oranye = nilai tipikal yang dipakai sebagai jawaban utama.',
+    short: 'Kelapa kan nggak ada yang persis sama — ini hasil paling sedikit & paling banyak yang masuk akal.',
+    long: 'Aplikasi mencoba semua kombinasi ujung (butir paling berat/ringan, tumpukan paling padat/longgar). Pita hitam = rentangnya, garis oranye = angka yang paling sering terjadi.',
   },
   density: {
-    term: 'Densitas curah (ρ)',
-    short: 'Berapa kg yang muat dalam 1 m³ tumpukan, termasuk rongga.',
-    long: 'Berbeda dengan berat jenis benda padat. Bentuk yang sama bisa punya densitas berbeda: lepas, dalam karung, atau bersarang.',
+    term: 'Kepadatan (ρ)',
+    short: 'Berapa kg barang yang muat di 1 m³, rongganya ikut dihitung.',
+    long: 'Barang yang sama bisa beda kepadatannya: ditumpuk lepas, dikarungin, atau disusun masuk-masukan (bersarang).',
   },
   util: {
-    term: 'Utilisasi ruang',
-    short: 'Bagian ruang container yang benar-benar terisi barang.',
-    long: 'Contoh: arang lump dalam karung tidak mengisi seluruh ruang karena ada celah antarkarung. Kalau densitas sudah "efektif dalam container", utilisasi = 100%.',
+    term: 'Ruang yang terpakai',
+    short: 'Berapa bagian ruang container yang beneran terisi barang.',
+    long: 'Contoh: arang lump dalam karung nggak bisa ngisi 100% ruang karena ada celah antarkarung. Kalau kepadatannya sudah "dalam container", isinya dianggap 100%.',
   },
   floorUtil: {
-    term: 'Utilisasi lantai',
-    short: 'Bagian lantai gudang untuk tumpukan; sisanya lorong & ventilasi.',
-    long: `Default ${fmt(DEFAULT_FLOOR_UTIL, 2)} artinya ${floorPct}% lantai untuk barang, sisanya untuk lorong, jalur forklift, dan sirkulasi udara.`,
+    term: 'Lantai yang terpakai',
+    short: 'Bagian lantai gudang buat tumpukan; sisanya buat lorong & sirkulasi udara.',
+    long: `Default ${fmt(DEFAULT_FLOOR_UTIL, 2)} artinya ${floorPct}% lantai buat barang, sisanya buat jalan, forklift, dan angin-anginan.`,
   },
   stackHeight: {
-    term: 'Tinggi tumpuk',
-    short: 'Tinggi tumpukan barang di gudang (bukan tinggi atap).',
-    long: `Sisakan minimal ${fmt(CEILING_CLEARANCE_M, 1)} m di bawah atap untuk ventilasi/sprinkler. Kopra & arang sebaiknya tidak ditumpuk terlalu tinggi (panas & beban).`,
+    term: 'Tinggi tumpukan',
+    short: 'Seberapa tinggi barang ditumpuk (bukan tinggi atap gudang).',
+    long: `Sisakan minimal ${fmt(CEILING_CLEARANCE_M, 1)} m di bawah atap buat ventilasi. Kopra & arang jangan ditumpuk kelewat tinggi — bisa panas & berat.`,
   },
   moisture: {
     term: 'Kadar air',
-    short: `Persentase air di dalam barang. Kopra di atas ${heatPct}% berisiko panas sendiri & berjamur.`,
-    long: 'Saat kopra dikeringkan, beratnya turun karena airnya hilang, sedangkan bahan keringnya tetap. Koreksi: berat baru = berat lama × (1 − kadar air lama) ÷ (1 − kadar air baru).',
+    short: `Seberapa basah barangnya. Kopra di atas ${heatPct}% gampang panas sendiri & jamuran.`,
+    long: 'Waktu kopra dikeringkan, beratnya turun karena airnya hilang — bagian keringnya tetap. Jadi berat baru = berat lama × (1 − air lama) ÷ (1 − air baru).',
   },
   benchmark: {
-    term: 'Benchmark pasar',
-    short: 'Angka muat yang dilaporkan eksportir/pembeli, sebagai pembanding.',
-    long: 'Kalau hasil hitung jauh dari benchmark, cek bentuk barang, ukuran karung, dan densitas. Satu sumber konservatif sengaja ditampilkan sebagai peringatan.',
+    term: 'Pembanding pasar',
+    short: 'Angka muat yang dilaporkan eksportir/pembeli — buat pembanding.',
+    long: 'Kalau hasilnya beda jauh, cek bentuk barang, ukuran karung, dan kepadatannya. Satu laporan yang angkanya jauh lebih rendah sengaja ditampilkan sebagai peringatan.',
   },
   grid: {
-    term: 'Representasi grid',
-    short: 'Gambar susunan adalah perkiraan rapi, bukan posisi muat sebenarnya.',
+    term: 'Gambar simulasi',
+    short: 'Gambarnya perkiraan yang dirapikan, bukan posisi barang yang sebenarnya.',
   },
   override: {
-    term: 'Ubah angka (override)',
-    short: 'Ganti angka default dengan hasil ukur Anda sendiri. Dataset asli tidak berubah.',
-    long: 'Angka yang terlalu jauh (di bawah setengah nilai minimum atau di atas dua kali maksimum) ditolak supaya tidak salah ketik.',
+    term: 'Ubah angka',
+    short: 'Pakai hasil ukurmu sendiri. Data asli nggak ikut berubah.',
+    long: 'Angka yang terlalu jauh (kurang dari setengah minimum atau lebih dari dua kali maksimum) ditolak, biar nggak salah ketik.',
   },
 } satisfies Record<string, GlossaryEntry>;
 

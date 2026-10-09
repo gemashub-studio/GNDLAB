@@ -111,7 +111,7 @@ export function Shell({ children, datasetVersion, profile }: { children: ReactNo
 
       {!online && (
         <div role="status" className="border-b-3 border-ink bg-safety px-4 py-2 text-center text-sm font-extrabold uppercase lg:hidden">
-          Mode offline — dataset v{datasetVersion}. Hitung tetap jalan; simpan di perangkat.
+          Lagi offline — kalkulator tetap jalan (data v{datasetVersion}). Simpan dulu di HP, nanti dikirim.
         </div>
       )}
 

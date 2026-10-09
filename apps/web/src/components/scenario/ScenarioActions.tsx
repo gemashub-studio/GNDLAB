@@ -61,11 +61,11 @@ export function ScenarioActions({ state }: { state: ScenarioState }) {
           onClick={() =>
             act(async () => {
               await saveLocal({ name, state, datasetVersion: ds.version });
-              if (!navigator.onLine) return 'Tersimpan di perangkat. Akan disinkronkan saat online.';
+              if (!navigator.onLine) return 'Sip, tersimpan di perangkat ini. Nanti dikirim ke akun begitu ada sinyal.';
               const r = await syncPending();
               return r.needLogin
-                ? 'Tersimpan di perangkat. Masuk (login) untuk menyimpan ke akun & membagikan lewat tautan pendek.'
-                : 'Tersimpan di perangkat & akun.';
+                ? 'Sip, tersimpan di perangkat ini. Mau tersimpan di akun & dapat tautan pendek? Masuk (login) dulu.'
+                : 'Sip, tersimpan di perangkat & akun.';
             })
           }
         >
@@ -80,7 +80,7 @@ export function ScenarioActions({ state }: { state: ScenarioState }) {
             act(async () => {
               const url = `${window.location.origin}${PATH[state.kind]}?s=${encodeState(state)}`;
               await navigator.clipboard.writeText(url);
-              return 'Tautan disalin. Siapa pun yang membukanya melihat hitungan yang sama.';
+              return 'Tautan sudah disalin. Siapa pun yang buka bakal lihat hitungan yang sama.';
             })
           }
         >
@@ -94,7 +94,7 @@ export function ScenarioActions({ state }: { state: ScenarioState }) {
           onClick={() =>
             act(async () => {
               download(new Blob([toCsv(rows())], { type: 'text/csv;charset=utf-8' }), `gemas-${slugName}.csv`);
-              return 'CSV diunduh (pemisah titik koma, siap dibuka Excel).';
+              return 'CSV sudah diunduh — tinggal buka di Excel.';
             })
           }
         >
@@ -109,7 +109,7 @@ export function ScenarioActions({ state }: { state: ScenarioState }) {
             act(async () => {
               const { reportPdfBlob } = await import('@/lib/pdf');
               download(await reportPdfBlob(name, rows()), `gemas-${slugName}.pdf`);
-              return 'PDF diunduh.';
+              return 'PDF sudah diunduh.';
             })
           }
         >

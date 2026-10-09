@@ -9,28 +9,28 @@ export const TOUR_EVENT = 'gemas:tour';
 const STEPS = [
   {
     tag: 'SELAMAT DATANG',
-    title: 'Hitung muat tanpa kira-kira',
-    body: 'gemasSTUDIO menghitung berapa kelapa, arang, atau kopra yang muat di container dan gudang Anda — lengkap dengan rentang dan tingkat keyakinan datanya.',
+    title: 'Halo! Nggak perlu kira-kira lagi',
+    body: 'gemasSTUDIO bantu hitung berapa kelapa, arang, atau kopra yang muat di container & gudang — plus alur prosesnya dari kelapa masuk sampai jadi kopra & arang.',
   },
   {
-    tag: 'LANGKAH 1–3',
-    title: 'Pilih barang, bentuk, container',
-    body: 'Di "Muat Container", ikuti 3 langkah bernomor. Hasil langsung muncul — tidak perlu tekan tombol hitung.',
+    tag: 'CARA PAKAI',
+    title: 'Pilih-pilih, hasil langsung keluar',
+    body: 'Pilih barang, bentuk, dan container. Hasilnya langsung muncul — nggak perlu pencet tombol hitung. Bingung? Pakai mode Panduan.',
   },
   {
     tag: 'BACA HASIL',
-    title: 'Angka besar + batas pengikat',
-    body: 'Angka besar = jawaban utama. Label "Batas" menunjukkan apa yang habis duluan: RUANG atau BERAT. Pita hitam = rentang min–maks.',
+    title: 'Lihat angka yang paling besar',
+    body: 'Itu jawaban utamanya. Label "Batas" kasih tahu apa yang habis duluan: ruangnya atau beratnya. Pita hitam = paling sedikit sampai paling banyak.',
   },
   {
     tag: 'A · B · C',
-    title: 'Huruf keyakinan data',
-    body: 'A terukur, B data dagang, C estimasi. Kalau C, ukur sendiri di gudang lalu masukkan lewat "Ubah angka". Tombol "?" di mana-mana menjelaskan istilah.',
+    title: 'Huruf A, B, C itu apa?',
+    body: 'A = sudah diukur, B = dari pedagang, C = masih kira-kira. Ketemu C? Timbang/ukur sendiri lalu isi di "Ubah angka". Nemu istilah aneh? Pencet tombol "?".',
   },
   {
     tag: 'OFFLINE',
-    title: 'Tetap jalan tanpa sinyal',
-    body: 'Kalkulator bekerja tanpa internet di HP gudang. Skenario bisa disimpan di perangkat dan disinkronkan nanti.',
+    title: 'Sinyal hilang? Tetap jalan',
+    body: 'Kalkulator tetap bisa dipakai tanpa internet di HP gudang. Hitungan bisa disimpan di HP dan dikirim ke akun nanti.',
   },
 ];
 
@@ -109,7 +109,7 @@ export function Tour() {
         </div>
         <div className="flex flex-wrap items-center justify-between gap-3">
           <button type="button" onClick={close} className="font-mono text-xs font-bold uppercase underline">
-            Lewati tur
+            Lewati aja
           </button>
           <div className="flex gap-2">
             {i > 0 && (
@@ -119,7 +119,7 @@ export function Tour() {
             )}
             {last ? (
               <Link href="/muat?wizard=1" className="btn-primary no-underline" onClick={close}>
-                Coba sekarang
+                Yuk coba
               </Link>
             ) : (
               <button type="button" className="btn-primary" onClick={() => setI(i + 1)}>
