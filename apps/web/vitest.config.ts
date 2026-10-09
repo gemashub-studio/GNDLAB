@@ -11,7 +11,10 @@ export default defineConfig({
   },
   test: {
     include: ['test/**/*.test.ts'],
-    // Uji DB berbagi satu database dev → jalankan berurutan.
+    // Siapkan database TEST (bukan dev): migrate deploy + seed bila kosong.
+    globalSetup: ['./test/db-setup.ts'],
+    testTimeout: 30_000,
+    // Uji DB berbagi satu database test → jalankan berurutan.
     fileParallelism: false,
   },
 });

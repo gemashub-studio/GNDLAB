@@ -74,3 +74,6 @@ Fungsi biasa yang diekspor dari file `'use client'` tidak bisa dipanggil dari se
 
 ### FND-019 · 2026-10-09 · Offline Next App Router: jalur "Falling back to browser navigation"
 Saat offline, klik `<Link>` → fetch `?_rsc=` gagal → Next melakukan navigasi dokumen (MPA) ke tujuan; SW menyajikan HTML dari cache (terbukti 200), tetapi pada emulasi offline Chromium, browser kemudian me-*reload* halaman lama dan membatalkan navigasi (CDP: `STARTNAV reload`, bukan skrip). Belum terselesaikan (ISS-025). Ide berikut: (1) uji di HP nyata; (2) saat `navigator.onLine === false`, render menu sebagai `<a>` biasa; (3) cache payload RSC untuk halaman publik.
+
+### FND-020 · 2026-10-09 · Prisma menolak `migrate reset` dari agen AI
+Prisma 6.19 mendeteksi dijalankan oleh Claude Code dan menolak `migrate reset` tanpa persetujuan eksplisit pengguna (env `PRISMA_USER_CONSENT_FOR_DANGEROUS_AI_ACTION`). Agen TIDAK boleh mengakalinya. Solusi: global setup vitest (`apps/web/test/db-setup.ts`) hanya `migrate deploy` + seed bila kosong; uji yang butuh DB segar (`calibration.db.test.ts`) melewati diri bila sudah ada sampel; owner mereset sendiri via `scripts/windows/reset-test-db.ps1` (menolak URL selain `gemas_test`).

@@ -53,6 +53,16 @@ if ((Sql "select 1 from pg_database where datname='gemas_dev'") -ne '1') {
   Sql "CREATE DATABASE gemas_dev OWNER gemas_app" | Out-Null
   Write-Host "Database gemas_dev dibuat."
 }
+# Database khusus test integrasi (di-reset otomatis oleh test; JANGAN dipakai untuk data asli).
+if ((Sql "select 1 from pg_database where datname='gemas_test'") -ne '1') {
+  Sql "CREATE DATABASE gemas_test OWNER gemas_app" | Out-Null
+  Write-Host "Database gemas_test dibuat."
+}
+if (-not (Select-String -Path $envFile -Pattern '^TEST_DATABASE_URL=' -Quiet)) {
+  $testUrl = $dbUrl -replace '/gemas_dev$', '/gemas_test'
+  Add-Content -Path $envFile -Value "TEST_DATABASE_URL=`"$testUrl`"" -Encoding ascii
+  Write-Host "TEST_DATABASE_URL ditambahkan ke .env."
+}
 
 Push-Location $web
 try {
