@@ -71,7 +71,7 @@ Spesifikasi: `architecture/CLAUDE_CODE_PROMPT.md` §3, ux_spec §3.3, ADR-005. A
 dengan kartu hasil kalkulator (pakai engine yang sama, bukan hitung ulang di komponen).
 
 Checklist (centang + commit per langkah; kalau sesi putus, lanjut dari yang belum dicentang):
-- [ ] S1 Engine `layout.ts`: posisi kemasan dalam container (urutan muat belakang→depan, bawah→atas,
+- [x] S1 Engine `layout.ts`: posisi kemasan dalam container (urutan muat belakang→depan, bawah→atas,
       dari `bestGridFit`), tata letak tumpukan gudang di zona (lorong), kolom bersarang arang; unit test
       (jumlah posisi = `containerCapacity().packs` untuk semua golden kemasan).
 - [ ] S2 Denah 2D SVG: tampak atas & samping container; denah zona gudang dengan lorong diarsir; hover isi tumpukan.
