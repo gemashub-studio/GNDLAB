@@ -1,7 +1,6 @@
 import 'server-only';
 import { randomBytes } from 'node:crypto';
-import type { Prisma } from '@prisma/client';
-import { getForm } from '@gemas/dataset';
+import { Prisma } from '@prisma/client';
 import { z } from 'zod';
 import { runScenario, ScenarioStateSchema, type ScenarioOutput, type ScenarioState } from '@/lib/scenario';
 import { activeDataset, datasetFor } from './datasets';
@@ -40,21 +39,47 @@ export async function saveScenario(user: SessionUser, input: SaveScenarioInput) 
   const { state } = input;
   const out = runScenario(ds, state); // validasi domain (override di luar rentang → 422)
 
-  if (input.clientId) {
-    const existing = await prisma.scenario.findUnique({ where: { id: input.clientId } });
-    if (existing) {
-      if (existing.user_id !== user.id) throw new ApiError(409, 'CONFLICT', 'ID skenario sudah dipakai');
-      return { id: existing.id, shareSlug: existing.share_slug!, created: false, out };
-    }
-  }
+  // Sinkron ulang dengan clientId yang sama → kembalikan skenario TERSIMPAN (bukan state baru).
+  const existingResult = async () => {
+    if (!input.clientId) return undefined;
+    const existing = await prisma.scenario.findUnique({
+      where: { id: input.clientId },
+      include: { dataset_version: { select: { semver: true } } },
+    });
+    if (!existing) return undefined;
+    if (existing.user_id !== user.id) throw new ApiError(409, 'CONFLICT', 'ID skenario sudah dipakai');
+    const stored = ScenarioStateSchema.parse((existing.input as { state?: unknown }).state);
+    return { id: existing.id, shareSlug: existing.share_slug!, created: false, out: runScenario(datasetFor(existing.dataset_version.semver), stored) };
+  };
+  const found = await existingResult();
+  if (found) return found;
 
-  getForm(ds, state.commodityId, state.formCode); // 422 bila kode tak dikenal
   const form = await prisma.commodity_form.findFirst({
     where: { code: state.formCode, commodity: { code: state.commodityId, dataset_version_id: versionId } },
     include: { parameter: { select: { id: true, key: true } } },
   });
   if (!form) throw notFound(`Form ${state.commodityId}.${state.formCode} tidak ada di versi aktif`);
 
+  try {
+    return await insertScenario(user, input, out, versionId, form);
+  } catch (e) {
+    // Dua sinkron paralel dengan clientId sama: yang kalah kena unique violation → kembalikan yang menang.
+    if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2002') {
+      const winner = await existingResult();
+      if (winner) return winner;
+    }
+    throw e;
+  }
+}
+
+async function insertScenario(
+  user: SessionUser,
+  input: SaveScenarioInput,
+  out: ScenarioOutput,
+  versionId: string,
+  form: { id: string; parameter: { id: string; key: string }[] },
+) {
+  const { state } = input;
   return prisma.$transaction(async (tx) => {
     let containerTypeId: string | undefined;
     if (state.kind === 'CONTAINER') {
@@ -129,11 +154,17 @@ export interface StoredScenario {
   output: ScenarioOutput;
 }
 
-/** Ambil skenario by id atau share_slug; hitung ulang dengan versi datasetnya sendiri (reproducible). */
-export async function getScenario(idOrSlug: string): Promise<StoredScenario> {
-  const isUuid = /^[0-9a-f-]{36}$/i.test(idOrSlug);
+export const isScenarioUuid = (s: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(s);
+
+/**
+ * Ambil skenario by share_slug (publik) atau by id (wajib `ownerId` = pemilik, cegah IDOR);
+ * hitung ulang dengan versi datasetnya sendiri (reproducible).
+ */
+export async function getScenario(idOrSlug: string, ownerId?: string): Promise<StoredScenario> {
+  const byId = isScenarioUuid(idOrSlug);
+  if (byId && !ownerId) throw notFound('Skenario tidak ditemukan');
   const sc = await prisma.scenario.findFirst({
-    where: isUuid ? { id: idOrSlug } : { share_slug: idOrSlug },
+    where: byId ? { id: idOrSlug, user_id: ownerId! } : { share_slug: idOrSlug },
     include: { dataset_version: { select: { semver: true } } },
   });
   if (!sc) throw notFound('Skenario tidak ditemukan');

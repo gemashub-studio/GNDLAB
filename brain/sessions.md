@@ -29,3 +29,11 @@
 5. Logs: traceability (FR-10, UI), decision_log DEC-020 (next/font), DEC-021 (dark mode ditunda — design_spec menggantikan ux_spec §5, tidak ada token gelap → tanya owner), DEC-022 (CSV `;` + BOM), DEC-023 (auth JWT + tabel token), findings FND-013 (angka mockup ≠ engine), FND-014 (storage.* hanya typ), FND-015 (.ps1 harus ASCII di PS 5.1).
 6. run_all_checks.sh + commit "Fase M2 selesai".
 **Owner bilang:** akan ada beberapa perubahan & penyesuaian di sesi berikutnya — tanyakan dulu sebelum melanjutkan daftar di atas.
+
+### 2026-10-09 · Claude Code (Opus 5.5) · Fase M2 SELESAI
+- Uji simpan → DB terbukti lewat test integrasi (scenarios.db.test.ts): override, calc_result, idempoten, IDOR, balapan sinkron.
+- E2E Playwright (Edge) 13/13: US-01..07, US-09..11, wizard, API, HP 360 px. Ditambah UI US-05 (tumpukan bersarang) & tag CUSTOM (US-09).
+- Bug ditemukan & diperbaiki: parseNum "0.575", SW revisi tetap + Vary, + 10 temuan code review (ISS-022).
+- ADR-006, DEC-020..025, ISS-019..025, FND-013..019.
+- Terbuka: ISS-025 navigasi offline di emulasi; dark mode menunggu owner (DEC-021).
+- **Owner minta pekerjaan baru (otonom):** bahasa lebih santai; simulasi kelapa (lingkaran) + container dalam ft; alur proses: loading masuk → kupas serabut → belah → rak jemur (matahari / greenhouse / oven) → cungkil → batok → arang + kalkulator produk jadi; kelapa dipisah per asal (dataran tinggi / rendah). Rencana: lihat plan.md bagian "Fase P".

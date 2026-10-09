@@ -55,6 +55,26 @@ export const gemasAdapter: Adapter = {
   },
 };
 
+/**
+ * Batas permintaan tautan masuk per email (anti spam email). In-memory per proses — cukup untuk satu
+ * server; deployment multi-instance perlu penyimpanan bersama (catat di risk log).
+ */
+const LOGIN_WINDOW_MS = 15 * 60 * 1000;
+const LOGIN_MAX_PER_WINDOW = 3;
+const loginHits = new Map<string, number[]>();
+export function allowLoginEmail(email: string, now = Date.now()): boolean {
+  const key = email.toLowerCase();
+  const recent = (loginHits.get(key) ?? []).filter((t) => now - t < LOGIN_WINDOW_MS);
+  if (recent.length >= LOGIN_MAX_PER_WINDOW) {
+    loginHits.set(key, recent);
+    return false;
+  }
+  recent.push(now);
+  loginHits.set(key, recent);
+  if (loginHits.size > 10_000) loginHits.clear(); // pengaman memori
+  return true;
+}
+
 export const authOptions: NextAuthOptions = {
   adapter: gemasAdapter,
   session: { strategy: 'jwt', maxAge: 30 * 24 * 3600 },
@@ -65,6 +85,9 @@ export const authOptions: NextAuthOptions = {
       from: process.env.EMAIL_FROM || 'gemasSTUDIO <noreply@localhost>',
       maxAge: 15 * 60,
       async sendVerificationRequest({ identifier, url, provider }) {
+        if (!allowLoginEmail(identifier)) {
+          throw new Error('Terlalu banyak permintaan tautan masuk. Coba lagi beberapa menit lagi.');
+        }
         if (!process.env.EMAIL_SERVER) {
           if (process.env.NODE_ENV === 'production') throw new Error('EMAIL_SERVER belum diatur');
           // Mode pengembangan: tidak ada SMTP — tautan dicetak di terminal server.
@@ -84,9 +107,11 @@ export const authOptions: NextAuthOptions = {
   ],
   callbacks: {
     async jwt({ token, user }) {
-      const id = user?.id ?? token.sub;
-      if (id) {
-        const u = await prisma.app_user.findUnique({ where: { id }, select: { role: true } });
+      // Peran dibaca dari DB hanya saat login (atau token lama tanpa peran) — bukan di setiap request.
+      // Perubahan peran berlaku setelah pengguna login ulang.
+      if (user?.id || token.role === undefined) {
+        const id = user?.id ?? token.sub;
+        const u = id ? await prisma.app_user.findUnique({ where: { id }, select: { role: true } }) : null;
         token.role = u?.role ?? 'viewer';
       }
       return token;

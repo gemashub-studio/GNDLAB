@@ -3,7 +3,7 @@
 import { correctMoisture, tradeInchToDiameterM, type QuantityUnit } from '@gemas/calc-engine';
 import { getCommodity, getForm } from '@gemas/dataset';
 import Link from 'next/link';
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { ScenarioActions } from '@/components/scenario/ScenarioActions';
 import { ConfidenceBadge } from '@/components/ui/badges';
 import { ChoiceGroup, NumberField } from '@/components/ui/fields';
@@ -12,8 +12,10 @@ import { WarningList } from '@/components/ui/Warnings';
 import { COMMODITY_UI, formLabel } from '@/lib/catalog';
 import { defaultFormCode } from '@/lib/defaults';
 import { fmt } from '@/lib/format';
-import { encodeState, runConvert, type ConvertState } from '@/lib/scenario';
+import { runConvert, type ConvertState } from '@/lib/scenario';
 import { useDataset } from '@/lib/useDataset';
+import { useUrlState } from '@/lib/useUrlState';
+import { NestedStackTool } from './NestedStackTool';
 
 const UNITS: QuantityUnit[] = ['pcs', 'pack', 'kg', 't', 'm3'];
 
@@ -44,11 +46,8 @@ export function Converter({ initial }: { initial?: ConvertState }) {
     }
   }, [ds, s]);
 
-  useEffect(() => {
-    const url = new URL(window.location.href);
-    url.searchParams.set('s', encodeState(s));
-    window.history.replaceState(null, '', url);
-  }, [s]);
+  // `?s=` ↔ state (juga memulihkan tautan bagikan saat halaman disajikan dari cache offline).
+  useUrlState('CONVERT', s, setS, !!initial);
 
   const pickCommodity = (id: string) => {
     const formCode = defaultFormCode(ds, id);
@@ -156,7 +155,7 @@ export function Converter({ initial }: { initial?: ConvertState }) {
         </section>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2">
+      <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
         <section className="card flex flex-col gap-3" aria-labelledby="inch-h">
           <h2 id="inch-h" className="text-xl">Spek dagang &quot;inch&quot; kelapa</h2>
           <p className="text-[13px]">Spek &quot;12–14 inch&quot; adalah <b>keliling</b>, bukan diameter (DEC-006).</p>
@@ -180,6 +179,7 @@ export function Converter({ initial }: { initial?: ConvertState }) {
             </p>
           )}
         </section>
+        <NestedStackTool />
       </div>
     </div>
   );

@@ -48,3 +48,29 @@ Installer winget PostgreSQL 16 (unattended) menyetel password yang tidak diketah
 
 ### FND-012 · 2026-10-08 · Menjalankan bash dari PowerShell 5.1
 `bash.exe -c '…'` dengan path berspasi bisa menelan output. Pola andal: tulis skrip `.sh` (scratchpad) lalu `& "C:\Program Files\Git\bin\bash.exe" path\skrip.sh`. PATH bash harus memuat `/c/Users/user/AppData/Local/Programs/Python/Python312` (alias Microsoft Store `python` menghalangi) dan `/c/Program Files/PostgreSQL/16/bin`.
+
+### FND-013 · 2026-10-09 · Angka di mockup bukan sumber data
+`Main.dc.html` memuat angka stok contoh dan beberapa kapasitas yang tidak cocok dengan engine (jambul 40HC "46.090", arang belah 2 "2,8 t"). **How to apply:** mockup = acuan tata letak & gaya saja; angka selalu dari engine (ISS-019).
+
+### FND-014 · 2026-10-09 · `storage.*` dataset hanya punya `typ`
+`max_stack_height_m`, `max_pile_height_m`, `max_stack_height_bags` tidak berbentuk rentang → tidak masuk `params`. Dibaca dari blok `storage` lewat `defaultStackHeightM()` di `packages/dataset/src/scenario.ts`.
+
+### FND-015 · 2026-10-09 · Skrip `.ps1` harus ASCII murni
+PowerShell 5.1 membaca `.ps1` tanpa BOM sebagai ANSI; "—" (UTF-8) berubah jadi karakter kutip → parse error (ISS-024).
+
+### FND-016 · 2026-10-09 · Service worker & Next.js App Router
+- Respons halaman Next membawa `Vary: RSC, Next-Router-State-Tree, …` → `cache.match` gagal kecuali `ignoreVary: true`.
+- Jangan precache halaman dengan revisi tetap (`'1'`) → HTML basi setelah deploy. Pakai NetworkFirst untuk halaman; aset `_next/static` sudah berversi dari manifest.
+- Hanya cache halaman publik (DEC-024). Panel browser bawaan Claude tidak mendaftarkan SW → uji PWA lewat Playwright (`e2e/pwa.spec.ts`, butuh `PWA_URL` ke `next start`).
+- Halaman yang disajikan dari cache tidak melihat `?s=` di server → `useUrlState` memulihkan state di client.
+
+### FND-017 · 2026-10-09 · Menjalankan Playwright di mesin ini
+- Pakai `channel: 'msedge'` (Edge terpasang) → tanpa unduh browser.
+- `pnpm exec playwright` di Git Bash bisa menggantung tanpa output; jalankan dari PowerShell: `node node_modules/@playwright/test/cli.js test`.
+- Saat menguji build produksi, set `PWA_URL` agar config tidak menyalakan dev server (bentrok folder `.next`). Hentikan dev server sebelum `next build`.
+
+### FND-018 · 2026-10-09 · Komponen client vs server di App Router
+Fungsi biasa yang diekspor dari file `'use client'` tidak bisa dipanggil dari server component → helper presentasi ditaruh di `apps/web/src/lib/present.ts` (tanpa `'use client'`).
+
+### FND-019 · 2026-10-09 · Offline Next App Router: jalur "Falling back to browser navigation"
+Saat offline, klik `<Link>` → fetch `?_rsc=` gagal → Next melakukan navigasi dokumen (MPA) ke tujuan; SW menyajikan HTML dari cache (terbukti 200), tetapi pada emulasi offline Chromium, browser kemudian me-*reload* halaman lama dan membatalkan navigasi (CDP: `STARTNAV reload`, bukan skrip). Belum terselesaikan (ISS-025). Ide berikut: (1) uji di HP nyata; (2) saat `navigator.onLine === false`, render menu sebagai `<a>` biasa; (3) cache payload RSC untuk halaman publik.

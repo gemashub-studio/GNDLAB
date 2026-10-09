@@ -13,3 +13,7 @@ test-results/
 __pycache__/
 *.pyc
 packages/dataset/src/generated/
+# service worker hasil build Serwist
+apps/web/public/sw.js
+apps/web/public/sw.js.map
+apps/web/public/swe-worker-*.js

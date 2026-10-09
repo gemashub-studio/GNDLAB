@@ -1,14 +1,20 @@
 import { NextResponse } from 'next/server';
 import { currentUser } from '@/server/auth';
 import { handle, unauthorized } from '@/server/http';
-import { deleteScenario, getScenario } from '@/server/scenarios';
+import { deleteScenario, getScenario, isScenarioUuid } from '@/server/scenarios';
 
 export const dynamic = 'force-dynamic';
 
-/** Ambil skenario by id atau share_slug (publik: siapa pun yang punya tautan). */
+/**
+ * Ambil skenario. Lewat `share_slug` → publik (siapa pun yang punya tautan bagikan).
+ * Lewat UUID → hanya pemiliknya (cegah IDOR).
+ */
 export const GET = handle(async (_req: Request, ctx: { params: Promise<{ id: string }> }) => {
   const { id } = await ctx.params;
-  const s = await getScenario(id);
+  const byId = isScenarioUuid(id);
+  const user = byId ? await currentUser() : null;
+  if (byId && !user) throw unauthorized();
+  const s = await getScenario(id, byId ? user!.id : undefined);
   return NextResponse.json({
     id: s.id,
     name: s.name,

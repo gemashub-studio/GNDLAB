@@ -17,12 +17,17 @@ Kebutuhan → desain → implementasi acuan → bukti uji.
 | NFR-02 Akurasi engine | calc_spec §7 | golden.test.ts membaca fixture langsung | 17/17 lulus; kasus tak dikenal = gagal | ✅ M1 |
 | Loader dataset ↔ seed | ERD §3, ADR-004 | packages/dataset/src/loader.ts | 102 tuple parameter identik dengan seed.sql; profil keyakinan A6/B9/C30 | ✅ M1 |
 | FR-09 Simulator | ux_spec §3.3 | – | – | ⏳ M3 |
-| FR-10 Skenario & ekspor | ERD `SCENARIO`, ARD §6 | `schema.sql` | IR-05, cek container wajib | ✅ skema |
+| FR-10 Skenario & ekspor | ERD `SCENARIO`, ARD §6, ADR-006 | apps/web: /api/v1/scenarios, IndexedDB, /s/[slug], CSV/PDF | scenarios.db.test.ts 8 uji + E2E US-10 | ✅ M2 |
 | FR-11 Sampling & kalibrasi | ADR-002, ERD `MEASUREMENT`, `CALIBRATION_PROPOSAL` | `schema.sql` | IR-07 (3 uji) | ✅ skema |
 | NFR-05 Traceability | ERD `PARAMETER_SOURCE`, `trace` | dataset `source_ids` | Validator SCHEMA source_id terdaftar | ✅ |
 | NFR-06 Audit | ERD `AUDIT_LOG`, IR-08 | trigger `audit_row` | IR-08 (7 baris tercatat) | ✅ |
 | NFR-07 Satuan SI | ADR-004 | `seed_from_dataset.py` | Pengaman fraksi & massa (ISS-005) | ✅ |
-| Gaya visual gemasSTUDIO | `06-design/design_spec.md` | tokens.json, tailwind.preset.ts, globals.css, 4 mockup | Kontras 11/11 lulus WCAG AA | ✅ desain · ⏳ UI |
+| Gaya visual gemasSTUDIO | `06-design/design_spec.md` | tailwind.preset.ts & globals.css dipakai apa adanya (DEC-020) | Review visual vs mockup Main/Calculator/Mobile; E2E @mobile 360 px | ✅ M2 (dark mode ditunda DEC-021) |
+| US-01..07, US-09..11 | PRD §5 | apps/web (Muat, Gudang, Konversi) | Playwright e2e/calculator.spec.ts 13/13 | ✅ M2 |
+| FR-01/02 Katalog di UI & API | ARD §6 | /api/v1/commodities, /containers, /datasets/active, halaman Data & Sumber | E2E API + smoke test | ✅ M2 |
+| NFR-03 Offline-first | ARD AR-07, DEC-024 | Serwist sw.ts + IndexedDB | SW + cache halaman terbukti (log SW); kalkulator di halaman terbuka jalan offline; navigasi offline belum stabil di emulasi (ISS-025) | 🟡 M2 sebagian |
+| NFR-04 Mobile 360 px | ux_spec §1 | Shell menu bawah, target ≥ 44 px | E2E @mobile | ✅ M2 |
+| Skema DB via Prisma | ERD, schema.sql | migrasi 0001 = schema.sql apa adanya + 0002_auth | schema_integrity_test 18/18 pada DB hasil migrasi; lib.test byte-equal | ✅ M2 |
 | RD-01..04 Batch, tahap, nilai parameter | `07-rnd/PRD_RnD.md`, `schema_rnd.sql` | trigger `rnd_check_measurement` | 21/21 uji `rnd_integrity_test.sql` | ✅ skema · ⏳ app |
 | RD-05/06 Impor & versi parameter | PRD_RnD RFR-03, `def_version` | `parameter_template.csv` | – | ⏳ M5 (parameter menunggu owner) |
 | Immutable dataset | ADR-002, IR-02 | trigger `forbid_published_mutation` | IR-02 (3 uji) | ✅ |

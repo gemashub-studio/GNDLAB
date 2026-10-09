@@ -1,6 +1,6 @@
 'use client';
 
-import { correctMoisture, DEFAULT_FLOOR_UTIL, OverrideOutOfRangeError } from '@gemas/calc-engine';
+import { correctMoisture, DEFAULT_FLOOR_UTIL, floorDiv, OverrideOutOfRangeError } from '@gemas/calc-engine';
 import { DatasetError, defaultStackHeightM, getCommodity, getForm, gridPackaging, type DatasetSI } from '@gemas/dataset';
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
@@ -12,8 +12,9 @@ import { WarningList } from '@/components/ui/Warnings';
 import { COMMODITY_UI, FORM_UI, formLabel } from '@/lib/catalog';
 import { defaultFormCode } from '@/lib/defaults';
 import { cm, fmt, fmtM2, fmtM3, fmtPct } from '@/lib/format';
-import { encodeState, runWarehouse, type WarehouseState } from '@/lib/scenario';
+import { runWarehouse, type WarehouseState } from '@/lib/scenario';
 import { useDataset } from '@/lib/useDataset';
+import { useUrlState } from '@/lib/useUrlState';
 
 type StockUnit = 'kg' | 't' | 'pcs' | 'packs';
 const UTIL_MIN = 0.5;
@@ -47,6 +48,12 @@ export function WarehouseCalculator({ initial }: { initial?: WarehouseState }) {
   const [stockUnit, setStockUnit] = useState<StockUnit>(() =>
     'pieces' in s.stock ? 'pcs' : 'packs' in s.stock ? 'packs' : s.stock.massKg >= 1000 ? 't' : 'kg',
   );
+  // Satuan field harus mengikuti jenis stok, termasuk saat state dipulihkan dari tautan (?s=) di client.
+  useEffect(() => {
+    if ('pieces' in s.stock && stockUnit !== 'pcs') setStockUnit('pcs');
+    else if ('packs' in s.stock && stockUnit !== 'packs') setStockUnit('packs');
+    else if ('massKg' in s.stock && (stockUnit === 'pcs' || stockUnit === 'packs')) setStockUnit('t');
+  }, [s.stock, stockUnit]);
   const commodity = getCommodity(ds, s.commodityId);
   const form = getForm(ds, s.commodityId, s.formCode);
   const packs = gridPackaging(form);
@@ -65,11 +72,8 @@ export function WarehouseCalculator({ initial }: { initial?: WarehouseState }) {
     }
   }, [ds, s]);
 
-  useEffect(() => {
-    const url = new URL(window.location.href);
-    url.searchParams.set('s', encodeState(s));
-    window.history.replaceState(null, '', url);
-  }, [s]);
+  // `?s=` ↔ state (juga memulihkan tautan bagikan saat halaman disajikan dari cache offline).
+  useUrlState('WAREHOUSE', s, setS, !!initial);
 
   const pick = (commodityId: string) => {
     const next = initialWarehouseState(ds, commodityId);
@@ -284,7 +288,10 @@ export function WarehouseCalculator({ initial }: { initial?: WarehouseState }) {
                   <Tile label="Volume" value={fmtM3(r.typ.volumeM3)} />
                   <Tile label="Tapak tumpukan" value={fmtM2(r.typ.footprintM2)} />
                   <Tile label="Beban lantai" value={`${fmt(r.typ.floorLoadKgM2)} kg/m²`} />
-                  {r.typ.stacks !== undefined && <Tile label="Tumpukan" value={`${fmt(r.typ.stacks)} × ${fmt(r.typ.packs ?? 0)} krg`} />}
+                  {r.typ.stacks !== undefined && r.typ.stacks > 0 && (
+                    <Tile label="Tumpukan" value={`${fmt(r.typ.stacks)} tumpuk · maks ${fmt(floorDiv(s.stackHeightM, pack?.dims?.h ?? s.stackHeightM))} krg/tumpuk`} />
+                  )}
+                  {r.typ.packs !== undefined && <Tile label="Jumlah karung" value={`${fmt(r.typ.packs)} krg`} />}
                   {r.typ.zoneUsedFraction !== undefined && (
                     <Tile label="Zona terpakai" value={fmtPct(r.typ.zoneUsedFraction)} danger={r.typ.zoneUsedFraction > 1} />
                   )}

@@ -22,7 +22,8 @@ export function parseNum(raw: string): number {
   if (!s) return Number.NaN;
   // Bila ada koma → koma desimal, titik ribuan.
   if (s.includes(',')) return Number(s.replace(/\./g, '').replace(',', '.'));
-  // Titik dengan tepat 3 digit di belakang & lebih dari satu grup → ribuan ("12.000").
-  if (/^\d{1,3}(\.\d{3})+$/.test(s)) return Number(s.replace(/\./g, ''));
+  // Titik ribuan gaya Indonesia ("12.000", "1.250.000"); grup pertama tidak diawali 0,
+  // jadi "0.575" tetap desimal.
+  if (/^[1-9]\d{0,2}(\.\d{3})+$/.test(s)) return Number(s.replace(/\./g, ''));
   return Number(s);
 }

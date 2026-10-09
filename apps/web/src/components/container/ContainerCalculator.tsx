@@ -3,7 +3,7 @@
 import { OverrideOutOfRangeError, type CalcMode } from '@gemas/calc-engine';
 import { availableModes, getCommodity, getForm, type DatasetSI } from '@gemas/dataset';
 import Link from 'next/link';
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { ConfidenceBadge } from '@/components/ui/badges';
 import { ChoiceGroup, NumberField } from '@/components/ui/fields';
 import { Hint } from '@/components/ui/Hint';
@@ -11,8 +11,9 @@ import { ScenarioActions } from '@/components/scenario/ScenarioActions';
 import { CONTAINER_UI, COMMODITY_UI, FORM_UI, MODE_UI, PACK_UI, formLabel } from '@/lib/catalog';
 import { defaultFormCode, defaultMode } from '@/lib/defaults';
 import { cm, fmt } from '@/lib/format';
-import { encodeState, runContainer, type ContainerState } from '@/lib/scenario';
+import { runContainer, type ContainerState } from '@/lib/scenario';
 import { useDataset } from '@/lib/useDataset';
+import { useUrlState } from '@/lib/useUrlState';
 import { ContainerResultView } from './ContainerResult';
 import { GridStrip } from './GridStrip';
 
@@ -53,17 +54,17 @@ export function ContainerCalculator({ initial, startWizard }: { initial?: Contai
   const form = getForm(ds, s.commodityId, s.formCode);
   const modes = availableModes(form);
   const result = useMemo(() => compute(ds, s), [ds, s]);
+  // Badge keyakinan per komoditas hanya bergantung pada dataset → hitung sekali.
+  const defaultConfidence = useMemo(
+    () => Object.fromEntries(ds.commodities.map((c) => [c.id, runContainer(ds, initialContainerState(ds, c.id)).confidence])),
+    [ds],
+  );
   const containerName = s.custom ? 'CUSTOM' : s.containerId!;
   const title = `${(COMMODITY_UI[s.commodityId]?.short ?? commodity.nameId).toUpperCase()} @ ${containerName}`;
   const benchmarks = s.custom ? [] : form.benchmarks.filter((b) => b.containerId === s.containerId);
 
-  // URL selalu mencerminkan state → tombol "Bagikan" & muat ulang aman.
-  useEffect(() => {
-    const url = new URL(window.location.href);
-    url.searchParams.set('s', encodeState(s));
-    url.searchParams.delete('wizard');
-    window.history.replaceState(null, '', url);
-  }, [s]);
+  // `?s=` ↔ state (juga memulihkan tautan bagikan saat halaman disajikan dari cache offline).
+  useUrlState('CONTAINER', s, setS, !!initial);
 
   const pickCommodity = (id: string) => {
     const formCode = defaultFormCode(ds, id);
@@ -96,7 +97,7 @@ export function ContainerCalculator({ initial, startWizard }: { initial?: Contai
       value={s.commodityId}
       onChange={pickCommodity}
       options={ds.commodities.map((c) => {
-        const conf = runContainer(ds, initialContainerState(ds, c.id)).confidence;
+        const conf = defaultConfidence[c.id]!;
         return {
           value: c.id,
           testId: `commodity-${c.id}`,
@@ -278,7 +279,7 @@ export function ContainerCalculator({ initial, startWizard }: { initial?: Contai
   );
 
   const resultBlock = result.ok ? (
-    <ContainerResultView out={result.out} mode={s.mode} commodityId={s.commodityId} title={title} benchmarks={benchmarks} compact={wizard} />
+    <ContainerResultView out={result.out} mode={s.mode} commodityId={s.commodityId} title={title} benchmarks={benchmarks} compact={wizard} customContainer={!!s.custom} />
   ) : (
     <div role="alert" className="card border-safety">
       <h2 className="text-xl">Belum bisa dihitung</h2>

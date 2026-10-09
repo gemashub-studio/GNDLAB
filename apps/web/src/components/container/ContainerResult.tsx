@@ -15,6 +15,7 @@ export function ContainerResultView({
   title,
   benchmarks,
   compact = false,
+  customContainer = false,
 }: {
   out: CalcOutput<ContainerResult>;
   mode: CalcMode;
@@ -22,7 +23,11 @@ export function ContainerResultView({
   title: string;
   benchmarks: BenchmarkSI[];
   compact?: boolean;
+  customContainer?: boolean;
 }) {
+  // US-09: hasil dengan angka ubahan pengguna diberi tanda "custom".
+  const overridden = Object.entries(out.trace.params).filter(([, t]) => t.source === 'override').map(([k]) => k);
+  const isCustom = overridden.length > 0 || customContainer;
   const p = primaryFigure(out, mode, commodityId);
   const t = out.result.typ;
   const empty = out.binding === 'NONE';
@@ -38,8 +43,17 @@ export function ContainerResultView({
         className={`flex flex-col gap-[18px] border-3 border-ink p-6 shadow-hard ${empty ? 'bg-surface' : 'bg-acid'}`}
       >
         <div className="flex flex-wrap items-center justify-between gap-2.5">
-          <h2 id="hasil-h" className="font-mono text-[13px] font-bold normal-case tracking-[0.1em]">
+          <h2 id="hasil-h" className="flex flex-wrap items-center gap-2 font-mono text-[13px] font-bold normal-case tracking-[0.1em]">
             HASIL · {title}
+            {isCustom && (
+              <span
+                data-testid="custom-tag"
+                className="tag-mono"
+                title={overridden.length ? `Angka diubah: ${overridden.join(', ')}` : 'Ukuran container sendiri'}
+              >
+                CUSTOM
+              </span>
+            )}
           </h2>
           <span className="flex items-center gap-2">
             <BindingTag b={out.binding} />
