@@ -16,7 +16,7 @@ Kebutuhan → desain → implementasi acuan → bukti uji.
 | NFR-01 < 50 ms per skenario | ADR-001 | engine murni TS | container.test.ts (rata-rata 100 run) | ✅ M1 |
 | NFR-02 Akurasi engine | calc_spec §7 | golden.test.ts membaca fixture langsung | 17/17 lulus; kasus tak dikenal = gagal | ✅ M1 |
 | Loader dataset ↔ seed | ERD §3, ADR-004 | packages/dataset/src/loader.ts | 102 tuple parameter identik dengan seed.sql; profil keyakinan A6/B9/C30 | ✅ M1 |
-| FR-09 Simulator | ux_spec §3.3 | – | – | ⏳ M3 |
+| FR-09 Simulator | ux_spec §3.3, ADR-005 | calc-engine/layout.ts; apps/web /simulator (Plan2D SVG, Sim3D three.js InstancedMesh) | layout.test 11 uji (posisi = packs engine utk semua golden kemasan); E2E simulator 10 uji (angka simulator == kartu hasil 5 golden kemasan; 1.892 karung @ ±48 fps headless) | ✅ M3 |
 | FR-10 Skenario & ekspor | ERD `SCENARIO`, ARD §6, ADR-006 | apps/web: /api/v1/scenarios, IndexedDB, /s/[slug], CSV/PDF | scenarios.db.test.ts 8 uji + E2E US-10 | ✅ M2 |
 | FR-11 Sampling & kalibrasi | ADR-002, ERD `MEASUREMENT`, `CALIBRATION_PROPOSAL` | `schema.sql` | IR-07 (3 uji) | ✅ skema |
 | NFR-05 Traceability | ERD `PARAMETER_SOURCE`, `trace` | dataset `source_ids` | Validator SCHEMA source_id terdaftar | ✅ |

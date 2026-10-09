@@ -22,7 +22,7 @@ Dependensi: `web → dataset → calc-engine`. Engine tidak bergantung pada apa 
 | M0 | Data, validator, skema | ✅ (handoff) | run_all_checks: 105 PASS |
 | M1 | Engine + dataset loader | ✅ 2026-10-08 | 99/99 test (17/17 golden), tsc bersih |
 | M2 | Web, DB, API, kalkulator, PWA | ✅ 2026-10-09 (offline nav: ISS-025 terbuka) | 131 unit + 13 E2E, run_all_checks LULUS |
-| M3 | Simulator 2D SVG + 3D r3f | ⏳ | – |
+| M3 | Simulator 2D SVG + 3D r3f | ✅ 2026-10-09 | engine 93 (layout 11), E2E simulator 10 (1.892 karung ±48 fps) |
 | M4 | Sampling, kalibrasi, approval | ⏳ | – |
 | M5 | R&D Lab | ⏳ (parameter owner menyusul) | – |
 
@@ -77,7 +77,7 @@ Checklist (centang + commit per langkah; kalau sesi putus, lanjut dari yang belu
 - [x] S2 Denah 2D SVG: tampak atas & samping container; denah zona gudang dengan lorong diarsir; hover isi tumpukan.
 - [x] S3 3D (three.js + @react-three/fiber, tanpa drei): kotak transparan, karung = InstancedMesh, slider
       "isi %", orbit; dimuat dinamis (tanpa SSR); label "representasi grid".
-- [~] S4 Halaman `/simulator` (baca `?s=` dari kalkulator/gudang) + tombol "Buka simulator" di kalkulator & gudang;
+- [x] S4 Halaman `/simulator` (baca `?s=` dari kalkulator/gudang) + tombol "Buka simulator" di kalkulator & gudang;
       mode arang belah 2 bersarang (kolom).
-- [ ] S5 Test: unit layout + E2E angka simulator == kartu hasil untuk golden kemasan; ukur fps 1.200 karung.
-- [ ] S6 Logs (traceability FR-09, decision, risk) + run_all_checks + commit "Fase M3 selesai".
+- [x] S5 Test: unit layout + E2E angka simulator == kartu hasil untuk golden kemasan; ukur fps 1.200 karung.
+- [x] S6 Logs (traceability FR-09, decision, risk) + run_all_checks + commit "Fase M3 selesai".

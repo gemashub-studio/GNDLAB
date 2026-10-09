@@ -50,3 +50,9 @@
 ### 2026-10-09 · Fase M3 (berjalan)
 - S1 ✅ engine layout (commit ef551ae). S2–S3 ✅ Plan2D.tsx, Sim3D.tsx (three + R3F, InstancedMesh). S4 dikodekan: /simulator + tombol "Buka simulator" + menu — BELUM diverifikasi visual/E2E.
 - Lanjutan: verifikasi /simulator (2D/3D, gudang, arang bersarang), E2E S5 (angka simulator == kartu hasil golden kemasan, fps 1.200 karung), lalu S6 logs.
+
+### 2026-10-09 · Fase M3 SELESAI
+- Simulator /simulator: denah 2D SVG (atas/samping, curah, gudang + lorong, kolom arang), 3D three.js InstancedMesh + slider isi % + putar stuffing; tombol dari kalkulator & gudang.
+- Angka simulator == kartu hasil (5 golden kemasan, E2E). 1.892 karung ±48 fps headless (≥30 fps ✅).
+- Test: engine 93, dataset 51, web 21, E2E 28 (+1 fixme ISS-025). run_all_checks LULUS.
+- Berikutnya: M4 (sampling & kalibrasi) → M5 (R&D Lab). Tanyakan owner bila ada prioritas lain.

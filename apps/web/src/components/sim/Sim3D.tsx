@@ -97,7 +97,7 @@ function Packs({ placements, visible }: { placements: Placement[]; visible: numb
       m.compose(v, q, s);
       mesh.setMatrixAt(i, m);
       // Lapisan atas sedikit lebih terang agar tumpukan terbaca.
-      c.copy(ACID).lerp(SAFETY, maxZ > 0 ? (p.z / maxZ) * 0.35 : 0);
+      c.copy(ACID).lerp(SAFETY, maxZ > 0 ? (p.z / maxZ) * 0.2 : 0);
       mesh.setColorAt(i, c);
     });
     mesh.instanceMatrix.needsUpdate = true;
@@ -171,8 +171,8 @@ export default function Sim3D({ space, placements = [], visible = placements.len
         camera={{ position: [L / 2 + span, H + span * 0.9, W / 2 + span], zoom: 900 / (span * 1.6), near: -100, far: 1000 }}
         gl={{ antialias: true }}
       >
-        <ambientLight intensity={0.75} />
-        <directionalLight position={[span, span * 2, span * 0.6]} intensity={1.1} />
+        <ambientLight intensity={1.6} />
+        <directionalLight position={[span, span * 2, span * 0.6]} intensity={0.9} />
         <ContainerBox L={L} W={W} H={H} />
         <Packs placements={placements} visible={visible} />
         {bulkLevel !== undefined && <BulkFill L={L} W={W} H={H} level={bulkLevel} />}
