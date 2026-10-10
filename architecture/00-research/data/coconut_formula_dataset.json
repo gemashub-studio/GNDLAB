@@ -166,6 +166,11 @@
     "tensile_min_mpa": { "min": 20, "typ": 20, "max": 20, "unit": "MPa", "confidence": "B", "source_ids": ["F03"] },
     "fold_min": { "min": 100, "typ": 100, "max": 100, "unit": "count", "confidence": "B", "source_ids": ["F03"] }
   },
+  "production": {
+    "shift_hours": { "min": 7, "typ": 8, "max": 8, "unit": "h", "confidence": "A", "source_ids": ["F23"], "note": "UU 13/2003 Pasal 77: 7 jam/hari × 6 hari atau 8 jam/hari × 5 hari (40 jam/minggu)" },
+    "work_days_per_week": { "min": 5, "typ": 5, "max": 6, "unit": "d", "confidence": "A", "source_ids": ["F23"] },
+    "oven_load_basis": "Kapasitas oven Yani 2022 (280 kg/1.200 kg per batch) dibaca sebagai kg daging segar masuk — interpretasi C, konfirmasi dengan spesifikasi oven KORA"
+  },
   "stations": [
     { "id": "kupas_sabut", "name_id": "Kupas sabut manual", "kind": "manual", "unit": "butir", "rate_per_person_h": { "min": 40, "typ": 60, "max": 80, "unit": "butir/h", "confidence": "C", "source_ids": ["F01"], "note": "Studi terukur 40–80/jam; typ titik tengah — time study wajib" } },
     { "id": "belah", "name_id": "Jagal belah dua (WS 2.B)", "kind": "manual", "unit": "butir", "rate_per_person_h": { "min": 37.5, "typ": 50, "max": 875, "unit": "butir/h", "confidence": "C", "source_ids": ["F01", "F19"], "note": "SOP lama 300–500/shift 8 jam; ILO/FAO terampil s/d 7.000/hari — rentang sangat lebar (K-06)" } },
@@ -358,6 +363,7 @@
     { "id": "F19", "title": "UNIDO 1982 Desiccated coconut industry; ILO/FAO small-scale copra — produktivitas (via SOP KORA B2.1)", "doc": "dirujuk F01", "grade": "B" },
     { "id": "F20", "title": "Turunan stoikiometri/fisika: Gay-Lussac 0,511 g etanol/g heksosa; 60,05/46,07 g/mol asam asetat/etanol; definisi °Brix (% massa)", "doc": "kora_research.md E1, E4", "grade": "A" },
     { "id": "F21", "title": "Den & Marquez 1987, Annals of Tropical Research 9(1) — cuka air kelapa (via SOP AKL)", "doc": "dirujuk F03", "grade": "A" },
+    { "id": "F23", "title": "UU No. 13 Tahun 2003 tentang Ketenagakerjaan, Pasal 77 (waktu kerja) — sebagaimana diubah UU 6/2023", "url": "https://peraturan.bpk.go.id/Details/43013", "grade": "A" },
     { "id": "F22", "title": "SNI 3451:2011 Tepung tapioka — KA maks 14% (reproduksi: J. Teknologi Pangan & Hasil Pertanian USM 2020)", "url": "https://journals.usm.ac.id/index.php/jtphp/article/download/4546/2392/12531", "grade": "B" }
   ]
 }

@@ -253,6 +253,7 @@ export const FormulaDatasetSchema = z
       tensile_min_mpa: RangeP,
       fold_min: RangeP,
     }),
+    production: z.object({ shift_hours: RangeP, work_days_per_week: RangeP, oven_load_basis: z.string() }),
     stations: z
       .array(
         z.object({
@@ -341,6 +342,7 @@ export interface FormulaDatasetSI {
   };
   cuka: ReturnType<typeof params<RawFormulaDataset['cuka']>>;
   bioleather: ReturnType<typeof params<RawFormulaDataset['bioleather']>>;
+  production: ReturnType<typeof params<RawFormulaDataset['production']>>;
   stations: { id: string; nameId: string; kind: 'manual' | 'machine'; unit: string; rate: Param }[];
   checklists: FormulaChecklist[];
   sources: RawFormulaDataset['sources'];
@@ -388,6 +390,7 @@ export function loadFormulaDataset(raw: unknown, process: ProcessDatasetSI): For
     },
     cuka: params('cuka', d.cuka),
     bioleather: params('bioleather', d.bioleather),
+    production: params('production', d.production),
     stations: d.stations.map((s) => ({
       id: s.id,
       nameId: s.name_id,

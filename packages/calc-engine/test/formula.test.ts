@@ -24,6 +24,7 @@ import {
   trialDesign,
   unitFactor,
   vinegarBatch,
+  batchesPerDay,
   type BriquetteInput,
   type Unit,
 } from '../src/index.ts';
@@ -301,13 +302,21 @@ describe('produksi per shift', () => {
         { id: 'oven', nameId: 'Oven', kind: 'batch', batchSize: P('b', 'kg', 280), cycleH: P('c', 'h', 13), count: 1, toProduct: unitFactor('kg'), unitLabel: 'kg' },
       ],
     });
-    // belah: 50 × 2 × 6,8 × 0,2 = 136 kg; oven: 280 × 24/13 = 516,9 kg
+    // belah: 50 × 2 × 6,8 × 0,2 = 136 kg; oven 13 jam dgn 1 shift 8 jam → 1 angkatan/hari = 280 kg
     expect(plan.stations[0]!.capacity.typ).toBeCloseTo(136, 9);
-    expect(plan.stations[1]!.capacity.typ).toBeCloseTo((280 * 24) / 13, 9);
+    expect(plan.stations[1]!.capacity.typ).toBeCloseTo(280, 9);
     expect(plan.bottleneckId).toBe('belah');
     expect(plan.output.typ).toBeCloseTo(136, 9);
     expect(plan.stations[0]!.neededCount).toBe(Math.ceil(300 / (50 * 6.8 * 0.2)));
-    expect(plan.stations[1]!.utilization).toBeCloseTo(136 / ((280 * 24) / 13), 9);
+    expect(plan.stations[1]!.utilization).toBeCloseTo(136 / 280, 9);
+  });
+  it('angkatan hanya dimulai di jam kerja (simulasi tunak)', () => {
+    expect(batchesPerDay(13, 8, 1)).toBe(1); // bukan 24/13
+    expect(batchesPerDay(7.9, 8, 1)).toBe(2); // limbah panas ketel IPB
+    expect(batchesPerDay(4, 8, 1)).toBe(2); // mulai jam 0 & 4; jam 8 = di luar shift
+    expect(batchesPerDay(108, 8, 1)).toBeCloseTo(0.2, 9); // greenhouse: tiap 120 jam (108 → tunggu besok pagi)
+    expect(batchesPerDay(12, 8, 3)).toBe(2); // 24 jam kerja → berjalan terus
+    expect(batchesPerDay(13, 8, 2)).toBeGreaterThan(1);
   });
   it('validasi input', () => {
     expect(() => shiftPlan({ shiftHours: 10, efficiency: 1, shiftsPerDay: 3, stations: [] })).toThrow();

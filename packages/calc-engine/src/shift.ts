@@ -4,8 +4,11 @@
  * Setiap stasiun diubah ke kapasitas PRODUK per shift:
  *   manual  : laju/orang/jam · orang · jam_shift · efisiensi · faktor_produk
  *   mesin   : laju/unit/jam  · unit  · jam_shift · efisiensi · faktor_produk
- *   batch   : isi/angkatan · unit · (jam_kalender_per_shift ÷ siklus) · faktor_produk
- *             (pengering/tungku berjalan terus; jam kalender per shift = 24 ÷ shift per hari)
+ *   batch   : isi/angkatan · unit · (angkatan per hari ÷ shift per hari) · faktor_produk
+ *             Angkatan hanya bisa DIMULAI (dimuat) di jam kerja — shift berurutan mulai jam 0 —
+ *             tetapi boleh berjalan terus di luar jam kerja (oven, tungku, greenhouse). Angkatan per hari
+ *             = rata-rata kondisi tunak hasil simulasi 60 hari. Contoh 1 shift 8 jam: oven 13 jam → 1/hari
+ *             (bukan 24/13 = 1,85), oven 7,9 jam → 2/hari.
  * Output lini = min(kapasitas stasiun) — stasiun pembatas (bottleneck) = yang terkecil (typ).
  * Min/max output = min atas min/max tiap stasiun (min monoton tiap argumen → sah tanpa sudut gabungan).
  * Kebutuhan orang/unit untuk target = ⌈target ÷ kapasitas satu orang/unit⌉ (typ).
@@ -70,13 +73,34 @@ export interface ShiftPlan {
   trace: Trace;
 }
 
+/**
+ * Rata-rata angkatan per hari per unit bila angkatan hanya dimulai di jam kerja [0, jam·shift) tiap hari.
+ * Simulasi 60 hari, rata-rata 30 hari terakhir (kondisi tunak).
+ */
+export function batchesPerDay(cycleH: number, shiftHours: number, shiftsPerDay: number): number {
+  assertPositive(cycleH, 'siklus');
+  const workH = shiftHours * shiftsPerDay;
+  const days = 60;
+  let t = 0;
+  const starts: number[] = [];
+  while (t < days * 24) {
+    starts.push(t);
+    let next = t + cycleH;
+    const inDay = next % 24;
+    if (inDay >= workH - 1e-9) next = Math.floor(next / 24) * 24 + 24; // tunggu shift pertama hari berikutnya
+    t = next;
+  }
+  const from = (days / 2) * 24;
+  return starts.filter((x) => x >= from).length / (days / 2);
+}
+
 function stationCapacity(s: ShiftStation, i: ShiftInput): { units: Range; product: Range; perOne: number } {
-  const calendarH = 24 / i.shiftsPerDay;
   if (s.kind === 'batch') {
     if (!s.batchSize || !s.cycleH) throw new RangeError(`${s.nameId}: stasiun batch butuh isi & siklus`);
     const r = evaluateRange({ b: s.batchSize, c: s.cycleH, t: s.toProduct }, (v) => {
-      const units = s.count * v.b * (calendarH / v.c);
-      return { units, product: units * v.t, perOne: v.b * (calendarH / v.c) * v.t };
+      const perShift = batchesPerDay(v.c, i.shiftHours, i.shiftsPerDay) / i.shiftsPerDay;
+      const units = s.count * v.b * perShift;
+      return { units, product: units * v.t, perOne: v.b * perShift * v.t };
     });
     return { units: pick(r, 'units'), product: pick(r, 'product'), perOne: r.typ.perOne };
   }
