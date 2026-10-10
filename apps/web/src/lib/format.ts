@@ -31,3 +31,10 @@ export function parseNum(raw: string): number {
 /** Angka hasil ukur: bulat tanpa desimal; < 10 → 2 desimal; < 100 → 1 desimal. */
 export const fmtMeasure = (v: number): string =>
   Number.isInteger(v) ? fmt(v) : fmt(v, Math.abs(v) < 10 ? 2 : Math.abs(v) < 100 ? 1 : 0);
+
+/** Label tampilan semua satuan engine (Record → tsc menangkap satuan baru yang lupa diberi label). */
+export const UNIT_TEXT: Record<import('@gemas/calc-engine').Unit, string> = {
+  m: 'm', kg: 'kg', m3: 'm³', kg_m3: 'kg/m³', fraction: 'fraksi', pct: '%', count: '', h: 'jam',
+  m2: 'm²', L: 'L', g: 'g', g_L: 'g/L', kg_L: 'kg/L', g_m3: 'g/m³', brix: '°Brix', pH: '', C: '°C', d: 'hari', wk: 'minggu',
+  mm: 'mm', M: 'M', MPa: 'MPa', g_cm3: 'g/cm³', g_L_d: 'g/L/hari', cal_g: 'kal/g', count_h: '/jam', kg_h: 'kg/jam',
+};

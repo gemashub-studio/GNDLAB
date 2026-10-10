@@ -5,7 +5,7 @@ import type { Metadata } from 'next';
 import { ConfidenceBadge } from '@/components/ui/badges';
 import { Hint } from '@/components/ui/Hint';
 import { COMMODITY_UI, formLabel } from '@/lib/catalog';
-import { fmt } from '@/lib/format';
+import { fmt, UNIT_TEXT } from '@/lib/format';
 
 export const metadata: Metadata = { title: 'Data & Sumber' };
 
@@ -23,7 +23,10 @@ function display(unit: Unit, v: number): string {
   }
 }
 function unitLabel(unit: Unit, v: number): string {
-  return { m: 'cm', kg: v < 1 ? 'g' : 'kg', m3: 'cm³', kg_m3: 'kg/m³', fraction: 'fraksi', pct: '%', count: '', h: 'jam' }[unit];
+  if (unit === 'm') return 'cm';
+  if (unit === 'kg') return v < 1 ? 'g' : 'kg';
+  if (unit === 'm3') return 'cm³';
+  return UNIT_TEXT[unit];
 }
 
 export const dynamic = 'force-dynamic';
