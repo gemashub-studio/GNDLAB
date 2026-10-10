@@ -116,3 +116,26 @@ Riset: `architecture/00-research/kora_research.md` (E1–E7, K-01..K-08, GAP). T
 - [x] F6 Draf `architecture/07-rnd/parameter_kora_draft.csv` (KE/KA/BL/CK + produk baru AR/BS/BB/BC) untuk M5 — tunggu konfirmasi owner
 - [x] F7 E2E, logs (DEC/ISS/traceability/CHANGELOG), run_all_checks, commit "Fase F selesai"
 Pertanyaan ke owner (jangan blokir kerja): kelas lot 100–600 mdpl (K-03); dosis perekat & tebal pillow BBQ aktual; kapasitas press/oven briket.
+
+## Fase G — Rantai produksi lengkap + kalkulator tiap proses (owner 2026-10-10, otonom)
+Permintaan owner (ringkas): bahan baku = kelapa tua utuh JAMBUL (berat & diameter seragam → cari rata-rata bersumber).
+Asal WAJIB tercatat & dipisah: pesisir/dataran rendah ≤500 mdpl vs gunung/bukit/dataran tinggi >500 mdpl (jawaban K-03 — sama dengan dataset proses P07).
+Kalkulator & SOP & alat untuk SETIAP proses:
+1. Pengangkutan: container berbagai ukuran (ft) + berbagai jenis truk, dengan simulasi.
+2. Penyimpanan awal saat bahan datang (gudang, per lot asal).
+3. Kupas sabut, belah, sortir kondisi & usia + penanganan, tampung air kelapa (standar simpan).
+4. Pengeringan: GREENHOUSE desainer (dimensi → ukuran rak, level, baris, jarak antar rak, tray/rak, kelapa/tray, kemiringan, kipas, belerang gram, titik & waktu bakar, teknis, SOP, alat) + matahari + oven.
+5. Congkel & QC → grade; SOP packing + kalkulator packing gudang & container (ft).
+6. Arang per asal: tungku drum pirolisis & kolam; persiapan → bakar → dingin → ayak rotari 2× → sortir → arang batok / serbuk (hammer mill); kalkulator packing per output.
+7. Briket: bahan baku per % asal (DT:DR) → kekuatan & warna abu; perekat; air; bentuk/jenis; SOP, alat, waktu, kapasitas, oven, packing.
+8. Turunan: cuka (ada), bioleather + opsi tambahan selulosa cocopeat/cocofiber/lainnya.
+Link owner untuk dicek: 1 TikTok vt, IG rifai_big, TikTok bonumcommune, 18 YouTube, spil.co.id (1 kg kopra berapa biji kelapa), query Google ukuran/berat kelapa jambul.
+- [ ] G0 Riset (link owner + sumber kredibel) → architecture/00-research/chain_research.md
+- [ ] G1 Transport (truk + container) & penerimaan/gudang per asal
+- [ ] G2 Kupas/belah/sortir/air kelapa
+- [ ] G3 Pengeringan (greenhouse desainer + matahari + oven)
+- [ ] G4 Congkel/QC/grade + packing gudang & container
+- [ ] G5 Arang (drum/kolam, ayak rotari 2×, hammer mill, packing per output)
+- [ ] G6 Briket (campuran asal, perekat, air, bentuk, oven, packing)
+- [ ] G7 Bioleather + selulosa tambahan; cuka
+- [ ] G8 E2E, logs, run_all_checks, commit
