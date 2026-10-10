@@ -17,9 +17,23 @@ const FRIENDLY: Record<WarningCode, { title: string; action?: string }> = {
   CONSERVATIVE_BENCHMARK_GAP: { title: 'Ada laporan pasar yang jauh lebih rendah', action: 'Cek ukuran butir & jenis container (reefer/palet) sebelum janji ke pembeli.' },
   WATER_REMAINDER_CLAMPED: { title: 'Komposisi buah lebih dari 100%', action: 'Cek lagi angka sabut, batok, dan daging hasil ukurmu.' },
   WEATHER_DEPENDENT: { title: 'Lama jemur tergantung cuaca', action: 'Siapkan terpal/penutup. Musim hujan? Pertimbangkan greenhouse atau oven.' },
+  MUST_BRIX_OUT_OF_RANGE: { title: 'Kadar gula must di luar resep', action: 'Biasanya 14–17 °Brix (target 15). Kurang dari itu alkoholnya tipis, cukanya asam lemah.' },
+  ACETIC_POTENTIAL_LOW: { title: 'Cukanya bisa kurang asam', action: 'Naikkan °Brix must (gula) atau pakai starter lebih banyak; target minimal 4% asam asetat.' },
+  BINDER_ABOVE_RANGE: { title: 'Perekatnya kebanyakan', action: 'Di atas 8% kalor turun dan abu naik. Coba 4–8% dulu (FAO).' },
+  DOUGH_MOISTURE_OUT_OF_RANGE: { title: 'Adonan terlalu kering/basah', action: 'Jaga kadar air adonan 22–28% biar gampang dicetak dan nggak retak.' },
+  DOUGH_TOO_WET: { title: 'Bahan sudah kebasahan', action: 'Jangan tambah air. Keringkan serbuk arang dulu atau kurangi air di pasta perekat.' },
+  FINAL_MOISTURE_ABOVE_SPEC: { title: 'Kadar air akhir masih tinggi', action: 'Tambah waktu oven/angin-anginkan sampai masuk spesifikasi pembeli.' },
+  NAOH_TOO_STRONG: { title: 'NaOH-nya terlalu pekat', action: 'Maksimal 0,1 M (4 g per liter). Lebih pekat bikin lembar rapuh permanen.' },
+  COOLING_TOO_SHORT: { title: 'Arang belum cukup dingin', action: 'Mati hampa minimal 8 jam / semalam, tanpa disiram air.' },
+  OVEN_TEMP_HIGH: { title: 'Ovennya kepanasan', action: 'Kopra maks 70°C, briket 60–90°C bertahap. Kepanasan = gosong & FFA naik.' },
+  SULFUR_NIGHTS_EXCEEDED: { title: 'Fumigasi kebanyakan malam', action: 'Batas keras 4 malam. Lebih dari itu residu sulfit bisa ditolak pembeli.' },
+  SO2_TEST_REQUIRED: { title: 'Wajib uji residu SO₂', action: 'Kirim sampel ke lab sebelum dikirim ke pembeli ekspor (UE ≤50 mg/kg).' },
+  SPLIT_DELAY_EXCEEDED: { title: 'Lewat aturan 4 jam', action: 'Batch ini nggak boleh diklaim Edible — maksimal Reguler. Jadwalkan belah sesuai kapasitas pengering.' },
+  DRYING_BEHIND_SCHEDULE: { title: 'Pengeringan ketinggalan jadwal', action: 'Target ≤35% di 24 jam dan ≤20% di 48 jam. Pindahkan sebagian ke oven.' },
+  YIELD_BELOW_REFERENCE: { title: 'Rendemen di bawah acuan', action: 'Cek kadar air batok, kebanyakan udara saat bakar, atau granul ikut terbuang saat ayak.' },
 };
 
-const SAFETY: WarningCode[] = ['SELF_HEATING_RISK', 'FLAMMABLE', 'FLOOR_OVERLOAD', 'ODOR_CONTAMINATION', 'ITEM_EXCEEDS_CONTAINER'];
+const SAFETY: WarningCode[] = ['SELF_HEATING_RISK', 'FLAMMABLE', 'FLOOR_OVERLOAD', 'ODOR_CONTAMINATION', 'ITEM_EXCEEDS_CONTAINER', 'NAOH_TOO_STRONG', 'COOLING_TOO_SHORT', 'SULFUR_NIGHTS_EXCEEDED', 'SO2_TEST_REQUIRED', 'SPLIT_DELAY_EXCEEDED'];
 
 export function WarningList({ warnings }: { warnings: CalcWarning[] }) {
   if (!warnings.length) return null;

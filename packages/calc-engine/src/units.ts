@@ -13,9 +13,38 @@ export type Fraction = Brand<number, 'fraction'>;
 
 /**
  * Satuan parameter — sama dengan enum `param_unit` di schema.sql, ditambah `h` (jam) untuk
- * parameter alur proses (dataset proses, tidak disimpan di tabel `parameter`; ADR-007).
+ * parameter alur proses (ADR-007) dan satuan formula R&D (ADR-009). Satuan formula tidak
+ * disimpan di tabel `parameter`; hanya dipakai dataset formula & engine formula.
  */
-export type Unit = 'm' | 'kg' | 'm3' | 'kg_m3' | 'fraction' | 'pct' | 'count' | 'h';
+export type Unit =
+  | 'm'
+  | 'kg'
+  | 'm3'
+  | 'kg_m3'
+  | 'fraction'
+  | 'pct'
+  | 'count'
+  | 'h'
+  // --- formula R&D (ADR-009) ---
+  | 'm2'
+  | 'L'
+  | 'g'
+  | 'g_L'
+  | 'kg_L'
+  | 'g_m3'
+  | 'brix'
+  | 'pH'
+  | 'C'
+  | 'd'
+  | 'wk'
+  | 'mm'
+  | 'M'
+  | 'MPa'
+  | 'g_cm3'
+  | 'g_L_d'
+  | 'cal_g'
+  | 'count_h'
+  | 'kg_h';
 
 export const meters = (v: number): Meters => v as Meters;
 export const kg = (v: number): Kg => v as Kg;

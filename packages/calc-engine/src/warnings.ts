@@ -18,6 +18,21 @@ export const WARNING_MESSAGES = {
   CONSERVATIVE_BENCHMARK_GAP: 'Satu sumber pasar melaporkan muat jauh lebih rendah.',
   WATER_REMAINDER_CLAMPED: 'Kombinasi sabut + batok + daging melebihi 100% — air kelapa dihitung 0.',
   WEATHER_DEPENDENT: 'Lama jemur tergantung cuaca; hujan menambah hari & risiko jamur.',
+  // --- formula R&D & produksi (ADR-009) ---
+  MUST_BRIX_OUT_OF_RANGE: 'Target °Brix must di luar 14–17.',
+  ACETIC_POTENTIAL_LOW: 'Potensi asam asetat di bawah batas minimum cuka.',
+  BINDER_ABOVE_RANGE: 'Dosis perekat di atas 8%: kalor turun, abu & zat terbang naik.',
+  DOUGH_MOISTURE_OUT_OF_RANGE: 'Kadar air adonan di luar 22–28%.',
+  DOUGH_TOO_WET: 'Bahan sudah lebih basah dari target adonan; tidak perlu tambah air.',
+  FINAL_MOISTURE_ABOVE_SPEC: 'Kadar air akhir di atas spesifikasi produk.',
+  NAOH_TOO_STRONG: 'NaOH di atas 0,1 M merusak serat selulosa (kuat tarik turun).',
+  COOLING_TOO_SHORT: 'Pendinginan arang < 8 jam: risiko menyala ulang.',
+  OVEN_TEMP_HIGH: 'Suhu oven di atas batas aman produk.',
+  SULFUR_NIGHTS_EXCEEDED: 'Fumigasi belerang melebihi 4 malam.',
+  SO2_TEST_REQUIRED: 'Fumigasi ≥3 malam: wajib uji residu SO₂ sebelum dikirim.',
+  SPLIT_DELAY_EXCEEDED: 'Jeda belah → pengering melebihi 4 jam: maksimal grade Reguler.',
+  DRYING_BEHIND_SCHEDULE: 'Kadar air belum mencapai alarm 24/48 jam: pindah ke pengering lebih panas.',
+  YIELD_BELOW_REFERENCE: 'Rendemen di bawah acuan literatur.',
 } as const;
 
 export type WarningCode = keyof typeof WARNING_MESSAGES;

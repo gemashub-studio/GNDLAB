@@ -78,6 +78,7 @@ Produksi per shift = stasiun pembatas (bottleneck) di rantai ini → dasar kalku
 | E4 | Alkohol & asam teoretis | 15% gula → ±9,1% v/v (efisiensi 92% glukosa) → asam asetat maks ±9,4% b/v; Gunathilake 17% → ±9% teramati (efisiensi ±80%) | Konsisten; engine pakai efisiensi sebagai parameter rentang |
 | E5 | Neraca adonan briket | 100 kg arang (KA 6%) + tapioka 5% → air ±26 kg untuk adonan 25% → ±105 kg briket KA 6% | Model engine |
 | E6 | Kubus shisha | 25 mm × ρ 0,9–1,1 g/cm³ → 14,1–17,2 g/butir (58–71 butir/kg) | Model engine |
+| **E8** | Desain Ronde 1 (40 kg) | Rencana PDF: "40 kg ≈ 60 butir (sisihkan 5 cadangan)" dengan 4 perlakuan × 3 ulangan × 5 butir = 60. Hitung: 40 ÷ 0,65 = **61 butir** → cadangan hanya **1**, bukan 5 (Tracker 20 kg benar: 30 butir, 24 dipakai, cadangan 6) | **Koreksi** — kalkulator desain uji menandai 'cadangan tipis' |
 | E7 | Kapasitas greenhouse | 117 m² rak × 25–30 belahan/m² → 1.460–1.755 butir | Konsisten dengan 1.600–2.000 |
 
 ## 5. Konflik antar-dokumen / dengan dataset proses (K-01…)

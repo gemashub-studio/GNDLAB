@@ -1,8 +1,8 @@
 {
   "meta": {
     "title": "Dataset Parameter Alur Proses Kelapa (loading, kupas sabut, belah, jemur, cungkil, batok, arang)",
-    "version": "1.0.0",
-    "compiled": "2026-10-09",
+    "version": "1.1.0",
+    "compiled": "2026-10-10",
     "requires_inventory_dataset": "1.0.4",
     "value_convention": "Setiap angka berbentuk {min, typ, max}. Fraksi = bagian dari massa BUAH UTUH BERSABUT (basis basah). Air kelapa TIDAK disimpan: dihitung sebagai sisa 1 - sabut - batok - daging. Parameter yang sudah ada di dataset inventory (kopra per butir, rendemen arang, kadar air produk, diameter mulut batok, kemasan) DIRUJUK, tidak disalin.",
     "units": { "mass": "kg", "duration": "h", "fraction": "0-1", "moisture": "pct", "altitude": "m dpl" },
@@ -11,7 +11,10 @@
       "B": "Lembaga/dagang (beberapa sumber konsisten)",
       "C": "Estimasi, turunan, atau satu studi kecil — WAJIB diverifikasi sampling"
     },
-    "report": "architecture/00-research/process_research.md"
+    "report": "architecture/00-research/process_research.md",
+    "changelog": [
+      "1.1.0 (2026-10-10): K-01 charcoal_kiln.cooling_h 1 jam → 8/10/12 jam (mati hampa ≥8 jam/semalam); K-02 oven kopra temperature_c 60/70/90 → 55/68/70 °C (maks 70 °C). Lihat kora_research.md."
+    ]
   },
   "origins": [
     {
@@ -56,7 +59,7 @@
       "id": "oven",
       "name_id": "Oven / kiln udara panas",
       "duration_h": { "min": 24, "typ": 36, "max": 62, "confidence": "B", "source_ids": ["P03", "P10", "P12"], "note": "Suhu 60-90 °C; bahan bakar bisa batok/sabut." },
-      "temperature_c": { "min": 60, "typ": 70, "max": 90, "confidence": "A", "source_ids": ["P14", "P15"] },
+      "temperature_c": { "min": 55, "typ": 68, "max": 70, "confidence": "A", "source_ids": ["P17"], "note": "Profil kerja 55–60 °C awal lalu 65–70 °C; jangan >75 °C (gosong, FFA naik). Nilai lama 60–90 °C dikoreksi (K-02)." },
       "weather_dependent": false
     }
   ],
@@ -69,7 +72,7 @@
   "charcoal_kiln": {
     "drum_batch_shell_kg": { "min": 15, "typ": 25, "max": 25, "confidence": "C", "source_ids": ["P16"], "note": "Drum 200 L; 25 kg = isi penuh paling efisien." },
     "burn_h": { "min": 4, "typ": 5, "max": 6, "confidence": "C", "source_ids": ["P16"] },
-    "cooling_h": { "min": 1, "typ": 1, "max": 1, "confidence": "C", "source_ids": ["P16"] }
+    "cooling_h": { "min": 8, "typ": 10, "max": 12, "confidence": "B", "source_ids": ["P18"], "note": "Mati hampa tanpa air ≥8 jam/semalam sebelum dibongkar (CDB India, FAO via SOP KORA). Nilai lama 1 jam berisiko arang menyala ulang (K-01)." }
   },
   "sources": [
     { "id": "P01", "title": "FAO Tropical Palms — Table 9-10 Components of Whole Coconut (Phil. Coco. Auth. 1979)", "url": "https://www.fao.org/4/i1590e/i1590e10.pdf", "grade": "A" },
@@ -85,6 +88,8 @@
     { "id": "P13", "title": "Sai Krishna 2018 — Development of a solar dryer for copra (thesis)", "url": "http://14.139.181.140:8080/xmlui/bitstream/handle/123456789/395/T400.pdf?sequence=1", "grade": "B" },
     { "id": "P14", "title": "Guarte et al. 1996 — Drying characteristics of copra", "url": "https://www.sciencedirect.com/science/article/abs/pii/S0925521496000324", "grade": "A" },
     { "id": "P15", "title": "Dharmasena 2007 — Solar hybrid dryer vs improved copra kiln", "url": "https://fileserver-az.core.ac.uk/download/52172577.pdf", "grade": "A" },
-    { "id": "P16", "title": "Arief et al. 2023 — Coconut shell carbonization process using smokeless kiln", "url": "https://www.cabidigitallibrary.org/doi/pdf/10.5555/20230241177", "grade": "A" }
+    { "id": "P16", "title": "Arief et al. 2023 — Coconut shell carbonization process using smokeless kiln", "url": "https://www.cabidigitallibrary.org/doi/pdf/10.5555/20230241177", "grade": "A" },
+    { "id": "P17", "title": "Yani et al. 2022, Jurnal Ilmu Pertanian Indonesia 27(3):321-331 — perbandingan 9 metode pengering kopra", "url": "https://doi.org/10.18343/jipi.27.3.321", "grade": "A" },
+    { "id": "P18", "title": "KORA-SOP-ARG-01 SOP Produksi Arang Batok Rev 03 (Sep 2026) — mati hampa, mengutip CDB India & FAO", "doc": "kora/New folder/baru/SOP_Arang_KORA.docx", "grade": "B" }
   ]
 }

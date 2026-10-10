@@ -13,6 +13,21 @@ import {
 import { z } from 'zod';
 import { DatasetError, getForm, parseConfidence, type DatasetSI } from './loader.ts';
 
+/**
+ * Sumber: URL publik ATAU dokumen internal owner (`doc`, mis. SOP KORA) — minimal salah satu.
+ * Dokumen internal tidak punya URL; jalurnya dicatat agar bisa ditelusuri (ADR-009).
+ */
+export const RefSourceSchema = (id: RegExp) =>
+  z
+    .object({
+      id: z.string().regex(id),
+      title: z.string().min(1),
+      url: z.string().regex(/^https?:\/\//).optional(),
+      doc: z.string().min(1).optional(),
+      grade: z.enum(['A', 'B', 'C']),
+    })
+    .refine((s) => s.url !== undefined || s.doc !== undefined, { message: 'sumber wajib punya url atau doc' });
+
 const RangeWithMeta = z
   .object({
     min: z.number().positive(),
@@ -54,7 +69,7 @@ export const ProcessDatasetSchema = z
       .min(1),
     rack: z.object({ halves_per_m2_per_tier: z.object({ derivation: z.string(), confidence: z.string() }) }),
     charcoal_kiln: z.object({ drum_batch_shell_kg: RangeWithMeta, burn_h: RangeWithMeta, cooling_h: RangeWithMeta }),
-    sources: z.array(z.object({ id: z.string().regex(/^P\d{2}$/), title: z.string(), url: z.string().regex(/^https?:\/\//), grade: z.enum(['A', 'B', 'C']) })).min(1),
+    sources: z.array(RefSourceSchema(/^P\d{2}$/)).min(1),
   })
   .superRefine((d, ctx) => {
     const ids = new Set(d.sources.map((s) => s.id));

@@ -7,6 +7,7 @@ import { fileURLToPath } from 'node:url';
 const FILES = {
   'dataset.json': 'coconut_inventory_dataset.json',
   'process-dataset.json': 'coconut_process_dataset.json',
+  'formula-dataset.json': 'coconut_formula_dataset.json',
 };
 const srcDir = fileURLToPath(new URL('../../../architecture/00-research/data/', import.meta.url));
 const outDir = fileURLToPath(new URL('../src/generated/', import.meta.url));

@@ -1,0 +1,353 @@
+{
+  "meta": {
+    "title": "Dataset Formula R&D, Produksi per Shift & Ceklis (kopra, arang, briket, cuka air kelapa, bioleather)",
+    "version": "1.0.0",
+    "compiled": "2026-10-10",
+    "requires_process_dataset": "1.1.0",
+    "requires_inventory_dataset": "1.0.4",
+    "value_convention": "Setiap angka {min, typ, max} + keyakinan A/B/C + source_ids. Persen ditulis apa adanya (pct); konversi ke fraksi di loader (ADR-004). typ diambil dari sumber; bila sumber hanya memberi rentang, typ = titik tengah dan ditandai di note. Angka STANDAR INTERNAL KORA = keyakinan C.",
+    "confidence_scale": {
+      "A": "Jurnal peer-review / standar resmi (terukur)",
+      "B": "Lembaga, buku teknis, atau beberapa sumber konsisten",
+      "C": "Standar internal KORA, satu studi kecil, atau spesifikasi pembeli — WAJIB divalidasi uji batch"
+    },
+    "report": "architecture/00-research/kora_research.md"
+  },
+  "kopra": {
+    "meat_per_nut_kg": { "min": 0.25, "typ": 0.3, "max": 0.4, "unit": "kg", "confidence": "C", "source_ids": ["F05"], "note": "Asumsi Rencana R&D Ronde 1; timbang sampel sendiri" },
+    "water_per_nut_l": { "min": 0.15, "typ": 0.17, "max": 0.2, "unit": "L", "confidence": "C", "source_ids": ["F05"] },
+    "copra_kg_per_1000_nuts": { "min": 150, "typ": 200, "max": 250, "unit": "kg", "confidence": "B", "source_ids": ["F01", "F19"], "note": "FAO/ILO; typ = titik tengah; tergantung varietas" },
+    "split_to_dryer_max_h": { "min": 4, "typ": 4, "max": 4, "unit": "h", "confidence": "A", "source_ids": ["F01", "F10"], "note": "Aturan 4 jam (FAO/APCC; BAFS) — titik kritis kapang & aflatoksin" },
+    "alarm_moisture_24h_max_pct": { "min": 35, "typ": 35, "max": 35, "unit": "pct", "confidence": "B", "source_ids": ["F01", "F10"] },
+    "alarm_moisture_48h_max_pct": { "min": 20, "typ": 20, "max": 20, "unit": "pct", "confidence": "B", "source_ids": ["F01", "F10"] },
+    "min_final_moisture_pct": { "min": 4.5, "typ": 4.5, "max": 4.5, "unit": "pct", "confidence": "C", "source_ids": ["F01"], "note": "Di bawah ini kopra rapuh/pecah & bobot jual turun" },
+    "grades": [
+      { "id": "edible", "name_id": "Edible", "moisture_max_pct": 6.0, "oil_min_pct": 60, "ffa_max_pct": 1, "foreign_max_pct": 0.5, "mould_max_pct": 0, "aflatoxin_max_ppb": 5, "confidence": "A", "source_ids": ["F01", "F09"] },
+      { "id": "reguler", "name_id": "Reguler", "moisture_max_pct": 8.0, "oil_min_pct": 58, "ffa_max_pct": 4, "foreign_max_pct": 1, "mould_max_pct": 10, "aflatoxin_max_ppb": 10, "confidence": "A", "source_ids": ["F01", "F09"] },
+      { "id": "asalan", "name_id": "Asalan", "moisture_max_pct": 13.9, "oil_min_pct": 55, "ffa_max_pct": 5, "foreign_max_pct": 2, "mould_max_pct": 20, "aflatoxin_max_ppb": 15, "confidence": "A", "source_ids": ["F01", "F09"] }
+    ],
+    "sulfur": {
+      "g_per_nut": { "min": 1.5, "typ": 1.75, "max": 2, "unit": "g", "confidence": "C", "source_ids": ["F01"], "note": "Dosis dasar SOP KORA; typ titik tengah" },
+      "g_per_m3": { "min": 20, "typ": 25, "max": 30, "unit": "g/m3", "confidence": "C", "source_ids": ["F01"], "note": "Cek silang volume ruang; kubung E3S 2024 ±80 g/m3 = batas atas kalibrasi, bukan dosis" },
+      "night_schedule_pct": [100, 50, 25, 25],
+      "max_nights": 4,
+      "lab_test_from_night": 3,
+      "so2_residue_eu_max_mg_kg": 50,
+      "source_ids": ["F01"]
+    },
+    "bisulfite_soak_pct": { "min": 0.2, "typ": 0.2, "max": 0.2, "unit": "pct", "confidence": "C", "source_ids": ["F01", "F05"], "note": "Rendam natrium bisulfit 0,2% (studi Indragiri Hilir); durasi rendam GAP — mulai 15 menit" },
+    "oven_profiles": [
+      { "id": "waste_heat", "name_id": "Limbah panas ketel (tidak langsung)", "temp_c": 68, "hours": 7.9, "final_moisture_pct": 5.0, "ffa_pct": 1.0, "source_ids": ["F08"] },
+      { "id": "electric", "name_id": "Oven listrik (280 kg/batch)", "temp_c": 68, "hours": 13, "final_moisture_pct": 5.0, "ffa_pct": 1.6, "batch_kg": 280, "source_ids": ["F08"] },
+      { "id": "biomass_husk", "name_id": "Oven biomassa sabut (1.200 kg)", "temp_c": 70, "hours": 27, "final_moisture_pct": 4.62, "ffa_pct": 0.085, "batch_kg": 1200, "source_ids": ["F08"] },
+      { "id": "multi_rack", "name_id": "Multi-sumber (rak ERK)", "temp_c": 65, "hours": 11, "final_moisture_pct": 5.0, "ffa_pct": 0.98, "source_ids": ["F08"] },
+      { "id": "solar_electric", "name_id": "Surya + listrik", "temp_c": 65, "hours": 20, "final_moisture_pct": 6.1, "ffa_pct": 2.1, "source_ids": ["F08"] },
+      { "id": "biomass_rack", "name_id": "Biomassa kayu/batok (rak)", "temp_c": 60, "hours": 30, "final_moisture_pct": 6.0, "ffa_pct": 2.0, "source_ids": ["F08"] },
+      { "id": "lpg", "name_id": "LPG", "temp_c": 70, "hours": 21, "final_moisture_pct": 9.0, "ffa_pct": 1.6, "source_ids": ["F08"] },
+      { "id": "sun", "name_id": "Penjemuran (pembanding)", "temp_c": 40, "hours": 48, "final_moisture_pct": 5.0, "ffa_pct": 2.0, "source_ids": ["F08"] }
+    ],
+    "oven_max_temp_c": { "min": 70, "typ": 70, "max": 75, "unit": "C", "confidence": "A", "source_ids": ["F01", "F08"], "note": "Kerja maks 70°C; >75°C menggosongkan & menaikkan FFA" },
+    "greenhouse": {
+      "rack_area_m2": { "min": 117, "typ": 117, "max": 117, "unit": "m2", "confidence": "C", "source_ids": ["F01"], "note": "Greenhouse 3×10×3,5 m, rak bertingkat (perhitungan SOP KORA)" },
+      "halves_per_m2": { "min": 25, "typ": 28, "max": 30, "unit": "count", "confidence": "C", "source_ids": ["F01"], "note": "Belahan Ø ±14 cm berjarak ±18 cm" },
+      "cycle_h": { "min": 72, "typ": 108, "max": 216, "unit": "h", "confidence": "B", "source_ids": ["F01"], "note": "108 jam kubung terkontrol (E3S 2024); KORA 3–5 hari kemarau, 6–9 hari hujan" }
+    },
+    "smoked_copra_per_kg_meat": { "min": 0.5, "typ": 0.5, "max": 0.5, "unit": "kg", "confidence": "C", "source_ids": ["F01"], "note": "Konversi teoretis KPI 1.A.1; ukur aktual" }
+  },
+  "arang": {
+    "yield_reference_pct": { "min": 28, "typ": 32, "max": 36, "unit": "pct", "confidence": "A", "source_ids": ["F02", "F15"], "note": "Drum 200 L 33,8–37,2% (Hudaya & Hartoyo 1990); operasi industri 28–33% (Unila); FAO/APCC ±33%" },
+    "yield_kora_actual_pct": { "min": 18, "typ": 20, "max": 22, "unit": "pct", "confidence": "C", "source_ids": ["F02"], "note": "SOP lama 5:1 — DI BAWAH acuan; target ≥25% (3 bln) → ≥28% (6 bln)" },
+    "shell_moisture_max_pct": { "min": 15, "typ": 15, "max": 15, "unit": "pct", "confidence": "C", "source_ids": ["F02"], "note": "Standar internal (data industri 13%, FAO 12–18%)" },
+    "reactor_temp_c": { "min": 450, "typ": 475, "max": 500, "unit": "C", "confidence": "A", "source_ids": ["F02"], "note": "VM ≤15% butuh 450–600°C (Ahmad & Sulaiman 2021; Hasibuan & Pardede 2023)" },
+    "methods": [
+      { "id": "kombi", "name_id": "1.A Kombi (bakar langsung)", "batch_shell_kg": { "min": 80, "typ": 80, "max": 80, "unit": "kg", "confidence": "C", "source_ids": ["F02"], "note": "Drum ±80 kg batok (Trubus); kolam lebih besar" }, "burn_h": { "min": 4, "typ": 6, "max": 7, "unit": "h", "confidence": "B", "source_ids": ["F02"] }, "cooling_h": { "min": 8, "typ": 10, "max": 12, "unit": "h", "confidence": "B", "source_ids": ["F02"], "note": "Mati hampa ≥8 jam/semalam (CDB India; FAO)" }, "liquid_smoke": false },
+      { "id": "pirolisis", "name_id": "1.B/1.C Pirolisis (kolam/drum, jet burner)", "batch_shell_kg": { "min": 80, "typ": 80, "max": 80, "unit": "kg", "confidence": "C", "source_ids": ["F02"], "note": "GAP: kapasitas reaktor KORA belum tercatat — isi sendiri" }, "burn_h": { "min": 4, "typ": 4.5, "max": 5, "unit": "h", "confidence": "B", "source_ids": ["F02"], "note": "350–450°C ±4–5 jam (jurnal UISU)" }, "cooling_h": { "min": 8, "typ": 10, "max": 12, "unit": "h", "confidence": "B", "source_ids": ["F02"] }, "liquid_smoke": true }
+    ],
+    "liquid_smoke_l_per_kg_shell": { "min": 0.25, "typ": 0.275, "max": 0.3, "unit": "L", "confidence": "C", "source_ids": ["F02"], "note": "Indikatif (jurnal UISU)" },
+    "weathering_days_export_min": 14,
+    "packing_temp_max_c": 40,
+    "fractions": [
+      { "id": "oversize", "name_id": "Oversize", "min_mm": 6.3, "use": "Kembali ke hammer mill" },
+      { "id": "granule", "name_id": "Granule", "min_mm": 2.0, "max_mm": 6.3, "use": "Arang aktif / granul" },
+      { "id": "mesh2", "name_id": "Mesh-2", "min_mm": 0.6, "max_mm": 2.0, "use": "Campuran briket" },
+      { "id": "powder", "name_id": "Powder", "max_mm": 0.6, "use": "Bahan utama briket" }
+    ],
+    "hammer_mill_kg_h": { "min": 21, "typ": 21, "max": 157, "unit": "kg/h", "confidence": "C", "source_ids": ["F02"], "note": "2 HP 1.440 rpm ±21 kg/jam (IPB 2023); 3 HP 2.800 rpm ±157 kg/jam (UBL 2024) — isi kapasitas mesin sendiri" },
+    "standards": [
+      { "id": "sni_1682", "name_id": "SNI 01-1682-1996 arang tempurung", "moisture_max_pct": 6, "ash_max_pct": 3, "vm_max_pct": 15, "confidence": "B", "source_ids": ["F02"], "note": "Cek status berlaku di BSN" },
+      { "id": "icc", "name_id": "ICC Coconut Shell Charcoal", "moisture_max_pct": 10, "ash_max_pct": 2, "vm_max_pct": 15, "fc_min_pct": 75, "foreign_max_pct": 0.5, "fines_max_pct": 5, "confidence": "A", "source_ids": ["F02", "F09"] }
+    ]
+  },
+  "briket": {
+    "binder_pct": { "min": 4, "typ": 6, "max": 8, "unit": "pct", "confidence": "B", "source_ids": ["F07"], "note": "Pati sebagai pasta air panas, % dari berat arang (FAO FP 63 bab 11); typ titik tengah. Dosis KORA aktual = GAP" },
+    "binder_moisture_pct": { "min": 10, "typ": 13, "max": 14, "unit": "pct", "confidence": "B", "source_ids": ["F22"], "note": "Tapioka SNI 3451:2011 KA maks 14%; typ asumsi — ukur" },
+    "charcoal_powder_moisture_pct": { "min": 5, "typ": 6, "max": 8, "unit": "pct", "confidence": "C", "source_ids": ["F02"], "note": "Arang lolos QC 5–10% (FAO); target packing ≤8%" },
+    "dough_moisture_pct": { "min": 22, "typ": 25, "max": 28, "unit": "pct", "confidence": "C", "source_ids": ["F04"], "note": "Catatan teknis produksi internal (Modul QC KORA COCONUT 7.2)" },
+    "gelatinization_min_c": { "min": 65, "typ": 65, "max": 65, "unit": "C", "confidence": "C", "source_ids": ["F04"] },
+    "binder_hot_water_share_pct": { "min": 70, "typ": 70, "max": 70, "unit": "pct", "confidence": "C", "source_ids": ["F04"], "note": "Rasio air panas:dingin ±70:30" },
+    "aging_h": { "min": 8, "typ": 12, "max": 16, "unit": "h", "confidence": "C", "source_ids": ["F04"], "note": "'Aging semalam' — durasi persis GAP" },
+    "predry_h": { "min": 2, "typ": 4, "max": 6, "unit": "h", "confidence": "C", "source_ids": ["F04"] },
+    "oven_temp_c": { "min": 60, "typ": 80, "max": 90, "unit": "C", "confidence": "B", "source_ids": ["F04", "F07"], "note": "Bertahap 60–90°C (KORA); FAO ±80°C" },
+    "oven_h": { "min": 8, "typ": 16, "max": 24, "unit": "h", "confidence": "C", "source_ids": ["F04"] },
+    "process_water": { "tds_max_ppm": 300, "ph_min": 6.5, "ph_max": 8.5, "fe_max_mg_l": 0.3, "kora_well": { "tds_ppm": 151, "ec_us_cm": 303, "ph": 5.92 }, "source_ids": ["F06"] },
+    "literature_calorific_cal_g": { "min": 5975, "typ": 6930, "max": 6930, "unit": "cal/g", "confidence": "A", "source_ids": ["F16", "F17"], "note": "Tapioka 4% → 6.930 (Milya 2023); tapioka 10% → 5.975 (BRIN 2026). Perekat naik → kalor turun" },
+    "variants": [
+      {
+        "id": "shisha", "name_id": "Briket shisha (kubus)", "rnd_code": "BS",
+        "shape": "cube", "dims_mm": { "side": 25 }, "dim_tolerance_mm": 1,
+        "density_g_cm3": { "min": 0.9, "typ": 1.0, "max": 1.1, "unit": "g/cm3", "confidence": "C", "source_ids": ["F04"] },
+        "spec": { "moisture_max_pct": 8, "ash_max_pct": 3, "fc_min_pct": 75, "calorific_min_kcal_kg": 7000, "burn_min_min": 60, "ignition_max_min": 10, "broken_max_pct": 5 },
+        "spec_note": "Spesifikasi pasar umum (Modul QC KORA); konfirmasi kontrak pembeli. Premium: KA 5–8%, abu ≤2%, FC 75–80%",
+        "confidence": "C", "source_ids": ["F04"]
+      },
+      {
+        "id": "bbq", "name_id": "Briket BBQ (pillow)", "rnd_code": "BB",
+        "shape": "pillow", "dims_mm": { "width": 50, "length": 100 }, "dim_tolerance_mm": 2,
+        "density_g_cm3": { "min": 0.9, "typ": 1.05, "max": 1.2, "unit": "g/cm3", "confidence": "C", "source_ids": ["F04"] },
+        "spec": { "moisture_max_pct": 8, "ash_max_pct": 5, "fc_min_pct": 70, "burn_min_min": 120, "broken_max_pct": 5 },
+        "spec_note": "Tebal pillow tidak tercantum (GAP) — isi tebal/berat per biji aktual",
+        "confidence": "C", "source_ids": ["F04"]
+      },
+      {
+        "id": "custom", "name_id": "Briket custom", "rnd_code": "BC",
+        "shape": "custom",
+        "density_g_cm3": { "min": 0.9, "typ": 1.0, "max": 1.2, "unit": "g/cm3", "confidence": "C", "source_ids": ["F04"] },
+        "spec": { "moisture_max_pct": 8, "ash_max_pct": 8, "vm_max_pct": 15, "calorific_min_kcal_kg": 5000 },
+        "spec_note": "Default SNI 01-6235-2000 (briket arang kayu; FC ≥77% di sebagian sumber — cek BSN). Ubah sesuai pembeli",
+        "confidence": "B", "source_ids": ["F18"]
+      }
+    ]
+  },
+  "cuka": {
+    "water_brix": { "min": 4, "typ": 4.5, "max": 5, "unit": "brix", "confidence": "A", "source_ids": ["F03", "F11"] },
+    "water_ph": { "min": 5.0, "typ": 5.48, "max": 5.7, "unit": "pH", "confidence": "A", "source_ids": ["F03", "F11"] },
+    "water_density_kg_l": { "min": 1.015, "typ": 1.02, "max": 1.025, "unit": "kg/L", "confidence": "C", "source_ids": ["F20"], "note": "Larutan ±4–5 °Brix; turunan tabel sukrosa — ukur/timbang 1 L untuk presisi" },
+    "water_max_cold_h": { "min": 48, "typ": 48, "max": 48, "unit": "h", "confidence": "C", "source_ids": ["F03"], "note": "≤10°C dalam ≤2 jam; olah hari sama; batas darurat 48 jam (internal)" },
+    "must_brix": { "min": 14, "typ": 15, "max": 17, "unit": "brix", "confidence": "A", "source_ids": ["F03", "F11"], "note": "FAO 'up to 15%'; PCA ±16%" },
+    "must_pasteurize_c": { "min": 60, "typ": 62.5, "max": 65, "unit": "C", "confidence": "B", "source_ids": ["F03"], "note": "10–15 menit (PCA)" },
+    "yeast_g_l": { "min": 1, "typ": 2, "max": 4, "unit": "g/L", "confidence": "B", "source_ids": ["F03"], "note": "PCA 0,7–0,8; Trinh Ngoc 4 g/L; KORA 1–4; typ titik tengah dibulatkan" },
+    "alcohol_days": { "min": 7, "typ": 10, "max": 14, "unit": "d", "confidence": "B", "source_ids": ["F03"] },
+    "ferment_temp_c": { "min": 28, "typ": 29, "max": 30, "unit": "C", "confidence": "B", "source_ids": ["F03"] },
+    "ethanol_efficiency": { "min": 0.8, "typ": 0.88, "max": 0.95, "unit": "fraction", "confidence": "C", "source_ids": ["F20", "F11"], "note": "Fraksi dari teoretis 0,511 g etanol/g gula (Gay-Lussac); Gunathilake 17%→±9% ≈ 0,8" },
+    "starter_pct": { "min": 10, "typ": 15, "max": 20, "unit": "pct", "confidence": "A", "source_ids": ["F03"], "note": "FAO 10%; PCA 1:4 (20%)" },
+    "acetify_weeks": { "min": 3, "typ": 4, "max": 6, "unit": "wk", "confidence": "B", "source_ids": ["F03"] },
+    "acetic_efficiency": { "min": 0.5, "typ": 0.75, "max": 0.9, "unit": "fraction", "confidence": "C", "source_ids": ["F20", "F21"], "note": "Fraksi dari teoretis 1,304 g asam/g etanol; aturan ≥8% alkohol untuk 4% asam ≈ 0,5" },
+    "acetic_min_pct": { "min": 4, "typ": 4, "max": 4, "unit": "pct", "confidence": "A", "source_ids": ["F03", "F13"] },
+    "acetic_target_pct": { "min": 5, "typ": 5, "max": 5, "unit": "pct", "confidence": "C", "source_ids": ["F03"] },
+    "residual_alcohol_max_pct": { "min": 0.5, "typ": 0.5, "max": 0.5, "unit": "pct", "confidence": "A", "source_ids": ["F13"] },
+    "egg_white_g_l": { "min": 7, "typ": 8, "max": 9, "unit": "g/L", "confidence": "A", "source_ids": ["F03", "F21"] },
+    "egg_white_per_egg_g": { "min": 30, "typ": 30, "max": 30, "unit": "g", "confidence": "C", "source_ids": ["F05"] },
+    "bottle_pasteurize_c": { "min": 60, "typ": 65, "max": 71, "unit": "C", "confidence": "B", "source_ids": ["F03"], "note": "Tahan ≥30 menit; jangan mendidih" },
+    "titration": { "naoh_n_default": 0.1, "sample_ml_default": 10, "acetic_g_mol": 60.05, "source_ids": ["F03", "F20"], "note": "% b/v = V·N·6,005 ÷ Vs (koreksi FND-022)" }
+  },
+  "bioleather": {
+    "sucrose_g_l": { "min": 80, "typ": 100, "max": 100, "unit": "g/L", "confidence": "A", "source_ids": ["F03", "F12"], "note": "Optimum 10% (Jagannath 2008); 8–10% (Lin 2022)" },
+    "za_g_l": { "min": 5, "typ": 5, "max": 5, "unit": "g/L", "confidence": "A", "source_ids": ["F03", "F12"] },
+    "ph": { "min": 4.0, "typ": 4.25, "max": 4.5, "unit": "pH", "confidence": "A", "source_ids": ["F03", "F12"] },
+    "starter_pct": { "min": 10, "typ": 12.5, "max": 15, "unit": "pct", "confidence": "B", "source_ids": ["F03"], "note": "15% → kuat tarik terbaik 69,25 MPa (Sya'di 2025)" },
+    "culture_days": { "min": 7, "typ": 14, "max": 21, "unit": "d", "confidence": "B", "source_ids": ["F03"] },
+    "culture_temp_c": { "min": 28, "typ": 29, "max": 30, "unit": "C", "confidence": "B", "source_ids": ["F03"] },
+    "wet_yield_g_l_day": { "min": 12.4, "typ": 12.4, "max": 19, "unit": "g/L/d", "confidence": "B", "source_ids": ["F03"], "note": "Sekali panen 12,4; panen berkala mingguan ±19 (studi 2025)" },
+    "dry_fraction_of_wet": { "min": 0.01, "typ": 0.013, "max": 0.015, "unit": "fraction", "confidence": "B", "source_ids": ["F03"], "note": "8,17 g/L kering dari 625,6 g/L basah" },
+    "target_wet_thickness_mm": { "min": 10, "typ": 15, "max": 20, "unit": "mm", "confidence": "C", "source_ids": ["F03"] },
+    "naoh_m": { "min": 0.1, "typ": 0.1, "max": 0.1, "unit": "M", "confidence": "A", "source_ids": ["F03"], "note": "Batas keras: NaOH 2–8% merusak serat (Chen 2021)" },
+    "glycerol_pct": { "min": 1, "typ": 1, "max": 1, "unit": "pct", "confidence": "A", "source_ids": ["F03"], "note": "Pilihan A: rendam 33 jam (Rathinamoorthy 2022)" },
+    "dry_temp_c": { "min": 30, "typ": 35, "max": 40, "unit": "C", "confidence": "B", "source_ids": ["F03"] },
+    "tensile_min_mpa": { "min": 20, "typ": 20, "max": 20, "unit": "MPa", "confidence": "B", "source_ids": ["F03"] },
+    "fold_min": { "min": 100, "typ": 100, "max": 100, "unit": "count", "confidence": "B", "source_ids": ["F03"] }
+  },
+  "stations": [
+    { "id": "kupas_sabut", "name_id": "Kupas sabut manual", "kind": "manual", "unit": "butir", "rate_per_person_h": { "min": 40, "typ": 60, "max": 80, "unit": "butir/h", "confidence": "C", "source_ids": ["F01"], "note": "Studi terukur 40–80/jam; typ titik tengah — time study wajib" } },
+    { "id": "belah", "name_id": "Jagal belah dua (WS 2.B)", "kind": "manual", "unit": "butir", "rate_per_person_h": { "min": 37.5, "typ": 50, "max": 875, "unit": "butir/h", "confidence": "C", "source_ids": ["F01", "F19"], "note": "SOP lama 300–500/shift 8 jam; ILO/FAO terampil s/d 7.000/hari — rentang sangat lebar (K-06)" } },
+    { "id": "congkel", "name_id": "Congkel daging (WS 2.D)", "kind": "manual", "unit": "butir", "rate_per_person_h": { "min": 160, "typ": 205, "max": 250, "unit": "butir/h", "confidence": "C", "source_ids": ["F19"], "note": "UNIDO 1982 (kapak kecil)" } },
+    { "id": "kupas_testa", "name_id": "Kupas kulit ari (Edible)", "kind": "manual", "unit": "butir", "rate_per_person_h": { "min": 150, "typ": 155, "max": 160, "unit": "butir/h", "confidence": "C", "source_ids": ["F19"], "note": "UNIDO 1982" } },
+    { "id": "hammer_mill", "name_id": "Hammer mill (WS 3.A)", "kind": "machine", "unit": "kg", "rate_per_unit_h": { "min": 21, "typ": 21, "max": 157, "unit": "kg/h", "confidence": "C", "source_ids": ["F02"] } }
+  ],
+  "checklists": [
+    { "id": "qc-kpr-terima", "type": "qc", "product": "kopra", "stage": "Penerimaan kelapa (WS 2.A)", "form_ref": "F-K01", "items": [
+      { "text": "Kematangan: sabut coklat, bunyi air jelas (tua 11–12 bln)", "critical": false },
+      { "text": "Tidak retak/bocor", "critical": true },
+      { "text": "Tidak bertunas (kentos)", "critical": false },
+      { "text": "Tidak busuk/bau, mata tidak berjamur", "critical": true },
+      { "text": "Bersih dari lumpur", "critical": false },
+      { "text": "Bebas hama/lubang gerek", "critical": false },
+      { "text": "Tebal daging (belah 10 butir) ≥1 cm, putih padat", "critical": false },
+      { "text": "Sampel ≥50 butir atau 2%; cacat ≤10% → terima", "critical": true },
+      { "text": "Asal kebun & DR/DT tercatat lengkap", "critical": true }
+    ], "source_ids": ["F01"] },
+    { "id": "qc-kpr-jagal", "type": "qc", "product": "kopra", "stage": "Jagal & aturan 4 jam (WS 2.B)", "form_ref": "F-K03", "items": [
+      { "text": "Meja, corong, saringan bersih di awal shift", "critical": false },
+      { "text": "Jam belah dicatat per keranjang", "critical": true },
+      { "text": "Belah → pengering ≤4 jam (lewat = maksimal Reguler)", "critical": true },
+      { "text": "Sabut dikumpulkan terpisah dari batok", "critical": false },
+      { "text": "Sampling salah sortir 10 keranjang ≤5%", "critical": false },
+      { "text": "Air kelapa masuk pendingin ≤2 jam, ≤10°C", "critical": true }
+    ], "source_ids": ["F01"] },
+    { "id": "qc-kpr-kering", "type": "qc", "product": "kopra", "stage": "Pengeringan & fumigasi (WS 2.F)", "form_ref": "F-K05/F-K06/F-K07", "items": [
+      { "text": "KA 24 jam ≤35%", "critical": false },
+      { "text": "KA 48 jam ≤20% (bila tidak → pindah oven, tandai batch)", "critical": true },
+      { "text": "Suhu oven ≤70°C, rotasi tray tiap 2–4 jam", "critical": true },
+      { "text": "Fumigasi: tak ada orang di dalam, kipas OFF, rambu & kunci", "critical": true },
+      { "text": "Respirator gas asam dipakai operator fumigasi", "critical": true },
+      { "text": "Fumigasi ≥3 malam → sampel uji SO₂ dikirim", "critical": true },
+      { "text": "Maks 4 malam fumigasi (100/50/25/25%)", "critical": true }
+    ], "source_ids": ["F01"] },
+    { "id": "qc-kpr-grading", "type": "qc", "product": "kopra", "stage": "Grading & packing", "form_ref": "F-K09/F-K10", "items": [
+      { "text": "KA 10 sampel, rata-rata & tertinggi dicatat", "critical": true },
+      { "text": "Tidak ada potong >1 poin di atas batas grade", "critical": true },
+      { "text": "Warna, kapang (termasuk sisi bawah), benda asing, bau diperiksa", "critical": true },
+      { "text": "Verifikasi ulang KA 3 sampel sebelum karung ditutup", "critical": true },
+      { "text": "Label: produk, grade, lot DR/DT, batch, tanggal, berat, KORA", "critical": false },
+      { "text": "Kopra turun grade/dicuci tidak dicampur ke grade lebih tinggi", "critical": true }
+    ], "source_ids": ["F01"] },
+    { "id": "qc-arg-karbon", "type": "qc", "product": "arang", "stage": "Karbonisasi (WS 1.A/1.B/1.C)", "form_ref": "F-A03/F-A04", "items": [
+      { "text": "Radius 5 m bersih bahan mudah terbakar; APAR, pasir, tanah liat siap", "critical": true },
+      { "text": "Minimal 2 orang selama tungku menyala", "critical": true },
+      { "text": "Satu tungku = satu lot (DR/DT tidak dicampur); batok ditimbang", "critical": false },
+      { "text": "KA batok ≤15%", "critical": false },
+      { "text": "Pirolisis: suhu reaktor 450–500°C dicatat tiap 30 menit", "critical": false },
+      { "text": "Mati hampa tanpa air ≥8 jam; cek bocor 15 menit", "critical": true },
+      { "text": "Rendemen = kg arang ÷ kg batok dicatat", "critical": false }
+    ], "source_ids": ["F02"] },
+    { "id": "qc-arg-ayak", "type": "qc", "product": "arang", "stage": "Ayak, QC & packing", "form_ref": "F-A05/F-A07", "items": [
+      { "text": "Arang dingin ≤40°C sebelum ayak/packing", "critical": true },
+      { "text": "% mentah (20 potong acak) ≤5%", "critical": false },
+      { "text": "KA, abu, VM sesuai standar (SNI 01-1682 / ICC)", "critical": true },
+      { "text": "≤5% lolos ayakan 6,3 mm", "critical": false },
+      { "text": "Ekspor: weathering ≥14 hari (IMDG SP 978)", "critical": true },
+      { "text": "Karung ekspor ≤30 kg, label UN 1361 kelas 4.2", "critical": true }
+    ], "source_ids": ["F02", "F14"] },
+    { "id": "qc-arg-giling", "type": "qc", "product": "arang", "stage": "Hammer mill & ayak sortase (WS 3.A/3.B)", "form_ref": "F-A06", "items": [
+      { "text": "Guard, grounding, sabuk & baut OK", "critical": true },
+      { "text": "Pengendali debu ON sebelum mesin", "critical": true },
+      { "text": "Tidak ada api/rokok/gerinda di ruang giling", "critical": true },
+      { "text": "Screen tidak sobek; uji ukuran 100 g/shift ≥90% sesuai", "critical": false },
+      { "text": "Debu dibersihkan basah/sedot, tidak ditiup", "critical": true },
+      { "text": "APD: respirator P2, kacamata, pelindung telinga", "critical": true }
+    ], "source_ids": ["F02"] },
+    { "id": "qc-brk-proses", "type": "qc", "product": "briket", "stage": "Adonan, cetak & oven", "form_ref": "Modul QC 7.2", "items": [
+      { "text": "Air proses: TDS <300 ppm, pH 6,5–8,5 (Fe <0,3 mg/L)", "critical": false },
+      { "text": "Perekat tergelatinisasi ≥65°C (air panas:dingin ±70:30)", "critical": true },
+      { "text": "Kadar air adonan 22–28%, merata", "critical": true },
+      { "text": "Aging adonan semalam sebelum cetak", "critical": false },
+      { "text": "Angin-anginkan 2–6 jam sebelum oven (cegah case hardening)", "critical": false },
+      { "text": "Oven bertahap 60–90°C, 8–24 jam; suhu & jam dicatat", "critical": true }
+    ], "source_ids": ["F04"] },
+    { "id": "qc-cka", "type": "qc", "product": "cuka", "stage": "Cuka air kelapa", "form_ref": "F-C01..F-C04", "items": [
+      { "text": "Air kelapa: pH >5, segar, tak berbusa; ≤10°C dalam ≤2 jam", "critical": true },
+      { "text": "Must 14–17 °Brix; pasteurisasi 60–65°C 10–15 mnt", "critical": true },
+      { "text": "Wadah bahan antara berlabel 'BUKAN UNTUK DIKONSUMSI', ruang terkunci", "critical": true },
+      { "text": "Fermentasi alkohol 28–30°C; selesai bila gelembung berhenti & °Brix stabil 2 hari", "critical": false },
+      { "text": "Titrasi mingguan; N NaOH & volume sampel dicatat", "critical": true },
+      { "text": "Asam asetat ≥4% & sisa alkohol ≤0,5% sebelum pembotolan", "critical": true },
+      { "text": "Pasteurisasi botol 60–71°C ≥30 mnt; 2 botol arsip", "critical": true }
+    ], "source_ids": ["F03"] },
+    { "id": "qc-blt", "type": "qc", "product": "bioleather", "stage": "Bioleather", "form_ref": "F-C05..F-C07", "items": [
+      { "text": "Media: sukrosa 10%, ZA 0,5%, pH 4,0–4,5", "critical": true },
+      { "text": "Baki tidak digoyang/dipindah selama kultur", "critical": true },
+      { "text": "Cek kontaminasi harian; baki terkontaminasi dibuang seluruhnya", "critical": true },
+      { "text": "NaOH maks 0,1 M; APD kimia lengkap", "critical": true },
+      { "text": "Bilas sampai pH netral (±7)", "critical": false },
+      { "text": "Kering 30–40°C di rangka sampai berat konstan", "critical": false }
+    ], "source_ids": ["F03"] },
+    { "id": "rnd-kopra", "type": "rnd", "product": "kopra", "stage": "Rencana batch R&D kopra edible", "form_ref": "Rencana R&D Ronde 1", "items": [
+      { "text": "Satu variabel diubah per percobaan (kematangan / jeda / suhu / pemutih / metode)", "critical": true },
+      { "text": "Kode batch unik; perlakuan & ulangan tercatat", "critical": true },
+      { "text": "Logger suhu/RH di ≥5 titik greenhouse; posisi rak diacak", "critical": false },
+      { "text": "Berat awal, jam belah & jam masuk pengering dicatat", "critical": true },
+      { "text": "KA tiap 12 jam sampai stabil", "critical": false },
+      { "text": "Uji akhir: KA, warna, jamur, FFA, minyak, aflatoksin, SO₂ (bila sulfur)", "critical": true },
+      { "text": "Resep lolos 3 ulangan berturut sebelum dikunci", "critical": true }
+    ], "source_ids": ["F05"] },
+    { "id": "rnd-briket", "type": "rnd", "product": "briket", "stage": "Rencana batch R&D briket", "form_ref": "—", "items": [
+      { "text": "Fraksi serbuk (mesh) & sumber arang (lot DR/DT) tercatat", "critical": true },
+      { "text": "Dosis perekat diuji bertingkat (mis. 4/6/8%) — satu variabel per batch", "critical": true },
+      { "text": "Air adonan diukur, bukan dikira-kira", "critical": true },
+      { "text": "Tekanan/alat cetak & dimensi dicatat", "critical": false },
+      { "text": "Uji bakar: waktu nyala, waktu bakar, warna abu, percikan, bau", "critical": true },
+      { "text": "Uji lab: KA, abu, VM, FC, kalor (lab eksternal per lot)", "critical": true }
+    ], "source_ids": ["F04", "F07"] },
+    { "id": "rnd-cuka", "type": "rnd", "product": "cuka", "stage": "Rencana batch R&D cuka", "form_ref": "Tracker Ronde 1 — sheet Cuka", "items": [
+      { "text": "Variabel: dosis ragi, Brix awal, % starter, umur air kelapa", "critical": true },
+      { "text": "Brix & pH awal diukur sebelum hitung gula", "critical": true },
+      { "text": "Gula dihitung dengan neraca massa (bukan rumus lama)", "critical": true },
+      { "text": "Log titrasi mingguan per toples", "critical": true },
+      { "text": "Rendemen liter cuka per liter air kelapa dicatat (GAP)", "critical": false }
+    ], "source_ids": ["F03", "F05"] },
+    { "id": "rnd-blt", "type": "rnd", "product": "bioleather", "stage": "Rencana batch R&D bioleather", "form_ref": "Tracker Ronde 1 — sheet Bioleather", "items": [
+      { "text": "Variabel: umur air kelapa (0 vs 2 hari), gula, tebal media, gliserol", "critical": true },
+      { "text": "Tebal pelikel hari 7/14/21 dicatat", "critical": false },
+      { "text": "Berat basah & kering → rendemen", "critical": true },
+      { "text": "Uji tarik (≥20 MPa) & lipat (≥100×)", "critical": true },
+      { "text": "Mother cuka (BLT-M) dibandingkan dengan kultur khusus", "critical": false }
+    ], "source_ids": ["F03", "F05"] },
+    { "id": "prd-kopra-edible", "type": "product", "product": "kopra", "stage": "Rilis produk: Kopra Edible", "form_ref": "F-K09 / CoA", "items": [
+      { "text": "KA ≤6,0%", "critical": true },
+      { "text": "Minyak ≥60%, FFA ≤1% (lab)", "critical": true },
+      { "text": "Aflatoksin ≤5 ppb (lab terakreditasi)", "critical": true },
+      { "text": "Residu SO₂ sesuai negara tujuan (UE ≤50 mg/kg) bila fumigasi", "critical": true },
+      { "text": "Kapang 0%, benda asing ≤0,5%, putih merata, tanpa bau asap/tengik", "critical": true },
+      { "text": "Karung berlapis PE, label lengkap, KA verifikasi 3 sampel", "critical": false }
+    ], "source_ids": ["F01", "F09"] },
+    { "id": "prd-arang-ekspor", "type": "product", "product": "arang", "stage": "Rilis produk: Arang batok ekspor", "form_ref": "F-A05 / RoA", "items": [
+      { "text": "KA, abu, VM, FC sesuai kontrak (acuan ICC: KA <10, abu ≤2, VM ≤15, FC ≥75)", "critical": true },
+      { "text": "Weathering ≥14 hari & suhu ≤40°C saat packing", "critical": true },
+      { "text": "Dokumen: RoA, MSDS, COO, dokumen UN 1361 kelas 4.2", "critical": true },
+      { "text": "Kontainer bersih kering; ruang kosong ≥30 cm di atas muatan", "critical": false }
+    ], "source_ids": ["F02", "F14"] },
+    { "id": "prd-briket-shisha", "type": "product", "product": "briket", "stage": "Rilis produk: Briket shisha", "form_ref": "Modul QC 6.4", "items": [
+      { "text": "KA ≤8%, abu ≤3% (premium ≤2%), FC ≥75%", "critical": true },
+      { "text": "Kalor ≥7.000 kkal/kg (sesuai kontrak)", "critical": true },
+      { "text": "Waktu bakar ≥60 mnt/kubus; nyala ≤10 mnt", "critical": true },
+      { "text": "Abu putih; tanpa percikan; tanpa bau/asap menyengat", "critical": true },
+      { "text": "Dimensi ±1 mm; pecah ≤5% per karton sampel", "critical": false },
+      { "text": "Sampel uji bakar ≥10 kubus/100 kg", "critical": false }
+    ], "source_ids": ["F04"] },
+    { "id": "prd-briket-bbq", "type": "product", "product": "briket", "stage": "Rilis produk: Briket BBQ", "form_ref": "Modul QC 7.5", "items": [
+      { "text": "KA produk jadi ≤8%", "critical": true },
+      { "text": "Abu ≤5%, abu putih merata", "critical": true },
+      { "text": "Waktu bakar 2–3 jam", "critical": true },
+      { "text": "Dimensi 5×10 cm ±2 mm; cacat retak/chipping ≤5%", "critical": false },
+      { "text": "Tanpa bau tar/asap menyengat", "critical": true },
+      { "text": "Sampel ≥5 batang/50 kg", "critical": false }
+    ], "source_ids": ["F04"] },
+    { "id": "prd-cuka", "type": "product", "product": "cuka", "stage": "Rilis produk: Cuka air kelapa", "form_ref": "B6.1 / F-C04", "items": [
+      { "text": "Asam asetat ≥4,0% (target 5%)", "critical": true },
+      { "text": "Sisa alkohol ≤0,5% v/v", "critical": true },
+      { "text": "Pb ≤1, As ≤1, Cu ≤5 mg/kg (lab, per 6 bulan/lot jual)", "critical": true },
+      { "text": "Jernih, kuning pucat, tanpa partikel & tanpa cacing cuka", "critical": true },
+      { "text": "Label: keasaman (angka bulat), volume, batch, tanggal, izin edar, alergen bila putih telur", "critical": true }
+    ], "source_ids": ["F03", "F13"] },
+    { "id": "prd-bioleather", "type": "product", "product": "bioleather", "stage": "Rilis produk: Bioleather", "form_ref": "F-C07", "items": [
+      { "text": "Kuat tarik ≥20 MPa (ISO 3376)", "critical": true },
+      { "text": "Lipat 180° ≥100× tanpa retak", "critical": true },
+      { "text": "Tebal seragam ±10%", "critical": false },
+      { "text": "Tanpa lubang, gelembung, bintik kapang, lengket", "critical": true },
+      { "text": "Grade A (kultur) / B (mother cuka) ditandai", "critical": false }
+    ], "source_ids": ["F03"] }
+  ],
+  "sources": [
+    { "id": "F01", "title": "KORA-SOP-KPR-01 SOP Produksi Kopra Rev 03 (Sep 2026) — merangkum ICC, FAO/APCC, BAFS, SNI 01-3946-1995, Yani 2022", "doc": "kora/New folder/baru/SOP_Kopra_KORA.docx", "grade": "B" },
+    { "id": "F02", "title": "KORA-SOP-ARG-01 SOP Produksi Arang Batok Rev 03 (Sep 2026) — SNI 01-1682-1996, ICC, CDB, FAO FP 41, IMDG", "doc": "kora/New folder/baru/SOP_Arang_KORA.docx", "grade": "B" },
+    { "id": "F03", "title": "KORA-SOP-AKL-01 SOP Turunan Air Kelapa: Cuka & Bioleather Rev 01 (Sep 2026) — PCA, FAO, Codex, jurnal", "doc": "kora/New folder/baru/SOP_Turunan_Air_Kelapa_Cuka_Bioleather_KORA.docx", "grade": "B" },
+    { "id": "F04", "title": "QC-KC-2026-01 Modul QC KORA COCONUT (kopra edibel/asalan, briket shisha, briket BBQ)", "doc": "kora/Modul_QC_KORA_COCONUT.docx", "grade": "C" },
+    { "id": "F05", "title": "Rencana R&D Ronde 1 & Tracker R&D (Draft v1, 29 Sep 2026)", "doc": "kora/RnD_Ronde1_Kopra_Edible_Air_Kelapa_40kg.pdf; kora/Tracker_RnD_Ronde1_Kopra_AirKelapa_20kg.xlsx", "grade": "C" },
+    { "id": "F06", "title": "Lampiran Standar Parameter Air & Ringkasan Hasil Uji Air KORA (Sep 2026)", "doc": "kora/air/", "grade": "C" },
+    { "id": "F07", "title": "FAO Forestry Paper 63 — Industrial charcoal making, Ch. 11 Briquetting of charcoal", "url": "https://www.fao.org/4/x5328e/x5328e0c.htm", "grade": "A" },
+    { "id": "F08", "title": "Yani et al. 2022, Jurnal Ilmu Pertanian Indonesia 27(3):321-331 — perbandingan 9 metode pengering kopra", "url": "https://doi.org/10.18343/jipi.27.3.321", "grade": "A" },
+    { "id": "F09", "title": "International Coconut Community (ICC) — Copra & Coconut Shell Charcoal quality standards", "url": "https://coconutcommunity.org", "grade": "A" },
+    { "id": "F10", "title": "FAO/APCC Coconut Post-harvest Compendium; FAO Manual on HACCP — Copra (via SOP KORA)", "doc": "dirujuk F01", "grade": "B" },
+    { "id": "F11", "title": "Gunathilake et al. 2011, CORD 27 — karakter air kelapa & fermentasi cuka (via SOP AKL)", "doc": "dirujuk F03", "grade": "A" },
+    { "id": "F12", "title": "Jagannath et al. 2008, World J. Microbiol. Biotechnol. — media nata air kelapa (via SOP AKL)", "doc": "dirujuk F03", "grade": "A" },
+    { "id": "F13", "title": "Codex CXS 162-1987 Regional Standard for Vinegar (via SOP AKL)", "doc": "dirujuk F03", "grade": "A" },
+    { "id": "F14", "title": "IMDG Code Amdt 42-24 SP 978; CINS Charcoal Guidelines 2024 (via SOP Arang)", "doc": "dirujuk F02", "grade": "A" },
+    { "id": "F15", "title": "Hudaya & Hartoyo 1990 (J. Penelitian Hasil Hutan 7(4)); J. Agric. Biosystem Eng. Unila — rendemen drum (via SOP Arang)", "doc": "dirujuk F02", "grade": "A" },
+    { "id": "F16", "title": "Milya et al. 2023, Chemical Engineering Journal Storage 3(4):505-516 — perekat tapioka 4%", "url": "https://ojs.unimal.ac.id/index.php/cejs/article/download/9913/pdf", "grade": "A" },
+    { "id": "F17", "title": "Analisis komparatif briket arang tempurung kelapa (J. Penelitian Hasil Hutan BRIN, 2026) — tapioka 10%, 60 mesh, 400 psi", "url": "https://ejournal.brin.go.id/jphh/article/download/13113/12481/49457", "grade": "A" },
+    { "id": "F18", "title": "SNI 01-6235-2000 Briket arang kayu (reproduksi sekunder; teks resmi di BSN)", "doc": "dirujuk F02 & jurnal; perlu verifikasi BSN", "grade": "B" },
+    { "id": "F19", "title": "UNIDO 1982 Desiccated coconut industry; ILO/FAO small-scale copra — produktivitas (via SOP KORA B2.1)", "doc": "dirujuk F01", "grade": "B" },
+    { "id": "F20", "title": "Turunan stoikiometri/fisika: Gay-Lussac 0,511 g etanol/g heksosa; 60,05/46,07 g/mol asam asetat/etanol; definisi °Brix (% massa)", "doc": "kora_research.md E1, E4", "grade": "A" },
+    { "id": "F21", "title": "Den & Marquez 1987, Annals of Tropical Research 9(1) — cuka air kelapa (via SOP AKL)", "doc": "dirujuk F03", "grade": "A" },
+    { "id": "F22", "title": "SNI 3451:2011 Tepung tapioka — KA maks 14% (reproduksi: J. Teknologi Pangan & Hasil Pertanian USM 2020)", "url": "https://journals.usm.ac.id/index.php/jtphp/article/download/4546/2392/12531", "grade": "B" }
+  ]
+}
