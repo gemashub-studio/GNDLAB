@@ -24,7 +24,8 @@ Dependensi: `web → dataset → calc-engine`. Engine tidak bergantung pada apa 
 | M2 | Web, DB, API, kalkulator, PWA | ✅ 2026-10-09 (offline nav: ISS-025 terbuka) | 131 unit + 13 E2E, run_all_checks LULUS |
 | M3 | Simulator 2D SVG + 3D r3f | ✅ 2026-10-09 | engine 93 (layout 11), E2E simulator 10 (1.892 karung ±48 fps) |
 | M4 | Sampling, kalibrasi, approval | ✅ 2026-10-09 | web 32 + 11 DB kalibrasi, E2E kalibrasi 2, run_all_checks LULUS |
-| M5 | R&D Lab | ⏳ (parameter owner menyusul) | – |
+| F | Formula R&D, produksi per shift, ceklis (owner 2026-10-10) | ⏳ berjalan | – |
+| M5 | R&D Lab | ⏳ (parameter: draf dari KORA di Fase F) | – |
 
 ## M2 — rencana rinci (belum dikerjakan)
 1. `apps/web`: Next.js 15 + Tailwind memakai `architecture/06-design/tailwind.preset.ts` & `globals.css` (font Bowlby One/Archivo/JetBrains Mono via `next/font`).
@@ -102,3 +103,16 @@ Checklist (centang + commit per langkah):
 - [x] K5 UI: /sampling (form + impor CSV + statistik + prioritas ASM), /kalibrasi (review), realisasi stuffing.
   - Selesai: `app/sampling`, `app/kalibrasi`, `components/sampling/SamplingWorkbench.tsx`, `components/calibration/ProposalReview.tsx`, `lib/realization.ts` (+5 unit test), menu "Sampling". E2E `e2e/calibration.spec.ts` (2) via `playwright.calib.config.ts` → dev server port 3100 + DB test + folder `.next-calib` (teardown memulihkan next-env.d.ts/tsconfig).
 - [x] K6 E2E alur penuh (sesi uji via JWT), logs (ADR-008, traceability FR-11/US-08), run_all_checks, commit "Fase M4 selesai".
+
+## Fase F — Formula R&D, Produksi per Shift & Ceklis (owner 2026-10-10, otonom)
+Permintaan: kalkulator formula kopra, arang, briket shisha, briket BBQ, briket custom, cuka air kelapa, bioleather; formula produksi per shift; ceklis R&D, QC, produk. Pelajari folder KORA milik owner (Downloads/kora (C:/Users/user/Downloads/kora)), validasi riset, tulis temuan. UI sesuai gaya, wizard + hint + tutorial.
+Riset: `architecture/00-research/kora_research.md` (E1–E7, K-01..K-08, GAP). Teks KORA terekstrak hanya di scratchpad sesi (tidak di repo); ekstraktor: zip+XML (docx/pptx/xlsx), pdftotext.
+- [x] F0 Baca & validasi KORA → kora_research.md, FND-021..024
+- [ ] F1 Dataset `00-research/data/coconut_formula_dataset.json` v1.0.0 (parameter bersumber + ceklis + laju stasiun) + koreksi dataset proses v1.1.0 (K-01 pendinginan arang 8–12 jam, K-02 oven kopra maks 70°C) + Zod/loader + test; ADR-009
+- [ ] F2 Engine `calc-engine/src/formula.ts`: gula must (neraca massa, E1), titrasi umum (E2), alkohol/asetat teoretis, media & hasil bioleather, kopra (rendemen, grade, alarm 24/48 jam, belerang), arang (rendemen, fraksi), briket (adonan, perekat, air, hasil, butir/kg), produksi shift (bottleneck) + unit test
+- [ ] F3 UI `/formula` per produk (7 tab) + wizard/hint/tur
+- [ ] F4 UI `/produksi` rencana per shift
+- [ ] F5 UI `/ceklis` R&D / QC / produk (data-driven, simpan di perangkat, cetak)
+- [ ] F6 Draf `architecture/07-rnd/parameter_kora_draft.csv` (KE/KA/BL/CK + produk baru AR/BS/BB/BC) untuk M5 — tunggu konfirmasi owner
+- [ ] F7 E2E, logs (DEC/ISS/traceability/CHANGELOG), run_all_checks, commit "Fase F selesai"
+Pertanyaan ke owner (jangan blokir kerja): kelas lot 100–600 mdpl (K-03); dosis perekat & tebal pillow BBQ aktual; kapasitas press/oven briket.

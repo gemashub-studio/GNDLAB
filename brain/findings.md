@@ -77,3 +77,15 @@ Saat offline, klik `<Link>` → fetch `?_rsc=` gagal → Next melakukan navigasi
 
 ### FND-020 · 2026-10-09 · Prisma menolak `migrate reset` dari agen AI
 Prisma 6.19 mendeteksi dijalankan oleh Claude Code dan menolak `migrate reset` tanpa persetujuan eksplisit pengguna (env `PRISMA_USER_CONSENT_FOR_DANGEROUS_AI_ACTION`). Agen TIDAK boleh mengakalinya. Solusi: global setup vitest (`apps/web/test/db-setup.ts`) hanya `migrate deploy` + seed bila kosong; uji yang butuh DB segar (`calibration.db.test.ts`) melewati diri bila sudah ada sampel; owner mereset sendiri via `scripts/windows/reset-test-db.ps1` (menolak URL selain `gemas_test`).
+
+### FND-021 · 2026-10-10 · Rumus gula must di SOP/tracker KORA kurang ±16,7%
+`(Brix target − Brix awal) × L ÷ 100` mengabaikan pengenceran oleh gula sendiri. Neraca massa: `x = M·(B−b)/(100−B)`, M = V·ρ. 100 L 4→15 °Brix: 11,0 kg (SOP) vs ±13,2 kg; dengan rumus SOP Brix akhir 13,35. Engine pakai neraca massa (kora_research.md E1).
+
+### FND-022 · 2026-10-10 · Titrasi asam asetat: rumus ringkas hanya untuk NaOH 0,1 N & sampel 10 mL
+Rumus umum di teks SOP B6.2 salah 10×; daftar belanja membeli NaOH 0,5 N & pipet 5 mL → rumus ringkas `0,06005×V` meleset 10×. Benar: `% b/v = V·N·6,005 ÷ Vs`.
+
+### FND-023 · 2026-10-10 · Dataset proses v1.0.0 berbahaya di pendinginan arang (1 jam)
+SOP KORA & CDB/FAO: mati hampa ≥8 jam/semalam; IMDG SP 978 weathering ≥14 hari & ≤40°C. Juga oven kopra maks 70°C (bukan 90). Koreksi → dataset proses v1.1.0.
+
+### FND-024 · 2026-10-10 · Dokumen KORA = parameter R&D yang ditunggu M5
+SOP Rev 03 sudah membedakan VALID / STANDAR INTERNAL / GAP → peta langsung ke keyakinan A/B/C. Draf parameter_template dibangkitkan dari dataset formula (bukan hardcode), menunggu konfirmasi owner.

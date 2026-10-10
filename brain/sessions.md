@@ -64,3 +64,8 @@
 - Catatan: Prisma menolak `migrate reset` dari agen (FND-020/ISS-031) → owner mereset DB test via `scripts/windows/reset-test-db.ps1` bila ingin mengulang 11 uji kalibrasi DB. E2E kalibrasi bisa diulang tanpa reset.
 - DB test `gemas_test` kini punya versi 1.0.5+ hasil uji (wajar). DB dev TIDAK tersentuh (tetap v1.0.4).
 - Berikutnya: M5 R&D Lab (parameter owner via `07-rnd/parameter_template.csv` masih menunggu → mulai dengan empty-state).
+
+### 2026-10-10 · Fase F dimulai (otonom)
+- Owner minta kalkulator formula R&D (kopra, arang, briket shisha/BBQ/custom, cuka, bioleather), produksi per shift, ceklis R&D/QC/produk; pelajari folder KORA (Downloads/kora (C:/Users/user/Downloads/kora)).
+- F0 selesai: 54 dokumen unik dibaca; temuan di `architecture/00-research/kora_research.md` (E1 gula −16,7%, E2 titrasi 10×, K-01 pendinginan arang, K-02 oven kopra, K-03 batas dataran). Riset web: FAO perekat pati 4–8%, oven ±80°C; SNI 01-6235 teks resmi tak terakses.
+- Lanjut: F1 dataset formula (lihat plan.md Fase F).
