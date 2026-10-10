@@ -133,11 +133,11 @@ Link owner untuk dicek: 1 TikTok vt, IG rifai_big, TikTok bonumcommune, 18 YouTu
 - [x] G0 Riset → chain_research.md + dataset rantai v1.0.0 (ADR-010) — commit a3cbe08
 - [x] G-engine: packages/calc-engine/src/chain.ts (18 uji) — commit 35448e2
 - UI rencana: halaman /rantai, tab angkut·terima·belah·kering·kemas·arang·briket·turunan (components/chain/*)
-- [ ] G1 Transport (truk + container) & penerimaan/gudang per asal
-- [ ] G2 Kupas/belah/sortir/air kelapa
-- [ ] G3 Pengeringan (greenhouse desainer + matahari + oven)
-- [ ] G4 Congkel/QC/grade + packing gudang & container
-- [ ] G5 Arang (drum/kolam, ayak rotari 2×, hammer mill, packing per output)
-- [ ] G6 Briket (campuran asal, perekat, air, bentuk, oven, packing)
-- [ ] G7 Bioleather + selulosa tambahan; cuka
-- [ ] G8 E2E, logs, run_all_checks, commit
+- [x] G1 Transport (truk + container) & penerimaan/gudang per asal
+- [x] G2 Kupas/belah/sortir/air kelapa
+- [x] G3 Pengeringan (greenhouse desainer + matahari + oven)
+- [x] G4 Congkel/QC/grade + packing gudang & container
+- [x] G5 Arang (drum/kolam, ayak rotari 2×, hammer mill, packing per output)
+- [x] G6 Briket (campuran asal, perekat, air, bentuk, oven, packing)
+- [x] G7 Bioleather + selulosa tambahan; cuka
+- [x] G8 E2E, logs, run_all_checks, commit (UI cea5319)

@@ -85,3 +85,9 @@
 ### 2026-10-10 · Fase G dimulai (owner: rantai produksi lengkap)
 - G0 selesai: chain_research.md, dataset rantai v1.0.0 (kendaraan 10 truk + 45HC, kelas DR ≤500/DT >500 mdpl, sortir, air kelapa <10 °C ≤2 jam, desain greenhouse KORA, kolam/drum, kemasan, bentuk briket, aditif bioleather), ADR-010, DEC-041, ISS-037 ditutup, FND-027..029.
 - Engine chain.ts selesai (150/150 uji engine). Berikutnya: UI /rantai, lalu E2E + logs + run_all_checks.
+
+### 2026-10-10 · Fase G SELESAI
+- /rantai (8 tahap: angkut, terima & lot, belah & sortir, pengeringan, congkel & kemas, arang, briket, cuka & bioleather). Register lot offline di IndexedDB `gemas-lot` (CSV).
+- Engine chain.ts (18 uji), dataset rantai v1.0.0 (5 uji), lotStore 1 uji, E2E rantai 11/11. run_all_checks + uji DB LULUS. Commit a3cbe08, 35448e2, cea5319.
+- GAP yang perlu data owner: dimensi kolam & lama bakar kolam KORA; kapasitas ayakan rotari & hammer mill aktual; hasil lab proksimat batok DT vs DR (n≥3/kelas) untuk rasio briket; dosis cocopeat/cocofiber bioleather (uji bertingkat); ukuran tray aktual greenhouse; payload legal (KIR) truk vendor.
+- Masih menunggu owner dari Fase F: revisi SOP gula/titrasi, data briket, konfirmasi draf parameter R&D → M5.
