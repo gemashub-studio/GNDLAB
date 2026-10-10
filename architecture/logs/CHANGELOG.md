@@ -3,6 +3,13 @@
 Format: [Keep a Changelog](https://keepachangelog.com/id/1.1.0/) · Versi dataset mengikuti SemVer (ADR-002).
 Waktu dalam WIB (UTC+7).
 
+## [aplikasi Fase G] — 2026-10-10
+### Ditambahkan
+- Rantai Produksi `/rantai` (8 tahap): angkut truk & container (pickup → tronton wingbox, 20GP/40GP/40HC/45HC) dengan butir per rit, pembatas ruang/berat & jumlah rit; register lot asal DR ≤500 / DT >500 mdpl (kode lot otomatis, offline, CSV) + gudang per asal; belah–sortir–air kelapa (pendingin per 2 jam); desainer greenhouse (rak, tingkat, lorong, tray, kelapa/tray, kemiringan, kipas, belerang, titik bakar, gambar skematis), jemur, oven; grade & kalkulator kemas gudang/kendaraan; arang per asal drum/kolam + fase asap + ayak rotari 2× + hammer mill + kemas; briket campuran DT:DR dari hasil lab (selang rasio layak) + bahan baku per asal + bentuk pasar; bioleather + cocopeat/cocofiber/bahan lain.
+- Dataset rantai produksi v1.0.0 (`00-research/data/coconut_chain_dataset.json`, sumber C01–C20), ADR-010.
+### Diubah
+- Kelas asal lot: DR ≤500 / DT >500 mdpl (keputusan owner; menggantikan kode KORA <100 / ≥600 mdpl). ISS-037 ditutup.
+
 ## [aplikasi Fase F] — 2026-10-10
 ### Ditambahkan
 - Formula R&D `/formula`: kopra, arang, briket shisha / BBQ / custom, cuka air kelapa, bioleather — wizard per tahap, daftar bahan, sumber & keyakinan per angka, kotak TEMUAN untuk rumus dokumen yang dikoreksi.

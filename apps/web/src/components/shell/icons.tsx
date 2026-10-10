@@ -87,6 +87,13 @@ export const Icon = {
       <path d="M9 3h6M10 3v6l-5 9a2 2 0 0 0 1.7 3h10.6a2 2 0 0 0 1.7-3l-5-9V3" />
     </svg>
   ),
+  chain: () => (
+    <svg {...P}>
+      <rect x="2" y="9" width="6" height="6" />
+      <rect x="16" y="9" width="6" height="6" />
+      <path d="M8 12h8M12 9l3 3-3 3" />
+    </svg>
+  ),
 };
 
 export type IconName = keyof typeof Icon;
