@@ -93,6 +93,7 @@ Produksi per shift = stasiun pembatas (bottleneck) di rantai ini → dasar kalku
 | K-06 | Produktivitas belah: SOP lama 300–500 butir/shift vs SOP baru ±7.000 butir/hari (ILO/FAO) | Rentang lebar → parameter C, wajib time study 2 minggu (sudah rencana KORA) |
 | K-07 | Starter bioleather: SOP AKL 10–15% vs SOP Kopra C4 2–10% (Lin 2022) | Dipakai 10–15% (SOP AKL lebih baru & spesifik); 2% dicatat sebagai batas bawah literatur |
 | K-08 | Gula media bioleather: SOP AKL 10% vs SOP Kopra C4 8–10% | 8/10/10% |
+| K-09 | Berat butir tanpa sabut: Tracker R&D 0,65 kg (bersabut ±1,3 kg) vs dataset proses (Jambi P07) 1,75 kg × (1 − 0,42) ≈ 1,0 kg | Kalkulator R&D memakai 0,65 (asumsi tracker, C) dan menampilkan pembanding; timbang 10 butir per lot. Kemungkinan beda varietas/ukuran pemasok Bogor |
 
 ## 6. Model produksi per shift (dirancang)
 

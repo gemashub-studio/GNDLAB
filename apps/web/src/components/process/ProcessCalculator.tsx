@@ -14,6 +14,7 @@ import { useMemo, useState, type ReactNode } from 'react';
 import { ConfidenceBadge } from '@/components/ui/badges';
 import { ChoiceGroup, NumberField } from '@/components/ui/fields';
 import { Hint } from '@/components/ui/Hint';
+import { Stat } from '@/components/ui/Stat';
 import { WarningList } from '@/components/ui/Warnings';
 import { fmt, fmtMass } from '@/lib/format';
 import { useDataset } from '@/lib/useDataset';
@@ -41,16 +42,6 @@ const PRODUCT_FORM: Record<ProductTarget, { formCode: string; mode: 'BULK' | 'PA
   kopra_edible: { formCode: 'bagged', mode: 'PACKAGE' },
   kopra_asalan: { formCode: 'bagged_jute', mode: 'BULK' },
 };
-
-function Stat({ label, value, sub, accent, testId }: { label: ReactNode; value: string; sub?: string; accent?: boolean; testId?: string }) {
-  return (
-    <div className={`flex flex-col gap-0.5 border-2 border-ink p-2.5 ${accent ? 'bg-acid' : 'bg-surface'}`} data-testid={testId}>
-      <span className="font-mono text-[11px] font-bold uppercase">{label}</span>
-      <span className="text-lg font-extrabold">{value}</span>
-      {sub && <span className="font-mono text-[11px]">{sub}</span>}
-    </div>
-  );
-}
 
 export function ProcessCalculator() {
   const inv = useDataset();

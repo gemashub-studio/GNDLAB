@@ -69,6 +69,49 @@ export const GLOSSARY = {
     short: 'Pakai hasil ukurmu sendiri. Data asli nggak ikut berubah.',
     long: 'Angka yang terlalu jauh (kurang dari setengah minimum atau lebih dari dua kali maksimum) ditolak, biar nggak salah ketik.',
   },
+  brix: {
+    term: '°Brix',
+    short: 'Kadar gula (padatan terlarut) dalam cairan, diukur pakai refraktometer. 15 °Brix ≈ 15% gula.',
+    long: 'Air kelapa tua biasanya 4–5 °Brix. Untuk cuka, gula ditambah sampai 14–17 °Brix supaya alkoholnya cukup (≥8%) untuk jadi cuka ≥4%.',
+  },
+  must: {
+    term: 'Must',
+    short: 'Air kelapa yang sudah disaring, ditambah gula, dan dipanaskan sebentar — siap diberi ragi.',
+  },
+  titrasi: {
+    term: 'Titrasi',
+    short: 'Cara mengukur keasaman cuka: tetesi NaOH sampai warnanya merah muda, catat berapa mL yang terpakai.',
+    long: 'Hasilnya tergantung kekuatan NaOH (N) dan banyaknya sampel. Rumus singkat 0,06005 × V cuma benar untuk NaOH 0,1 N dan sampel 10 mL.',
+  },
+  rendemen: {
+    term: 'Rendemen',
+    short: 'Berapa persen hasil dari bahan masuk. Mis. 100 kg batok jadi 30 kg arang = rendemen 30%.',
+  },
+  perekat: {
+    term: 'Perekat (binder)',
+    short: 'Lem dari tepung (biasanya tapioka) yang dimasak jadi pasta, buat menyatukan serbuk arang jadi briket.',
+    long: 'Pati harus matang (tergelatinisasi, ≥65°C). Terlalu banyak perekat bikin kalor turun dan abu naik — umumnya 4–8% dari berat arang (FAO).',
+  },
+  adonan: {
+    term: 'Kadar air adonan',
+    short: 'Seberapa basah campuran arang + perekat sebelum dicetak. Target 22–28%.',
+  },
+  mati_hampa: {
+    term: 'Mati hampa',
+    short: 'Memadamkan arang dengan menutup rapat semua lubang udara (pakai tanah liat basah), BUKAN disiram air. Minimal 8 jam.',
+  },
+  weathering: {
+    term: 'Weathering',
+    short: 'Arang diangin-anginkan di tempat beratap minimal 14 hari sebelum dikemas untuk ekspor, biar nggak panas sendiri di kapal.',
+  },
+  pembatas: {
+    term: 'Stasiun pembatas',
+    short: 'Tahap yang paling lambat. Hasil satu shift nggak bisa lebih dari kemampuan tahap ini — tambah orang/mesin di sini dulu.',
+  },
+  shift: {
+    term: 'Efisiensi shift',
+    short: 'Berapa persen jam kerja yang benar-benar dipakai produksi (dipotong istirahat, setup, ganti lot). 85% = 6,8 jam dari 8 jam.',
+  },
 } satisfies Record<string, GlossaryEntry>;
 
 export type GlossaryKey = keyof typeof GLOSSARY;

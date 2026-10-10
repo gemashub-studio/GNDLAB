@@ -5,7 +5,7 @@ import type { CalcWarning, WarningCode } from '@gemas/calc-engine';
  * ditampilkan kecil di bawahnya — itu kontrak API, sengaja tidak diubah.
  */
 const FRIENDLY: Record<WarningCode, { title: string; action?: string }> = {
-  LOW_CONFIDENCE_PARAM: { title: 'Sebagian angkanya masih kira-kira', action: 'Timbang/ukur sendiri beberapa sampel, lalu masukkan lewat "Ubah angka".' },
+  LOW_CONFIDENCE_PARAM: { title: 'Sebagian angkanya masih kira-kira', action: 'Timbang/ukur sendiri beberapa sampel, lalu pakai angkamu sendiri (kalkulator: "Ubah angka"; formula: isi kotaknya).' },
   SELF_HEATING_RISK: { title: 'Awas, kopra basah bisa panas sendiri', action: 'Keringkan dulu atau simpan di tempat berangin; jangan ditumpuk tinggi.' },
   FLAMMABLE: { title: 'Arang gampang terbakar', action: 'Jauhkan dari api, kasih tanda "DILARANG MEROKOK", jaga tetap kering.' },
   ODOR_CONTAMINATION: { title: 'Bau kopra asap bisa nempel', action: 'Simpan kopra edible di ruang/zona terpisah.' },

@@ -47,7 +47,8 @@ export interface BriquetteInput {
   finalMoisturePct: number;
   /** Porsi air panas untuk gelatinisasi pasta perekat (%). */
   hotWaterSharePct: number;
-  piece: PieceShape;
+  /** Bentuk biji; kosong → jumlah biji tidak dihitung (mis. tebal pillow belum diukur). */
+  piece?: PieceShape;
   density: Param;
   /** Rentang dianjurkan untuk peringatan. */
   binderRange: Range;
@@ -98,10 +99,10 @@ export function briquetteMix(i: BriquetteInput): FormulaOutput<BriquetteResult> 
   const rawWater = doughKg - charcoalKg - binderKg;
   const waterKg = Math.max(0, rawWater);
   const productKg = dryKg / (1 - i.finalMoisturePct / 100);
-  const vol = pieceVolumeCm3(i.piece);
+  const vol = i.piece ? pieceVolumeCm3(i.piece) : undefined;
 
   const result = evaluateRange({ rho: i.density }, (v) => {
-    const pieceG = vol === undefined ? (i.piece as { grams: number }).grams : vol * v.rho;
+    const pieceG = !i.piece ? 0 : vol === undefined ? (i.piece as { grams: number }).grams : vol * v.rho;
     return {
       charcoalKg,
       binderKg,
@@ -112,8 +113,8 @@ export function briquetteMix(i: BriquetteInput): FormulaOutput<BriquetteResult> 
       productKg,
       evaporatedKg: Math.max(0, Math.max(doughKg, charcoalKg + binderKg) - productKg),
       pieceG,
-      pieces: Math.floor((productKg * 1000) / pieceG),
-      piecesPerKg: 1000 / pieceG,
+      pieces: pieceG > 0 ? Math.floor((productKg * 1000) / pieceG) : 0,
+      piecesPerKg: pieceG > 0 ? 1000 / pieceG : 0,
     };
   });
 

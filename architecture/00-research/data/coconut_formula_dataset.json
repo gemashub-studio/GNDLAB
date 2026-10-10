@@ -14,6 +14,8 @@
     "report": "architecture/00-research/kora_research.md"
   },
   "kopra": {
+    "nut_dehusked_kg": { "min": 0.65, "typ": 0.65, "max": 0.65, "unit": "kg", "confidence": "C", "source_ids": ["F05"], "note": "Asumsi Tracker R&D (tanpa sabut; bersabut ±1,3 kg). Dataset proses (Jambi) memberi ±1,0 kg tanpa sabut — konflik K-09, timbang 10 butir per lot" },
+    "trial_reserve_min_nuts": { "min": 5, "typ": 5, "max": 5, "unit": "count", "confidence": "C", "source_ids": ["F05"], "note": "Cadangan butir busuk/cacat (Tracker R&D)" },
     "meat_per_nut_kg": { "min": 0.25, "typ": 0.3, "max": 0.4, "unit": "kg", "confidence": "C", "source_ids": ["F05"], "note": "Asumsi Rencana R&D Ronde 1; timbang sampel sendiri" },
     "water_per_nut_l": { "min": 0.15, "typ": 0.17, "max": 0.2, "unit": "L", "confidence": "C", "source_ids": ["F05"] },
     "copra_kg_per_1000_nuts": { "min": 150, "typ": 200, "max": 250, "unit": "kg", "confidence": "B", "source_ids": ["F01", "F19"], "note": "FAO/ILO; typ = titik tengah; tergantung varietas" },
@@ -48,6 +50,7 @@
     ],
     "oven_max_temp_c": { "min": 70, "typ": 70, "max": 75, "unit": "C", "confidence": "A", "source_ids": ["F01", "F08"], "note": "Kerja maks 70°C; >75°C menggosongkan & menaikkan FFA" },
     "greenhouse": {
+      "room_m3": { "min": 105, "typ": 105, "max": 105, "unit": "m3", "confidence": "C", "source_ids": ["F01"], "note": "Greenhouse 3 × 10 × 3,5 m" },
       "rack_area_m2": { "min": 117, "typ": 117, "max": 117, "unit": "m2", "confidence": "C", "source_ids": ["F01"], "note": "Greenhouse 3×10×3,5 m, rak bertingkat (perhitungan SOP KORA)" },
       "halves_per_m2": { "min": 25, "typ": 28, "max": 30, "unit": "count", "confidence": "C", "source_ids": ["F01"], "note": "Belahan Ø ±14 cm berjarak ±18 cm" },
       "cycle_h": { "min": 72, "typ": 108, "max": 216, "unit": "h", "confidence": "B", "source_ids": ["F01"], "note": "108 jam kubung terkontrol (E3S 2024); KORA 3–5 hari kemarau, 6–9 hari hujan" }
@@ -57,6 +60,9 @@
   "arang": {
     "yield_reference_pct": { "min": 28, "typ": 32, "max": 36, "unit": "pct", "confidence": "A", "source_ids": ["F02", "F15"], "note": "Drum 200 L 33,8–37,2% (Hudaya & Hartoyo 1990); operasi industri 28–33% (Unila); FAO/APCC ±33%" },
     "yield_kora_actual_pct": { "min": 18, "typ": 20, "max": 22, "unit": "pct", "confidence": "C", "source_ids": ["F02"], "note": "SOP lama 5:1 — DI BAWAH acuan; target ≥25% (3 bln) → ≥28% (6 bln)" },
+    "yield_target_3m_pct": { "min": 25, "typ": 25, "max": 25, "unit": "pct", "confidence": "C", "source_ids": ["F02"], "note": "Target bertahap KORA (SOP ARG C0.2/I4)" },
+    "yield_target_6m_pct": { "min": 28, "typ": 28, "max": 28, "unit": "pct", "confidence": "C", "source_ids": ["F02"] },
+    "raw_max_pct": { "min": 5, "typ": 5, "max": 5, "unit": "pct", "confidence": "C", "source_ids": ["F02"], "note": "Key measure % arang mentah (kg mentah ÷ kg arang)" },
     "shell_moisture_max_pct": { "min": 15, "typ": 15, "max": 15, "unit": "pct", "confidence": "C", "source_ids": ["F02"], "note": "Standar internal (data industri 13%, FAO 12–18%)" },
     "reactor_temp_c": { "min": 450, "typ": 475, "max": 500, "unit": "C", "confidence": "A", "source_ids": ["F02"], "note": "VM ≤15% butuh 450–600°C (Ahmad & Sulaiman 2021; Hasibuan & Pardede 2023)" },
     "methods": [
@@ -83,6 +89,7 @@
     "binder_moisture_pct": { "min": 10, "typ": 13, "max": 14, "unit": "pct", "confidence": "B", "source_ids": ["F22"], "note": "Tapioka SNI 3451:2011 KA maks 14%; typ asumsi — ukur" },
     "charcoal_powder_moisture_pct": { "min": 5, "typ": 6, "max": 8, "unit": "pct", "confidence": "C", "source_ids": ["F02"], "note": "Arang lolos QC 5–10% (FAO); target packing ≤8%" },
     "dough_moisture_pct": { "min": 22, "typ": 25, "max": 28, "unit": "pct", "confidence": "C", "source_ids": ["F04"], "note": "Catatan teknis produksi internal (Modul QC KORA COCONUT 7.2)" },
+    "final_moisture_pct": { "min": 5, "typ": 6.5, "max": 8, "unit": "pct", "confidence": "C", "source_ids": ["F04"], "note": "KA produk jadi maks 5–8% (Modul QC KORA); typ titik tengah — ikuti kontrak pembeli" },
     "gelatinization_min_c": { "min": 65, "typ": 65, "max": 65, "unit": "C", "confidence": "C", "source_ids": ["F04"] },
     "binder_hot_water_share_pct": { "min": 70, "typ": 70, "max": 70, "unit": "pct", "confidence": "C", "source_ids": ["F04"], "note": "Rasio air panas:dingin ±70:30" },
     "aging_h": { "min": 8, "typ": 12, "max": 16, "unit": "h", "confidence": "C", "source_ids": ["F04"], "note": "'Aging semalam' — durasi persis GAP" },
@@ -120,6 +127,7 @@
   },
   "cuka": {
     "water_brix": { "min": 4, "typ": 4.5, "max": 5, "unit": "brix", "confidence": "A", "source_ids": ["F03", "F11"] },
+    "water_sugar_pct": { "min": 1, "typ": 1.8, "max": 2.6, "unit": "pct", "confidence": "A", "source_ids": ["F03", "F11"], "note": "Gula alami ±1% (FAO) s/d 2,56% (Gunathilake 2011); typ titik tengah" },
     "water_ph": { "min": 5.0, "typ": 5.48, "max": 5.7, "unit": "pH", "confidence": "A", "source_ids": ["F03", "F11"] },
     "water_density_kg_l": { "min": 1.015, "typ": 1.02, "max": 1.025, "unit": "kg/L", "confidence": "C", "source_ids": ["F20"], "note": "Larutan ±4–5 °Brix; turunan tabel sukrosa — ukur/timbang 1 L untuk presisi" },
     "water_max_cold_h": { "min": 48, "typ": 48, "max": 48, "unit": "h", "confidence": "C", "source_ids": ["F03"], "note": "≤10°C dalam ≤2 jam; olah hari sama; batas darurat 48 jam (internal)" },
@@ -131,6 +139,8 @@
     "ethanol_efficiency": { "min": 0.8, "typ": 0.88, "max": 0.95, "unit": "fraction", "confidence": "C", "source_ids": ["F20", "F11"], "note": "Fraksi dari teoretis 0,511 g etanol/g gula (Gay-Lussac); Gunathilake 17%→±9% ≈ 0,8" },
     "starter_pct": { "min": 10, "typ": 15, "max": 20, "unit": "pct", "confidence": "A", "source_ids": ["F03"], "note": "FAO 10%; PCA 1:4 (20%)" },
     "acetify_weeks": { "min": 3, "typ": 4, "max": 6, "unit": "wk", "confidence": "B", "source_ids": ["F03"] },
+    "acetify_temp_c": { "min": 27, "typ": 28.5, "max": 30, "unit": "C", "confidence": "B", "source_ids": ["F03"], "note": "Optimum ±30°C; NC State 27°C; typ titik tengah" },
+    "aging_weeks": { "min": 3, "typ": 3.5, "max": 4, "unit": "wk", "confidence": "A", "source_ids": ["F03", "F21"], "note": "Pematangan tertutup penuh setelah klarifikasi (Den & Marquez 1987)" },
     "acetic_efficiency": { "min": 0.5, "typ": 0.75, "max": 0.9, "unit": "fraction", "confidence": "C", "source_ids": ["F20", "F21"], "note": "Fraksi dari teoretis 1,304 g asam/g etanol; aturan ≥8% alkohol untuk 4% asam ≈ 0,5" },
     "acetic_min_pct": { "min": 4, "typ": 4, "max": 4, "unit": "pct", "confidence": "A", "source_ids": ["F03", "F13"] },
     "acetic_target_pct": { "min": 5, "typ": 5, "max": 5, "unit": "pct", "confidence": "C", "source_ids": ["F03"] },

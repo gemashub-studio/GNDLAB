@@ -186,6 +186,12 @@ describe('briket — neraca adonan (E5)', () => {
     expect(t.result.typ.pieceG).toBe(40);
     expect(t.trace.params.rho).toBeUndefined();
   });
+  it('tanpa bentuk biji → neraca tetap dihitung, jumlah biji 0', () => {
+    const t = briquetteMix({ ...base, piece: undefined }).result.typ;
+    expect(t.productKg).toBeGreaterThan(0);
+    expect(t.pieces).toBe(0);
+    expect(t.piecesPerKg).toBe(0);
+  });
   it('FC proksimat & cek spesifikasi', () => {
     expect(fixedCarbonPct(5, 2, 13)).toBe(80);
     const c = checkSpec({ moisture_max_pct: 8, fc_min_pct: 75, burn_min_min: 60, ignition_max_min: 10 }, { moisture_max_pct: 9, fc_min_pct: 80, burn_min_min: 55, ignition_max_min: 8 });

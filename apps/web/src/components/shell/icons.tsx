@@ -64,6 +64,24 @@ export const Icon = {
       <path d="M4 7l-2.5 6a3 3 0 0 0 5 0zM20 7l-2.5 6a3 3 0 0 0 5 0z" />
     </svg>
   ),
+  flask: () => (
+    <svg {...P}>
+      <path d="M9 3h6M10 3v5L4.5 19a1.5 1.5 0 0 0 1.3 2h12.4a1.5 1.5 0 0 0 1.3-2L14 8V3" />
+      <path d="M7 15h10" />
+    </svg>
+  ),
+  clock: () => (
+    <svg {...P}>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 7v5l3 3" />
+    </svg>
+  ),
+  check: () => (
+    <svg {...P}>
+      <rect x="4" y="3" width="16" height="18" />
+      <path d="M8 9l2 2 4-4M8 15h8" />
+    </svg>
+  ),
   lab: () => (
     <svg {...P}>
       <path d="M9 3h6M10 3v6l-5 9a2 2 0 0 0 1.7 3h10.6a2 2 0 0 0 1.7-3l-5-9V3" />

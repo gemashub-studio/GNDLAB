@@ -27,6 +27,7 @@ const UNIT_MAP = {
   MPa: 'MPa',
   mm: 'mm',
   m2: 'm2',
+  m3: 'm3',
   count: 'count',
   'g/cm3': 'g_cm3',
   'g/L/d': 'g_L_d',
@@ -91,6 +92,8 @@ export const FormulaDatasetSchema = z
   .object({
     meta: z.object({ version: z.string().regex(/^\d+\.\d+\.\d+$/), compiled: z.string(), requires_process_dataset: z.string(), requires_inventory_dataset: z.string() }).passthrough(),
     kopra: z.object({
+      nut_dehusked_kg: RangeP,
+      trial_reserve_min_nuts: RangeP,
       meat_per_nut_kg: RangeP,
       water_per_nut_l: RangeP,
       copra_kg_per_1000_nuts: RangeP,
@@ -124,12 +127,15 @@ export const FormulaDatasetSchema = z
         )
         .min(1),
       oven_max_temp_c: RangeP,
-      greenhouse: z.object({ rack_area_m2: RangeP, halves_per_m2: RangeP, cycle_h: RangeP }),
+      greenhouse: z.object({ room_m3: RangeP, rack_area_m2: RangeP, halves_per_m2: RangeP, cycle_h: RangeP }),
       smoked_copra_per_kg_meat: RangeP,
     }),
     arang: z.object({
       yield_reference_pct: RangeP,
       yield_kora_actual_pct: RangeP,
+      yield_target_3m_pct: RangeP,
+      yield_target_6m_pct: RangeP,
+      raw_max_pct: RangeP,
       shell_moisture_max_pct: RangeP,
       reactor_temp_c: RangeP,
       methods: z
@@ -172,6 +178,7 @@ export const FormulaDatasetSchema = z
       binder_moisture_pct: RangeP,
       charcoal_powder_moisture_pct: RangeP,
       dough_moisture_pct: RangeP,
+      final_moisture_pct: RangeP,
       gelatinization_min_c: RangeP,
       binder_hot_water_share_pct: RangeP,
       aging_h: RangeP,
@@ -207,6 +214,7 @@ export const FormulaDatasetSchema = z
     }),
     cuka: z.object({
       water_brix: RangeP,
+      water_sugar_pct: RangeP,
       water_ph: RangeP,
       water_density_kg_l: RangeP,
       water_max_cold_h: RangeP,
@@ -218,6 +226,8 @@ export const FormulaDatasetSchema = z
       ethanol_efficiency: RangeP,
       starter_pct: RangeP,
       acetify_weeks: RangeP,
+      acetify_temp_c: RangeP,
+      aging_weeks: RangeP,
       acetic_efficiency: RangeP,
       acetic_min_pct: RangeP,
       acetic_target_pct: RangeP,
@@ -316,6 +326,7 @@ export interface FormulaDatasetSI {
   kopra: ReturnType<typeof params<RawFormulaDataset['kopra']>> & {
     sulfurGPerNut: Param;
     sulfurGPerM3: Param;
+    greenhouseRoomM3: Param;
     greenhouseArea: Param;
     greenhouseHalves: Param;
     greenhouseCycleH: Param;
@@ -354,6 +365,7 @@ export function loadFormulaDataset(raw: unknown, process: ProcessDatasetSI): For
       ...params('kopra', d.kopra),
       sulfurGPerNut: toParam('kopra.sulfur.g_per_nut', d.kopra.sulfur.g_per_nut),
       sulfurGPerM3: toParam('kopra.sulfur.g_per_m3', d.kopra.sulfur.g_per_m3),
+      greenhouseRoomM3: toParam('kopra.greenhouse.room_m3', d.kopra.greenhouse.room_m3),
       greenhouseArea: toParam('kopra.greenhouse.rack_area_m2', d.kopra.greenhouse.rack_area_m2),
       greenhouseHalves: toParam('kopra.greenhouse.halves_per_m2', d.kopra.greenhouse.halves_per_m2),
       greenhouseCycleH: toParam('kopra.greenhouse.cycle_h', d.kopra.greenhouse.cycle_h),
