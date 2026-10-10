@@ -31,6 +31,9 @@ const FRIENDLY: Record<WarningCode, { title: string; action?: string }> = {
   SPLIT_DELAY_EXCEEDED: { title: 'Lewat aturan 4 jam', action: 'Batch ini nggak boleh diklaim Edible — maksimal Reguler. Jadwalkan belah sesuai kapasitas pengering.' },
   DRYING_BEHIND_SCHEDULE: { title: 'Pengeringan ketinggalan jadwal', action: 'Target ≤35% di 24 jam dan ≤20% di 48 jam. Pindahkan sebagian ke oven.' },
   YIELD_BELOW_REFERENCE: { title: 'Rendemen di bawah acuan', action: 'Cek kadar air batok, kebanyakan udara saat bakar, atau granul ikut terbuang saat ayak.' },
+  PAYLOAD_LEGAL_CHECK: { title: 'Cek batas muat legal truk', action: 'Angka payload dari vendor/platform. Pastikan ke JBI di buku KIR — muatan lebih (ODOL) bisa ditilang & membahayakan.' },
+  DERIVED_SCALING: { title: 'Angka kipas/belerang hasil skala', action: 'Diskalakan dari contoh greenhouse KORA 105 m³. Ukur suhu & RH tiap tingkat dan cium bau SO₂ di ujung lorong saat uji pertama.' },
+  BLEND_OUT_OF_SPEC: { title: 'Campuran belum masuk spek', action: 'Geser rasio DT:DR (lihat batas rasio di bawah) atau pakai lot batok lain.' },
 };
 
 const SAFETY: WarningCode[] = ['SELF_HEATING_RISK', 'FLAMMABLE', 'FLOOR_OVERLOAD', 'ODOR_CONTAMINATION', 'ITEM_EXCEEDS_CONTAINER', 'NAOH_TOO_STRONG', 'COOLING_TOO_SHORT', 'SULFUR_NIGHTS_EXCEEDED', 'SO2_TEST_REQUIRED', 'SPLIT_DELAY_EXCEEDED'];

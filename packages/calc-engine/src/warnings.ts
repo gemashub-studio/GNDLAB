@@ -33,6 +33,10 @@ export const WARNING_MESSAGES = {
   SPLIT_DELAY_EXCEEDED: 'Jeda belah → pengering melebihi 4 jam: maksimal grade Reguler.',
   DRYING_BEHIND_SCHEDULE: 'Kadar air belum mencapai alarm 24/48 jam: pindah ke pengering lebih panas.',
   YIELD_BELOW_REFERENCE: 'Rendemen di bawah acuan literatur.',
+  // --- rantai produksi (ADR-010) ---
+  PAYLOAD_LEGAL_CHECK: 'Payload truk dari data vendor: cek JBI di buku KIR (aturan ODOL).',
+  DERIVED_SCALING: 'Jumlah kipas/titik belerang diskalakan dari contoh KORA 105 m³ — uji suhu, RH & bau SO₂.',
+  BLEND_OUT_OF_SPEC: 'Campuran asal batok tidak memenuhi batas spesifikasi.',
 } as const;
 
 export type WarningCode = keyof typeof WARNING_MESSAGES;

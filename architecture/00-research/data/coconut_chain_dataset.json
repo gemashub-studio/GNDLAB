@@ -1131,6 +1131,17 @@
    ],
    "note": "Perlakuan alkali serat sabut 5% NaOH (rasio serat:larutan 1:15)"
   },
+  "coir_alkali_liquor_ratio": {
+   "min": 15,
+   "typ": 15,
+   "max": 15,
+   "unit": "count",
+   "confidence": "A",
+   "source_ids": [
+    "C20"
+   ],
+   "note": "Rasio larutan NaOH : serat = 15 : 1 (massa/volume)"
+  },
   "in_situ_note": "Serat selulosa tanaman di media TIDAK mengganggu biosintesis BC dan menambah kekuatan (ikatan hidrogen, penampang sandwich) - C19. GAP: kadar optimal serat sabut/cocopeat belum ada data → kadar adalah input R&D, uji bertingkat.",
   "source_ids": [
    "C19",

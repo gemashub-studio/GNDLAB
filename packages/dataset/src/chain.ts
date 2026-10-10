@@ -155,6 +155,7 @@ export const ChainDatasetSchema = z
     bioleather_additive: z.object({
       materials: z.array(z.object({ id: z.string(), name_id: z.string(), prep: z.string() })).min(1),
       coir_alkali_naoh_pct: RangeP,
+      coir_alkali_liquor_ratio: RangeP,
       in_situ_note: z.string(),
       source_ids: Ids,
     }),
