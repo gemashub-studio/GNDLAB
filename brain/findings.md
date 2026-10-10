@@ -89,3 +89,9 @@ SOP KORA & CDB/FAO: mati hampa ≥8 jam/semalam; IMDG SP 978 weathering ≥14 ha
 
 ### FND-024 · 2026-10-10 · Dokumen KORA = parameter R&D yang ditunggu M5
 SOP Rev 03 sudah membedakan VALID / STANDAR INTERNAL / GAP → peta langsung ke keyakinan A/B/C. Draf parameter_template dibangkitkan dari dataset formula (bukan hardcode), menunggu konfirmasi owner.
+
+### FND-025 · 2026-10-10 · Model kapasitas batch per shift: angkatan hanya dimulai di jam kerja
+Model awal (24 ÷ siklus) menganggap oven/tungku diisi ulang kapan saja → oven 13 jam dihitung 1,85 angkatan/hari padahal 1 shift 8 jam hanya 1 (aturan 4 jam & bongkar-muat butuh orang). Akibatnya stasiun pembatas salah (belah, bukan oven). Engine `batchesPerDay()` mensimulasi kondisi tunak 60 hari.
+
+### FND-026 · 2026-10-10 · Komponen di dalam render & angka di UI
+Dua jebakan yang tertangkap saat review sendiri: (1) mendefinisikan komponen (`function Inputs()`) di dalam komponen lain → field di-mount ulang tiap ketikan (fokus hilang) — pakai variabel JSX; (2) angka resep yang "kecil" (gula alami 1–2,6%, pematangan 3–4 minggu, target rendemen 25%) sempat tertulis di UI — semua dipindah ke dataset bersumber.

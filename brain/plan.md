@@ -24,7 +24,7 @@ Dependensi: `web → dataset → calc-engine`. Engine tidak bergantung pada apa 
 | M2 | Web, DB, API, kalkulator, PWA | ✅ 2026-10-09 (offline nav: ISS-025 terbuka) | 131 unit + 13 E2E, run_all_checks LULUS |
 | M3 | Simulator 2D SVG + 3D r3f | ✅ 2026-10-09 | engine 93 (layout 11), E2E simulator 10 (1.892 karung ±48 fps) |
 | M4 | Sampling, kalibrasi, approval | ✅ 2026-10-09 | web 32 + 11 DB kalibrasi, E2E kalibrasi 2, run_all_checks LULUS |
-| F | Formula R&D, produksi per shift, ceklis (owner 2026-10-10) | ⏳ berjalan | – |
+| F | Formula R&D, produksi per shift, ceklis (owner 2026-10-10) | ✅ 2026-10-10 | engine 132, dataset 66, web +11, E2E 41 (+1 flaky ISS-041), run_all_checks LULUS |
 | M5 | R&D Lab | ⏳ (parameter: draf dari KORA di Fase F) | – |
 
 ## M2 — rencana rinci (belum dikerjakan)
@@ -114,5 +114,5 @@ Riset: `architecture/00-research/kora_research.md` (E1–E7, K-01..K-08, GAP). T
 - [x] F4 UI `/produksi` rencana per shift
 - [x] F5 UI `/ceklis` R&D / QC / produk (data-driven, simpan di perangkat, cetak)
 - [x] F6 Draf `architecture/07-rnd/parameter_kora_draft.csv` (KE/KA/BL/CK + produk baru AR/BS/BB/BC) untuk M5 — tunggu konfirmasi owner
-- [ ] F7 E2E, logs (DEC/ISS/traceability/CHANGELOG), run_all_checks, commit "Fase F selesai"
+- [x] F7 E2E, logs (DEC/ISS/traceability/CHANGELOG), run_all_checks, commit "Fase F selesai"
 Pertanyaan ke owner (jangan blokir kerja): kelas lot 100–600 mdpl (K-03); dosis perekat & tebal pillow BBQ aktual; kapasitas press/oven briket.

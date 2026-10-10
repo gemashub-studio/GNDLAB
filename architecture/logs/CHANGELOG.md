@@ -3,6 +3,15 @@
 Format: [Keep a Changelog](https://keepachangelog.com/id/1.1.0/) · Versi dataset mengikuti SemVer (ADR-002).
 Waktu dalam WIB (UTC+7).
 
+## [aplikasi Fase F] — 2026-10-10
+### Ditambahkan
+- Formula R&D `/formula`: kopra, arang, briket shisha / BBQ / custom, cuka air kelapa, bioleather — wizard per tahap, daftar bahan, sumber & keyakinan per angka, kotak TEMUAN untuk rumus dokumen yang dikoreksi.
+- Produksi per shift `/produksi`: lini produksi, stasiun pembatas, kebutuhan orang/unit untuk target.
+- Ceklis `/ceklis`: 19 ceklis R&D / QC / produk dari form KORA, simpan offline, CSV, cetak.
+- Dataset formula v1.0.0 (`00-research/data/coconut_formula_dataset.json`); draf parameter R&D M5 (`07-rnd/parameter_kora_draft.csv`, 111 parameter).
+### Diperbaiki
+- Dataset proses v1.1.0: pendinginan arang 1 jam → 8–12 jam; oven kopra 60–90 °C → 55–70 °C.
+
 ## [aplikasi M4] — 2026-10-09
 ### Ditambahkan
 - Sampling lapangan (`/sampling`): form cepat, impor CSV format template (semua-atau-tidak), kartu prioritas ASM-06/01/02, statistik n/rata-rata/SD/P5/median/P95.

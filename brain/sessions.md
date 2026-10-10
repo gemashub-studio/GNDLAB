@@ -71,3 +71,8 @@
 - Lanjut: F1 dataset formula (lihat plan.md Fase F).
 - (lanjutan 2026-10-10) F1–F5 selesai & di-commit: dataset formula v1.0.0 (+ proses v1.1.0), engine formula + shift (angkatan hanya dimulai di jam kerja — model 24/siklus salah ±85%), /formula (7 produk, wizard), /produksi (stasiun pembatas), /ceklis (19 ceklis, IndexedDB `gemas-ceklis`, CSV, cetak). Temuan tambahan: E8 cadangan Ronde 1, K-09 berat butir 0,65 vs ±1,0 kg.
 - Sisa: F6 draf parameter M5 (07-rnd/parameter_kora_draft.csv), F7 E2E + logs + run_all_checks + commit "Fase F selesai".
+
+### 2026-10-10 · Fase F SELESAI
+- /formula (7 produk), /produksi, /ceklis, dataset formula v1.0.0 + proses v1.1.0, ADR-009, DEC-035..040, ISS-034..041, FND-021..026, draf 111 parameter R&D.
+- Test: engine 132 (golden 17/17), dataset 66, web unit +11, E2E 41 lulus + 1 skip (US-10 flaky saat compile dev, lulus 3/3 ulang). run_all_checks + uji DB LULUS.
+- Menunggu owner: kelas lot 100–600 mdpl; revisi rumus gula & titrasi di SOP/tracker KORA; data briket (perekat aktual, tebal pillow, kapasitas press/oven); konfirmasi draf parameter R&D → lanjut M5.
