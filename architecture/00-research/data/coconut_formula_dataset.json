@@ -55,6 +55,7 @@
       "halves_per_m2": { "min": 25, "typ": 28, "max": 30, "unit": "count", "confidence": "C", "source_ids": ["F01"], "note": "Belahan Ø ±14 cm berjarak ±18 cm" },
       "cycle_h": { "min": 72, "typ": 108, "max": 216, "unit": "h", "confidence": "B", "source_ids": ["F01"], "note": "108 jam kubung terkontrol (E3S 2024); KORA 3–5 hari kemarau, 6–9 hari hujan" }
     },
+    "smoke_min_h": { "min": 24, "typ": 24, "max": 24, "unit": "h", "confidence": "B", "source_ids": ["F01", "F10"], "note": "Pengasapan langsung minimal 24 jam, balik tiap ±8 jam (FAO HACCP via SOP KPR E4)" },
     "smoked_copra_per_kg_meat": { "min": 0.5, "typ": 0.5, "max": 0.5, "unit": "kg", "confidence": "C", "source_ids": ["F01"], "note": "Konversi teoretis KPI 1.A.1; ukur aktual" }
   },
   "arang": {

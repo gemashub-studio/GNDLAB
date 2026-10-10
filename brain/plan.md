@@ -113,6 +113,6 @@ Riset: `architecture/00-research/kora_research.md` (E1–E7, K-01..K-08, GAP). T
 - [x] F3 UI `/formula` per produk (7 tab) + wizard/hint/tur
 - [x] F4 UI `/produksi` rencana per shift
 - [x] F5 UI `/ceklis` R&D / QC / produk (data-driven, simpan di perangkat, cetak)
-- [ ] F6 Draf `architecture/07-rnd/parameter_kora_draft.csv` (KE/KA/BL/CK + produk baru AR/BS/BB/BC) untuk M5 — tunggu konfirmasi owner
+- [x] F6 Draf `architecture/07-rnd/parameter_kora_draft.csv` (KE/KA/BL/CK + produk baru AR/BS/BB/BC) untuk M5 — tunggu konfirmasi owner
 - [ ] F7 E2E, logs (DEC/ISS/traceability/CHANGELOG), run_all_checks, commit "Fase F selesai"
 Pertanyaan ke owner (jangan blokir kerja): kelas lot 100–600 mdpl (K-03); dosis perekat & tebal pillow BBQ aktual; kapasitas press/oven briket.

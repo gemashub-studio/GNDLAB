@@ -128,6 +128,7 @@ export const FormulaDatasetSchema = z
         .min(1),
       oven_max_temp_c: RangeP,
       greenhouse: z.object({ room_m3: RangeP, rack_area_m2: RangeP, halves_per_m2: RangeP, cycle_h: RangeP }),
+      smoke_min_h: RangeP,
       smoked_copra_per_kg_meat: RangeP,
     }),
     arang: z.object({

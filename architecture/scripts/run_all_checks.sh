@@ -23,6 +23,8 @@ $PY scripts/validate_dataset.py || fail=1
 echo; echo "== 2. Bangkitkan seed & kamus data =="
 $PY scripts/seed_from_dataset.py || fail=1
 $PY scripts/gen_data_dictionary.py || fail=1
+# Draf parameter R&D (Fase F, ADR-009) harus sinkron dengan dataset formula.
+$PY scripts/gen_rnd_param_draft.py --check || fail=1
 
 echo; echo "== 3. Uji database =="
 if [ -n "${PGURL:-}" ] && command -v psql >/dev/null; then

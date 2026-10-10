@@ -33,7 +33,7 @@ Kualitas dokumen: SOP Rev 03 sudah memisahkan angka **VALID (bersumber)** vs **S
 
 Produksi per shift = stasiun pembatas (bottleneck) di rantai ini → dasar kalkulator shift (§6).
 
-## 3. Parameter yang diambil (ringkas; detail & sumber di `data/coconut_formula_dataset.json`)
+## 3. Parameter yang diambil (ringkas; detail & sumber di `00-research/data/coconut_formula_dataset.json`)
 
 ### 3.1 Kopra (KORA-SOP-KPR-01)
 - Grade KA akhir: Edible ≤6,0% (ICC Grade A), Reguler 6,1–8,0% (ICC B), Asalan 8,1–13,9% (ICC C), >13,9% wajib re-dry. Jangan <±4,5% (rapuh).
@@ -111,6 +111,6 @@ Produksi per shift = stasiun pembatas (bottleneck) di rantai ini → dasar kalku
 8. Kedalaman baki optimum bioleather (uji 3/5/8 cm).
 
 ## 8. Keputusan desain (lihat ADR-009)
-- Parameter formula = **data bersumber** (`coconut_formula_dataset.json`), engine murni, UI hanya presentasi.
+- Parameter formula = **data bersumber** (`00-research/data/coconut_formula_dataset.json`), engine murni, UI hanya presentasi.
 - Ceklis (R&D, QC, produk) = **data** dalam dataset yang sama, ditelusuri ke kode form KORA (F-K, F-A, F-C) — bukan hardcode di komponen.
 - Draf parameter R&D untuk M5 dibangkitkan dari dataset ini (`07-rnd/parameter_kora_draft.csv`) — menunggu konfirmasi owner sebelum diimpor.
