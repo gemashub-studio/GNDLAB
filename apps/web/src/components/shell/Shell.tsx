@@ -63,7 +63,7 @@ export function Shell({ children, datasetVersion, profile }: { children: ReactNo
       {/* Sidebar desktop (mockup Main) */}
       <nav
         aria-label="Navigasi utama"
-        className="hidden w-[260px] flex-none flex-col gap-7 border-r-4 border-ink bg-ink px-5 py-7 text-paper lg:flex"
+        className="hidden w-[260px] flex-none flex-col gap-7 border-r-4 border-ink bg-ink px-5 py-7 text-paper lg:flex print:hidden"
       >
         <Link href="/" className="flex flex-col gap-2.5 no-underline">
           <span className="flex items-center gap-2.5">
@@ -104,7 +104,7 @@ export function Shell({ children, datasetVersion, profile }: { children: ReactNo
       </nav>
 
       {/* Header HP (mockup Mobile) */}
-      <header className="flex items-center justify-between gap-2.5 bg-ink px-4 py-4 text-paper lg:hidden">
+      <header className="flex items-center justify-between gap-2.5 bg-ink px-4 py-4 text-paper lg:hidden print:hidden">
         <Link href="/" className="no-underline">
           <Wordmark className="text-xl" />
         </Link>
@@ -128,7 +128,7 @@ export function Shell({ children, datasetVersion, profile }: { children: ReactNo
       {/* Menu bawah HP */}
       <nav
         aria-label="Menu bawah"
-        className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-5 border-t-3 border-ink bg-surface lg:hidden"
+        className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-5 border-t-3 border-ink bg-surface lg:hidden print:hidden"
       >
         {NAV.filter((n) => n.mobile).map((n) => {
           const active = isActive(path, n.href);

@@ -69,3 +69,5 @@
 - Owner minta kalkulator formula R&D (kopra, arang, briket shisha/BBQ/custom, cuka, bioleather), produksi per shift, ceklis R&D/QC/produk; pelajari folder KORA (Downloads/kora (C:/Users/user/Downloads/kora)).
 - F0 selesai: 54 dokumen unik dibaca; temuan di `architecture/00-research/kora_research.md` (E1 gula −16,7%, E2 titrasi 10×, K-01 pendinginan arang, K-02 oven kopra, K-03 batas dataran). Riset web: FAO perekat pati 4–8%, oven ±80°C; SNI 01-6235 teks resmi tak terakses.
 - Lanjut: F1 dataset formula (lihat plan.md Fase F).
+- (lanjutan 2026-10-10) F1–F5 selesai & di-commit: dataset formula v1.0.0 (+ proses v1.1.0), engine formula + shift (angkatan hanya dimulai di jam kerja — model 24/siklus salah ±85%), /formula (7 produk, wizard), /produksi (stasiun pembatas), /ceklis (19 ceklis, IndexedDB `gemas-ceklis`, CSV, cetak). Temuan tambahan: E8 cadangan Ronde 1, K-09 berat butir 0,65 vs ±1,0 kg.
+- Sisa: F6 draf parameter M5 (07-rnd/parameter_kora_draft.csv), F7 E2E + logs + run_all_checks + commit "Fase F selesai".

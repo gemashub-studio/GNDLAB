@@ -108,11 +108,11 @@ Checklist (centang + commit per langkah):
 Permintaan: kalkulator formula kopra, arang, briket shisha, briket BBQ, briket custom, cuka air kelapa, bioleather; formula produksi per shift; ceklis R&D, QC, produk. Pelajari folder KORA milik owner (Downloads/kora (C:/Users/user/Downloads/kora)), validasi riset, tulis temuan. UI sesuai gaya, wizard + hint + tutorial.
 Riset: `architecture/00-research/kora_research.md` (E1–E7, K-01..K-08, GAP). Teks KORA terekstrak hanya di scratchpad sesi (tidak di repo); ekstraktor: zip+XML (docx/pptx/xlsx), pdftotext.
 - [x] F0 Baca & validasi KORA → kora_research.md, FND-021..024
-- [ ] F1 Dataset `00-research/data/coconut_formula_dataset.json` v1.0.0 (parameter bersumber + ceklis + laju stasiun) + koreksi dataset proses v1.1.0 (K-01 pendinginan arang 8–12 jam, K-02 oven kopra maks 70°C) + Zod/loader + test; ADR-009
-- [ ] F2 Engine `calc-engine/src/formula.ts`: gula must (neraca massa, E1), titrasi umum (E2), alkohol/asetat teoretis, media & hasil bioleather, kopra (rendemen, grade, alarm 24/48 jam, belerang), arang (rendemen, fraksi), briket (adonan, perekat, air, hasil, butir/kg), produksi shift (bottleneck) + unit test
-- [ ] F3 UI `/formula` per produk (7 tab) + wizard/hint/tur
-- [ ] F4 UI `/produksi` rencana per shift
-- [ ] F5 UI `/ceklis` R&D / QC / produk (data-driven, simpan di perangkat, cetak)
+- [x] F1 Dataset `00-research/data/coconut_formula_dataset.json` v1.0.0 (parameter bersumber + ceklis + laju stasiun) + koreksi dataset proses v1.1.0 (K-01 pendinginan arang 8–12 jam, K-02 oven kopra maks 70°C) + Zod/loader + test; ADR-009
+- [x] F2 Engine `calc-engine/src/formula.ts`: gula must (neraca massa, E1), titrasi umum (E2), alkohol/asetat teoretis, media & hasil bioleather, kopra (rendemen, grade, alarm 24/48 jam, belerang), arang (rendemen, fraksi), briket (adonan, perekat, air, hasil, butir/kg), produksi shift (bottleneck) + unit test
+- [x] F3 UI `/formula` per produk (7 tab) + wizard/hint/tur
+- [x] F4 UI `/produksi` rencana per shift
+- [x] F5 UI `/ceklis` R&D / QC / produk (data-driven, simpan di perangkat, cetak)
 - [ ] F6 Draf `architecture/07-rnd/parameter_kora_draft.csv` (KE/KA/BL/CK + produk baru AR/BS/BB/BC) untuk M5 — tunggu konfirmasi owner
 - [ ] F7 E2E, logs (DEC/ISS/traceability/CHANGELOG), run_all_checks, commit "Fase F selesai"
 Pertanyaan ke owner (jangan blokir kerja): kelas lot 100–600 mdpl (K-03); dosis perekat & tebal pillow BBQ aktual; kapasitas press/oven briket.
