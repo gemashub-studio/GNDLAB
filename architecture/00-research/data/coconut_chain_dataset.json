@@ -1,0 +1,1262 @@
+{
+ "meta": {
+  "title": "Dataset Rantai Produksi Kelapa Jambul → Kopra, Air Kelapa, Arang, Briket (Fase G)",
+  "version": "1.0.0",
+  "compiled": "2026-10-10",
+  "requires_formula_dataset": "1.0.0",
+  "requires_inventory_dataset": "1.0.4",
+  "value_convention": "Sama dengan dataset formula: {min, typ, max} + unit + keyakinan A/B/C + source_ids. Angka yang SUDAH ada di dataset inventory/proses/formula DIRUJUK (field *_ref), tidak disalin. Ukuran desain milik pengguna (dimensi greenhouse, kolam, tray) adalah INPUT, bukan data.",
+  "confidence_scale": {
+   "A": "Jurnal peer-review / spesifikasi resmi",
+   "B": "Lembaga, buku teknis, atau SOP internal yang merangkum standar",
+   "C": "Praktik lapangan, vendor, satu sumber - WAJIB divalidasi uji di fasilitas"
+  },
+  "report": "architecture/00-research/chain_research.md"
+ },
+ "raw_material": {
+  "commodity_ref": "kelapa_jambul",
+  "note": "Berat & diameter rata-rata kelapa tua jambul DIRUJUK dari dataset inventory (mass_per_unit_g 450/575/850 g; diameter ekuator 8,5/9,5/11,5 cm; keliling 30/33/36 cm). Silang-cek: SPIL 4-5 butir/kg kopra; Ikatrinasari 2026 kopra 92-176 g/butir (genjah-dalam).",
+  "size_classes_whole_kg": [
+   {
+    "id": "A",
+    "kg": 1.4
+   },
+   {
+    "id": "B",
+    "kg": 0.9
+   },
+   {
+    "id": "C",
+    "kg": 0.65,
+    "note": "0,6-0,7 kg"
+   },
+   {
+    "id": "D",
+    "kg": 0.4
+   },
+   {
+    "id": "boncos",
+    "kg": 0.2
+   }
+  ],
+  "size_classes_source_ids": [
+   "C04"
+  ],
+  "standard_whole_min_kg": {
+   "min": 0.6,
+   "typ": 0.6,
+   "max": 0.6,
+   "unit": "kg",
+   "confidence": "B",
+   "source_ids": [
+    "C04"
+   ],
+   "note": "Kelapa standar pengepul: ≥0,6 kg (buah bersabut), diameter ≥15 cm, utuh, tanpa tunas"
+  },
+  "copra_per_nut_by_type_g": [
+   {
+    "id": "dalam",
+    "name_id": "Kelapa dalam (tall)",
+    "g": 176
+   },
+   {
+    "id": "genjah",
+    "name_id": "Kelapa genjah (dwarf)",
+    "g": 92
+   },
+   {
+    "id": "hibrida",
+    "name_id": "Kelapa hibrida",
+    "g": 135
+   }
+  ],
+  "copra_per_nut_source_ids": [
+   "C04"
+  ]
+ },
+ "origin": {
+  "classes": [
+   {
+    "id": "DR",
+    "name_id": "Pesisir / dataran rendah",
+    "altitude_max_m": 500,
+    "rule": "≤ 500 mdpl"
+   },
+   {
+    "id": "DT",
+    "name_id": "Gunung / bukit / dataran tinggi",
+    "altitude_min_m": 500,
+    "rule": "> 500 mdpl"
+   }
+  ],
+  "lot_code_pattern": "{KELAS}-{YYMMDD}-{NNN}",
+  "source_ids": [
+   "C01",
+   "C02"
+  ],
+  "note": "Keputusan owner 2026-10-10 (K-03): batas tunggal 500 mdpl, selaras dataset proses (P07). Menggantikan kode KORA lama DR <100 / DT ≥600 mdpl yang menyisakan celah 100-600 mdpl. DR dan DT TIDAK BOLEH dicampur di tahap mana pun (C02)."
+ },
+ "vehicles": [
+  {
+   "id": "pickup",
+   "name_id": "Pickup bak",
+   "kind": "truck",
+   "body": "bak",
+   "inner_m": {
+    "L": 2.35,
+    "W": 1.62,
+    "H": 1.3
+   },
+   "payload_kg": {
+    "min": 1000,
+    "typ": 1000,
+    "max": 2000,
+    "unit": "kg",
+    "confidence": "C",
+    "source_ids": [
+     "C05"
+    ],
+    "note": "Deliveree 1 t; Isuzu-Astra 1-2 t"
+   },
+   "source_ids": [
+    "C05"
+   ]
+  },
+  {
+   "id": "cde_box",
+   "name_id": "Engkel box (CDE)",
+   "kind": "truck",
+   "body": "box",
+   "inner_m": {
+    "L": 3.2,
+    "W": 1.7,
+    "H": 1.7
+   },
+   "payload_kg": {
+    "min": 1500,
+    "typ": 2200,
+    "max": 2500,
+    "unit": "kg",
+    "confidence": "C",
+    "source_ids": [
+     "C05",
+     "C06",
+     "C07"
+    ],
+    "note": "Astra UD 1,5-2 t; Deliveree 2,2 t; SNG 2,5 t"
+   },
+   "source_ids": [
+    "C05"
+   ]
+  },
+  {
+   "id": "cde_bak",
+   "name_id": "Engkel bak (CDE)",
+   "kind": "truck",
+   "body": "bak",
+   "inner_m": {
+    "L": 3.2,
+    "W": 1.7,
+    "H": 1.8
+   },
+   "payload_kg": {
+    "min": 1500,
+    "typ": 2600,
+    "max": 2600,
+    "unit": "kg",
+    "confidence": "C",
+    "source_ids": [
+     "C05",
+     "C07"
+    ]
+   },
+   "source_ids": [
+    "C05"
+   ],
+   "note": "Tinggi = tinggi muat aman, bukan pagar bak"
+  },
+  {
+   "id": "cdd_box",
+   "name_id": "Double engkel box (CDD)",
+   "kind": "truck",
+   "body": "box",
+   "inner_m": {
+    "L": 4.4,
+    "W": 2.0,
+    "H": 1.9
+   },
+   "payload_kg": {
+    "min": 3500,
+    "typ": 5000,
+    "max": 5000,
+    "unit": "kg",
+    "confidence": "C",
+    "source_ids": [
+     "C05",
+     "C06",
+     "C07"
+    ],
+    "note": "Astra UD 3,5-5 t"
+   },
+   "source_ids": [
+    "C05"
+   ]
+  },
+  {
+   "id": "cdd_bak",
+   "name_id": "Double engkel bak (CDD)",
+   "kind": "truck",
+   "body": "bak",
+   "inner_m": {
+    "L": 4.4,
+    "W": 2.0,
+    "H": 2.0
+   },
+   "payload_kg": {
+    "min": 3500,
+    "typ": 5000,
+    "max": 5000,
+    "unit": "kg",
+    "confidence": "C",
+    "source_ids": [
+     "C05",
+     "C07"
+    ]
+   },
+   "source_ids": [
+    "C05"
+   ]
+  },
+  {
+   "id": "cdd_long",
+   "name_id": "CDD long box",
+   "kind": "truck",
+   "body": "box",
+   "inner_m": {
+    "L": 5.3,
+    "W": 2.0,
+    "H": 2.1
+   },
+   "payload_kg": {
+    "min": 6000,
+    "typ": 6000,
+    "max": 6000,
+    "unit": "kg",
+    "confidence": "C",
+    "source_ids": [
+     "C05"
+    ]
+   },
+   "source_ids": [
+    "C05"
+   ]
+  },
+  {
+   "id": "fuso_box",
+   "name_id": "Fuso box",
+   "kind": "truck",
+   "body": "box",
+   "inner_m": {
+    "L": 6.2,
+    "W": 2.35,
+    "H": 2.35
+   },
+   "payload_kg": {
+    "min": 7000,
+    "typ": 8000,
+    "max": 10000,
+    "unit": "kg",
+    "confidence": "C",
+    "source_ids": [
+     "C05",
+     "C06"
+    ],
+    "note": "Deliveree 7-8 t; SNG 10 t"
+   },
+   "source_ids": [
+    "C05"
+   ]
+  },
+  {
+   "id": "fuso_bak",
+   "name_id": "Fuso bak",
+   "kind": "truck",
+   "body": "bak",
+   "inner_m": {
+    "L": 6.6,
+    "W": 2.35,
+    "H": 2.45
+   },
+   "payload_kg": {
+    "min": 7000,
+    "typ": 8000,
+    "max": 8000,
+    "unit": "kg",
+    "confidence": "C",
+    "source_ids": [
+     "C05",
+     "C06"
+    ]
+   },
+   "source_ids": [
+    "C05"
+   ]
+  },
+  {
+   "id": "tronton_bak",
+   "name_id": "Tronton bak",
+   "kind": "truck",
+   "body": "bak",
+   "inner_m": {
+    "L": 9.5,
+    "W": 2.45,
+    "H": 2.6
+   },
+   "payload_kg": {
+    "min": 18000,
+    "typ": 18000,
+    "max": 18000,
+    "unit": "kg",
+    "confidence": "C",
+    "source_ids": [
+     "C05"
+    ]
+   },
+   "source_ids": [
+    "C05"
+   ]
+  },
+  {
+   "id": "tronton_wingbox",
+   "name_id": "Tronton wingbox",
+   "kind": "truck",
+   "body": "wingbox",
+   "inner_m": {
+    "L": 9.4,
+    "W": 2.4,
+    "H": 2.9
+   },
+   "payload_kg": {
+    "min": 18000,
+    "typ": 18000,
+    "max": 25000,
+    "unit": "kg",
+    "confidence": "C",
+    "source_ids": [
+     "C05",
+     "C06",
+     "C07"
+    ],
+    "note": "Deliveree 18 t (9,5x2,45x2,5 m); Astra UD & SNG 25 t (9,4x2,4x2,9 m)"
+   },
+   "source_ids": [
+    "C07"
+   ]
+  },
+  {
+   "id": "c45hc",
+   "name_id": "Container 45ft High Cube",
+   "kind": "container",
+   "body": "box",
+   "inner_m": {
+    "L": 13.556,
+    "W": 2.352,
+    "H": 2.7
+   },
+   "payload_kg": {
+    "min": 27650,
+    "typ": 27700,
+    "max": 27800,
+    "unit": "kg",
+    "confidence": "B",
+    "source_ids": [
+     "C08",
+     "C09"
+    ],
+    "note": "Hapag-Lloyd 27.700; Maersk 27.650"
+   },
+   "source_ids": [
+    "C08",
+    "C09"
+   ]
+  }
+ ],
+ "vehicles_note": "Container 20GP/40GP/40HC DIRUJUK dari dataset inventory. Dimensi bak truk bervariasi per karoseri; payload legal mengikuti JBI di buku KIR (aturan ODOL) - pakai typ (konservatif) dan ukur truk vendor sebelum kontrak.",
+ "receiving": {
+  "max_stack_height_m": {
+   "min": 1.5,
+   "typ": 1.5,
+   "max": 1.5,
+   "unit": "m",
+   "confidence": "C",
+   "source_ids": [
+    "C02"
+   ],
+   "note": "SOP KORA: palet wajib, FIFO, tumpukan karung ≤1,5 m (inventory 1,8 m = batas fisik; 1,5 m = SOP)"
+  }
+ },
+ "sorting": {
+  "classes": [
+   {
+    "id": "normal",
+    "name_id": "Tua normal",
+    "criteria": "Daging tebal ≥1 cm, putih bersih, padat; air jernih; tempurung coklat tua keras",
+    "handling": "Jalur kopra edible; air kelapa ditampung",
+    "route": "edible"
+   },
+   {
+    "id": "muda",
+    "name_id": "Kurang tua",
+    "criteria": "Daging tipis <1 cm / lembek berair",
+    "handling": "Jalur kopra reguler (jangan dicampur edible); air boleh ditampung bila jernih & manis",
+    "route": "reguler"
+   },
+   {
+    "id": "tunas",
+    "name_id": "Bertunas",
+    "criteria": "Ada tunas/kentos (haustorium), daging menipis",
+    "handling": "Pisahkan; daging ke asalan, kentos tidak masuk kopra; air TIDAK ditampung",
+    "route": "asalan"
+   },
+   {
+    "id": "retak",
+    "name_id": "Retak / bocor",
+    "criteria": "Tempurung retak, air merembes/asam",
+    "handling": "Belah segera, cium bau; air TIDAK ditampung; daging ke reguler/asalan sesuai kondisi",
+    "route": "asalan"
+   },
+   {
+    "id": "busuk",
+    "name_id": "Busuk / berjamur / berbau",
+    "criteria": "Daging kuning-coklat, berlendir, bau asam/tengik",
+    "handling": "Tolak - jangan masuk area kopra; batok masih bisa ke arang setelah dicuci & dijemur",
+    "route": "reject"
+   }
+  ],
+  "min_meat_thickness_mm": {
+   "min": 10,
+   "typ": 10,
+   "max": 10,
+   "unit": "mm",
+   "confidence": "C",
+   "source_ids": [
+    "C02",
+    "C03"
+   ],
+   "note": "Syarat daging edible (≥1 cm)"
+  },
+  "grade_split_pct": [
+   {
+    "id": "dalam",
+    "name_id": "Kelapa dalam",
+    "edible": 15,
+    "reguler": 60,
+    "asalan": 25
+   },
+   {
+    "id": "hibrida",
+    "name_id": "Kelapa hibrida",
+    "edible": 40,
+    "reguler": 40,
+    "asalan": 20
+   }
+  ],
+  "grade_split_source_ids": [
+   "C04"
+  ],
+  "source_ids": [
+   "C02",
+   "C03",
+   "C04"
+  ]
+ },
+ "coconut_water": {
+  "chill_within_h": {
+   "min": 2,
+   "typ": 2,
+   "max": 2,
+   "unit": "h",
+   "confidence": "C",
+   "source_ids": [
+    "C02",
+    "C03"
+   ],
+   "note": "Air kelapa wajib diproses/didinginkan maks 2 jam sejak keluar buah"
+  },
+  "chill_target_max_c": {
+   "min": 10,
+   "typ": 10,
+   "max": 10,
+   "unit": "C",
+   "confidence": "C",
+   "source_ids": [
+    "C02",
+    "C03"
+   ],
+   "note": "Kulkas/cold storage < 10 C"
+  },
+  "max_cold_h_ref": "cuka.water_max_cold_h"
+ },
+ "greenhouse": {
+  "ref_room_m": {
+   "L": 10,
+   "W": 3,
+   "H": 3.5
+  },
+  "ref_room_source_ids": [
+   "C02"
+  ],
+  "rack_depth_m": {
+   "min": 0.65,
+   "typ": 0.65,
+   "max": 0.65,
+   "unit": "m",
+   "confidence": "C",
+   "source_ids": [
+    "C02"
+   ],
+   "note": "Kedalaman satu rak; rak acuan 0,65 x 10 x 3 m"
+  },
+  "tier_pitch_m": {
+   "min": 0.5,
+   "typ": 0.5,
+   "max": 0.5,
+   "unit": "m",
+   "confidence": "C",
+   "source_ids": [
+    "C02",
+    "C03"
+   ],
+   "note": "3 m / 6 tingkat = 0,5 m untuk sirkulasi uap"
+  },
+  "aisle_min_m": {
+   "min": 0.5,
+   "typ": 0.5,
+   "max": 0.525,
+   "unit": "m",
+   "confidence": "C",
+   "source_ids": [
+    "C02"
+   ],
+   "note": "Sisa 1,05 m untuk 2 lorong kerja"
+  },
+  "roof_clearance_m": {
+   "min": 0.5,
+   "typ": 0.5,
+   "max": 0.5,
+   "unit": "m",
+   "confidence": "C",
+   "source_ids": [
+    "C02"
+   ],
+   "note": "Rak 3 m di greenhouse 3,5 m"
+  },
+  "face_down_days": {
+   "min": 1,
+   "typ": 2,
+   "max": 2,
+   "unit": "d",
+   "confidence": "C",
+   "source_ids": [
+    "C02",
+    "C03"
+   ],
+   "note": "Hari 1-2 telungkup agar sisa air menetes"
+  },
+  "face_up_tilt_deg": {
+   "min": 15,
+   "typ": 22.5,
+   "max": 30,
+   "unit": "deg",
+   "confidence": "C",
+   "source_ids": [
+    "C02",
+    "C03"
+   ],
+   "note": "Hari ke-3 dst terlentang miring 15-30 derajat menghadap sinar/aliran udara; titik awal, kalibrasi di tray aktual"
+  },
+  "fan_tray_tilt_deg": {
+   "min": 10,
+   "typ": 12.5,
+   "max": 15,
+   "unit": "deg",
+   "confidence": "C",
+   "source_ids": [
+    "C02",
+    "C03"
+   ],
+   "note": "Tray rak berkipas condong 10-15 derajat ke exhaust agar kondensasi mengalir keluar"
+  },
+  "fans_per_ref_room": {
+   "min": 2,
+   "typ": 3,
+   "max": 4,
+   "unit": "count",
+   "confidence": "C",
+   "source_ids": [
+    "C02",
+    "C03"
+   ],
+   "note": "Minimal 2-4 kipas sirkulasi untuk greenhouse 3x10x3,5 m (105 m³)"
+  },
+  "fan_diameter_mm": {
+   "min": 406,
+   "typ": 457,
+   "max": 508,
+   "unit": "mm",
+   "confidence": "C",
+   "source_ids": [
+    "C02",
+    "C03"
+   ],
+   "note": "Diameter 16-20 inci; di kedua ujung, menyapu sepanjang lorong"
+  },
+  "fan_run_h": {
+   "min": 5,
+   "typ": 5,
+   "max": 5,
+   "unit": "h",
+   "confidence": "C",
+   "source_ids": [
+    "C02",
+    "C03"
+   ],
+   "note": "Fokus 10.00-15.00; SEMUA kipas mati saat fumigasi"
+  },
+  "vent_open_pct": {
+   "min": 10,
+   "typ": 15,
+   "max": 20,
+   "unit": "pct",
+   "confidence": "C",
+   "source_ids": [
+    "C02",
+    "C03"
+   ],
+   "note": "Kisi berkasa dibuka 10-20% luas ventilasi untuk buang uap"
+  },
+  "day_temp_c": {
+   "min": 45,
+   "typ": 52.5,
+   "max": 60,
+   "unit": "C",
+   "confidence": "C",
+   "source_ids": [
+    "C02",
+    "C03"
+   ],
+   "note": "Target suhu udara siang"
+  },
+  "sulfur_exposure_h": {
+   "min": 8,
+   "typ": 10,
+   "max": 12,
+   "unit": "h",
+   "confidence": "C",
+   "source_ids": [
+    "C02"
+   ],
+   "note": "Paparan semalam 8-12 jam (pembakaran praktik 3-4 jam)"
+  },
+  "sulfur_ventilate_h": {
+   "min": 0.5,
+   "typ": 0.75,
+   "max": 1,
+   "unit": "h",
+   "confidence": "C",
+   "source_ids": [
+    "C02",
+    "C03"
+   ],
+   "note": "Ventilasi total 30-60 menit sebelum orang masuk"
+  },
+  "sulfur_room_per_point_m3": {
+   "min": 105,
+   "typ": 105,
+   "max": 105,
+   "unit": "m3",
+   "confidence": "C",
+   "source_ids": [
+    "C02"
+   ],
+   "note": "Turunan: 1 wadah bakar di lorong tengah untuk ruang acuan 105 m³ → titik = ceil(V/105), sebar merata sepanjang lorong; GAP - belum ada uji sebaran SO₂"
+  },
+  "sulfur_dose_ref": "kopra.sulfur",
+  "halves_per_m2_ref": "kopra.greenhouse.halves_per_m2",
+  "cycle_h_ref": "kopra.greenhouse.cycle_h"
+ },
+ "sun": {
+  "rack_height_m": {
+   "min": 0.5,
+   "typ": 0.6,
+   "max": 0.7,
+   "unit": "m",
+   "confidence": "C",
+   "source_ids": [
+    "C02"
+   ],
+   "note": "Para-para/widig 50-70 cm dari tanah"
+  },
+  "duration_ref": "drying_methods.sun.duration_h"
+ },
+ "oven": {
+  "ref_room_m": {
+   "L": 6,
+   "W": 3,
+   "H": 3
+  },
+  "ref_room_source_ids": [
+   "C02"
+  ],
+  "tray_tilt_deg": {
+   "min": 10,
+   "typ": 10,
+   "max": 10,
+   "unit": "deg",
+   "confidence": "C",
+   "source_ids": [
+    "C02"
+   ],
+   "note": "Daging menghadap atas/arah panas, miring ±10 derajat ke jalur keluar uap"
+  },
+  "temp_ref": "drying_methods.oven.temperature_c",
+  "note": "Tungku/ruang bakar terpisah, panas lewat saluran - asap tidak boleh menyentuh produk (C02)."
+ },
+ "packing": {
+  "copra_sack_kg": {
+   "min": 50,
+   "typ": 50,
+   "max": 60,
+   "unit": "kg",
+   "confidence": "C",
+   "source_ids": [
+    "C02"
+   ],
+   "note": "Karung goni/woven food-grade 50-60 kg (ikuti kontrak buyer)"
+  },
+  "warehouse_rh_max_pct": {
+   "min": 60,
+   "typ": 60,
+   "max": 70,
+   "unit": "pct",
+   "confidence": "C",
+   "source_ids": [
+    "C02"
+   ],
+   "note": "RH gudang ideal <60% (kopra <70%); palet, tidak menempel dinding"
+  },
+  "charcoal_bag_kg": [
+   {
+    "id": "b25",
+    "kg": 25
+   },
+   {
+    "id": "b30",
+    "kg": 30
+   },
+   {
+    "id": "b50",
+    "kg": 50
+   },
+   {
+    "id": "jumbo",
+    "kg": 1000
+   }
+  ],
+  "charcoal_bag_source_ids": [
+   "C10",
+   "C15",
+   "C16"
+  ],
+  "charcoal_container_net_kg": [
+   {
+    "container": "20GP",
+    "net": {
+     "min": 18000,
+     "typ": 18000,
+     "max": 18000,
+     "unit": "kg",
+     "confidence": "C",
+     "source_ids": [
+      "C15"
+     ],
+     "note": "Arang batok dalam karung (vendor)"
+    }
+   },
+   {
+    "container": "40HC",
+    "net": {
+     "min": 26000,
+     "typ": 26000,
+     "max": 26000,
+     "unit": "kg",
+     "confidence": "C",
+     "source_ids": [
+      "C15"
+     ]
+    }
+   }
+  ],
+  "briquette_cartons": [
+   {
+    "id": "mb10_c25",
+    "name_id": "Master box 10 kg (kubus 25 mm, inner box 1 kg)",
+    "net_kg": 10,
+    "dims_mm": {
+     "L": 415,
+     "W": 217,
+     "H": 164
+    }
+   },
+   {
+    "id": "mb10_c26",
+    "name_id": "Master box 10 kg (kubus 26 mm, inner box 1 kg)",
+    "net_kg": 10,
+    "dims_mm": {
+     "L": 560,
+     "W": 230,
+     "H": 115
+    }
+   },
+   {
+    "id": "mb20_c25",
+    "name_id": "Master box 20 kg (kubus 25 mm, double wall)",
+    "net_kg": 20,
+    "dims_mm": {
+     "L": 417,
+     "W": 219,
+     "H": 330
+    }
+   }
+  ],
+  "briquette_cartons_source_ids": [
+   "C13"
+  ],
+  "briquette_20ft_net_kg": {
+   "min": 18000,
+   "typ": 18200,
+   "max": 18500,
+   "unit": "kg",
+   "confidence": "C",
+   "source_ids": [
+    "C13",
+    "C14"
+   ],
+   "note": "Muat lepas (tanpa palet): 1.820-1.850 master box 10 kg"
+  },
+  "bbq_20ft_net_kg": [
+   {
+    "shape": "pillow",
+    "net": {
+     "min": 18000,
+     "typ": 18750,
+     "max": 19500,
+     "unit": "kg",
+     "confidence": "C",
+     "source_ids": [
+      "C17"
+     ]
+    }
+   },
+   {
+    "shape": "hexagonal",
+    "net": {
+     "min": 15500,
+     "typ": 16000,
+     "max": 16500,
+     "unit": "kg",
+     "confidence": "C",
+     "source_ids": [
+      "C17"
+     ]
+    }
+   }
+  ]
+ },
+ "charcoal": {
+  "shell_moisture_ref": "arang.shell_moisture_max_pct",
+  "shell_moisture_kora_max_pct": {
+   "min": 15,
+   "typ": 15,
+   "max": 18,
+   "unit": "pct",
+   "confidence": "C",
+   "source_ids": [
+    "C02"
+   ],
+   "note": "Syarat siap karbonisasi ≤15-18%"
+  },
+  "shell_sun_dry_days": {
+   "min": 5,
+   "typ": 6,
+   "max": 7,
+   "unit": "d",
+   "confidence": "C",
+   "source_ids": [
+    "C02"
+   ],
+   "note": "Jemur di para-para, terpal saat hujan"
+  },
+  "shell_wash_drain_h": {
+   "min": 1,
+   "typ": 1.5,
+   "max": 2,
+   "unit": "h",
+   "confidence": "C",
+   "source_ids": [
+    "C02"
+   ]
+  },
+  "drum_piece_mm": {
+   "min": 25,
+   "typ": 25,
+   "max": 25,
+   "unit": "mm",
+   "confidence": "C",
+   "source_ids": [
+    "C02"
+   ],
+   "note": "Pecah batok ±2,5 x 2,5 cm agar drum terisi padat & matang seragam"
+  },
+  "kiln_seal_h": {
+   "min": 0.5,
+   "typ": 0.75,
+   "max": 1,
+   "unit": "h",
+   "confidence": "C",
+   "source_ids": [
+    "C02"
+   ],
+   "note": "Tutup semua celah dengan tanah liat 30-60 menit"
+  },
+  "kolam_cool_h": {
+   "min": 12,
+   "typ": 24,
+   "max": 48,
+   "unit": "h",
+   "confidence": "C",
+   "source_ids": [
+    "C02"
+   ],
+   "note": "Kolam/tungku bata: semalam-2 hari kedap; drum: formula arang.methods.cooling_h (≥8 jam)"
+  },
+  "spread_cool_h": {
+   "min": 2,
+   "typ": 3,
+   "max": 4,
+   "unit": "h",
+   "confidence": "C",
+   "source_ids": [
+    "C02"
+   ],
+   "note": "Hamparkan di lantai beratap 2-4 jam sebelum ditumpuk (cegah menyala ulang)"
+  },
+  "pit_yield_pct": {
+   "min": 30,
+   "typ": 30,
+   "max": 30,
+   "unit": "pct",
+   "confidence": "B",
+   "source_ids": [
+    "C12"
+   ],
+   "note": "Metode lubang tradisional ±30% berat kering batok; mutu bervariasi & rawan kotoran tanah"
+  },
+  "drum_yield_kg_per_1000_shells": {
+   "min": 35,
+   "typ": 35,
+   "max": 35,
+   "unit": "kg",
+   "confidence": "B",
+   "source_ids": [
+    "C10"
+   ],
+   "note": "CDB India: 35 kg arang per 1.000 batok utuh"
+  },
+  "pit_fill_fraction": {
+   "min": 0.9,
+   "typ": 0.9,
+   "max": 0.9,
+   "unit": "fraction",
+   "confidence": "B",
+   "source_ids": [
+    "C11"
+   ],
+   "note": "FAO: volume berguna lubang ±90% volume nominal"
+  },
+  "raw_bulk_ref": "arang_batok_belah2.bulk_density_kg_m3.raw_halves_loose",
+  "sieve_passes": {
+   "min": 2,
+   "typ": 2,
+   "max": 3,
+   "unit": "count",
+   "confidence": "C",
+   "source_ids": [
+    "C01",
+    "C02"
+   ],
+   "note": "Owner: 2x ayakan rotari; SOP KORA 2-3x (kasar ke halus)"
+  },
+  "phases": [
+   {
+    "id": "nyala",
+    "name_id": "1. Penyalaan awal",
+    "smoke": "Putih keabuan tebal (uap air)",
+    "action": "Ventilasi lebih terbuka sampai api menjalar"
+   },
+   {
+    "id": "aktif",
+    "name_id": "2. Karbonisasi aktif",
+    "smoke": "Kuning kecoklatan lalu abu-abu kebiruan",
+    "action": "Kurangi udara bertahap (tutup sebagian ventilasi)"
+   },
+   {
+    "id": "akhir",
+    "name_id": "3. Mendekati selesai",
+    "smoke": "Tipis, biru muda/hampir transparan",
+    "action": "Siapkan penutupan total"
+   },
+   {
+    "id": "tutup",
+    "name_id": "4. Penutupan total",
+    "smoke": "Nyaris tak terlihat",
+    "action": "Tutup SEMUA celah dengan tanah liat, biarkan kedap"
+   }
+  ],
+  "phases_source_ids": [
+   "C02"
+  ]
+ },
+ "briquette": {
+  "shapes": [
+   {
+    "id": "cube",
+    "name_id": "Kubus (shisha)",
+    "dims_mm": [
+     [
+      22,
+      22,
+      22
+     ],
+     [
+      25,
+      25,
+      25
+     ],
+     [
+      26,
+      26,
+      26
+     ],
+     [
+      27,
+      27,
+      27
+     ]
+    ]
+   },
+   {
+    "id": "hexagonal",
+    "name_id": "Heksagonal berlubang (BBQ/shisha)",
+    "dims_mm": [
+     [
+      22,
+      22,
+      50
+     ]
+    ],
+    "note": "lebar antar-sisi x panjang"
+   },
+   {
+    "id": "flat",
+    "name_id": "Pipih / flat (shisha)",
+    "dims_mm": [
+     [
+      25,
+      25,
+      17
+     ],
+     [
+      25,
+      25,
+      20
+     ]
+    ]
+   },
+   {
+    "id": "pillow",
+    "name_id": "Bantal / pillow (BBQ)",
+    "dims_mm": [],
+    "note": "Ukuran vendor beragam - isi sendiri (lihat formula briket BBQ)"
+   },
+   {
+    "id": "finger",
+    "name_id": "Finger / stik",
+    "dims_mm": [],
+    "note": "Ukuran vendor beragam - isi sendiri"
+   }
+  ],
+  "shapes_source_ids": [
+   "C18",
+   "C16"
+  ],
+  "origin_blend_note": "GAP: belum ada literatur terukur pengaruh ketinggian kebun terhadap abu/FC/kekuatan batok. KORA (C02) hanya menduga batok DT lebih padat & FC lebih tinggi. Kalkulator campuran DT:DR memakai HASIL LAB per lot (rata-rata tertimbang), bukan angka asumsi."
+ },
+ "bioleather_additive": {
+  "materials": [
+   {
+    "id": "cocopeat",
+    "name_id": "Cocopeat (serbuk sabut)",
+    "prep": "Ayak halus, cuci, sterilkan (rebus/kukus); opsional rendam NaOH lalu bilas sampai netral"
+   },
+   {
+    "id": "cocofiber",
+    "name_id": "Cocofiber (serat sabut)",
+    "prep": "Potong pendek, rendam NaOH lalu bilas sampai netral (pH 7), sterilkan"
+   },
+   {
+    "id": "lain",
+    "name_id": "Bahan lain (ampas tebu, kapas, kertas daur ulang, dll.)",
+    "prep": "Haluskan, cuci, sterilkan; catat sumber & perlakuan"
+   }
+  ],
+  "coir_alkali_naoh_pct": {
+   "min": 5,
+   "typ": 5,
+   "max": 5,
+   "unit": "pct",
+   "confidence": "A",
+   "source_ids": [
+    "C20"
+   ],
+   "note": "Perlakuan alkali serat sabut 5% NaOH (rasio serat:larutan 1:15)"
+  },
+  "in_situ_note": "Serat selulosa tanaman di media TIDAK mengganggu biosintesis BC dan menambah kekuatan (ikatan hidrogen, penampang sandwich) - C19. GAP: kadar optimal serat sabut/cocopeat belum ada data → kadar adalah input R&D, uji bertingkat.",
+  "source_ids": [
+   "C19",
+   "C20"
+  ]
+ },
+ "sources": [
+  {
+   "id": "C01",
+   "title": "Permintaan & keputusan owner Fase G (2026-10-10): kelas asal ≤500/>500 mdpl, ayak rotari 2x, rantai proses lengkap",
+   "doc": "brain/plan.md (Fase G)",
+   "grade": "C"
+  },
+  {
+   "id": "C02",
+   "title": "KORA - SOP Penyimpanan Kopra & Pembakaran Arang (greenhouse 3x10x3,5 m, rak, belerang, kipas, karbonisasi, ayak)",
+   "doc": "kora/SOP Penyimpanan_kopra_Pembakaran_Arang.docx",
+   "grade": "B"
+  },
+  {
+   "id": "C03",
+   "title": "KORA - SOP Detail Kopra Greenhouse (lampiran)",
+   "doc": "kora/SOP_Detail_Kopra_Greenhouse_2.docx",
+   "grade": "B"
+  },
+  {
+   "id": "C04",
+   "title": "Ikatrinasari et al. 2026. Quality Control in Indonesia's Coconut Supply Chain. J. Agro Ind. Perkebunan 14(1):15-32",
+   "url": "https://jurnal.polinela.ac.id/index.php/AIP/article/download/4430/2674/19510",
+   "grade": "A"
+  },
+  {
+   "id": "C05",
+   "title": "Deliveree - tabel armada, kapasitas & dimensi kargo",
+   "url": "https://www.deliveree.com/id/ekspedisi/jasa-pick-up-denpasar-mojokerto-ekspedisi-murah",
+   "grade": "C"
+  },
+  {
+   "id": "C06",
+   "title": "SNG Logistic - Truk angkut barang: jenis, kapasitas, dimensi karoseri",
+   "url": "https://snglogistic.com/truk-angkut-barang.html",
+   "grade": "C"
+  },
+  {
+   "id": "C07",
+   "title": "Astra UD Trucks - Ragam truk wing box & kapasitas angkut (2025)",
+   "url": "https://astraudtrucks.co.id/berita/ragam-truk-wing-box-dan-kapasitas-angkutnya",
+   "grade": "C"
+  },
+  {
+   "id": "C08",
+   "title": "Hapag-Lloyd - 45' Standard High Cube (dimensi dalam, payload)",
+   "url": "https://www.hapag-lloyd.com/en/services-information/cargo-fleet/container/45-standard-high-cube.html",
+   "grade": "B"
+  },
+  {
+   "id": "C09",
+   "title": "Maersk - A handy guide to Maersk's fleet of containers",
+   "url": "https://www.maersk.com/~/media_sc9/maersk/local-information/files/europe/italy/export/equipment-flyer.pdf",
+   "grade": "B"
+  },
+  {
+   "id": "C10",
+   "title": "Coconut Development Board India - Shell Charcoal (drum kiln, pit, standar, kemasan)",
+   "url": "https://coconutboard.gov.in/images/TMOC/Pdf/ProcessingTechnology/shellchar-process.pdf",
+   "grade": "B"
+  },
+  {
+   "id": "C11",
+   "title": "FAO - Simple technologies for charcoal making, Ch.5 Earth pits",
+   "url": "https://www.fao.org/4/x5328e/x5328e06.htm",
+   "grade": "B"
+  },
+  {
+   "id": "C12",
+   "title": "Coconut Community (ICC) Journal - shell charcoal: metode lubang tradisional ±30%; WHU 33%",
+   "url": "https://journal.coconutcommunity.org/index.php/journalicc/article/download/247/210",
+   "grade": "B"
+  },
+  {
+   "id": "C13",
+   "title": "charcoal.pro - Packaging coconut charcoal briquettes (dimensi master box, 18.200 kg/20ft)",
+   "url": "https://charcoal.pro/packaging-for-coconut-charcoal-briquettes",
+   "grade": "C"
+  },
+  {
+   "id": "C14",
+   "title": "Mulia Charcoal - Master box spec (18.500 kg net/20ft lepas)",
+   "url": "https://muliacharcoal.com/packaging/master-box",
+   "grade": "C"
+  },
+  {
+   "id": "C15",
+   "title": "Charcoal Experience - Coconut shell charcoal (karung 25/30/50 kg, jumbo; 20ft 18 t, 40ft 26 t)",
+   "url": "https://charcoalexperience.com/coconut-shell-charcoal-material",
+   "grade": "C"
+  },
+  {
+   "id": "C16",
+   "title": "IndonesiaCharcoal - Export services (inner box, master 10-12 kg, PP 25 kg / jumbo 1 t)",
+   "url": "https://indonesiacharcoal.com/en/services",
+   "grade": "C"
+  },
+  {
+   "id": "C17",
+   "title": "bbq-charcoal.com FAQ - muatan 20ft pillow 18-19,5 t vs hexagonal 15,5-16,5 t",
+   "url": "https://bbq-charcoal.com/faq",
+   "grade": "C"
+  },
+  {
+   "id": "C18",
+   "title": "Inaexport (PT Athaya Agro Pratindo) - briket kubus 25/26/27 mm, heksagonal 22x22x50 mm",
+   "url": "https://inaexport.id/produk/charcoal/21382/charcoal",
+   "grade": "C"
+  },
+  {
+   "id": "C19",
+   "title": "MDPI Polysaccharides 2025 - Changed characteristics of bacterial cellulose due to in situ biosynthesis as part of composites (review)",
+   "url": "https://www.mdpi.com/2673-4176/6/4/114",
+   "grade": "A"
+  },
+  {
+   "id": "C20",
+   "title": "IOP Conf. Ser. MSE 368 (2018) 012048 - Effect of alkali treatment on tensile properties of coir fibre",
+   "url": "https://iopscience.iop.org/article/10.1088/1757-899X/368/1/012048/pdf",
+   "grade": "A"
+  }
+ ]
+}

@@ -36,5 +36,5 @@ export const fmtMeasure = (v: number): string =>
 export const UNIT_TEXT: Record<import('@gemas/calc-engine').Unit, string> = {
   m: 'm', kg: 'kg', m3: 'm³', kg_m3: 'kg/m³', fraction: 'fraksi', pct: '%', count: '', h: 'jam',
   m2: 'm²', L: 'L', g: 'g', g_L: 'g/L', kg_L: 'kg/L', g_m3: 'g/m³', brix: '°Brix', pH: '', C: '°C', d: 'hari', wk: 'minggu',
-  mm: 'mm', M: 'M', MPa: 'MPa', g_cm3: 'g/cm³', g_L_d: 'g/L/hari', cal_g: 'kal/g', count_h: '/jam', kg_h: 'kg/jam',
+  mm: 'mm', M: 'M', MPa: 'MPa', g_cm3: 'g/cm³', g_L_d: 'g/L/hari', cal_g: 'kal/g', count_h: '/jam', kg_h: 'kg/jam', deg: '°',
 };

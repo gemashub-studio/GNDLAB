@@ -55,7 +55,7 @@
 | ISS-034 | Rumus gula must SOP/tracker KORA kurang ±16,7% (100 L 4→15 °Brix hanya tercapai 13,35) | Validasi Fase F (E1) | Engine pakai neraca massa; UI menampilkan selisih; perlu revisi SOP AKL B1 & tracker oleh owner | Selesai (app) · SOP menunggu owner |
 | ISS-035 | Rumus umum titrasi di SOP AKL B6.2 salah 10×; daftar belanja membeli NaOH 0,5 N & pipet 5 mL sehingga rumus ringkas `0,06005×V` meleset 10× | Validasi Fase F (E2) | Kalkulator titrasi wajib isi N & volume sampel; peringatan bila rumus ringkas tidak berlaku | Selesai (app) · SOP menunggu owner |
 | ISS-036 | Dataset proses v1.0.0: pendinginan arang 1 jam & oven kopra s/d 90 °C | Validasi Fase F (K-01/K-02) | Dataset proses v1.1.0 | Selesai |
-| ISS-037 | Batas dataran: KORA DR <100 / DT ≥600 mdpl vs studi P07 500 mdpl; kelapa 100–600 mdpl tidak berkelas | Riset Fase F (K-03) | Tanya owner | Terbuka |
+| ISS-037 | Batas dataran: KORA DR <100 / DT ≥600 mdpl vs studi P07 500 mdpl; kelapa 100–600 mdpl tidak berkelas | Riset Fase F (K-03) | Owner 2026-10-10: DR ≤500 / DT >500 mdpl (dataset rantai C01, ADR-010) | Selesai |
 | ISS-038 | SNI 01-6235-2000 (briket): sumber sekunder tidak konsisten soal FC ≥77% & kerapatan; teks resmi tidak terakses | Riset Fase F (K-04) | Pakai KA/abu/VM/kalor; cek BSN | Terbuka |
 | ISS-039 | GAP data produksi briket: dosis perekat aktual KORA, tebal pillow BBQ, kapasitas press & oven; kapasitas reaktor pirolisis | Riset Fase F | UI meminta isian; FAO 4–8% sebagai acuan perekat | Terbuka (butuh data owner) |
 | ISS-040 | Rencana R&D Ronde 1 (40 kg) mengklaim 5 cadangan, hitungan hanya 1 butir (E8); berat butir 0,65 kg vs ±1,0 kg data Jambi (K-09) | Validasi Fase F | Kalkulator desain uji menandai cadangan tipis; timbang butir per lot | Selesai (app) |

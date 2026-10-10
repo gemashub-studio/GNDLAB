@@ -44,7 +44,9 @@ export type Unit =
   | 'g_L_d'
   | 'cal_g'
   | 'count_h'
-  | 'kg_h';
+  | 'kg_h'
+  // --- rantai produksi (ADR-010) ---
+  | 'deg';
 
 export const meters = (v: number): Meters => v as Meters;
 export const kg = (v: number): Kg => v as Kg;

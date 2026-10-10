@@ -95,3 +95,12 @@ Model awal (24 ÷ siklus) menganggap oven/tungku diisi ulang kapan saja → oven
 
 ### FND-026 · 2026-10-10 · Komponen di dalam render & angka di UI
 Dua jebakan yang tertangkap saat review sendiri: (1) mendefinisikan komponen (`function Inputs()`) di dalam komponen lain → field di-mount ulang tiap ketikan (fokus hilang) — pakai variabel JSX; (2) angka resep yang "kecil" (gula alami 1–2,6%, pematangan 3–4 minggu, target rendemen 25%) sempat tertulis di UI — semua dipindah ke dataset bersumber.
+
+### FND-027 · 2026-10-10 · Ketinggian kebun → mutu batok/briket = GAP literatur
+Tidak ada studi terukur ketinggian kebun vs abu/FC/kekuatan/warna abu batok. Studi Jember (Nuraisyah 2021) hanya bobot komponen buah; tabelnya tak bisa diambil. KORA hanya menduga DT lebih padat. Keputusan: kalkulator campuran DT:DR memakai hasil lab per lot; rencana uji proksimat + kuat tekan n ≥ 3 per kelas (chain_research.md CH-04).
+
+### FND-028 · 2026-10-10 · Kode asal KORA lama menyisakan celah 100–600 mdpl
+SOP KORA: DR <100 / DT ≥600 mdpl. Owner memutuskan batas tunggal 500 mdpl (DR ≤500 / DT >500), sama dengan studi Jambi P07. ISS-037 ditutup.
+
+### FND-029 · 2026-10-10 · Desain rak greenhouse KORA = satu-satunya sumber angka rak
+Rak 0,65 m, 6 tingkat × 0,5 m, lorong ±0,5 m, pusat belahan 18 cm (25–30 belahan/m²), telungkup hari 1–2 lalu miring 15–30°, kipas 2–4 × Ø16–20″ per 105 m³, belerang 1,5–2 g/butir atau 20–30 g/m³. Semua keyakinan C → kalkulator memakai geometri murni + parameter ini, skala ruang lain ditandai turunan.
