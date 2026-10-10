@@ -130,7 +130,9 @@ Kalkulator & SOP & alat untuk SETIAP proses:
 7. Briket: bahan baku per % asal (DT:DR) → kekuatan & warna abu; perekat; air; bentuk/jenis; SOP, alat, waktu, kapasitas, oven, packing.
 8. Turunan: cuka (ada), bioleather + opsi tambahan selulosa cocopeat/cocofiber/lainnya.
 Link owner untuk dicek: 1 TikTok vt, IG rifai_big, TikTok bonumcommune, 18 YouTube, spil.co.id (1 kg kopra berapa biji kelapa), query Google ukuran/berat kelapa jambul.
-- [ ] G0 Riset (link owner + sumber kredibel) → architecture/00-research/chain_research.md
+- [x] G0 Riset → chain_research.md + dataset rantai v1.0.0 (ADR-010) — commit a3cbe08
+- [x] G-engine: packages/calc-engine/src/chain.ts (18 uji) — commit 35448e2
+- UI rencana: halaman /rantai, tab angkut·terima·belah·kering·kemas·arang·briket·turunan (components/chain/*)
 - [ ] G1 Transport (truk + container) & penerimaan/gudang per asal
 - [ ] G2 Kupas/belah/sortir/air kelapa
 - [ ] G3 Pengeringan (greenhouse desainer + matahari + oven)

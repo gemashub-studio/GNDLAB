@@ -81,3 +81,7 @@
 - Status: Fase F selesai & di-commit (6a2a6c7). Working tree bersih.
 - MULAI DARI SINI sesi berikut: (1) tanyakan jawaban owner atas pertanyaan terbuka di entri "Fase F SELESAI" (kelas lot 100–600 mdpl, data briket, berat butir, revisi SOP gula/titrasi, konfirmasi draf parameter); (2) bila draf parameter disetujui → mulai M5 R&D Lab (CLAUDE_CODE_PROMPT.md §5, PRD_RnD.md, 07-rnd/parameter_kora_draft.csv); bila belum → M5 dengan empty-state + impor CSV.
 - Cara jalankan test di Windows: lihat brain/environment.md (PowerShell + node langsung; jangan pakai backtick di Bash).
+
+### 2026-10-10 · Fase G dimulai (owner: rantai produksi lengkap)
+- G0 selesai: chain_research.md, dataset rantai v1.0.0 (kendaraan 10 truk + 45HC, kelas DR ≤500/DT >500 mdpl, sortir, air kelapa <10 °C ≤2 jam, desain greenhouse KORA, kolam/drum, kemasan, bentuk briket, aditif bioleather), ADR-010, DEC-041, ISS-037 ditutup, FND-027..029.
+- Engine chain.ts selesai (150/150 uji engine). Berikutnya: UI /rantai, lalu E2E + logs + run_all_checks.
