@@ -164,3 +164,16 @@ Tujuan: isian semudah mungkin + PDF laporan lengkap awal–akhir.
 2. Bandingkan dua eksperimen berdampingan.
 3. Konfirmasi draf parameter R&D (119) oleh owner → status bukan "draf".
 4. Menunggu owner: basis gliserol (v/v | b/v); pasar tujuan kopra edibel; baca naskah SNI (akses-sni.bsn.go.id); lampiran BPOM 11/2019 batas sulfit; pilihan sinkronisasi laptop↔HP (07-rnd/sinkronisasi-opsi.md).
+
+## RENCANA — Laporan berdesain bagus + grafik (owner 2026-10-11; kerjakan setelah limit aman, SEBELUM backlog butir 1)
+Kajian kondisi sekarang:
+- `apps/web/src/lib/labPdf.tsx`: PDF eksperimen (kompilasi) sudah punya grafik garis per variabel (Chart) & batang rata-rata±SD per perlakuan (SummaryBars); tampilan polos (kotak Block per kolom, banyak "belum dicatat").
+- `apps/web/src/lib/researchReport.ts` → model `ResearchReport` (blok teks/tabel/gambar) dipakai `researchPdfBlob` (labPdf), `buildDocx`/`buildPptx` (officeExport.ts). **Laporan riset produk BELUM punya grafik sama sekali**; desain = daftar blok berurutan.
+- Data grafik tersedia: hasil ukur laporan harian (`measurementSeries` di labStore), Hari ke-N (`dayNumber`), status/tanggal (`researchDates`), desain eksperimen (`summarize` di labDesign).
+Rancangan:
+1. Model laporan tambah `charts: ChartSpec[]` (garis per variabel vs Hari ke-N; batang per perlakuan; kelompok = ulangan/unit) — SATU sumber data untuk PDF/DOCX/PPTX; hanya data tercatat, <2 titik → tidak digambar + teks "data belum cukup".
+2. Gambar grafik sekali sebagai SVG (fungsi murni `chartSvg(spec)` → string, diuji unit) → PDF: komponen react-pdf Svg setara; DOCX/PPTX: SVG → PNG lewat canvas di browser (`svgToPng`) lalu ditanam sebagai gambar (DrawingML chart asli terlalu rumit; PNG cukup & terbaca Word/PPT).
+3. Desain (token Lab Futuristik): sampul (judul, kode, status pill, tanggal mulai–selesai, durasi, pembuat+asisten, foto utama bila ada); halaman "Ringkasan" berisi kartu KPI (jumlah hari, laporan, variabel diukur, nilai awal→akhir tiap variabel, versi resep); bagian bernomor dengan garis aksen mint; tabel bergaris tipis zebra; galeri foto 2–3 kolom berkapsi; footer halaman + disclaimer.
+4. PPTX: 1 slide sampul, 1 ringkasan KPI, 1 slide per grafik (besar), komposisi/alat/hari, foto 2 per slide, 1 slide per laporan harian ringkas.
+5. Eksperimen (labPdf CompileDoc) ikut gaya yang sama + sampul & KPI.
+6. Validasi: uji unit chartSvg/model; E2E unduh 3 format; buka DOCX/PPTX via Word/PowerPoint COM (baca saja) & cek jumlah gambar/grafik; PDF dibaca visual (Read pdf). Simbol ≥ − ± tidak ada di font PDF bawaan → pakai teks.

@@ -148,3 +148,4 @@
 - MULAI DARI SINI: brain/plan.md → "BACKLOG — lanjut setelah limit aman" butir 1 (hapus hasil riset).
 - Cara uji di Windows: brain/environment.md (PowerShell + node langsung). Office COM (Word/PowerPoint) tersedia untuk validasi DOCX/PPTX (buka baca-saja).
 - Data owner di browser pane: eksperimen "greenhouse 1" (KE-2610-001) — jangan dihapus.
+- (jeda 2) Owner minta laporan berdesain bagus + grafik setelah limit aman; rencana lengkap di brain/plan.md "RENCANA — Laporan berdesain bagus + grafik" (prioritas sebelum hapus hasil riset). Konteks sesi 93% saat dicatat → mulai sesi baru.
