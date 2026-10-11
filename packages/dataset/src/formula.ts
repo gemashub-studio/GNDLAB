@@ -88,6 +88,49 @@ const ChecklistSchema = z.object({
   source_ids: Ids,
 });
 
+const MethodBase = { id: z.string().regex(/^[a-zA-Z_]+$/), name_id: z.string(), note: z.string().optional(), source_ids: Ids };
+
+const VinegarMethodSchema = z
+  .object({
+    ...MethodBase,
+    kind: z.enum(['batch', 'semi', 'generator']),
+    acetify_d: RangeP.optional(),
+    acetify_h: RangeP.optional(),
+    withdraw_fraction: RangeP.optional(),
+    startup_runs: RangeP.optional(),
+    equipment: z.string(),
+    pros: z.string(),
+    cons: z.string(),
+  })
+  .refine((m) => (m.kind === 'generator' ? !!m.acetify_h && !!m.startup_runs : !!m.acetify_d && !!m.withdraw_fraction), {
+    message: 'metode generator butuh acetify_h & startup_runs; metode lain butuh acetify_d & withdraw_fraction',
+  });
+
+const BlCultureSchema = z.object({ ...MethodBase, wet_yield_g_l_day: RangeP.optional(), grade: z.enum(['A', 'B']) });
+const BlPlasticizerSchema = z
+  .object({
+    ...MethodBase,
+    glycerol_pct_bath: RangeP.optional(),
+    glycerol_pct_of_bc: RangeP.optional(),
+    glycerin_ethanol_ratio: RangeP.optional(),
+    soak_h: RangeP.optional(),
+    dry_c: RangeP.optional(),
+    dry_h: RangeP.optional(),
+  })
+  .refine((m) => [m.glycerol_pct_bath, m.glycerol_pct_of_bc, m.glycerin_ethanol_ratio].filter(Boolean).length === 1, {
+    message: 'plastisasi wajib tepat satu basis resep',
+  });
+const BlDyeSchema = z.object({
+  ...MethodBase,
+  mordant: z.string(),
+  mordant_g_l: RangeP.optional(),
+  dye_pct_of_fiber: RangeP.optional(),
+  salt_g_l: RangeP.optional(),
+  temp_c: RangeP.optional(),
+  time_h: RangeP.optional(),
+});
+const BlFinishSchema = z.object({ ...MethodBase, wax_share_pct: RangeP.optional(), apply_c: RangeP, cure_h: RangeP });
+
 export const FormulaDatasetSchema = z
   .object({
     meta: z.object({ version: z.string().regex(/^\d+\.\d+\.\d+$/), compiled: z.string(), requires_process_dataset: z.string(), requires_inventory_dataset: z.string() }).passthrough(),
@@ -237,6 +280,7 @@ export const FormulaDatasetSchema = z
       egg_white_per_egg_g: RangeP,
       bottle_pasteurize_c: RangeP,
       titration: z.object({ naoh_n_default: z.number().positive(), sample_ml_default: z.number().positive(), acetic_g_mol: z.number(), source_ids: Ids, note: z.string() }),
+      methods: z.array(VinegarMethodSchema).min(1),
     }),
     bioleather: z.object({
       sucrose_g_l: RangeP,
@@ -253,6 +297,10 @@ export const FormulaDatasetSchema = z
       dry_temp_c: RangeP,
       tensile_min_mpa: RangeP,
       fold_min: RangeP,
+      culture_methods: z.array(BlCultureSchema).min(1),
+      plasticizers: z.array(BlPlasticizerSchema).min(1),
+      dyes: z.array(BlDyeSchema).min(1),
+      finishes: z.array(BlFinishSchema).min(1),
     }),
     production: z.object({ shift_hours: RangeP, work_days_per_week: RangeP, oven_load_basis: z.string() }),
     stations: z
@@ -321,6 +369,12 @@ function params<T extends Record<string, unknown>>(group: string, obj: T): Range
   return out as never;
 }
 
+export type VinegarMethodRaw = RawFormulaDataset['cuka']['methods'][number];
+
+/** Metode (resep/cara) dari dataset: data mentah + setiap rentang dipetakan ke Param (`grup.id.field`). */
+export type MethodSI<T> = T & { p: Record<string, Param> };
+const methodSI = <T extends { id: string } & Record<string, unknown>>(group: string, m: T): MethodSI<T> => ({ ...m, p: params(`${group}.${m.id}`, m) as Record<string, Param> });
+
 export interface FormulaDatasetSI {
   version: string;
   compiled: string;
@@ -341,8 +395,13 @@ export interface FormulaDatasetSI {
   briket: ReturnType<typeof params<RawFormulaDataset['briket']>> & {
     variants: (BriquetteVariant & { density: Param })[];
   };
-  cuka: ReturnType<typeof params<RawFormulaDataset['cuka']>>;
-  bioleather: ReturnType<typeof params<RawFormulaDataset['bioleather']>>;
+  cuka: ReturnType<typeof params<RawFormulaDataset['cuka']>> & { methods: MethodSI<VinegarMethodRaw>[] };
+  bioleather: ReturnType<typeof params<RawFormulaDataset['bioleather']>> & {
+    cultureMethods: MethodSI<RawFormulaDataset['bioleather']['culture_methods'][number]>[];
+    plasticizers: MethodSI<RawFormulaDataset['bioleather']['plasticizers'][number]>[];
+    dyes: MethodSI<RawFormulaDataset['bioleather']['dyes'][number]>[];
+    finishes: MethodSI<RawFormulaDataset['bioleather']['finishes'][number]>[];
+  };
   production: ReturnType<typeof params<RawFormulaDataset['production']>>;
   stations: { id: string; nameId: string; kind: 'manual' | 'machine'; unit: string; rate: Param }[];
   checklists: FormulaChecklist[];
@@ -389,8 +448,14 @@ export function loadFormulaDataset(raw: unknown, process: ProcessDatasetSI): For
       ...params('briket', d.briket),
       variants: d.briket.variants.map((v) => ({ ...v, density: toParam(`briket.${v.id}.density`, v.density_g_cm3) })),
     },
-    cuka: params('cuka', d.cuka),
-    bioleather: params('bioleather', d.bioleather),
+    cuka: { ...params('cuka', d.cuka), methods: d.cuka.methods.map((m) => methodSI('cuka.method', m)) },
+    bioleather: {
+      ...params('bioleather', d.bioleather),
+      cultureMethods: d.bioleather.culture_methods.map((m) => methodSI('bioleather.culture', m)),
+      plasticizers: d.bioleather.plasticizers.map((m) => methodSI('bioleather.plast', m)),
+      dyes: d.bioleather.dyes.map((m) => methodSI('bioleather.dye', m)),
+      finishes: d.bioleather.finishes.map((m) => methodSI('bioleather.finish', m)),
+    },
     production: params('production', d.production),
     stations: d.stations.map((s) => ({
       id: s.id,

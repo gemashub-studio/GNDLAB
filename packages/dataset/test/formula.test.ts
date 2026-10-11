@@ -8,7 +8,7 @@ describe('dataset formula (ADR-009)', () => {
   const f = bundledFormulaDataset();
 
   it('valid, versi & kompatibilitas dengan dataset proses v1.1.0', () => {
-    expect(f.version).toBe('1.0.0');
+    expect(f.version).toBe('1.1.0');
     expect(bundledProcessDataset().version).toBe('1.1.0');
     expect(() => loadFormulaDataset({ ...clone(), meta: { ...clone().meta, requires_process_dataset: '9.9.9' } }, bundledProcessDataset())).toThrow(/butuh dataset proses/);
   });
@@ -88,5 +88,21 @@ describe('dataset formula (ADR-009)', () => {
     });
     expect(out.result.typ.waterKg).toBeGreaterThan(0);
     expect(out.warnings.map((w) => w.code)).not.toContain('DOUGH_TOO_WET');
+  });
+
+  it('metode cuka & bioleather (v1.1.0): 5 metode cuka, kultur/plastisasi/pewarna/finishing, ceklis R&D baru', () => {
+    expect(f.cuka.methods.map((m) => m.id)).toEqual(['statis', 'semikontinu', 'generator', 'aerasi', 'alami']);
+    const gen = f.cuka.methods.find((m) => m.id === 'generator')!;
+    expect(gen.p.acetify_h!.typ).toBe(32);
+    expect(f.cuka.methods.find((m) => m.id === 'aerasi')!.p.withdraw_fraction!.min).toBe(0.34);
+    expect(f.bioleather.plasticizers.map((m) => m.id)).toEqual(['A', 'B', 'C']);
+    expect(f.bioleather.cultureMethods.find((m) => m.id === 'berkala')!.p.wet_yield_g_l_day!.typ).toBe(19);
+    for (const id of ['rnd-cuka-metode', 'rnd-blt-kultur', 'rnd-blt-plastis', 'rnd-blt-finish']) expect(f.checklists.some((c) => c.id === id)).toBe(true);
+    const bad = clone();
+    delete bad.cuka.methods[2].acetify_h;
+    expect(() => loadFormulaDataset(bad, bundledProcessDataset())).toThrow(/generator butuh/);
+    const bad2 = clone();
+    bad2.bioleather.plasticizers[0].glycerol_pct_of_bc = bad2.bioleather.plasticizers[0].glycerol_pct_bath;
+    expect(() => loadFormulaDataset(bad2, bundledProcessDataset())).toThrow(/tepat satu basis/);
   });
 });

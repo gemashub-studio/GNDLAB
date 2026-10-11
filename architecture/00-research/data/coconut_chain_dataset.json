@@ -1,9 +1,9 @@
 {
  "meta": {
   "title": "Dataset Rantai Produksi Kelapa Jambul → Kopra, Air Kelapa, Arang, Briket (Fase G)",
-  "version": "1.0.0",
-  "compiled": "2026-10-10",
-  "requires_formula_dataset": "1.0.0",
+  "version": "1.0.1",
+  "compiled": "2026-10-11",
+  "requires_formula_dataset": "1.1.0",
   "requires_inventory_dataset": "1.0.4",
   "value_convention": "Sama dengan dataset formula: {min, typ, max} + unit + keyakinan A/B/C + source_ids. Angka yang SUDAH ada di dataset inventory/proses/formula DIRUJUK (field *_ref), tidak disalin. Ukuran desain milik pengguna (dimensi greenhouse, kolam, tray) adalah INPUT, bukan data.",
   "confidence_scale": {

@@ -26,5 +26,6 @@ export * from './formula-bioleather.ts';
 export * from './formula-briket.ts';
 export * from './formula-kopra.ts';
 export * from './formula-arang.ts';
+export * from './formula-methods.ts';
 export * from './shift.ts';
 export * from './chain.ts';
