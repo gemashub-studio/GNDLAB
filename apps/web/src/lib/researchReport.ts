@@ -35,10 +35,20 @@ const or = (v: string | undefined) => (v && v.trim() ? v.trim() : NOT_RECORDED);
 const img = (m: MediaItem): ReportImage => ({ name: m.name, caption: m.caption, dataUrl: m.thumb, video: m.type.startsWith('video/') });
 const STATUS: Record<ReturnType<typeof researchStatus>, string> = { 'belum-mulai': 'Belum ada laporan harian', berjalan: 'Berjalan', selesai: 'SELESAI' };
 
-export function buildResearchReport(key: string, versions: readonly ProtocolVersion[], entries: readonly DailyEntry[], media: readonly MediaItem[], generatedAt = new Date().toLocaleString('id-ID')): ResearchReport {
-  const vs = [...versions].filter((v) => v.key === key).sort((a, b) => a.version - b.version);
-  const latest = vs[vs.length - 1];
-  if (!latest) throw new RangeError(`Riset ${key} tidak ditemukan`);
+export function buildResearchReport(
+  key: string,
+  versions: readonly ProtocolVersion[],
+  entries: readonly DailyEntry[],
+  media: readonly MediaItem[],
+  generatedAt = new Date().toLocaleString('id-ID'),
+  /** Versi yang dilaporkan (default: terbaru). Riwayat versi = sampai versi ini. */
+  versionId?: string,
+): ResearchReport {
+  const all = [...versions].filter((v) => v.key === key).sort((a, b) => a.version - b.version);
+  const chosen = versionId ? all.find((v) => v.id === versionId) : all[all.length - 1];
+  if (!chosen) throw new RangeError(`Riset ${versionId ?? key} tidak ditemukan`);
+  const vs = all.filter((v) => v.version <= chosen.version);
+  const latest = chosen;
   const days = [...entries].filter((e) => e.experimentId === key).sort((a, b) => a.entryDate.localeCompare(b.entryDate) || a.createdAt.localeCompare(b.createdAt));
   const byId = new Map(media.map((m) => [m.id, m]));
   const pics = (ids?: string[]) => (ids ?? []).map((id) => byId.get(id)).filter((m): m is MediaItem => !!m).map(img);
@@ -121,5 +131,5 @@ export function buildResearchReport(key: string, versions: readonly ProtocolVers
       images: [],
     },
   ];
-  return { title: `Riset Produk — ${latest.name}`, subtitle: `${key} · ${productName(latest.product)} · ${STATUS[status]}`, generatedAt, blocks, footer: `GEMA RnD Lab · dibuat ${generatedAt}` };
+  return { title: `Riset Produk — ${latest.name} (versi ${latest.version})`, subtitle: `${key} · ${productName(latest.product)} · ${STATUS[status]}`, generatedAt, blocks, footer: `GEMA RnD Lab · dibuat ${generatedAt}` };
 }

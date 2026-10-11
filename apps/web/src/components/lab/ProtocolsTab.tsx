@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { downloadBlob, fmtBytes, makeThumb } from '@/lib/labMedia';
 import {
   addProtocolVersion,
+  deleteDraft,
   listDrafts,
   saveDraft,
   LAB_PRODUCTS,
@@ -27,6 +28,25 @@ import { DailyLog } from './DailyLog';
 import { MediaPicker } from './MediaPicker';
 import { ProductMark, Section, TextInput } from './ui';
 
+type ExportKind = 'pdf' | 'docx' | 'pptx';
+const KIND_LABEL: Record<ExportKind, string> = { pdf: 'PDF', docx: 'Word', pptx: 'PowerPoint' };
+
+/** Unduh laporan riset untuk versi tertentu (default terbaru) dalam PDF / Word / PowerPoint. */
+async function downloadResearch(kind: ExportKind, key: string, versionId: string | undefined, protocols: ProtocolVersion[], entries: DailyEntry[], media: MediaItem[]) {
+  const { buildResearchReport } = await import('@/lib/researchReport');
+  const report = buildResearchReport(key, protocols, entries, media, undefined, versionId);
+  const v = versionId ? `-${versionId.slice(key.length + 1)}` : '';
+  const name = `${key}${v}-riset-produk.${kind}`;
+  if (kind === 'pdf') {
+    const { researchPdfBlob } = await import('@/lib/labPdf');
+    downloadBlob(await researchPdfBlob(report), name);
+  } else {
+    const o = await import('@/lib/officeExport');
+    const bytes = kind === 'docx' ? o.buildDocx(report) : o.buildPptx(report);
+    downloadBlob(new Blob([bytes as Uint8Array<ArrayBuffer>], { type: kind === 'docx' ? o.DOCX_MIME : o.PPTX_MIME }), name);
+  }
+}
+
 const blankIng = (): ProtocolIngredient => ({ name: '', amount: '', unit: '' });
 const blankStep = (): ProtocolStep => ({ text: '', duration: '', conditions: '' });
 const STATUS_TEXT = { 'belum-mulai': 'belum ada laporan', berjalan: 'berjalan', selesai: 'SELESAI' } as const;
@@ -37,7 +57,6 @@ const STATUS_TEXT = { 'belum-mulai': 'belum ada laporan', berjalan: 'berjalan', 
  * Aplikasi TIDAK mengisi angka resep. Versi tersimpan tidak bisa diubah; perubahan = versi baru.
  */
 export function ProtocolsTab({ protocols, entries, media, refresh }: { protocols: ProtocolVersion[]; entries: DailyEntry[]; media: MediaItem[]; refresh: () => Promise<void> }) {
-  const [product, setProduct] = useState<LabProductId | 'all'>('all');
   const [editing, setEditing] = useState<{ base?: ProtocolVersion; product: LabProductId; draft?: ProtocolDraft } | undefined>();
   const [openKey, setOpenKey] = useState<string>();
   const [drafts, setDrafts] = useState<ProtocolDraft[]>([]);
@@ -47,7 +66,9 @@ export function ProtocolsTab({ protocols, entries, media, refresh }: { protocols
     void loadDrafts();
   }, []);
   const running = [...new Set(protocols.map((p) => p.key))].filter((k) => researchStatus(entries.filter((e) => e.experimentId === k)) !== 'selesai');
-  const keys = [...new Set(protocols.filter((p) => product === 'all' || p.product === product).map((p) => p.key))];
+  const keys = [...new Set(protocols.map((p) => p.key))];
+  const [verSel, setVerSel] = useState<Record<string, string>>({});
+  const [busy, setBusy] = useState('');
 
   if (openKey && !editing) {
     return <ResearchDetail rkey={openKey} protocols={protocols} entries={entries} media={media} refresh={refresh} onBack={() => setOpenKey(undefined)} onNewVersion={(base) => setEditing({ base, product: base.product })} />;
@@ -61,14 +82,7 @@ export function ProtocolsTab({ protocols, entries, media, refresh }: { protocols
           Tiap perubahan menjadi <strong>versi baru</strong>; versi lama tetap utuh. Catat laporan harian sampai riset selesai, lalu unduh laporan gabungan (PDF, Word, PowerPoint). Aplikasi tidak mengisi angka resep.
         </p>
         <div className="flex flex-wrap items-end gap-3">
-          <label className="flex flex-col gap-1.5">
-            <span className="label-mono">Jalur</span>
-            <select className="field" value={product} onChange={(e) => setProduct(e.target.value as LabProductId | 'all')} data-testid="proto-filter">
-              <option value="all">Semua jalur</option>
-              {LAB_PRODUCTS.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-            </select>
-          </label>
-          <button type="button" className="btn-primary" onClick={() => setEditing({ product: product === 'all' ? 'KE' : product })} data-testid="proto-new">+ Resep baru</button>
+          <button type="button" className="btn-primary" onClick={() => setEditing({ product: 'KE' })} data-testid="proto-new">+ Resep baru</button>
           <button type="button" className="btn-ghost" aria-expanded={ongoing} onClick={() => setOngoing((o) => !o)} data-testid="proto-ongoing">
             On going proses ({drafts.length + running.length})
           </button>
@@ -77,7 +91,7 @@ export function ProtocolsTab({ protocols, entries, media, refresh }: { protocols
 
       {ongoing && (
         <Section title="On going proses" testId="ongoing-list">
-          <p className="text-xs text-muted">Draf = resep yang masih bisa diubah (belum ditekan Selesai). Riset berjalan = resep resmi yang belum punya laporan penutup.</p>
+          <p className="text-xs text-muted">Draf = resep yang masih bisa diubah (belum ditekan Selesai) — bisa dilanjutkan atau dihapus. Riset berjalan = resep resmi yang belum punya laporan penutup (tidak bisa dihapus; catatan resmi).</p>
           {drafts.length === 0 && running.length === 0 && <p className="text-sm text-muted">Tidak ada proses yang sedang berjalan.</p>}
           <ul className="flex flex-col gap-2">
             {drafts.map((d) => (
@@ -88,6 +102,17 @@ export function ProtocolsTab({ protocols, entries, media, refresh }: { protocols
                   <span className="font-mono text-[11px] text-muted">{LAB_PRODUCTS.find((p) => p.id === d.product)?.name} · disimpan {d.updatedAt.slice(0, 16).replace('T', ' ')}</span>
                 </span>
                 <button type="button" className="btn-primary" onClick={() => { setOngoing(false); setEditing({ product: d.product, draft: d, ...(d.baseId && { base: protocols.find((p) => p.id === d.baseId) }) }); }} data-testid={`draft-open-${d.id}`}>Lanjutkan</button>
+                <button
+                  type="button"
+                  className="btn-ghost"
+                  onClick={() => {
+                    if (!window.confirm(`Hapus draf "${d.name || '(tanpa nama)'}" beserta foto/video yang belum disimpan? Tidak bisa dibatalkan.`)) return;
+                    void deleteDraft(d.id).then(loadDrafts);
+                  }}
+                  data-testid={`draft-del-${d.id}`}
+                >
+                  Hapus
+                </button>
               </li>
             ))}
             {running.map((k) => {
@@ -99,7 +124,7 @@ export function ProtocolsTab({ protocols, entries, media, refresh }: { protocols
                     <span className="font-semibold">{latest.name}</span>
                     <span className="font-mono text-[11px] text-muted">{k} · mulai {latest.startDate ?? '–'} · {entries.filter((e) => e.experimentId === k).length} laporan harian</span>
                   </span>
-                  <button type="button" className="btn-ghost" onClick={() => { setOngoing(false); setOpenKey(k); }} data-testid={`ongoing-open-${k}`}>Buka riset</button>
+                  <button type="button" className="btn-ghost" onClick={() => { setOngoing(false); setOpenKey(k); }} data-testid={`ongoing-open-${k}`}>Lanjutkan</button>
                 </li>
               );
             })}
@@ -126,6 +151,7 @@ export function ProtocolsTab({ protocols, entries, media, refresh }: { protocols
         />
       )}
 
+      <h2 className="text-xl">Hasil riset ({keys.length})</h2>
       {keys.length ? (
         <ul className="flex flex-col gap-3" data-testid="proto-list">
           {keys.map((k) => {
@@ -143,12 +169,35 @@ export function ProtocolsTab({ protocols, entries, media, refresh }: { protocols
                   <button type="button" className="btn-primary" onClick={() => setOpenKey(k)} data-testid={`proto-open-${k}`}>Buka riset</button>
                   <button type="button" className="btn-ghost" onClick={() => setEditing({ base: latest, product: latest.product })} data-testid={`proto-newver-${k}`}>Buat versi baru</button>
                 </div>
+                <div className="flex flex-wrap items-center gap-2 rounded-xl bg-paper p-2" data-testid={`hr-dl-${k}`}>
+                  <label className="flex items-center gap-2 text-xs">
+                    <span className="label-mono">Unduh versi</span>
+                    <select className="field min-h-[40px] text-sm" value={verSel[k] ?? latest.id} onChange={(e) => setVerSel((x) => ({ ...x, [k]: e.target.value }))} data-testid={`hr-ver-${k}`}>
+                      {versions.map((v) => <option key={v.id} value={v.id}>Versi {v.version} · {v.createdAt.slice(0, 10)}</option>)}
+                    </select>
+                  </label>
+                  {(['pdf', 'docx', 'pptx'] as const).map((kind) => (
+                    <button
+                      key={kind}
+                      type="button"
+                      disabled={!!busy}
+                      className="btn-ghost min-h-[40px] px-3"
+                      onClick={() => {
+                        setBusy(`${k}-${kind}`);
+                        void downloadResearch(kind, k, verSel[k] ?? latest.id, protocols, entries, media).finally(() => setBusy(''));
+                      }}
+                      data-testid={`hr-${kind}-${k}`}
+                    >
+                      {busy === `${k}-${kind}` ? '…' : KIND_LABEL[kind]}
+                    </button>
+                  ))}
+                </div>
               </li>
             );
           })}
         </ul>
       ) : (
-        !editing && <p className="text-sm text-muted">Belum ada riset produk tersimpan.</p>
+        !editing && <p className="text-sm text-muted">Belum ada hasil riset. Resep masuk ke sini setelah kamu menekan Selesai.</p>
       )}
     </div>
   );
@@ -246,19 +295,10 @@ function ResearchDetail({ rkey, protocols, entries, media, refresh, onBack, onNe
     processConditions: '', resultSummary: '', conclusion: '', status: st === 'selesai' ? 'selesai' : 'berjalan', nextSteps: [], createdAt: versions[versions.length - 1]!.createdAt,
   };
 
-  const exportAs = async (kind: 'pdf' | 'docx' | 'pptx') => {
+  const exportAs = async (kind: ExportKind) => {
     setBusy(kind);
     try {
-      const { buildResearchReport } = await import('@/lib/researchReport');
-      const report = buildResearchReport(rkey, protocols, entries, media);
-      if (kind === 'pdf') {
-        const { researchPdfBlob } = await import('@/lib/labPdf');
-        downloadBlob(await researchPdfBlob(report), `${rkey}-riset-produk.pdf`);
-      } else {
-        const o = await import('@/lib/officeExport');
-        const bytes = kind === 'docx' ? o.buildDocx(report) : o.buildPptx(report);
-        downloadBlob(new Blob([bytes as Uint8Array<ArrayBuffer>], { type: kind === 'docx' ? o.DOCX_MIME : o.PPTX_MIME }), `${rkey}-riset-produk.${kind}`);
-      }
+      await downloadResearch(kind, rkey, undefined, protocols, entries, media);
     } finally {
       setBusy('');
     }

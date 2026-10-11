@@ -84,3 +84,16 @@ describe('tanggal riset produk', () => {
     expect(r.blocks[3]!.lines[0]).toBe('Hari ke-1: Belah & tiriskan · 15 menit');
   });
 });
+
+describe('laporan per versi', () => {
+  it('versi terpilih dipakai untuk resep & judul; riwayat hanya sampai versi itu', () => {
+    const v2: ProtocolVersion = { ...v1, id: 'KE-P01-v2', version: 2, reason: 'naik suhu', ingredients: [{ name: 'Daging kelapa', amount: '3', unit: 'kg' }], createdAt: '2026-10-12T01:00:00.000Z' };
+    const r1 = buildResearchReport('KE-P01', [v1, v2], [], [], 'x', 'KE-P01-v1');
+    expect(r1.title).toContain('(versi 1)');
+    expect(r1.blocks[1]!.table!.rows[0]).toEqual(['1', 'Daging kelapa', '2', 'kg']);
+    expect(r1.blocks.find((b) => b.heading === 'Riwayat versi')!.table!.rows.map((r) => r[0])).toEqual(['KE-P01-v1']);
+    const r2 = buildResearchReport('KE-P01', [v1, v2], [], [], 'x');
+    expect(r2.title).toContain('(versi 2)');
+    expect(() => buildResearchReport('KE-P01', [v1], [], [], 'x', 'KE-P01-v9')).toThrow(/tidak ditemukan/);
+  });
+});

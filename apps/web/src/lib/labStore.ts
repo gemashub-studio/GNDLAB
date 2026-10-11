@@ -430,6 +430,11 @@ export async function saveDraft(dr: Omit<ProtocolDraft, 'createdAt' | 'updatedAt
   return full;
 }
 
+/** Hapus draf (hanya draf — versi resmi & catatan harian tidak bisa dihapus). */
+export async function deleteDraft(id: string): Promise<void> {
+  await (await labDb()).delete('drafts', id);
+}
+
 export async function listDrafts(): Promise<ProtocolDraft[]> {
   return (await (await labDb()).getAll('drafts')).sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
 }

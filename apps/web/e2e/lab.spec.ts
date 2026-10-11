@@ -55,8 +55,8 @@ test.describe('GEMA RnD Lab', () => {
     const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==', 'base64');
 
     await page.goto('/lab?t=protokol');
-    await page.getByTestId('proto-filter').selectOption('CK');
     await page.getByTestId('proto-new').click();
+    await page.getByTestId('proto-product').selectOption('CK');
     const pid = (await page.getByTestId('proto-id').textContent())!;
     expect(pid).toMatch(/^CK-P\d{2}-v1$/);
     await page.getByTestId('proto-name').fill('Cuka E2E');
@@ -204,8 +204,8 @@ test.describe('GEMA RnD Lab', () => {
     const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==', 'base64');
     await page.goto('/lab?t=protokol');
     await expect(page.getByTestId('lab-tab-protokol')).toHaveText('Riset Produk');
-    await page.getByTestId('proto-filter').selectOption('KE');
     await page.getByTestId('proto-new').click();
+    await page.getByTestId('proto-product').selectOption('KE');
     const pid = (await page.getByTestId('proto-id').textContent())!;
     const key = pid.replace(/-v1$/, '');
     await page.getByTestId('proto-name').fill('Kopra oven E2E');
@@ -268,8 +268,8 @@ test.describe('GEMA RnD Lab', () => {
   test('resep: Simpan = draf (buka lagi besok lewat On going proses) → Selesai = versi resmi', async ({ page }) => {
     const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==', 'base64');
     await page.goto('/lab?t=protokol');
-    await page.getByTestId('proto-filter').selectOption('AR');
     await page.getByTestId('proto-new').click();
+    await page.getByTestId('proto-product').selectOption('AR');
     await page.getByTestId('proto-name').fill('Arang draf E2E');
     await page.getByTestId('proto-ing-name-0').fill('Batok kelapa');
     await page.getByTestId('proto-ing-files-0').setInputFiles({ name: 'batok.png', mimeType: 'image/png', buffer: png });
@@ -313,6 +313,33 @@ test.describe('GEMA RnD Lab', () => {
     const form = page.getByTestId('proto-form');
     await expect(form).toContainText(/foto-\d{8}-\d{6}\.jpg/);
     await expect(form).toContainText(/video-\d{8}-\d{6}\.(webm|mp4)/);
+  });
+  test('hasil riset: pilih versi lalu unduh langsung; draf di On going proses bisa dihapus', async ({ page }) => {
+    await page.goto('/lab?t=protokol');
+    await expect(page.getByTestId('proto-filter')).toHaveCount(0);
+    await page.getByTestId('proto-new').click();
+    await page.getByTestId('proto-product').selectOption('BR');
+    const key = (await page.getByTestId('proto-id').textContent())!.replace(/-v1$/, '');
+    await page.getByTestId('proto-name').fill('Briket versi E2E');
+    await page.getByTestId('proto-finish').click();
+    await page.getByTestId(`proto-newver-${key}`).click();
+    await page.getByTestId('proto-reason').fill('perekat naik');
+    await page.getByTestId('proto-finish').click();
+    await page.getByTestId(`hr-ver-${key}`).selectOption(`${key}-v1`);
+    const dl = page.waitForEvent('download');
+    await page.getByTestId(`hr-docx-${key}`).click();
+    expect((await dl).suggestedFilename()).toBe(`${key}-v1-riset-produk.docx`);
+
+    await page.getByTestId('proto-new').click();
+    await page.getByTestId('proto-name').fill('Draf dibuang E2E');
+    await page.getByTestId('proto-save').click();
+    await page.getByRole('button', { name: 'Tutup' }).click();
+    await page.getByTestId('proto-ongoing').click();
+    const list = page.getByTestId('ongoing-list');
+    await expect(list).toContainText('Draf dibuang E2E');
+    page.once('dialog', (d) => void d.accept());
+    await list.locator('li', { hasText: 'Draf dibuang E2E' }).getByRole('button', { name: 'Hapus' }).click();
+    await expect(list).not.toContainText('Draf dibuang E2E');
   });
 });
 

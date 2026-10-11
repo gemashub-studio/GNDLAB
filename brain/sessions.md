@@ -141,3 +141,4 @@
 - Test: web unit 72, E2E lab 11/11, run_all_checks LULUS.
 - (lanjutan) DEC-053: tanggal mulai/selesai otomatis, asisten, Urutan hari (Hari ke-N), rencana harian otomatis. Unit 74, E2E lab 11/11, Word/PPT tervalidasi.
 - (lanjutan) DEC-054 draf resep (Simpan/Selesai/On going proses) + DEC-055 kamera (MediaPicker; webcam di halaman butuh https/localhost — di HP via http LAN pakai kamera bawaan lewat tombol Foto/Video). E2E lab 13/13 (kamera palsu), unit 73.
+- (lanjutan) DEC-056: tanpa filter jalur, On going Lanjutkan/Hapus draf, Hasil riset unduh per versi. Unit 74, E2E lab 14/14.
