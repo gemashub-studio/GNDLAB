@@ -2,7 +2,23 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { GEMA_DOSSIERS, GEMA_SOURCES, sourceById, sourceCounts } from '@/lib/gemaSources';
-import { applyUpdate, filterExperiments, labBackupJson, LAB_PRODUCTS, nextExperimentId, openNextSteps, type Experiment } from '@/lib/labStore';
+import { labBackupJson, parseBackup, planRestore } from '@/lib/labBackup';
+import {
+  applyUpdate,
+  chartable,
+  filterExperiments,
+  LAB_PRODUCTS,
+  measurementSeries,
+  nextEntryId,
+  nextExperimentId,
+  nextProtocolKey,
+  nextProtocolVersion,
+  openNextSteps,
+  parseMeasure,
+  type DailyEntry,
+  type Experiment,
+  type ProtocolVersion,
+} from '@/lib/labStore';
 
 const exp = (over: Partial<Experiment>): Experiment => ({
   id: 'KE-2610-001', product: 'KE', title: 'Uji oven', startedAt: '2026-10-11', question: '', objective: '', methodVersion: '',
@@ -44,9 +60,65 @@ describe('buku catatan GEMA RnD', () => {
     expect(openNextSteps(items).map((x) => x.step.action)).toEqual(['Ayak 2×']);
   });
 
-  it('cadangan JSON memuat format, versi & semua eksperimen', () => {
+  it('cadangan JSON v2 memuat eksperimen, catatan harian, protokol & media', () => {
     const json = JSON.parse(labBackupJson([], '2026-10-11T00:00:00.000Z'));
-    expect(json).toEqual({ format: 'gemas-lab', version: 1, exportedAt: '2026-10-11T00:00:00.000Z', experiments: [] });
+    expect(json).toEqual({ format: 'gemas-lab', version: 2, exportedAt: '2026-10-11T00:00:00.000Z', experiments: [], entries: [], protocols: [], media: [] });
+  });
+});
+
+const entry = (over: Partial<DailyEntry>): DailyEntry => ({
+  id: 'KE-2610-001-H01', experimentId: 'KE-2610-001', entryDate: '2026-10-11', createdAt: '2026-10-11T02:00:00.000Z', protocolId: '',
+  plan: '', actual: '', materials: [], tools: '', conditions: '', measurements: [], deviations: '', interpretation: '', nextStep: '', mediaIds: [], ...over,
+});
+const meas = (name: string, value: string, at: string, unit = '%', group = '') => ({ name, value, unit, at, group, note: '' });
+
+describe('catatan harian, protokol & laporan', () => {
+  it('ID catatan harian berurutan per eksperimen', () => {
+    expect(nextEntryId('KE-2610-001', [])).toBe('KE-2610-001-H01');
+    expect(nextEntryId('KE-2610-001', ['KE-2610-001-H01', 'KE-2610-001-H03', 'KE-2610-002-H09'])).toBe('KE-2610-001-H04');
+  });
+
+  it('protokol: resep baru dapat kunci baru; perubahan = versi berikutnya (versi lama tetap)', () => {
+    const v1: ProtocolVersion = { id: 'KE-P01-v1', key: 'KE-P01', version: 1, product: 'KE', name: 'Oven', ingredients: [], steps: [], reason: 'versi awal', author: '', createdAt: '' };
+    expect(nextProtocolKey('KE', [v1])).toBe('KE-P02');
+    expect(nextProtocolKey('CK', [v1])).toBe('CK-P01');
+    expect(nextProtocolVersion('KE-P01', [v1])).toEqual({ id: 'KE-P01-v2', version: 2 });
+    expect(nextProtocolVersion('KE-P01', [v1, { ...v1, id: 'KE-P01-v2', version: 2 }])).toEqual({ id: 'KE-P01-v3', version: 3 });
+  });
+
+  it('nilai ukur dibaca seperti kolom angka lain; teks bukan angka tidak dipaksa', () => {
+    expect(parseMeasure('6,2')).toBe(6.2);
+    expect(parseMeasure('0.575')).toBe(0.575);
+    expect(parseMeasure('1.250,5')).toBe(1250.5);
+    expect(parseMeasure('retak')).toBeUndefined();
+    expect(parseMeasure('')).toBeUndefined();
+  });
+
+  it('seri grafik hanya dari data tercatat, urut waktu, per variabel+satuan; < 2 titik → tidak digambar', () => {
+    const series = measurementSeries([
+      entry({ measurements: [meas('Kadar air', '12', '2026-10-12T08:00', '%', 'U1'), meas('Warna', 'putih', '2026-10-12T08:00', '')] }),
+      entry({ id: 'H02', measurements: [meas('kadar air', '9,5', '2026-10-11T08:00', '%', 'U1'), meas('Suhu', '60', '2026-10-11T08:00', '°C')] }),
+    ]);
+    const ka = series.find((x) => x.name === 'Kadar air')!;
+    expect(ka.points.map((p) => p.value)).toEqual([9.5, 12]);
+    expect(chartable(ka)).toBe(true);
+    expect(chartable(series.find((x) => x.name === 'Suhu')!)).toBe(false);
+    expect(series.find((x) => x.name === 'Warna')).toMatchObject({ points: [], nonNumeric: 1 });
+  });
+
+  it('pulihkan cadangan hanya menambah; ID yang sudah ada dilewati, tidak ditimpa', () => {
+    const b = parseBackup(labBackupJson([exp({}), exp({ id: 'KE-2610-002' })], '2026-10-11T00:00:00.000Z', { entries: [entry({})] }));
+    const plan = planRestore(b, { experiments: new Set(['KE-2610-001']), entries: new Set(), protocols: new Set(), media: new Set() });
+    expect(plan.add.experiments.map((e) => e.id)).toEqual(['KE-2610-002']);
+    expect(plan.add.entries).toHaveLength(1);
+    expect(plan.skipped).toEqual([{ kind: 'eksperimen', id: 'KE-2610-001' }]);
+  });
+
+  it('cadangan versi 1 (langkah 1) tetap bisa dipulihkan; file asing ditolak', () => {
+    const v1 = parseBackup(JSON.stringify({ format: 'gemas-lab', version: 1, exportedAt: 'x', experiments: [exp({})] }));
+    expect(v1.entries).toEqual([]);
+    expect(() => parseBackup('{"hello":1}')).toThrow(/bukan file cadangan/);
+    expect(() => parseBackup('bukan json')).toThrow(/JSON/);
   });
 });
 

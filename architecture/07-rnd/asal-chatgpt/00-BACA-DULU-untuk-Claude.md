@@ -89,3 +89,19 @@ Simpan tiap sumber dengan: `source_id`, judul, penulis/lembaga, tahun, jenis sum
 ## Fokus riset dan otonomi baru
 
 Ada file riset awal: `01-temuan-awal-standar-dan-riset.md`. Claude harus memperlakukannya sebagai pemetaan awal (bukan validasi produk) dan membuka ulang sumber terbaru sebelum mengandalkan statusnya. Gunakan `02-prompt-otonom-visual-Claude.md` sebagai instruksi kerja untuk riset mandiri, penyimpanan semua temuan di folder project yang sudah ada, desain visual aplikasi, dan batas kerja otonom. Jangan menganggap tiga file ini menggantikan naskah penuh SNI atau pengujian lab.
+
+## Tambahan wajib: eksperimen milik pengguna, offline, dan laporan
+
+Pengguna dapat membuat resep/formulasi dan prosesnya sendiri. Perlakukan itu sebagai versi protokol buatan pengguna, simpan komposisi/jumlah/satuan dan langkahnya persis seperti diberikan, dan hubungkan ke eksperimen. Jika ada perubahan, buat versi baru; jangan menulis ulang versi yang dipakai eksperimen lama. Jangan menyarankan nilai resep/proses sebagai fakta jika belum ada sumber dan keputusan pengguna.
+
+Untuk aplikasi tahap awal, kerjakan offline-first dengan penyimpanan lokal yang mendukung foto/video. Tiap eksperimen punya catatan harian baru yang berisi rencana, realisasi proses, bahan/batch, data mentah dengan satuan/waktu, penyimpangan, lampiran/keterangan, interpretasi sementara, dan langkah berikutnya. Buat ekspor PDF harian dan laporan kompilasi eksperimen dengan tabel serta grafik yang hanya bersumber dari data tercatat. Video asli disimpan sebagai lampiran dan disertakan dalam paket ekspor; di PDF tampilkan nama berkas, tanggal, caption dan thumbnail bila tersedia. Jangan mengarang atau menghapus data. Sertakan ekspor dan pemulihan backup. Jelaskan bahwa offline di laptop dan offline di HP adalah penyimpanan terpisah sampai ada sinkronisasi yang sengaja dibuat.
+
+Literatur dipakai untuk membantu memilih variabel dan metode, bukan menetapkan resep pengguna. Labeli tiap butir sebagai rencana pengguna, hasil yang benar-benar dilakukan, temuan literatur, atau saran AI. Saran AI harus dapat ditelusuri ke sumber dan tidak boleh otomatis dianggap sebagai hasil.
+
+## Pembaruan keputusan pengguna
+
+- Untuk tahap awal, aplikasi digunakan offline.
+- Tiap penelitian/eksperimen memiliki laporan harian dan dapat dilampiri foto/video.
+- Hasil dikompilasi menjadi PDF dengan tabel dan grafik berdasarkan data aktual penelitian masing-masing.
+- Pengguna akan merancang resep dan prosesnya sendiri. Claude membantu menyusun daftar calon variabel berdasarkan sumber kredibel, namun tidak menentukan resep atau mengarang nilai/hasil.
+- UI harus responsif di HP; offline di HP tidak berarti data otomatis menyatu dengan laptop. Sediakan backup/restore manual sampai sinkronisasi diputuskan.

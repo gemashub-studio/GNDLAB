@@ -8,11 +8,16 @@ import {
   LAB_STATUS,
   nextExperimentId,
   updateExperiment,
+  type DailyEntry,
   type Experiment,
   type ExperimentEditable,
   type LabProductId,
   type LabStatus,
+  type MediaItem,
+  type ProtocolVersion,
 } from '@/lib/labStore';
+import { downloadBlob } from '@/lib/labMedia';
+import { DailyLog } from './DailyLog';
 import { Field, ProductMark, productName, Section, StatusPill, TextArea, TextInput } from './ui';
 
 const today = () => new Date().toISOString().slice(0, 10);
@@ -20,6 +25,9 @@ const blank = () => ({ title: '', startedAt: today(), question: '', objective: '
 
 export function ExperimentsTab({
   items,
+  entries,
+  media,
+  protocols,
   product,
   setProduct,
   openId,
@@ -27,6 +35,9 @@ export function ExperimentsTab({
   refresh,
 }: {
   items: Experiment[];
+  entries: DailyEntry[];
+  media: MediaItem[];
+  protocols: ProtocolVersion[];
   product: LabProductId | 'all';
   setProduct: (p: LabProductId | 'all') => void;
   openId: string | undefined;
@@ -39,7 +50,17 @@ export function ExperimentsTab({
   const shown = useMemo(() => filterExperiments(items, { q, product, status }), [items, q, product, status]);
   const open = items.find((e) => e.id === openId);
 
-  if (open) return <ExperimentDetail e={open} onBack={() => setOpenId(undefined)} refresh={refresh} />;
+  if (open)
+    return (
+      <ExperimentDetail
+        e={open}
+        entries={entries.filter((x) => x.experimentId === open.id)}
+        media={media.filter((m) => m.experimentId === open.id)}
+        protocols={protocols}
+        onBack={() => setOpenId(undefined)}
+        refresh={refresh}
+      />
+    );
 
   return (
     <div className="flex flex-col gap-5" data-testid="lab-experiments">
@@ -177,7 +198,21 @@ function NewExperimentForm({ items, initialProduct, onSaved }: { items: Experime
   );
 }
 
-function ExperimentDetail({ e, onBack, refresh }: { e: Experiment; onBack: () => void; refresh: () => Promise<void> }) {
+function ExperimentDetail({
+  e,
+  entries,
+  media,
+  protocols,
+  onBack,
+  refresh,
+}: {
+  e: Experiment;
+  entries: DailyEntry[];
+  media: MediaItem[];
+  protocols: ProtocolVersion[];
+  onBack: () => void;
+  refresh: () => Promise<void>;
+}) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState<ExperimentEditable>(e);
   const [step, setStep] = useState('');
@@ -215,10 +250,25 @@ function ExperimentDetail({ e, onBack, refresh }: { e: Experiment; onBack: () =>
           <span className="font-mono text-xs text-muted-ink">{productName(e.product)} · mulai {e.startedAt}</span>
         </div>
         <h2 className="text-3xl text-paper">{e.title}</h2>
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            className="btn border-acid/40 bg-transparent text-acid hover:bg-acid hover:text-ink"
+            onClick={async () => {
+              const { compilePdfBlob } = await import('@/lib/labPdf');
+              downloadBlob(await compilePdfBlob(e, entries, protocols, media), `${e.id}-kompilasi.pdf`);
+            }}
+            data-testid="lab-compile-pdf"
+          >
+            PDF kompilasi
+          </button>
+        </div>
         {e.history?.length ? <span className="font-mono text-[11px] text-muted-ink">{e.history.length} versi lama tersimpan · terakhir diubah {e.updatedAt?.slice(0, 16).replace('T', ' ')}</span> : null}
       </header>
 
       {msg && <p className="font-mono text-xs" role="status" data-testid="lab-detail-msg">{msg}</p>}
+
+      <DailyLog e={e} entries={entries} media={media} protocols={protocols} onSaved={refresh} />
 
       {editing ? (
         <Section title="Lengkapi catatan" testId="lab-edit">
@@ -286,7 +336,6 @@ function ExperimentDetail({ e, onBack, refresh }: { e: Experiment; onBack: () =>
         </div>
       </Section>
 
-      <p className="text-xs text-muted">Pengamatan terukur, bahan/batch, dan lampiran foto menyusul di langkah berikutnya.</p>
     </div>
   );
 }

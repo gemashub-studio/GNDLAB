@@ -54,3 +54,32 @@ Prompt harian setelah aturan ini dipasang:
 ```text
 Lanjutkan dari file project. Kerjakan: [satu perubahan/pertanyaan]. Simpan hasil dan sumber baru di folder GEMA RnD, lalu jelaskan hasilnya singkat.
 ```
+
+## Tambahan: pemakaian dari HP dan sinkronisasi
+
+Aplikasi perlu nyaman dipakai dari laptop dan HP. Bedakan dua kebutuhan ini:
+
+- **Responsif:** tampilan menyesuaikan layar HP. Ini tidak otomatis menyinkronkan catatan.
+- **Sinkron antarperangkat:** data laptop dan HP masuk ke penyimpanan pusat yang sama dengan login dan backup. Local storage/browser saja membuat data tiap perangkat terpisah.
+
+Jangan mengklaim sinkronisasi sudah ada sebelum implementasi dan alurnya terlihat. Untuk tahap awal, perbaiki layout mobile terlebih dulu. Lalu jelaskan opsi sinkronisasi yang sesuai dengan stack project, termasuk kebutuhan akun, database/cloud, keamanan, biaya berulang bila ada, ekspor, dan restore. Jangan deploy, membuat akun, membuat kunci akses, atau memindahkan data ke layanan pihak ketiga tanpa persetujuan gue.
+
+Prompt singkat untuk tugas HP:
+
+```text
+Buat GEMA RnD nyaman dipakai di HP dan laptop. Audit aplikasi yang ada dulu. Pastikan formulir eksperimen, foto/lampiran, pencarian, dan navigasi mudah dipakai di layar kecil. Jelaskan apakah data saat ini hanya tersimpan di browser/perangkat atau sudah tersinkron. Jangan mengklaim sinkronisasi sebelum ada penyimpanan bersama yang benar-benar berfungsi. Usulkan cara sinkron lintas perangkat yang aman dan sederhana, beserta risiko/biaya dan cara backup/restore; jangan deploy atau mengirim data ke layanan eksternal.
+```
+
+## Tahap offline dan catatan eksperimen
+
+Untuk sekarang, implementasikan offline-first: data eksperimen dan media tersimpan lokal, tanpa cloud. Buat UI responsif untuk laptop/HP, tetapi jelaskan bahwa data dua perangkat belum tersinkron dan sediakan ekspor/impor cadangan.
+
+Setiap eksperimen perlu catatan harian yang append-only (entri baru, bukan overwrite), lampiran foto/video, dan laporan PDF harian serta PDF kompilasi eksperimen. PDF mencakup tabel data, grafik yang sesuai dengan variabel dan data aktual, caption/media, interpretasi dan batasan. Simpan video asli dalam storage lokal dan paket ekspor; PDF menampilkan thumbnail/caption/nama file. Grafik tidak boleh memakai data rekaan atau menyembunyikan hasil gagal. Backup mencakup data dan media serta bisa dipulihkan.
+
+Pengguna membuat resep dan proses sendiri. Simpan tiap resep/proses sebagai versi protokol pengguna; catat bahan, jumlah, satuan, urutan langkah, kondisi yang dipilih, tanggal dan alasan perubahan. Eksperimen mengacu ke versi yang benar-benar digunakan. Jangan mengubah resep lama ketika resep baru dibuat. Bedakan rencana dengan proses yang benar-benar dilakukan. Gunakan literatur untuk menyusun daftar calon variabel dan metode ukur, sertakan sumber serta keterbatasannya; jangan menentukan resep, angka, atau hasil tanpa masukan/data. Hanya klaim kesimpulan yang memang didukung hasil eksperimen.
+
+Prompt pendek untuk pekerjaan lanjutan:
+
+```text
+Lanjutkan dari spesifikasi GEMA RnD. Pengguna membuat resep/proses sendiri; rekam sebagai versi protokol yang tidak mengubah eksperimen lama. Implementasikan satu tugas ini: [tugas]. Pertahankan semua data mentah dan sumber, simpan di folder project, jelaskan cara mencoba.
+```

@@ -3,6 +3,13 @@
 Format: [Keep a Changelog](https://keepachangelog.com/id/1.1.0/) · Versi dataset mengikuti SemVer (ADR-002).
 Waktu dalam WIB (UTC+7).
 
+## [aplikasi GEMA RnD catatan harian] — 2026-10-11
+### Ditambahkan
+- Catatan harian per eksperimen (hanya bisa ditambah; koreksi = catatan baru): rencana, realisasi, bahan & batch, alat, kondisi, hasil ukur mentah (nilai + satuan + waktu + ulangan), penyimpangan, interpretasi, langkah berikutnya, foto/video dengan keterangan.
+- Tab Protokol: resep & proses buatan pengguna berversi; versi baru wajib beralasan, versi lama tidak berubah.
+- PDF harian & PDF kompilasi eksperimen dengan tabel dan grafik dari data tercatat.
+- Cadangan lengkap (data + foto/video) & pulihkan yang hanya menambah. Penjelasan opsi sinkronisasi: `07-rnd/sinkronisasi-opsi.md`.
+
 ## [aplikasi GEMA RnD + tema Lab Futuristik] — 2026-10-11
 ### Diubah
 - Gaya visual seluruh aplikasi: Punk Skate Lab → **Lab Futuristik** (ADR-011, tokens v2.0.0): latar putih-dingin bergrid halus, panel slate dengan cahaya mint, garis rambut, sudut lembut, aksen mint #63E6CF & amber #F5A524, judul Space Grotesk.

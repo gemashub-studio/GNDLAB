@@ -114,3 +114,10 @@
 - /lab 4 tab (DEC-045): eksperimen bisa dilengkapi dengan riwayat versi, cari/saring, langkah berikutnya, library, standar per jalur.
 - Test: tsc bersih; web unit 53 (lab 7); E2E 47 lulus (lab 2 baru; US-10 & formula ceklis flaky → lulus 2×2 saat diulang, ISS-041).
 - Berikutnya (satu per giliran): pengamatan terukur (pakai rnd_param_def/draf parameter) → bahan/batch → lampiran foto → pulihkan cadangan. Pertanyaan owner: maksud "kopra edibel" & pasar; produk akhir bioleather; arang untuk apa; baca naskah SNI via Akses SNI.
+
+### 2026-10-11 · GEMA RnD langkah 3: catatan harian, media, protokol, PDF, cadangan
+- Owner kirim versi baru 00/02/arsitektur (tambahan: offline, laporan harian, foto/video, PDF tabel+grafik, resep buatan sendiri, HP). ADR-012, DEC-047, `07-rnd/sinkronisasi-opsi.md` (belum tersinkron; A manual sekarang, B server lokal stack yang ada, C cloud).
+- IndexedDB `gemas-lab` v2: entries (append-only), media (Blob + thumb), protocols (berversi). PDF @react-pdf (grafik hanya ≥2 titik angka). Cadangan JSON v2 + pulihkan tambah-saja. fflate TIDAK dipakai (butuh izin dependensi).
+- Data owner di browser pane: eksperimen "greenhouse 1" (KE-2610-001) — JANGAN dihapus/ubah; upgrade v2 mempertahankannya.
+- Test: tsc bersih; unit 59 (lab 13); E2E lab 3 + HP 5, formula+rantai lulus; video webm nyata → thumbnail & PDF diverifikasi visual.
+- Berikutnya: hasil ukur memilih variabel dari draf `rnd_param_def`/parameter owner; daftar calon variabel per produk dari literatur (berlabel "temuan literatur", bukan resep); bandingkan eksperimen.

@@ -257,3 +257,23 @@ Pertanyaan: [tulis pertanyaan]
 ```
 
 Simpan instruksi riset lengkap di `00-BACA-DULU-untuk-Claude.md` agar prompt harian tetap pendek.
+
+## Catatan akses laptop dan HP
+
+Tampilan **responsif** berarti layar menyesuaikan HP; itu tidak sama dengan **sinkronisasi data**. Jika data hanya berada di penyimpanan browser, laptop dan HP akan memiliki catatan terpisah. Untuk memakai dataset yang sama di dua perangkat, perlu penyimpanan bersama yang aman, login, aturan konflik/perubahan, ekspor, backup, dan pemulihan. Mulai dengan desain mobile yang baik; rencanakan cloud sync secara terpisah dan jangan pindahkan data eksperimen ke layanan luar sebelum pengguna menyetujui pilihan layanan serta konsekuensinya.
+
+## 11. Offline, catatan harian, media, dan PDF
+
+Tahap awal harus **offline-first**: aplikasi berjalan dan data tersimpan lokal pada perangkat tanpa mengirim catatan ke cloud. Gunakan penyimpanan lokal yang cocok untuk berkas besar; jangan simpan video di localStorage. Formulir harus nyaman di HP. Tampilan di HP tidak otomatis menyinkronkan data dengan laptop: sebelum sinkronisasi bersama dibuat, gunakan ekspor/impor cadangan manual.
+
+Setiap eksperimen berisi entri harian yang ditambahkan sebagai rekaman baru, bukan menimpa hari sebelumnya. Catat tanggal/waktu, rencana dan langkah yang benar-benar dilakukan, versi resep/proses buatan pengguna, bahan dan batch beserta jumlah/satuan, alat, kondisi yang dicatat, pengamatan/hasil ukur mentah, penyimpangan/kegagalan, foto/video dengan keterangan, interpretasi sementara, dan langkah berikutnya. Data yang kosong harus ditandai “belum dicatat”.
+
+Lampiran asli tetap disimpan lokal bersama data. PDF harian dan PDF kompilasi eksperimen berisi data yang tercatat, tabel, grafik yang relevan, foto/thumbnail, keterangan media dan nama berkas video. Video asli tidak perlu ditanam ke PDF; sertakan dalam paket ekspor bersama PDF dan data/berkas agar bisa dibuka terpisah. Grafik hanya memakai data nyata, menampilkan satuan, tanggal/waktu atau kelompok pembanding, jumlah ulangan, dan sumber eksperimen. Jangan membuat angka, menghaluskan hasil, atau menampilkan grafik jika datanya belum cukup.
+
+Backup manual harus mencakup catatan, file media, dan metadata; sediakan cara memulihkan salinan. Jangan menghapus catatan mentah saat membuat laporan atau ringkasan.
+
+## 12. Resep dan proses buatan peneliti
+
+Pengguna boleh merancang resep/formulasi dan langkah prosesnya sendiri. Aplikasi harus menyimpan setiap resep sebagai **versi protokol buatan pengguna** yang terhubung ke eksperimen, termasuk komposisi/jumlah/satuan, urutan langkah, waktu, kondisi proses yang dipilih, tanggal dibuat/diubah, alasan perubahan, dan siapa yang mengubah. Eksperimen lama tetap menunjuk ke versi yang benar-benar dipakai saat itu; perubahan resep membuat versi baru, tidak mengubah sejarah.
+
+Literatur dan standar berfungsi sebagai bahan untuk merancang faktor, hasil ukur, pembanding, dan metode pengujian—bukan resep wajib dan bukan bukti bahwa resep pengguna pasti benar. AI boleh menyarankan variabel dan pertanyaan eksperimen dengan sumber serta batasannya, tetapi tidak boleh mengisi komposisi, angka, kondisi, atau hasil yang belum diberikan pengguna. Pengguna menentukan resep dan menjalankan proses; sistem merekam apa yang benar-benar dilakukan, termasuk penyimpangan dari rencana. Bedakan dengan jelas: **rencana**, **realisasi**, **hasil ukur**, **interpretasi**, dan **saran AI**.

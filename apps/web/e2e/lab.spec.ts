@@ -46,4 +46,96 @@ test.describe('GEMA RnD Lab', () => {
     await expect(page.getByTestId('std-detail')).toContainText('ISO 3376:2020');
     await expect(page.getByTestId('std-detail')).toContainText('Belum boleh disimpulkan');
   });
+
+  test('protokol berversi → catatan harian (append-only) dengan hasil ukur & foto → PDF harian/kompilasi → cadangan & pulihkan', async ({ page }) => {
+    // PNG 1×1 untuk lampiran.
+    const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==', 'base64');
+
+    await page.goto('/lab?t=protokol');
+    await page.getByTestId('proto-filter').selectOption('CK');
+    await page.getByTestId('proto-new').click();
+    const pid = (await page.getByTestId('proto-id').textContent())!;
+    expect(pid).toMatch(/^CK-P\d{2}-v1$/);
+    await page.getByTestId('proto-name').fill('Cuka E2E');
+    await page.getByTestId('proto-ing-name-0').fill('Air kelapa');
+    await page.getByTestId('proto-ing-amount-0').fill('2');
+    await page.getByTestId('proto-ing-unit-0').fill('L');
+    await page.getByTestId('proto-step-0').fill('Saring');
+    await page.getByTestId('proto-save').click();
+    const key = pid.replace(/-v1$/, '');
+    await expect(page.getByTestId(`proto-${key}`)).toContainText('1 versi');
+    await page.getByTestId(`proto-newver-${key}`).click();
+    await expect(page.getByTestId('proto-id')).toHaveText(`${key}-v2`);
+    await expect(page.getByTestId('proto-ing-amount-0')).toHaveValue('2');
+    await page.getByTestId('proto-ing-amount-0').fill('3');
+    await page.getByTestId('proto-save').click();
+    await expect(page.getByTestId('proto-form')).toContainText('Tulis alasan');
+    await page.getByTestId('proto-reason').fill('naikkan volume');
+    await page.getByTestId('proto-save').click();
+    await expect(page.getByTestId(`proto-${key}`)).toContainText('2 versi');
+
+    await page.getByTestId('lab-tab-eksperimen').click();
+    await page.getByTestId('lab-new').click();
+    await page.getByTestId('lab-product').selectOption('CK');
+    await page.getByTestId('lab-title').fill('E2E cuka harian');
+    await page.getByTestId('lab-save').click();
+    const id = (await page.getByTestId('lab-detail-id').textContent())!;
+
+    await page.getByTestId('day-new').click();
+    await expect(page.getByTestId('day-id')).toHaveText(`${id}-H01`);
+    await page.getByTestId('day-protocol').selectOption(`${key}-v2`);
+    await page.getByTestId('day-plan').fill('Fermentasi 2 L');
+    await page.getByTestId('day-actual').fill('Fermentasi 1,8 L karena tumpah');
+    await page.getByTestId('day-mat-name-0').fill('Air kelapa');
+    await page.getByTestId('day-mat-amount-0').fill('1,8');
+    await page.getByTestId('day-mat-unit-0').fill('L');
+    await page.getByTestId('day-meas-name-0').fill('pH');
+    await page.getByTestId('day-meas-value-0').fill('4,6');
+    await page.getByTestId('day-meas-at-0').fill('2026-10-11T08:00');
+    await page.getByTestId('day-meas-add').click();
+    await page.getByTestId('day-meas-name-1').fill('pH');
+    await page.getByTestId('day-meas-value-1').fill('4,1');
+    await page.getByTestId('day-meas-at-1').fill('2026-10-11T16:00');
+    await page.getByTestId('day-deviation').fill('Tumpah 0,2 L');
+    await page.getByTestId('day-files').setInputFiles({ name: 'botol.png', mimeType: 'image/png', buffer: png });
+    await page.getByTestId('day-save').click();
+    await expect(page.getByTestId('day-msg')).toContainText(`${id}-H01`);
+    await expect(page.getByTestId(`day-meas-table-${id}-H01`)).toContainText('4,6');
+    await expect(page.getByTestId(`day-media-${id}-H01`)).toContainText('botol.png');
+
+    const daily = page.waitForEvent('download');
+    await page.getByTestId(`day-pdf-${id}-H01`).click();
+    expect((await daily).suggestedFilename()).toBe(`${id}-H01-harian.pdf`);
+    const compiled = page.waitForEvent('download');
+    await page.getByTestId('lab-compile-pdf').click();
+    const pdfPath = await (await compiled).path();
+    const { readFileSync } = await import('node:fs');
+    expect(readFileSync(pdfPath!).subarray(0, 5).toString()).toBe('%PDF-');
+
+    // Cadangan lengkap lalu pulihkan: semua sudah ada → dilewati, tidak ditimpa.
+    await page.getByTestId('lab-tab-ringkasan').click();
+    const dl = page.waitForEvent('download');
+    await page.getByTestId('lab-backup').click();
+    const backupPath = (await (await dl).path())!;
+    const backup = JSON.parse(readFileSync(backupPath, 'utf8'));
+    expect(backup.version).toBe(2);
+    expect(backup.entries.some((e: { id: string }) => e.id === `${id}-H01`)).toBe(true);
+    expect(backup.media.some((m: { name: string; data: string }) => m.name === 'botol.png' && m.data.length > 0)).toBe(true);
+    await page.getByTestId('lab-restore-file').setInputFiles(backupPath);
+    await expect(page.getByTestId('lab-restore-plan')).toContainText('Akan ditambahkan: 0 eksperimen, 0 catatan harian');
+    await expect(page.getByTestId('lab-restore-apply')).toBeDisabled();
+  });
+});
+
+test.describe('GEMA RnD Lab — HP 360 px', () => {
+  for (const t of ['ringkasan', 'eksperimen', 'protokol', 'library', 'standar']) {
+    test(`@mobile /lab?t=${t} tanpa geser horizontal`, async ({ page }) => {
+      await page.goto(`/lab?t=${t}`);
+      await expect(page.getByTestId('lab-hero')).toBeVisible();
+      if (t === 'eksperimen') await page.getByTestId('lab-new').click();
+      if (t === 'protokol') await page.getByTestId('proto-new').click();
+      const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+      expect(overflow).toBeLessThanOrEqual(1);
+    });
+  }
 });

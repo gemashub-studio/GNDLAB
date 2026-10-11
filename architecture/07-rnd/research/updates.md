@@ -7,3 +7,4 @@
 - **Temuan baru:** menurut FAQ BSN, SNI bisa dibaca gratis di akses-sni.bsn.go.id. Ini jalan termurah untuk membaca naskah.
 - **Konflik/risiko:** angka SNI di `00-research/` (kadar air kopra 5%, arang, briket) berasal dari sumber sekunder dan belum dicocokkan ke naskah. Angkanya tidak diubah, hanya ditandai.
 - **Belum terjawab:** maksud "kopra edibel" & pasar tujuan; standar yang mencakup cuka air kelapa; ruang lingkup untuk briket tempurung; produk akhir bioleather.
+- (sore) Owner memperbarui 00-BACA-DULU, 02-prompt, arsitektur (hanya tambahan): offline, catatan harian, foto/video, PDF, resep buatan pengguna, HP. Disalin ke `asal-chatgpt/` (versi lama di riwayat git). Tidak ada riset baru di langkah ini.
