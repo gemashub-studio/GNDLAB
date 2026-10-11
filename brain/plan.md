@@ -160,7 +160,7 @@ Tujuan: isian semudah mungkin + PDF laporan lengkap awal–akhir.
 - [x] R5 Uji (unit: zip/docx/pptx struktur; E2E) + logs DEC-052 + commit.
 
 ## BACKLOG — lanjut setelah limit aman (dicatat 2026-10-11)
-1. **Hasil riset bisa dihapus** (permintaan owner). Rancangan: tombol Hapus di kartu Hasil riset → konfirmasi ketik nama riset + saran "Unduh cadangan dulu"; hapus SEMUA versi (store protocols, key), laporan harian (entries experimentId = key) & media terkait (experimentId = key) dalam satu transaksi; tambah DEC + E2E. Catatan: ini satu-satunya penghapusan catatan resmi — wajib konfirmasi kuat.
+1. ~~**Hasil riset bisa dihapus**~~ SELESAI 2026-10-11 (DEC-060; konfirmasi ketik KODE riset). Rancangan: tombol Hapus di kartu Hasil riset → konfirmasi ketik nama riset + saran "Unduh cadangan dulu"; hapus SEMUA versi (store protocols, key), laporan harian (entries experimentId = key) & media terkait (experimentId = key) dalam satu transaksi; tambah DEC + E2E. Catatan: ini satu-satunya penghapusan catatan resmi — wajib konfirmasi kuat.
 2. Bandingkan dua eksperimen berdampingan.
 3. Konfirmasi draf parameter R&D (119) oleh owner → status bukan "draf".
 4. Menunggu owner: basis gliserol (v/v | b/v); pasar tujuan kopra edibel; baca naskah SNI (akses-sni.bsn.go.id); lampiran BPOM 11/2019 batas sulfit; pilihan sinkronisasi laptop↔HP (07-rnd/sinkronisasi-opsi.md).
