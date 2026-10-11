@@ -110,3 +110,6 @@ Data sumber: statis (dengan starter cuka hidup) ±28 hari/siklus; semi-kontinu (
 
 ### FND-031 · 2026-10-11 · Bioleather: basis resep berbeda-beda
 Plastisasi A = % larutan (gliserol 1%), B = % berat BC kering (30%), C = rasio gliserin:etanol 1:2 → engine memisahkan basis agar tidak tertukar. Takaran oles lilin/AESO (g/m²), dosis secang & tanin = GAP (diisi uji). Basis "FeSO₄ 1%" pada pewarna kopi ambigu → tidak dihitung otomatis.
+
+### FND-032 · 2026-10-11 · Brief "GEMA RnD" (owner, dari ChatGPT) = M5 R&D Lab + tambahan
+Disimpan di `architecture/07-rnd/GEMA_RnD_brief.md`. Selisih dengan PRD_RnD/schema_rnd: (1) jalur produk 5 (KE, CK, BL, **arang, briket**) vs skema 4 (KE, KA, BL, CK) → arang & briket belum ada di `rnd_product`; (2) tambahan field kesimpulan + langkah berikutnya per eksperimen; (3) library sumber dengan label bukti; (4) tegas: data kosong = "belum dicatat", satu langkah kecil per giliran, bahasa sederhana. File `arsitektur-GEMA-RnD.md` yang dirujuk brief TIDAK ada di repo → minta ke owner.
