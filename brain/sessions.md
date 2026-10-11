@@ -157,3 +157,4 @@
 - Lanjut: backlog butir 1 (hapus hasil riset), PDF eksperimen gaya baru, LPJ ke PDF + ikut file cadangan.
 - Lanjutan: DEC-060 — LPJ jadi bukti alokasi saja (permintaan owner); backlog butir 1 (hapus hasil riset) SELESAI. E2E lab 17/17. Catatan: server dev preview pernah basi (aset 404) → preview_stop + preview_start web memperbaiki.
 - DEC-061: laporan belanja ikut cadangan lab (uji unit + E2E cadangan lulus). Berikutnya: PDF eksperimen gaya baru (pakai SpecChart/reportCharts), lalu bandingkan dua eksperimen.
+- DEC-062: PDF kompilasi eksperimen gaya baru (dicek visual). Berikutnya: bandingkan dua eksperimen; ekspor PDF laporan belanja (opsional).

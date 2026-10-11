@@ -166,7 +166,7 @@ Tujuan: isian semudah mungkin + PDF laporan lengkap awal–akhir.
 4. Menunggu owner: basis gliserol (v/v | b/v); pasar tujuan kopra edibel; baca naskah SNI (akses-sni.bsn.go.id); lampiran BPOM 11/2019 batas sulfit; pilihan sinkronisasi laptop↔HP (07-rnd/sinkronisasi-opsi.md).
 
 ## SELESAI 2026-10-11 (DEC-058) — Laporan berdesain bagus + grafik
-Sisa: PDF eksperimen (CompileDoc) belum ikut gaya baru & masih pakai Chart lama; foto sampul PPTX/PDF hanya bila ada foto.
+Sisa: ~~PDF eksperimen gaya baru~~ SELESAI (DEC-062); foto sampul PPTX/PDF hanya bila ada foto.
 ### Rencana awal (arsip)
 Kajian kondisi sekarang:
 - `apps/web/src/lib/labPdf.tsx`: PDF eksperimen (kompilasi) sudah punya grafik garis per variabel (Chart) & batang rata-rata±SD per perlakuan (SummaryBars); tampilan polos (kotak Block per kolom, banyak "belum dicatat").

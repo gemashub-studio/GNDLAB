@@ -19,7 +19,7 @@ import {
 } from './labStore';
 import { summarize, type ResponseSummary } from './labDesign';
 import type { ResearchReport } from './researchReport';
-import { CHART_H, CHART_W, chartLayout, type ChartSpec } from './reportCharts';
+import { CHART_H, CHART_W, chartLayout, fmtNum, researchCharts, type ChartSpec } from './reportCharts';
 
 const C = { ink: '#0E1A1F', paper: '#F3F6F7', grid: '#E2E8EA', mint: '#1FA88F', mintLight: '#63E6CF', amber: '#F5A524', muted: '#5B6B72' };
 const SERIES_COLORS = [C.mint, C.amber, C.ink, '#7C5CBF', '#D9534F', '#3B82F6'];
@@ -121,39 +121,6 @@ function Chart({ series }: { series: Series }) {
   );
 }
 
-/** Batang rata-rata ± SD per perlakuan — hanya bila ≥ 2 perlakuan punya data. */
-function SummaryBars({ sum }: { sum: ResponseSummary }) {
-  const rows = sum.rows.filter((r) => r.mean !== undefined);
-  if (rows.length < 2) return <Text style={[s.empty, { marginBottom: 6 }]}>Grafik muncul bila minimal 2 perlakuan punya data.</Text>;
-  const W = 500;
-  const H = 150;
-  const hi = Math.max(...rows.map((r) => r.mean! + (r.sd ?? 0)), 0);
-  const lo = Math.min(0, ...rows.map((r) => r.mean! - (r.sd ?? 0)));
-  const bw = (W - 40) / rows.length;
-  const y = (v: number) => 8 + (1 - (v - lo) / (hi - lo || 1)) * (H - 30);
-  const f = (v: number) => String(Number(v.toPrecision(4))).replace('.', ',');
-  return (
-    <View wrap={false} style={{ marginBottom: 8 }}>
-      <Svg width={W} height={H}>
-        <Line x1={40} x2={W} y1={y(0)} y2={y(0)} stroke={C.grid} strokeWidth={1} />
-        <Text x={2} y={y(hi) + 3} style={{ fontSize: 7, fontFamily: 'Courier' }}>{f(hi)}</Text>
-        <Text x={2} y={y(0) + 3} style={{ fontSize: 7, fontFamily: 'Courier' }}>{f(0)}</Text>
-        {rows.map((r, i) => {
-          const x0 = 40 + i * bw;
-          return (
-            <G key={r.treatment}>
-              <Rect x={x0 + bw * 0.2} y={Math.min(y(r.mean!), y(0))} width={bw * 0.6} height={Math.abs(y(0) - y(r.mean!))} fill={C.mintLight} stroke={C.ink} strokeWidth={0.8} />
-              {r.sd !== undefined && <Line x1={x0 + bw / 2} x2={x0 + bw / 2} y1={y(r.mean! - r.sd)} y2={y(r.mean! + r.sd)} stroke={C.ink} strokeWidth={1.2} />}
-              <Text x={x0 + bw / 2 - 6} y={H - 8} style={{ fontSize: 8, fontFamily: 'Courier' }}>{r.treatment}</Text>
-            </G>
-          );
-        })}
-      </Svg>
-      <Text style={{ fontSize: 7.5, color: C.muted }}>Batang = rata-rata nilai terakhir tiap unit; garis = +/- SD (n-1). Deskriptif, tanpa uji beda nyata.</Text>
-    </View>
-  );
-}
-
 function SeriesSection({ entries }: { entries: DailyEntry[] }) {
   const series = measurementSeries(entries);
   if (!series.length) return <Text style={s.empty}>Belum ada hasil ukur tercatat — tidak ada grafik.</Text>;
@@ -248,11 +215,36 @@ function DailyDoc({ e, entry, protocols, media, at }: { e: Experiment; entry: Da
 
 function CompileDoc({ e, entries, protocols, media, at }: { e: Experiment; entries: DailyEntry[]; protocols: ProtocolVersion[]; media: MediaItem[]; at: string }) {
   const usedProtocols = protocols.filter((p) => entries.some((x) => x.protocolId === p.id));
+  const res = researchCharts(e.startedAt, entries);
+  let n = 0;
+  const H = (t: string) => (
+    <View style={r.secHead} minPresenceAhead={80}>
+      <Text style={r.secNum}>{String(++n).padStart(2, '0')}</Text>
+      <Text style={r.secTitle}>{t}</Text>
+    </View>
+  );
+  const kpis: [string, string][] = [
+    ['Catatan harian', String(entries.length)],
+    ['Variabel diukur', String(new Set(res.summary.map((m) => `${m.name}|${m.unit}`)).size)],
+    ['Titik data angka', String(res.summary.reduce((k, m) => k + m.n, 0))],
+    ['Grafik', String(res.charts.length)],
+    ['Foto & video', String(media.filter((m) => entries.some((x) => x.id === m.entryId)).length)],
+    ['Unit percobaan', e.design ? String(e.design.runs.length) : '–'],
+  ];
   return (
     <Document title={`${e.id} — kompilasi`} author="GEMA RnD">
       <Page size="A4" style={s.page}>
         <Header title="Laporan eksperimen — lengkap" e={e} sub={`${entries.length} catatan harian`} />
-        <Text style={s.h2} minPresenceAhead={60}>{e.title}</Text>
+        <Text style={[s.h2, { fontSize: 15 }]}>{e.title}</Text>
+        <View style={r.kpis}>
+          {kpis.map(([k, v]) => (
+            <View key={k} style={r.kpi}>
+              <Text style={r.kpiVal}>{v}</Text>
+              <Text style={r.kpiLabel}>{k}</Text>
+            </View>
+          ))}
+        </View>
+        {H('Rancangan')}
         <Block label="Pertanyaan" value={e.question} />
         <Block label="Tujuan" value={e.objective} />
         <Block label="Dugaan (hipotesis)" value={e.hypothesis ?? ''} />
@@ -261,7 +253,7 @@ function CompileDoc({ e, entries, protocols, media, at }: { e: Experiment; entri
 
         {e.design && (
           <>
-            <Text style={s.h2} minPresenceAhead={60}>Desain eksperimen</Text>
+            {H('Desain eksperimen')}
             <Table
               head={['Faktor', 'Level', 'Satuan']}
               widths={[35, 50, 15]}
@@ -274,7 +266,7 @@ function CompileDoc({ e, entries, protocols, media, at }: { e: Experiment; entri
               widths={[14, 18, 68]}
               rows={[...e.design.runs].sort((a, b) => a.order - b.order).map((r) => [String(r.order), r.code, r.label])}
             />
-            <Text style={s.h2} minPresenceAhead={60}>Ringkasan hasil per perlakuan</Text>
+            {H('Ringkasan hasil per perlakuan')}
             {summarize(e.design, entries).map((sum) => (
               <View key={`${sum.response.name}|${sum.response.unit}`} style={{ marginBottom: 6 }} wrap={false}>
                 <Text style={{ fontFamily: 'Helvetica-Bold', marginBottom: 3 }}>{sum.response.name}{sum.response.unit ? ` (${sum.response.unit})` : ''}</Text>
@@ -286,13 +278,13 @@ function CompileDoc({ e, entries, protocols, media, at }: { e: Experiment; entri
                     return [`${r.treatment} ${r.label}`, String(r.n), f(r.mean), f(r.sd), f(r.min), f(r.max), String(r.missing)];
                   })}
                 />
-                <SummaryBars sum={sum} />
+                {sum.rows.filter((x) => x.mean !== undefined).length >= 2 ? <SpecCard spec={barSpec(sum)} /> : <Text style={[s.empty, { marginBottom: 6 }]}>Grafik muncul bila minimal 2 perlakuan punya data.</Text>}
               </View>
             ))}
           </>
         )}
 
-        <Text style={s.h2} minPresenceAhead={60}>Riset produk yang dipakai</Text>
+        {H('Riset produk yang dipakai')}
         {usedProtocols.length ? (
           usedProtocols.map((p) => (
             <View key={p.id} style={s.box} wrap={false}>
@@ -305,10 +297,19 @@ function CompileDoc({ e, entries, protocols, media, at }: { e: Experiment; entri
           <Text style={s.empty}>Tidak ada catatan harian yang merujuk riset produk.</Text>
         )}
 
-        <Text style={s.h2} minPresenceAhead={60}>Grafik hasil ukur (semua catatan)</Text>
-        <SeriesSection entries={entries} />
+        {H('Grafik hasil ukur (semua catatan)')}
+        {res.summary.length ? (
+          <ZebraTable
+            head={['Variabel', 'Kelompok', 'n', 'Awal', 'Akhir', 'Min', 'Maks']}
+            rows={res.summary.map((m) => [`${m.name}${m.unit ? ` (${m.unit})` : ''}`, m.group, String(m.n), `${fmtNum(m.first)} (${m.firstAt})`, `${fmtNum(m.last)} (${m.lastAt})`, fmtNum(m.min), fmtNum(m.max)])}
+          />
+        ) : (
+          <Text style={s.empty}>Belum ada hasil ukur angka — tidak ada grafik.</Text>
+        )}
+        {res.insufficient.map((t) => <Text key={t} style={[s.empty, { marginBottom: 3 }]}>{t}</Text>)}
+        {res.charts.map((c) => <SpecCard key={c.id} spec={c} />)}
 
-        <Text style={s.h2} minPresenceAhead={60}>Ringkasan catatan harian</Text>
+        {H('Ringkasan catatan harian')}
         {entries.length ? (
           <Table
             head={['Entri', 'Tanggal', 'Riset produk', 'Hasil ukur', 'Penyimpangan']}
@@ -319,7 +320,7 @@ function CompileDoc({ e, entries, protocols, media, at }: { e: Experiment; entri
           <Text style={s.empty}>Belum ada catatan harian.</Text>
         )}
 
-        <Text style={s.h2} minPresenceAhead={60}>Hasil & kesimpulan</Text>
+        {H('Hasil & kesimpulan')}
         <Block label="Hasil (ringkasan pengguna)" value={e.resultSummary} />
         <Block label="Kesimpulan sementara (pengguna)" value={e.conclusion} />
         <Text style={s.label}>Langkah berikutnya</Text>
@@ -408,6 +409,31 @@ function SpecChart({ spec, width = 523 }: { spec: ChartSpec; width?: number }) {
       })}
     </Svg>
   );
+}
+
+function SpecCard({ spec }: { spec: ChartSpec }) {
+  return (
+    <View style={r.chartCard} wrap={false}>
+      <Text style={r.chartTitle}>{spec.title}</Text>
+      <SpecChart spec={spec} width={505} />
+      <Text style={r.note}>{spec.note}</Text>
+    </View>
+  );
+}
+
+/** Batang rata-rata per perlakuan (dari summarize; SD ada di tabel) — bentuk sama dengan grafik laporan lain. */
+function barSpec(sum: ResponseSummary): ChartSpec {
+  const rows = sum.rows.filter((x) => x.mean !== undefined);
+  return {
+    id: `bar-${sum.response.name}`,
+    title: `${sum.response.name}${sum.response.unit ? ` (${sum.response.unit})` : ''} — rata-rata per perlakuan`,
+    unit: sum.response.unit,
+    kind: 'bar',
+    x: rows.map((x) => x.treatment),
+    xTitle: 'Perlakuan',
+    series: [{ name: 'Rata-rata nilai terakhir tiap unit', color: '#1FA88F', values: rows.map((x) => x.mean!) }],
+    note: 'Batang = rata-rata nilai terakhir tiap unit; SD (n-1), min, maks di tabel. Deskriptif, tanpa uji beda nyata.',
+  };
 }
 
 function ZebraTable({ head, rows }: { head: string[]; rows: string[][] }) {
