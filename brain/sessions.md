@@ -149,3 +149,9 @@
 - Cara uji di Windows: brain/environment.md (PowerShell + node langsung). Office COM (Word/PowerPoint) tersedia untuk validasi DOCX/PPTX (buka baca-saja).
 - Data owner di browser pane: eksperimen "greenhouse 1" (KE-2610-001) — jangan dihapus.
 - (jeda 2) Owner minta laporan berdesain bagus + grafik setelah limit aman; rencana lengkap di brain/plan.md "RENCANA — Laporan berdesain bagus + grafik" (prioritas sebelum hapus hasil riset). Konteks sesi 93% saat dicatat → mulai sesi baru.
+
+## 2026-10-11 malam · Claude (Opus 5.5) — laporan bergrafik + laporan belanja
+- DEC-058: laporan riset produk berdesain (sampul, KPI, bagian bernomor, tabel zebra, galeri) + grafik dari `reportCharts.ts` (satu geometri → PDF Svg & PNG untuk Word/PPT). Divalidasi: unit, E2E lab desktop 9/9, visual PDF (Edge), Word→PDF & PPT→PNG via COM.
+- DEC-059: tab Laporan Belanja (LPJ) mengikuti Google Doc owner (dibaca via /mobilebasic). Ekspor Word divalidasi visual di Word.
+- Trik validasi visual tanpa poppler: Word COM SaveAs2 PDF, PowerPoint COM Slide.Export PNG, lalu Edge (Playwright headed, channel msedge) screenshot PDF.
+- Lanjut: backlog butir 1 (hapus hasil riset), PDF eksperimen gaya baru, LPJ ke PDF + ikut file cadangan.

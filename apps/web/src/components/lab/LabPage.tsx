@@ -1,5 +1,6 @@
 'use client';
 
+import { BelanjaTab } from './BelanjaTab';
 import Link from 'next/link';
 import { useCallback, useEffect, useState } from 'react';
 import { GEMA_SOURCES, sourceCounts } from '@/lib/gemaSources';
@@ -15,6 +16,7 @@ const TABS = [
   { id: 'ringkasan', label: 'Ringkasan' },
   { id: 'eksperimen', label: 'Eksperimen' },
   { id: 'protokol', label: 'Riset Produk' },
+  { id: 'belanja', label: 'Laporan Belanja' },
   { id: 'library', label: 'Library' },
   { id: 'standar', label: 'Standar' },
 ] as const;
@@ -131,6 +133,7 @@ export function LabPage() {
         <ExperimentsTab items={items} entries={entries} media={media} protocols={protocols} product={product} setProduct={setProduct} openId={openId} setOpenId={setOpenId} refresh={refresh} />
       )}
       {tab === 'protokol' && <ProtocolsTab protocols={protocols} entries={entries} media={media} refresh={refresh} />}
+      {tab === 'belanja' && <BelanjaTab />}
       {tab === 'library' && <LibraryTab />}
       {tab === 'standar' && <StandardsTab product={stdProduct} setProduct={setStdProduct} />}
 

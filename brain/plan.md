@@ -165,7 +165,9 @@ Tujuan: isian semudah mungkin + PDF laporan lengkap awal–akhir.
 3. Konfirmasi draf parameter R&D (119) oleh owner → status bukan "draf".
 4. Menunggu owner: basis gliserol (v/v | b/v); pasar tujuan kopra edibel; baca naskah SNI (akses-sni.bsn.go.id); lampiran BPOM 11/2019 batas sulfit; pilihan sinkronisasi laptop↔HP (07-rnd/sinkronisasi-opsi.md).
 
-## RENCANA — Laporan berdesain bagus + grafik (owner 2026-10-11; kerjakan setelah limit aman, SEBELUM backlog butir 1)
+## SELESAI 2026-10-11 (DEC-058) — Laporan berdesain bagus + grafik
+Sisa: PDF eksperimen (CompileDoc) belum ikut gaya baru & masih pakai Chart lama; foto sampul PPTX/PDF hanya bila ada foto.
+### Rencana awal (arsip)
 Kajian kondisi sekarang:
 - `apps/web/src/lib/labPdf.tsx`: PDF eksperimen (kompilasi) sudah punya grafik garis per variabel (Chart) & batang rata-rata±SD per perlakuan (SummaryBars); tampilan polos (kotak Block per kolom, banyak "belum dicatat").
 - `apps/web/src/lib/researchReport.ts` → model `ResearchReport` (blok teks/tabel/gambar) dipakai `researchPdfBlob` (labPdf), `buildDocx`/`buildPptx` (officeExport.ts). **Laporan riset produk BELUM punya grafik sama sekali**; desain = daftar blok berurutan.
@@ -186,4 +188,4 @@ Contoh owner: Google Doc "LPJ_PR_Request_RnD_Kora_Revisi" (link di chat; dibaca 
 4. Penutup, "Hormat kami", kota/tanggal, 2 penanda tangan (nama + jabatan).
 5. Lampiran 1 rincian alokasi: tabel per bagian (No, Alokasi, Bahan/perlengkapan, Jumlah beli, Satuan beli, Harga dasar, Faktor 1/0, Harga dipakai, Jumlah) + paragraf bagian + subtotal per alokasi + rekonsiliasi total. Aturan owner di dokumen: faktor 1 = harga dasar + batas atas 50%; faktor 0 = harga dasar; jumlah = jumlah beli × harga dipakai.
 6. Lampiran 2 timeline: No, Kegiatan, Mulai, Selesai, Hari (otomatis, inklusif) + catatan + output yang dituju.
-Status: dikerjakan setelah laporan berdesain + grafik selesai divalidasi.
+Status: SELESAI 2026-10-11 (DEC-059) — tab /lab?t=belanja, ekspor Word divalidasi di Word. Belum: ekspor PDF LPJ, nama/penanda tangan tersimpan sebagai bawaan, cadangan LPJ ikut file cadangan lab.

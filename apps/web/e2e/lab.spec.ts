@@ -351,13 +351,55 @@ test.describe('GEMA RnD Lab', () => {
   });
 });
 
+test.describe('Laporan belanja (LPJ)', () => {
+  test('isi surat, bukti dengan nota & foto barang, rincian berfaktor, timeline → simpan & unduh Word', async ({ page }) => {
+    const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==', 'base64');
+    await page.goto('/lab?t=belanja');
+    await page.getByTestId('lpj-new').click();
+    await page.getByTestId('lpj-ref').fill('KPA/001/10/2026');
+    await page.getByTestId('lpj-city').fill('Bogor');
+    await page.getByTestId('lpj-purpose').fill('R&D Produk : Kopra E2E');
+    await page.getByTestId('lpj-budget').fill('5.876.200');
+    await expect(page.getByTestId('lpj-form')).toContainText('Lima Juta Delapan Ratus Tujuh Puluh Enam Ribu Dua Ratus Rupiah');
+    await page.getByTestId('lpj-proof-title-0').fill('Belanja bahan');
+    await page.getByTestId('lpj-proof-total-0').fill('427.000');
+    await page.getByTestId('lpj-nota-0').setInputFiles({ name: 'nota.png', mimeType: 'image/png', buffer: png });
+    await page.getByTestId('lpj-barang-0').setInputFiles({ name: 'barang.png', mimeType: 'image/png', buffer: png });
+    await expect(page.getByTestId('lpj-proof-0').locator('img')).toHaveCount(2);
+    await page.getByTestId('lpj-item-0-0-cat').fill('Umum');
+    await page.getByTestId('lpj-item-0-0-name').fill('Gula pasir');
+    await page.getByTestId('lpj-item-0-0-qty').fill('1');
+    await page.getByTestId('lpj-item-0-0-unit').fill('kg');
+    await page.getByTestId('lpj-item-0-0-price').fill('18.000');
+    await expect(page.getByTestId('lpj-item-0-0-total')).toContainText('Rp27.000');
+    await page.getByTestId('lpj-item-add-0').click();
+    await page.getByTestId('lpj-item-0-1-name').fill('Kelapa');
+    await page.getByTestId('lpj-item-0-1-qty').fill('40');
+    await page.getByTestId('lpj-item-0-1-price').fill('10.000');
+    await page.getByTestId('lpj-item-0-1-factor').selectOption('0');
+    await expect(page.getByTestId('lpj-sub-0')).toContainText('Umum Rp427.000');
+    await page.getByTestId('lpj-tl-act-0').fill('Pengadaan bahan');
+    await page.getByTestId('lpj-tl-start-0').fill('2026-10-12');
+    await page.getByTestId('lpj-tl-end-0').fill('2026-10-18');
+    await expect(page.getByTestId('lpj-tl-days-0')).toHaveText('7 hari');
+    await page.getByTestId('lpj-save').click();
+    const dl = page.waitForEvent('download');
+    await page.getByTestId('lpj-docx').click();
+    expect((await dl).suggestedFilename()).toMatch(/^LPJ-\d{6}-\d{2}-laporan-belanja\.docx$/);
+    await page.getByRole('button', { name: 'Tutup' }).click();
+    await expect(page.getByTestId('lpj-list')).toContainText('Kopra E2E');
+    await expect(page.getByTestId('lpj-list')).toContainText('Realisasi Rp427.000');
+  });
+});
+
 test.describe('GEMA RnD Lab — HP 360 px', () => {
-  for (const t of ['ringkasan', 'eksperimen', 'protokol', 'library', 'standar']) {
+  for (const t of ['ringkasan', 'eksperimen', 'protokol', 'belanja', 'library', 'standar']) {
     test(`@mobile /lab?t=${t} tanpa geser horizontal`, async ({ page }) => {
       await page.goto(`/lab?t=${t}`);
       await expect(page.getByTestId('lab-hero')).toBeVisible();
       if (t === 'eksperimen') await page.getByTestId('lab-new').click();
       if (t === 'protokol') await page.getByTestId('proto-new').click();
+      if (t === 'belanja') await page.getByTestId('lpj-new').click();
       const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
       expect(overflow).toBeLessThanOrEqual(1);
     });

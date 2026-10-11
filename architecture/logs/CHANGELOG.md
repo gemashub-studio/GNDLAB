@@ -3,6 +3,10 @@
 Format: [Keep a Changelog](https://keepachangelog.com/id/1.1.0/) · Versi dataset mengikuti SemVer (ADR-002).
 Waktu dalam WIB (UTC+7).
 
+## [aplikasi GEMA RnD laporan belanja] — 2026-10-11
+### Ditambahkan
+- Tab "Laporan Belanja" di /lab: lembar pertanggungjawaban (LPJ) anggaran R&D mengikuti contoh owner — surat memo, anggaran & realisasi + terbilang otomatis, bukti per alokasi (foto nota & foto barang lewat galeri/kamera), penutup & 2 penanda tangan, Lampiran 1 rincian alokasi (faktor 1 = harga dasar + batas atas %, subtotal per alokasi, rekonsiliasi), Lampiran 2 timeline (hari dihitung otomatis) & output; unduh Word (.docx).
+
 ## [aplikasi GEMA RnD laporan bergrafik] — 2026-10-11
 ### Ditambahkan
 - Laporan riset produk (PDF/Word/PowerPoint) berdesain baru: sampul gelap Lab Futuristik, halaman Ringkasan (kartu KPI), bagian bernomor, tabel zebra, galeri foto 3 kolom, nomor halaman.
