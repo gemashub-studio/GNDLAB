@@ -102,3 +102,8 @@
 - Owner: tiap langkah pakai ilustrasi gambar sederhana seperti infografis; visual elegan, unik, fun.
 - StepFlow + Picto (35 piktogram SVG dua warna, token saja) dipasang di SopList (semua tab /rantai), langkah metode cuka, fase bakar arang, panel bioleather, wizard Formula. lib/picto.ts = tebakan ikon (diuji). DEC-043.
 - Test: web unit +2, E2E formula+rantai 29/29.
+
+### 2026-10-11 · GEMA RnD langkah 1 (/lab)
+- Owner membawa brief + spesifikasi dari ChatGPT: `architecture/07-rnd/GEMA_RnD_brief.md`, `architecture/07-rnd/arsitektur-GEMA-RnD.md` (FND-032, DEC-044). Owner masih belajar → bahasa sederhana, satu langkah kecil per giliran.
+- /lab: dashboard 5 jalur + form eksperimen baru (judul, tanggal, pertanyaan, tujuan, versi metode, kondisi, status) + daftar per jalur + cadangan JSON. Uji unit labStore 3/3, tsc bersih, dicoba di browser (simpan → muat ulang tetap ada; data contoh dihapus lagi).
+- Berikutnya (satu per giliran): pengamatan → bahan/batch → hasil+kesimpulan+langkah berikutnya (edit eksperimen) → lampiran → cari/saring → library sumber → pulihkan cadangan → E2E.

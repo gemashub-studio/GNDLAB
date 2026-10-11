@@ -30,7 +30,7 @@ export const NAV: NavItem[] = [
   { href: '/sampling', label: 'Sampling', short: 'Sampling', icon: 'scale' },
   { href: '/data', label: 'Data & Sumber', short: 'Data', icon: 'data' },
   { href: '/panduan', label: 'Panduan', short: 'Panduan', icon: 'help', mobile: true },
-  { href: '/lab', label: 'R&D Lab', short: 'Lab', icon: 'lab', soon: true },
+  { href: '/lab', label: 'R&D Lab', short: 'Lab', icon: 'lab' },
 ];
 
 const isActive = (path: string, href: string) =>
