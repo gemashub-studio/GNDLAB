@@ -122,3 +122,9 @@ Penelusuran: E3S 2024 (Apriyanto dkk.) satu studi deskriptif tanpa jumlah kelapa
 
 ### FND-035 · 2026-10-11 · 60 parameter formula berkeyakinan terlalu tinggi
 Parameter A/B yang hanya bersumber SOP KORA (F01–F06), atau jurnal yang hanya dikutip lewat SOP (F10–F21), diturunkan ke C / maks B (DEC-049). Plastisasi bioleather A/B/C berlabel A padahal hanya F03. Basis gliserol 1% (v/v vs b/v) tidak diketahui (ISS-043).
+
+### FND-036 · 2026-10-11 · Pelajaran teknis sesi GEMA RnD
+- Heredoc Git Bash di sesi ini memotong `\` & `\n` di skrip Python panjang → tulis skrip ke file (scratchpad) lalu jalankan; `sed` dengan `&` di teks pengganti menyisipkan teks cocok (pernah merusak JSON dataset).
+- DOCX/PPTX bisa dibuat tanpa dependensi (zip store + OOXML) dan divalidasi dengan Word/PowerPoint via COM.
+- Webcam di halaman butuh konteks aman (https/localhost); HP via http LAN → pakai input `capture`.
+- Form React yang dipakai ulang harus diberi `key` unik per "buat baru", kalau tidak state lama (termasuk ID draf) terbawa.

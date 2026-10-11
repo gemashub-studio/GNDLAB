@@ -142,3 +142,9 @@
 - (lanjutan) DEC-053: tanggal mulai/selesai otomatis, asisten, Urutan hari (Hari ke-N), rencana harian otomatis. Unit 74, E2E lab 11/11, Word/PPT tervalidasi.
 - (lanjutan) DEC-054 draf resep (Simpan/Selesai/On going proses) + DEC-055 kamera (MediaPicker; webcam di halaman butuh https/localhost — di HP via http LAN pakai kamera bawaan lewat tombol Foto/Video). E2E lab 13/13 (kamera palsu), unit 73.
 - (lanjutan) DEC-056: tanpa filter jalur, On going Lanjutkan/Hapus draf, Hasil riset unduh per versi. Unit 74, E2E lab 14/14.
+
+### 2026-10-11 · JEDA (owner: simpan temuan, lanjut setelah token aman)
+- Status: semua fitur Riset Produk ter-commit (draf/Selesai/On going=draf saja, Hasil riset unduh per versi PDF/Word/PPT, kamera laptop & HP, Hari ke-N, tanggal selesai otomatis, asisten). E2E lab 14/14, run_all_checks LULUS.
+- MULAI DARI SINI: brain/plan.md → "BACKLOG — lanjut setelah limit aman" butir 1 (hapus hasil riset).
+- Cara uji di Windows: brain/environment.md (PowerShell + node langsung). Office COM (Word/PowerPoint) tersedia untuk validasi DOCX/PPTX (buka baca-saja).
+- Data owner di browser pane: eksperimen "greenhouse 1" (KE-2610-001) — jangan dihapus.
