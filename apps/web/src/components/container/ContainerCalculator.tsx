@@ -145,7 +145,7 @@ export function ContainerCalculator({ initial, startWizard }: { initial?: Contai
                 title={CONTAINER_UI[k.id] ?? 'Truk, reefer, atau container lain'}
                 onClick={() => pickContainer(k.id)}
                 className={`flex min-h-[64px] flex-col items-center justify-center gap-0.5 border-3 border-ink ${
-                  on ? 'bg-ink text-acid shadow-[4px_4px_0_#FF5A1F]' : 'bg-surface'
+                  on ? 'bg-ink text-acid shadow-[4px_4px_0_#F5A524]' : 'bg-surface'
                 }`}
               >
                 <span className="font-display text-lg">{k.id === CUSTOM ? 'CUSTOM' : containerFtName(k.id).replace(' High Cube', ' HC')}</span>

@@ -5,11 +5,11 @@ import { useMemo, useState } from 'react';
 import { fmt } from '@/lib/format';
 import { ftIn } from '@/lib/imperial';
 
-const INK = '#111111';
-const ACID = '#C6F135';
-const SAFETY = '#FF5A1F';
-const PAPER = '#EFEDE4';
-const GRID = '#DAD6C8';
+const INK = '#0E1A1F';
+const ACID = '#63E6CF';
+const SAFETY = '#F5A524';
+const PAPER = '#F3F6F7';
+const GRID = '#E2E8EA';
 const SURFACE = '#FFFFFF';
 const MONO = 'JetBrains Mono, monospace';
 

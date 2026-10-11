@@ -84,7 +84,7 @@ export function FormulaPage() {
             aria-selected={product === p.id}
             onClick={() => setProduct(p.id)}
             data-testid={`ftab-${p.id}`}
-            className={`flex min-h-[56px] flex-col items-start justify-center border-3 border-ink px-2 text-left ${product === p.id ? 'bg-ink text-acid shadow-[4px_4px_0_#FF5A1F]' : 'bg-surface'}`}
+            className={`flex min-h-[56px] flex-col items-start justify-center border-3 border-ink px-2 text-left ${product === p.id ? 'bg-ink text-acid shadow-[4px_4px_0_#F5A524]' : 'bg-surface'}`}
           >
             <span className="font-mono text-[11px] font-bold">{p.code}</span>
             <span className="text-xs font-extrabold uppercase leading-tight">{p.label}</span>

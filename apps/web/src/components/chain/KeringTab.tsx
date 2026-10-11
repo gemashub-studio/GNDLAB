@@ -22,7 +22,7 @@ function FrontView({ W, H, r, depth, pitch }: { W: number; H: number; r: RackRoo
         <rect x={0} y={0} width={300} height={h} fill="none" stroke="currentColor" strokeWidth={2} />
         {racks.map((x0, i) => (
           <g key={i}>
-            <rect x={x0 * px} y={h - r.rackHeightM * px} width={depth * px} height={r.rackHeightM * px} fill="#C6F135" stroke="currentColor" strokeWidth={1.5} />
+            <rect x={x0 * px} y={h - r.rackHeightM * px} width={depth * px} height={r.rackHeightM * px} fill="#63E6CF" stroke="currentColor" strokeWidth={1.5} />
             {Array.from({ length: r.tiers }, (_, t) => (
               <line key={t} x1={x0 * px} x2={(x0 + depth) * px} y1={h - (t + 1) * pitch * px} y2={h - (t + 1) * pitch * px} stroke="currentColor" strokeWidth={1} />
             ))}

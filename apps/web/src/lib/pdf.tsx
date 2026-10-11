@@ -7,17 +7,17 @@ import { Document, Page, StyleSheet, Text, View, pdf } from '@react-pdf/renderer
 import type { ReportRow } from './report';
 
 const s = StyleSheet.create({
-  page: { padding: 32, fontFamily: 'Helvetica', fontSize: 10, color: '#111111', backgroundColor: '#EFEDE4' },
-  head: { backgroundColor: '#111111', color: '#EFEDE4', padding: 12, marginBottom: 14 },
+  page: { padding: 32, fontFamily: 'Helvetica', fontSize: 10, color: '#0E1A1F', backgroundColor: '#F3F6F7' },
+  head: { backgroundColor: '#0E1A1F', color: '#F3F6F7', padding: 12, marginBottom: 14 },
   brand: { fontFamily: 'Helvetica-Bold', fontSize: 18 },
-  acid: { color: '#C6F135' },
+  acid: { color: '#63E6CF' },
   title: { fontFamily: 'Helvetica-Bold', fontSize: 14, marginTop: 4, textTransform: 'uppercase' },
-  section: { borderWidth: 3, borderColor: '#111111', backgroundColor: '#FFFFFF', marginBottom: 12 },
-  sectionHead: { backgroundColor: '#111111', color: '#C6F135', fontFamily: 'Courier-Bold', fontSize: 9, padding: 5 },
-  row: { flexDirection: 'row', borderTopWidth: 1, borderColor: '#DAD6C8' },
+  section: { borderWidth: 3, borderColor: '#0E1A1F', backgroundColor: '#FFFFFF', marginBottom: 12 },
+  sectionHead: { backgroundColor: '#0E1A1F', color: '#63E6CF', fontFamily: 'Courier-Bold', fontSize: 9, padding: 5 },
+  row: { flexDirection: 'row', borderTopWidth: 1, borderColor: '#E2E8EA' },
   label: { width: '38%', padding: 5, fontFamily: 'Helvetica-Bold' },
   value: { width: '62%', padding: 5, fontFamily: 'Courier' },
-  foot: { marginTop: 8, fontFamily: 'Courier', fontSize: 8, color: '#55534B' },
+  foot: { marginTop: 8, fontFamily: 'Courier', fontSize: 8, color: '#5B6B72' },
 });
 
 function Report({ title, rows, generatedAt }: { title: string; rows: ReportRow[]; generatedAt: string }) {

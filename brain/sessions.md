@@ -104,6 +104,13 @@
 - Test: web unit +2, E2E formula+rantai 29/29.
 
 ### 2026-10-11 · GEMA RnD langkah 1 (/lab)
-- Owner membawa brief + spesifikasi dari ChatGPT: `architecture/07-rnd/GEMA_RnD_brief.md`, `architecture/07-rnd/arsitektur-GEMA-RnD.md` (FND-032, DEC-044). Owner masih belajar → bahasa sederhana, satu langkah kecil per giliran.
+- Owner membawa brief + spesifikasi dari ChatGPT: `architecture/07-rnd/GEMA_RnD_brief.md`, `architecture/07-rnd/asal-chatgpt/arsitektur-GEMA-RnD.md` (FND-032, DEC-044). Owner masih belajar → bahasa sederhana, satu langkah kecil per giliran.
 - /lab: dashboard 5 jalur + form eksperimen baru (judul, tanggal, pertanyaan, tujuan, versi metode, kondisi, status) + daftar per jalur + cadangan JSON. Uji unit labStore 3/3, tsc bersih, dicoba di browser (simpan → muat ulang tetap ada; data contoh dihapus lagi).
 - Berikutnya (satu per giliran): pengamatan → bahan/batch → hasil+kesimpulan+langkah berikutnya (edit eksperimen) → lampiran → cari/saring → library sumber → pulihkan cadangan → E2E.
+
+### 2026-10-11 · GEMA RnD langkah 2 + tema Lab Futuristik
+- Owner kirim 01-temuan-awal & 02-prompt-otonom (ChatGPT) → disimpan di `architecture/07-rnd/asal-chatgpt/`. Riset dicek ulang ke BSN/ISO/Codex/NIST → `07-rnd/research/`, `07-rnd/library/sumber/sources.md` (14 sumber, FND-033, ISS-042).
+- Owner: "tema lab, futuristic, elegan" + "jangan pakai punk skate lagi" → ADR-011, tokens v2.0.0, seluruh aplikasi berganti (nama token tetap). CLAUDE.md (root & architecture) diperbarui.
+- /lab 4 tab (DEC-045): eksperimen bisa dilengkapi dengan riwayat versi, cari/saring, langkah berikutnya, library, standar per jalur.
+- Test: tsc bersih; web unit 53 (lab 7); E2E 47 lulus (lab 2 baru; US-10 & formula ceklis flaky → lulus 2×2 saat diulang, ISS-041).
+- Berikutnya (satu per giliran): pengamatan terukur (pakai rnd_param_def/draf parameter) → bahan/batch → lampiran foto → pulihkan cadangan. Pertanyaan owner: maksud "kopra edibel" & pasar; produk akhir bioleather; arang untuk apa; baca naskah SNI via Akses SNI.

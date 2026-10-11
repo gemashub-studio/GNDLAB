@@ -8,7 +8,7 @@ Anda membangun **gemasSTUDIO — Coco Inventory & R&D Lab** dari spesifikasi di 
 3. `04-calculation/calculation_spec.md` — **semua rumus**; ini spesifikasi engine
 4. `03-data/ERD.md`, `schema.sql`, `data_dictionary.md` — model data
 5. `05-ui-ux/ux_spec.md` — layar & perilaku UI
-6. `06-design/design_spec.md` + `tokens.json` + `tailwind.preset.ts` + `globals.css` — gaya visual **Punk Skate Lab** (menggantikan token di ux_spec §5); mockup acuan di `06-design/mockups/`
+6. `06-design/design_spec.md` + `tokens.json` + `tailwind.preset.ts` + `globals.css` — gaya visual **Lab Futuristik** (ADR-011; menggantikan Punk Skate Lab dan token di ux_spec §5); mockup acuan di `06-design/mockups/`
 7. `07-rnd/PRD_RnD.md` + `schema_rnd.sql` — modul R&D Lab
 
 ## Aturan Wajib
@@ -20,7 +20,7 @@ Anda membangun **gemasSTUDIO — Coco Inventory & R&D Lab** dari spesifikasi di 
 - Setiap hasil kalkulasi wajib mengembalikan `binding`, `warnings`, dan `trace` (calculation_spec §1, §6, §8).
 - Parameter berkeyakinan **C** harus tampil dengan badge & peringatan `LOW_CONFIDENCE_PARAM`.
 - Jangan pernah menampilkan simulasi 3D tanpa label "representasi grid" (ADR-005).
-- Nama aplikasi: **gemasSTUDIO**. Gaya visual wajib dari `06-design/` (tanpa radius, garis 3px, bayangan keras, aksen #C6F135 & #FF5A1F). Jangan memakai warna/komponen di luar token tanpa ADR.
+- Nama aplikasi: **gemasSTUDIO**. Gaya visual wajib dari `06-design/` (Lab Futuristik: sudut lembut, garis rambut 1px, bayangan lembut, aksen mint #63E6CF & amber #F5A524). Jangan memakai warna/komponen di luar token tanpa ADR.
 - Modul R&D: parameter produk adalah DATA di `rnd_param_def` — **jangan pernah meng-hardcode parameter** sebagai kolom atau field form. Form dibangkitkan dari definisi.
 
 ## Urutan Implementasi (milestone PRD §9)

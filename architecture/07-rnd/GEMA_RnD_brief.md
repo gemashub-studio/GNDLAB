@@ -2,7 +2,7 @@
 doc: Brief owner (dari percakapan ChatGPT)
 title: Bahan Konteks — GEMA RnD
 date: 2026-10-11
-status: Diterima; spesifikasi pendamping `arsitektur-GEMA-RnD.md` BELUM ada di repo
+status: Diterima; spesifikasi pendamping + dokumen asli ada di `asal-chatgpt/arsitektur-GEMA-RnD.md`
 related: [PRD_RnD.md, schema_rnd.sql, parameter_kora_draft.csv]
 ---
 

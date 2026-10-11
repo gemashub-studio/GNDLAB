@@ -82,7 +82,7 @@ export function ChainPage() {
             aria-selected={step === s.id}
             onClick={() => setStep(s.id)}
             data-testid={`ctab-${s.id}`}
-            className={`flex min-h-[56px] flex-col items-start justify-center border-3 border-ink px-2 text-left ${step === s.id ? 'bg-ink text-acid shadow-[4px_4px_0_#FF5A1F]' : 'bg-surface'}`}
+            className={`flex min-h-[56px] flex-col items-start justify-center border-3 border-ink px-2 text-left ${step === s.id ? 'bg-ink text-acid shadow-[4px_4px_0_#F5A524]' : 'bg-surface'}`}
           >
             <span className="font-mono text-[11px] font-bold">{String(n + 1).padStart(2, '0')}</span>
             <span className="text-xs font-extrabold uppercase leading-tight">{s.label}</span>

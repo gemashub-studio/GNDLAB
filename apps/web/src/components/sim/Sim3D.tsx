@@ -13,9 +13,9 @@ import { useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 
-const INK = new THREE.Color('#111111');
-const ACID = new THREE.Color('#C6F135');
-const SAFETY = new THREE.Color('#FF5A1F');
+const INK = new THREE.Color('#0E1A1F');
+const ACID = new THREE.Color('#63E6CF');
+const SAFETY = new THREE.Color('#F5A524');
 
 declare global {
   interface Window {
@@ -71,7 +71,7 @@ function ContainerBox({ L, W, H }: { L: number; W: number; H: number }) {
     <group position={[L / 2, H / 2, W / 2]}>
       <mesh>
         <boxGeometry args={[L, H, W]} />
-        <meshBasicMaterial color="#EFEDE4" transparent opacity={0.12} depthWrite={false} />
+        <meshBasicMaterial color="#F3F6F7" transparent opacity={0.12} depthWrite={false} />
       </mesh>
       <lineSegments geometry={edges}>
         <lineBasicMaterial color={INK} />
@@ -177,7 +177,7 @@ export default function Sim3D({ space, placements = [], visible = placements.len
         <Packs placements={placements} visible={visible} />
         {bulkLevel !== undefined && <BulkFill L={L} W={W} H={H} level={bulkLevel} />}
         <Columns columns={columns} />
-        <gridHelper args={[span * 1.4, 14, INK, '#DAD6C8']} position={[L / 2, 0, W / 2]} />
+        <gridHelper args={[span * 1.4, 14, INK, '#E2E8EA']} position={[L / 2, 0, W / 2]} />
         <Controls target={target} />
         <FpsProbe instances={placements.length + columns.length} visible={visible} />
       </Canvas>

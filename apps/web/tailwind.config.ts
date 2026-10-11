@@ -10,7 +10,7 @@ const config: Config = {
       // Font dimuat lokal oleh next/font (offline/PWA) — nama keluarga dari variabel CSS,
       // urutan fallback sama dengan preset.
       fontFamily: {
-        display: ['var(--font-display)', '"Bowlby One"', 'system-ui', 'sans-serif'],
+        display: ['var(--font-display)', '"Space Grotesk"', 'system-ui', 'sans-serif'],
         sans: ['var(--font-sans)', 'Archivo', 'system-ui', 'sans-serif'],
         mono: ['var(--font-mono)', '"JetBrains Mono"', 'ui-monospace', 'monospace'],
       },

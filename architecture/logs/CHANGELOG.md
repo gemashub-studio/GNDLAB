@@ -3,6 +3,13 @@
 Format: [Keep a Changelog](https://keepachangelog.com/id/1.1.0/) · Versi dataset mengikuti SemVer (ADR-002).
 Waktu dalam WIB (UTC+7).
 
+## [aplikasi GEMA RnD + tema Lab Futuristik] — 2026-10-11
+### Diubah
+- Gaya visual seluruh aplikasi: Punk Skate Lab → **Lab Futuristik** (ADR-011, tokens v2.0.0): latar putih-dingin bergrid halus, panel slate dengan cahaya mint, garis rambut, sudut lembut, aksen mint #63E6CF & amber #F5A524, judul Space Grotesk.
+### Ditambahkan
+- `/lab` GEMA RnD Lab: Ringkasan (5 jalur, aktif & terbaru, langkah berikutnya, status riset), Eksperimen (cari/saring, formulir, detail, lengkapi hasil/kesimpulan dengan riwayat versi, langkah berikutnya), Library sumber (14 sumber, status pemeriksaan), Standar per jalur.
+- Riset standar awal: `07-rnd/research/standar-produk/` (5 dossier), `research/metode-dan-validasi/tata-riset.md`, `library/sumber/sources.md`, `research/updates.md`. Dokumen asli ChatGPT di `07-rnd/asal-chatgpt/`.
+
 ## [aplikasi ilustrasi langkah] — 2026-10-11
 ### Ditambahkan
 - Setiap langkah SOP (8 tab Rantai Produksi), langkah metode cuka, fase bakar arang, panel bioleather, dan tombol tahap wizard Formula R&D kini berilustrasi: kartu infografis "stiker" bernomor dengan piktogram dua warna (35 gambar), panah alur, selotip, efek tegak-terangkat saat disentuh.

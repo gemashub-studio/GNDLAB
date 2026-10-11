@@ -67,7 +67,7 @@ export default async function Home() {
           <Link href="/gudang" className="btn-ghost no-underline">
             Hitung gudang
           </Link>
-          <Link href="/muat?wizard=1" className="btn-primary no-underline shadow-[5px_5px_0_#111111]" data-testid="cta-plan">
+          <Link href="/muat?wizard=1" className="btn-primary no-underline shadow-[5px_5px_0_#0E1A1F]" data-testid="cta-plan">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" aria-hidden>
               <path d="M12 5v14M5 12h14" />
             </svg>

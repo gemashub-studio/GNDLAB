@@ -12,7 +12,7 @@ Semua riset, data, desain, skema database, dan kontrak uji **sudah selesai dan t
 ## Aturan singkat
 - Sumber angka satu-satunya: `architecture/00-research/data/coconut_inventory_dataset.json`.
 - `architecture/tests/fixtures/golden_cases.json` adalah kontrak: 17/17 harus lulus. Jangan diedit manual.
-- Gaya visual wajib dari `architecture/06-design/` (Punk Skate Lab).
+- Gaya visual wajib dari `architecture/06-design/` (**Lab Futuristik**, ADR-011). Punk Skate Lab sudah tidak dipakai.
 - Parameter R&D adalah DATA di `rnd_param_def`, jangan pernah di-hardcode.
 - Kerjakan per fase M1 → M5. Selesai tiap fase: perbarui `architecture/logs/`, jalankan `bash architecture/scripts/run_all_checks.sh`, lalu berhenti dan laporkan.
 

@@ -1,39 +1,46 @@
-/* Sumber: architecture/06-design/globals.css (Punk Skate Lab).
-   Perbedaan satu-satunya dengan sumber: @import Google Fonts diganti next/font (font di-host lokal
-   agar PWA tetap tampil benar saat offline — DEC-020). Komponen tambahan di bawah hanya memakai token. */
+/* Sumber: architecture/06-design/globals.css — gaya "Lab Futuristik" (ADR-011, menggantikan Punk Skate Lab).
+   Perbedaan dengan sumber: @import Google Fonts diganti next/font (font di-host lokal agar PWA tetap
+   tampil benar saat offline — DEC-020). Komponen tambahan di bawah hanya memakai token. */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
   html { color-scheme: light; }
-  body { @apply bg-paper bg-lab-grid bg-[length:24px_24px] text-ink font-sans antialiased; }
-  h1, h2, h3 { @apply font-display uppercase leading-[0.95]; }
-  :focus-visible { outline: 3px solid #FF5A1F; outline-offset: 2px; }
+  body { @apply bg-paper text-ink font-sans antialiased; background-image: radial-gradient(1200px 600px at 85% -10%, rgba(99, 230, 207, 0.14), transparent 60%), linear-gradient(#E2E8EA 1px, transparent 1px), linear-gradient(90deg, #E2E8EA 1px, transparent 1px); background-size: auto, 32px 32px, 32px 32px; background-attachment: fixed; }
+  h1, h2, h3 { @apply font-display font-semibold leading-[1.05] tracking-[-0.02em]; }
+  :focus-visible { outline: 2px solid #63E6CF; outline-offset: 2px; }
 }
 
 @layer components {
-  .card        { @apply bg-surface border-3 border-ink shadow-hard p-[22px]; }
-  .card-ink    { @apply bg-ink text-paper border-3 border-ink shadow-hard-safety p-[22px]; }
-  .btn         { @apply inline-flex items-center justify-center gap-2 min-h-touch px-5 border-3 border-ink font-extrabold uppercase tracking-wide; }
-  .btn-primary { @apply btn bg-safety text-ink shadow-hard-sm active:translate-x-[2px] active:translate-y-[2px] active:shadow-none; }
+  .card        { @apply rounded-2xl bg-surface/90 border-3 border-ink shadow-hard p-[22px] backdrop-blur-sm; }
+  .card-ink    { @apply rounded-2xl bg-ink text-paper border-3 border-ink shadow-hard-safety p-[22px]; }
+  .btn         { @apply inline-flex items-center justify-center gap-2 min-h-touch rounded-xl px-5 border-3 border-ink text-sm font-bold tracking-wide transition; }
+  .btn-primary { @apply btn bg-safety text-ink shadow-hard-sm hover:brightness-105 active:translate-y-px; }
   .btn-acid    { @apply btn bg-acid text-ink shadow-hard-sm; }
-  .tag-mono    { @apply font-mono text-xs font-bold tracking-[0.12em] bg-ink text-acid px-2.5 py-1; }
-  .badge-conf  { @apply inline-flex items-center justify-center w-7 h-7 border-2 border-ink font-mono font-bold text-ink; }
-  .bar         { @apply h-4 border-2 border-ink bg-surface; }
+  .tag-mono    { @apply rounded-full font-mono text-[11px] font-semibold tracking-[0.14em] bg-ink text-acid px-3 py-1; }
+  .badge-conf  { @apply inline-flex items-center justify-center w-7 h-7 rounded-lg border-2 border-ink font-mono font-bold text-ink; }
+  .bar         { @apply h-3 rounded-full overflow-hidden border-2 border-ink bg-surface; }
   .num         { @apply font-mono tabular-nums; }
 
   /* --- tambahan aplikasi (token saja) --- */
-  .btn-ghost   { @apply btn bg-surface text-ink; }
+  .btn-ghost   { @apply btn bg-surface text-ink hover:bg-paper; }
   .btn:disabled { @apply opacity-50 cursor-not-allowed shadow-none; }
-  .label-mono  { @apply font-mono text-xs font-bold tracking-[0.08em] uppercase; }
-  .field       { @apply min-h-[48px] w-full border-3 border-ink bg-surface px-3 font-mono text-lg font-bold; }
+  .label-mono  { @apply font-mono text-[11px] font-semibold tracking-[0.12em] uppercase text-muted; }
+  .field       { @apply min-h-[48px] w-full rounded-xl border-3 border-ink bg-surface px-3 font-mono text-base font-semibold transition focus:border-acid; }
   .field[aria-invalid='true'] { @apply border-safety; }
-  .chip        { @apply flex min-h-[48px] items-center justify-between gap-2 border-3 border-ink bg-surface px-3.5 text-left text-sm font-extrabold uppercase; }
+  .chip        { @apply flex min-h-[48px] items-center justify-between gap-2 rounded-xl border-3 border-ink bg-surface px-3.5 text-left text-sm font-semibold transition; }
   .chip[aria-pressed='true'], .chip[aria-checked='true'] { @apply bg-acid shadow-hard-sm; }
-  .chip-ink[aria-pressed='true'], .chip-ink[aria-checked='true'] { @apply bg-ink text-acid shadow-[4px_4px_0_#FF5A1F]; }
-  .lab-paper   { @apply bg-paper bg-lab-grid bg-[length:24px_24px]; }
+  .chip-ink[aria-pressed='true'], .chip-ink[aria-checked='true'] { @apply bg-ink text-acid shadow-hard-safety; }
+  .lab-paper   { @apply bg-paper bg-lab-grid bg-[length:32px_32px]; }
 }
+
+/* Gaya garis rambut: garis "ink" tampil lembut; kotak bergaris ikut membulat; tanpa kemiringan stiker. */
+.border-ink { border-color: rgb(14 26 31 / 0.16); }
+.bg-ink.border-ink, .bg-ink .border-ink { border-color: rgb(99 230 207 / 0.18); }
+.border-3:not(td):not(th):not(tr):not(table) { border-radius: 0.875rem; }
+[class*='rotate-']:not(svg):not(svg *) { --tw-rotate: 0deg !important; }
+.label-mono.text-acid, .bg-ink .label-mono, .card-ink .label-mono { color: inherit; }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { transition: none !important; animation: none !important; }

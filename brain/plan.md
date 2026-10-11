@@ -9,7 +9,7 @@ gemasSTUDIO/
 ├─ apps/web/                 # M2 — Next.js 15 App Router (UI + /api/v1), Prisma, PWA
 ├─ packages/calc-engine/     # M1 ✅ — TS murni, zero dependency, SI, golden test
 ├─ packages/dataset/         # M1 ✅ — salinan JSON (build) + Zod + loader SI (paritas seed)
-├─ packages/ui/ (opsional)   # M2 — komponen Punk Skate Lab bila dipakai >1 app
+├─ packages/ui/ (opsional)   # M2 — komponen Lab Futuristik bila dipakai >1 app
 ├─ architecture/             # spesifikasi (sumber kebenaran desain & data)
 └─ brain/                    # otak kedua lintas agent
 ```

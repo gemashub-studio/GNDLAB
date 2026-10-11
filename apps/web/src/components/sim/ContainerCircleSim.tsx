@@ -12,7 +12,7 @@ export interface SimSegment {
   tone: 'acid' | 'safety' | 'ink';
 }
 
-const FILL: Record<SimSegment['tone'], string> = { acid: '#C6F135', safety: '#FF5A1F', ink: '#111111' };
+const FILL: Record<SimSegment['tone'], string> = { acid: '#63E6CF', safety: '#F5A524', ink: '#0E1A1F' };
 
 /**
  * Tampak samping container: kelapa digambar sebagai lingkaran. Satu lingkaran = `perCircle` butir.
@@ -76,7 +76,7 @@ export function ContainerCircleSim({
         role="img"
         aria-label={`Container ${containerFtName(containerId)} terisi ${Math.round(pct * 100)} persen, ${fmt(loaded)} dari ${fmt(capacity)} butir`}
       >
-        <rect x={pad / 2} y={pad / 2} width={w - pad} height={h - pad} fill="#FFFFFF" stroke="#111111" strokeWidth={3} />
+        <rect x={pad / 2} y={pad / 2} width={w - pad} height={h - pad} fill="#FFFFFF" stroke="#0E1A1F" strokeWidth={3} />
         {fills.map((f, i) => {
           const col = Math.floor(i / rows);
           const row = rows - 1 - (i % rows);
@@ -87,13 +87,13 @@ export function ContainerCircleSim({
               cy={pad + row * cell + cell / 2}
               r={cell / 2 - 2}
               fill={f === 'none' ? '#FFFFFF' : f}
-              stroke={f === 'none' ? '#DAD6C8' : '#111111'}
+              stroke={f === 'none' ? '#E2E8EA' : '#0E1A1F'}
               strokeWidth={f === 'none' ? 1 : 1.6}
             />
           );
         })}
         {/* Ukuran dalam (ft/in) */}
-        <text x={w / 2} y={h + 18} textAnchor="middle" fontFamily="JetBrains Mono, monospace" fontSize="12" fontWeight="700" fill="#111111">
+        <text x={w / 2} y={h + 18} textAnchor="middle" fontFamily="JetBrains Mono, monospace" fontSize="12" fontWeight="700" fill="#0E1A1F">
           ← panjang {ftIn(innerM.L)} · lebar {ftIn(innerM.W)} · tinggi {ftIn(innerM.H)} →
         </text>
       </svg>
