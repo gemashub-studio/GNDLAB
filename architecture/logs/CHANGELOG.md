@@ -5,7 +5,8 @@ Waktu dalam WIB (UTC+7).
 
 ## [aplikasi GEMA RnD laporan belanja] — 2026-10-11
 ### Ditambahkan
-- Tab "Laporan Belanja" di /lab: lembar pertanggungjawaban (LPJ) anggaran R&D mengikuti contoh owner — surat memo, anggaran & realisasi + terbilang otomatis, bukti per alokasi (foto nota & foto barang lewat galeri/kamera), penutup & 2 penanda tangan, Lampiran 1 rincian alokasi (faktor 1 = harga dasar + batas atas %, subtotal per alokasi, rekonsiliasi), Lampiran 2 timeline (hari dihitung otomatis) & output; unduh Word (.docx).
+- Tab "Laporan Belanja" di /lab — disederhanakan owner jadi UPLOAD BUKTI ALOKASI saja: tiap alokasi = judul ALOKASI, tabel (kiri foto bukti bayar/nota, kanan foto barang yang dibeli), baris total Rp + terbilang, keterangan di bawah tabel; total seluruh alokasi; unduh Word (.docx).
+- Hasil riset produk bisa dihapus (ketik kode riset untuk konfirmasi; versi + laporan harian + foto/video dihapus dalam satu transaksi; ditolak bila dipakai eksperimen lain).
 
 ## [aplikasi GEMA RnD laporan bergrafik] — 2026-10-11
 ### Ditambahkan

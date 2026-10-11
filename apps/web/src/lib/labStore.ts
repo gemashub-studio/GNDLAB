@@ -430,6 +430,33 @@ export async function saveDraft(dr: Omit<ProtocolDraft, 'createdAt' | 'updatedAt
   return full;
 }
 
+/**
+ * Hapus SATU hasil riset produk (DEC-060, atas permintaan owner): semua versi resep + laporan harian +
+ * foto/video riset itu, dalam satu transaksi. Ditolak bila ada eksperimen lain yang memakai versinya
+ * (catatan eksperimen tidak boleh kehilangan rujukan). Mengembalikan jumlah yang dihapus.
+ */
+export async function deleteResearch(key: string): Promise<{ versions: number; entries: number; media: number }> {
+  const d = await labDb();
+  const tx = d.transaction(['protocols', 'entries', 'media'], 'readwrite');
+  const versions = (await tx.objectStore('protocols').getAll()).filter((p) => p.key === key);
+  if (!versions.length) throw new RangeError(`Riset ${key} tidak ditemukan`);
+  const ids = new Set(versions.map((v) => v.id));
+  const entries = await tx.objectStore('entries').getAll();
+  const usedBy = entries.filter((e) => e.experimentId !== key && ids.has(e.protocolId));
+  if (usedBy.length) {
+    tx.abort();
+    await tx.done.catch(() => undefined);
+    throw new Error(`Riset ${key} dipakai ${usedBy.length} catatan eksperimen (${[...new Set(usedBy.map((e) => e.experimentId))].join(', ')}) — tidak dihapus.`);
+  }
+  const own = entries.filter((e) => e.experimentId === key);
+  const media = (await tx.objectStore('media').getAll()).filter((m) => m.experimentId === key);
+  for (const v of versions) await tx.objectStore('protocols').delete(v.id);
+  for (const e of own) await tx.objectStore('entries').delete(e.id);
+  for (const m of media) await tx.objectStore('media').delete(m.id);
+  await tx.done;
+  return { versions: versions.length, entries: own.length, media: media.length };
+}
+
 /** Hapus draf (hanya draf — versi resmi & catatan harian tidak bisa dihapus). */
 export async function deleteDraft(id: string): Promise<void> {
   await (await labDb()).delete('drafts', id);

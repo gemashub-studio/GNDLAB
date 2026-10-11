@@ -42,9 +42,10 @@ describe('laporan belanja / LPJ (DEC-059)', () => {
     expect(nextLpjId(['LPJ-202610-01', 'LPJ-202610-07', 'LPJ-202609-09'], d)).toBe('LPJ-202610-08');
   });
 
-  it('Word: bagian surat, lampiran 1 & 2, teks di-escape', () => {
-    const r = { ...newLpj('LPJ-202610-01'), refNo: 'KPA/001', budget: '5.876.200', purpose: 'R&D <Kopra>', timeline: [{ activity: 'Pengadaan', start: '2026-10-12', end: '2026-10-18' }] };
+  it('Word: hanya bukti alokasi — judul ALOKASI, tabel nota | barang, total + terbilang, keterangan', () => {
+    const r = { ...newLpj('LPJ-202610-01'), proofs: [{ title: 'Bahan <umum>', total: '427.000', description: 'Kelapa & gula', receipts: [], goods: [] }] };
     const doc = new TextDecoder().decode(buildLpjDocx(r));
-    for (const t of ['LEMBAR PERTANGGUNGJAWABAN', 'Lima Juta Delapan Ratus Tujuh Puluh Enam Ribu Dua Ratus Rupiah', 'Lampiran 1 Rincian alokasi anggaran', 'Lampiran 2 Timeline dan output R&amp;D', 'R&amp;D &lt;Kopra&gt;', '12/10/2026']) expect(doc).toContain(t);
+    for (const t of ['BUKTI ALOKASI', 'ALOKASI — Bahan &lt;umum&gt;', 'Foto Bukti Bayar / Nota', 'Foto Barang yang Dibeli', 'Rp427.000', 'Empat Ratus Dua Puluh Tujuh Ribu Rupiah', 'Keterangan: Kelapa &amp; gula']) expect(doc).toContain(t);
+    expect(doc).not.toContain('Lampiran 1');
   });
 });

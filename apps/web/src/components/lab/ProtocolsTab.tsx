@@ -5,6 +5,7 @@ import { downloadBlob, fmtBytes, makeThumb } from '@/lib/labMedia';
 import {
   addProtocolVersion,
   deleteDraft,
+  deleteResearch,
   listDrafts,
   saveDraft,
   LAB_PRODUCTS,
@@ -156,6 +157,26 @@ export function ProtocolsTab({ protocols, entries, media, refresh }: { protocols
                   </div>
                   <button type="button" className="btn-primary" onClick={() => setOpenKey(k)} data-testid={`proto-open-${k}`}>Buka riset</button>
                   <button type="button" className="btn-ghost" onClick={() => setEditing({ base: latest, product: latest.product, nonce: Date.now() })} data-testid={`proto-newver-${k}`}>Buat versi baru</button>
+                  <button
+                    type="button"
+                    className="btn-ghost"
+                    onClick={() => {
+                      const typed = window.prompt(`Hapus hasil riset ${k} "${latest.name}" beserta SEMUA versi, laporan harian, dan foto/videonya? Tidak bisa dibatalkan — sebaiknya unduh cadangan dulu (tab Ringkasan).
+
+Ketik kode ${k} untuk menghapus:`);
+                      if (typed === null) return;
+                      if (typed.trim().toUpperCase() !== k) return window.alert('Kode tidak cocok — tidak ada yang dihapus.');
+                      void deleteResearch(k)
+                        .then(async (n) => {
+                          await refresh();
+                          window.alert(`Terhapus: ${n.versions} versi, ${n.entries} laporan harian, ${n.media} foto/video.`);
+                        })
+                        .catch((e: Error) => window.alert(e.message));
+                    }}
+                    data-testid={`proto-del-${k}`}
+                  >
+                    Hapus
+                  </button>
                 </div>
                 <div className="flex flex-wrap items-center gap-2 rounded-xl bg-paper p-2" data-testid={`hr-dl-${k}`}>
                   <label className="flex items-center gap-2 text-xs">

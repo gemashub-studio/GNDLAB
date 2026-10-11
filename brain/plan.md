@@ -188,4 +188,4 @@ Contoh owner: Google Doc "LPJ_PR_Request_RnD_Kora_Revisi" (link di chat; dibaca 
 4. Penutup, "Hormat kami", kota/tanggal, 2 penanda tangan (nama + jabatan).
 5. Lampiran 1 rincian alokasi: tabel per bagian (No, Alokasi, Bahan/perlengkapan, Jumlah beli, Satuan beli, Harga dasar, Faktor 1/0, Harga dipakai, Jumlah) + paragraf bagian + subtotal per alokasi + rekonsiliasi total. Aturan owner di dokumen: faktor 1 = harga dasar + batas atas 50%; faktor 0 = harga dasar; jumlah = jumlah beli × harga dipakai.
 6. Lampiran 2 timeline: No, Kegiatan, Mulai, Selesai, Hari (otomatis, inklusif) + catatan + output yang dituju.
-Status: SELESAI 2026-10-11 (DEC-059) — tab /lab?t=belanja, ekspor Word divalidasi di Word. Belum: ekspor PDF LPJ, nama/penanda tangan tersimpan sebagai bawaan, cadangan LPJ ikut file cadangan lab.
+Status: SELESAI 2026-10-11 (DEC-059) lalu DISEDERHANAKAN owner (DEC-060) jadi upload bukti alokasi saja — tab /lab?t=belanja, ekspor Word divalidasi di Word. Belum: ekspor PDF LPJ, nama/penanda tangan tersimpan sebagai bawaan, cadangan LPJ ikut file cadangan lab.

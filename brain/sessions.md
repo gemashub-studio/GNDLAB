@@ -155,3 +155,4 @@
 - DEC-059: tab Laporan Belanja (LPJ) mengikuti Google Doc owner (dibaca via /mobilebasic). Ekspor Word divalidasi visual di Word.
 - Trik validasi visual tanpa poppler: Word COM SaveAs2 PDF, PowerPoint COM Slide.Export PNG, lalu Edge (Playwright headed, channel msedge) screenshot PDF.
 - Lanjut: backlog butir 1 (hapus hasil riset), PDF eksperimen gaya baru, LPJ ke PDF + ikut file cadangan.
+- Lanjutan: DEC-060 — LPJ jadi bukti alokasi saja (permintaan owner); backlog butir 1 (hapus hasil riset) SELESAI. E2E lab 17/17. Catatan: server dev preview pernah basi (aset 404) → preview_stop + preview_start web memperbaiki.
