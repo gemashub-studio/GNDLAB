@@ -49,3 +49,18 @@ describe('laporan belanja / LPJ (DEC-059)', () => {
     expect(doc).not.toContain('Lampiran 1');
   });
 });
+
+describe('laporan belanja ikut cadangan lab (DEC-061)', () => {
+  it('cadangan memuat belanja; pulihkan hanya menambah yang belum ada', async () => {
+    const { labBackupJson, parseBackup, planRestore } = await import('@/lib/labBackup');
+    const a = newLpj('LPJ-202610-01');
+    const b = { ...newLpj('LPJ-202610-02'), proofs: [{ title: 'x', total: '1.000', description: '', receipts: [{ id: 'p', name: 'nota.jpg', dataUrl: 'data:image/jpeg;base64,AA==' }], goods: [] }] };
+    const parsed = parseBackup(labBackupJson([], 'x', { belanja: [a, b] }));
+    expect(parsed.belanja!.map((r) => r.id)).toEqual(['LPJ-202610-01', 'LPJ-202610-02']);
+    const plan = planRestore(parsed, { experiments: new Set(), entries: new Set(), protocols: new Set(), media: new Set(), belanja: new Set(['LPJ-202610-01']) });
+    expect(plan.add.belanja.map((r) => r.id)).toEqual(['LPJ-202610-02']);
+    expect(plan.add.belanja[0]!.proofs[0]!.receipts[0]!.name).toBe('nota.jpg');
+    expect(plan.skipped).toEqual([{ kind: 'laporan belanja', id: 'LPJ-202610-01' }]);
+    expect(planRestore(parseBackup(labBackupJson([], 'x')), { experiments: new Set(), entries: new Set(), protocols: new Set(), media: new Set() }).add.belanja).toEqual([]);
+  });
+});

@@ -6,6 +6,7 @@ Waktu dalam WIB (UTC+7).
 ## [aplikasi GEMA RnD laporan belanja] — 2026-10-11
 ### Ditambahkan
 - Tab "Laporan Belanja" di /lab — disederhanakan owner jadi UPLOAD BUKTI ALOKASI saja: tiap alokasi = judul ALOKASI, tabel (kiri foto bukti bayar/nota, kanan foto barang yang dibeli), baris total Rp + terbilang, keterangan di bawah tabel; total seluruh alokasi; unduh Word (.docx).
+- Cadangan & pulihkan lab kini ikut menyimpan laporan belanja (beserta foto nota/barang).
 - Hasil riset produk bisa dihapus (ketik kode riset untuk konfirmasi; versi + laporan harian + foto/video dihapus dalam satu transaksi; ditolak bila dipakai eksperimen lain).
 
 ## [aplikasi GEMA RnD laporan bergrafik] — 2026-10-11
