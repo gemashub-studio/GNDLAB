@@ -43,7 +43,7 @@ describe('ekspor laporan riset produk (DEC-052)', () => {
   it('model laporan: urutan awal → akhir, status selesai dari laporan penutup', () => {
     const r = buildResearchReport('KE-P01', [v1], [day('KE-P01-H01'), day('KE-P01-H02', true)], [], 'x');
     expect(r.blocks.map((b) => b.heading)).toEqual([
-      'Identitas riset', 'Komposisi bahan (versi 1)', 'Alat yang digunakan', 'Urutan langkah', 'Riwayat versi', 'Laporan harian',
+      'Identitas riset', 'Komposisi bahan (versi 1)', 'Alat yang digunakan', 'Urutan hari', 'Riwayat versi', 'Laporan harian',
       '2026-10-12 · KE-P01-H01', '2026-10-12 · KE-P01-H02 · LAPORAN PENUTUP (SELESAI)', 'Penutup',
     ]);
     expect(r.subtitle).toContain('SELESAI');
@@ -65,5 +65,22 @@ describe('ekspor laporan riset produk (DEC-052)', () => {
   it('ukuran JPEG dibaca dari penanda SOF', () => {
     const sof = new Uint8Array([0xff, 0xd8, 0xff, 0xc0, 0x00, 0x11, 0x08, 0x01, 0x2c, 0x01, 0xe0, 0x03]);
     expect(jpegSize(sof)).toEqual({ w: 480, h: 300 });
+  });
+});
+
+describe('tanggal riset produk', () => {
+  it('Hari ke-N dari tanggal mulai; selesai OTOMATIS = laporan penutup paling awal', async () => {
+    const { dayNumber, researchDates } = await import('@/lib/labStore');
+    expect(dayNumber('2026-10-11', '2026-10-11')).toBe(1);
+    expect(dayNumber('2026-10-11', '2026-10-13')).toBe(3);
+    expect(dayNumber('2026-10-11', '2026-10-10')).toBeUndefined();
+    expect(dayNumber(undefined, '2026-10-10')).toBeUndefined();
+    expect(researchDates('2026-10-11', [day('a'), { ...day('b', true), entryDate: '2026-10-15' }, { ...day('c', true), entryDate: '2026-10-14' }])).toEqual({ start: '2026-10-11', end: '2026-10-14', days: 4 });
+    expect(researchDates('2026-10-11', [day('a')])).toEqual({ start: '2026-10-11' });
+    const r = buildResearchReport('KE-P01', [{ ...v1, startDate: '2026-10-11', assistants: ['Rina'] }], [day('KE-P01-H01', true)], [], 'x');
+    expect(r.blocks[0]!.lines.join(' ')).toContain('Asisten: Rina');
+    expect(r.blocks[0]!.lines.join(' ')).toContain('Tanggal selesai: 2026-10-12 (otomatis');
+    expect(r.blocks.find((b) => b.heading.startsWith('Hari ke-2 · 2026-10-12'))).toBeDefined();
+    expect(r.blocks[3]!.lines[0]).toBe('Hari ke-1: Belah & tiriskan · 15 menit');
   });
 });

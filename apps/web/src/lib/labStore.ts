@@ -163,6 +163,10 @@ export interface ProtocolVersion {
   name: string;
   ingredients: ProtocolIngredient[];
   steps: ProtocolStep[];
+  /** Tanggal mulai riset (YYYY-MM-DD) — disalin ke versi berikutnya. */
+  startDate?: string;
+  /** Nama asisten (selain pembuat). */
+  assistants?: string[];
   /** Alat yang digunakan (teks lama = string). */
   tools?: (ProtocolTool | string)[];
   reason: string;
@@ -388,6 +392,26 @@ export async function addProtocolVersion(
   for (const m of items) await tx.objectStore('media').add(m);
   await tx.done;
   return full;
+}
+
+/** Hari ke-N dari tanggal mulai (Hari ke-1 = tanggal mulai); undefined bila tanggal tak valid/sebelum mulai. */
+export function dayNumber(start: string | undefined, date: string): number | undefined {
+  if (!start || !/^\d{4}-\d{2}-\d{2}/.test(start) || !/^\d{4}-\d{2}-\d{2}/.test(date)) return undefined;
+  const d = Math.round((Date.parse(`${date.slice(0, 10)}T00:00:00Z`) - Date.parse(`${start.slice(0, 10)}T00:00:00Z`)) / 86_400_000);
+  return d >= 0 ? d + 1 : undefined;
+}
+
+/** Tanggal riset: mulai (isian), selesai OTOMATIS = tanggal laporan penutup paling awal, & durasi (hari). */
+export function researchDates(start: string | undefined, entries: readonly DailyEntry[]): { start?: string; end?: string; days?: number } {
+  const closing = entries.filter((e) => e.finished).map((e) => e.entryDate).sort()[0];
+  const out: { start?: string; end?: string; days?: number } = {};
+  if (start) out.start = start;
+  if (closing) {
+    out.end = closing;
+    const n = dayNumber(start, closing);
+    if (n) out.days = n;
+  }
+  return out;
 }
 
 /** Status riset produk: selesai bila ada laporan harian bertanda `finished`. */

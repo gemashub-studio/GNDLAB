@@ -7,6 +7,7 @@ import {
   LAB_PRODUCTS,
   nextProtocolKey,
   nextProtocolVersion,
+  researchDates,
   researchStatus,
   toolList,
   type DailyEntry,
@@ -155,11 +156,12 @@ function VersionView({ v, media }: { v: ProtocolVersion; media: MediaItem[] }) {
         ) : <p className="italic text-muted">belum dicatat</p>}
       </div>
       <div>
-        <span className="label-mono">Urutan langkah</span>
+        <span className="label-mono">Urutan hari</span>
         {v.steps.length ? (
-          <ol className="mt-1 flex list-decimal flex-col gap-2 pl-5">
+          <ol className="mt-1 flex flex-col gap-2">
             {v.steps.map((s, n) => (
               <li key={n}>
+                <span className="mr-2 rounded-full bg-acid px-2 py-0.5 font-mono text-[11px] font-semibold">Hari ke-{n + 1}</span>
                 {s.text}{s.duration && <span className="font-mono text-xs"> · {s.duration}</span>}{s.conditions && <span className="text-muted"> · {s.conditions}</span>}
                 <Thumbs ids={s.mediaIds} media={media} />
               </li>
@@ -186,6 +188,8 @@ function ResearchDetail({ rkey, protocols, entries, media, refresh, onBack, onNe
   const [busy, setBusy] = useState('');
   if (!latest) return null;
   const st = researchStatus(days);
+  const start = latest.startDate ?? versions[versions.length - 1]!.startDate;
+  const dates = researchDates(start, days);
   // Laporan harian memakai komponen catatan harian (append-only); "eksperimen" semu = kunci riset.
   const pseudo: Experiment = {
     id: rkey, product: latest.product, title: latest.name, startedAt: versions[versions.length - 1]!.createdAt.slice(0, 10), question: '', objective: '', methodVersion: latest.id,
@@ -221,6 +225,11 @@ function ResearchDetail({ rkey, protocols, entries, media, refresh, onBack, onNe
           <span className="font-mono text-xs text-muted-ink">{versions.length} versi · {days.length} laporan harian</span>
         </div>
         <h2 className="text-3xl text-paper">{latest.name}</h2>
+        <dl className="grid gap-2 font-mono text-xs text-muted-ink sm:grid-cols-3" data-testid="rp-dates">
+          <div><dt className="uppercase tracking-[0.12em]">Tanggal mulai</dt><dd className="text-paper">{dates.start ?? 'belum dicatat'}</dd></div>
+          <div><dt className="uppercase tracking-[0.12em]">Tanggal selesai (otomatis)</dt><dd className="text-paper" data-testid="rp-end">{dates.end ? `${dates.end}${dates.days ? ` · ${dates.days} hari` : ''}` : 'belum selesai'}</dd></div>
+          <div><dt className="uppercase tracking-[0.12em]">Pembuat & asisten</dt><dd className="text-paper">{[latest.author || 'belum dicatat', ...(latest.assistants ?? [])].join(', ')}</dd></div>
+        </dl>
         <div className="flex flex-wrap gap-2">
           {(['pdf', 'docx', 'pptx'] as const).map((k) => (
             <button key={k} type="button" disabled={!!busy} className="btn border-acid/40 bg-transparent text-acid hover:bg-acid hover:text-ink" onClick={() => void exportAs(k)} data-testid={`rp-${k}`}>
@@ -234,7 +243,7 @@ function ResearchDetail({ rkey, protocols, entries, media, refresh, onBack, onNe
         <VersionView v={latest} media={media} />
       </Section>
 
-      <DailyLog e={pseudo} entries={days} media={media.filter((m) => m.experimentId === rkey && m.entryId.startsWith(`${rkey}-H`))} protocols={protocols} onSaved={refresh} finishable title="Laporan harian" />
+      <DailyLog e={pseudo} entries={days} media={media.filter((m) => m.experimentId === rkey && m.entryId.startsWith(`${rkey}-H`))} protocols={protocols} onSaved={refresh} finishable title="Laporan harian" {...(start && { startDate: start })} dayPlan={(n) => (latest.steps[n - 1] ? `Hari ke-${n}: ${latest.steps[n - 1]!.text}` : '')} />
 
       {versions.length > 1 && (
         <Section title="Riwayat versi" testId="rp-history">
@@ -291,6 +300,8 @@ function ProtocolForm({ protocols, media, base, initialProduct, onCancel, onSave
   const [product, setProduct] = useState<LabProductId>(base?.product ?? initialProduct);
   const [name, setName] = useState(base?.name ?? '');
   const [author, setAuthor] = useState(base?.author ?? '');
+  const [assistants, setAssistants] = useState((base?.assistants ?? []).join(', '));
+  const [startDate, setStartDate] = useState(base?.startDate ?? new Date().toISOString().slice(0, 10));
   const [reason, setReason] = useState(base ? '' : 'versi awal');
   const [ings, setIngs] = useState<ProtocolIngredient[]>(base ? base.ingredients.map((i) => ({ ...i })) : [blankIng()]);
   const [steps, setSteps] = useState<ProtocolStep[]>(base ? base.steps.map((s) => ({ ...s })) : [blankStep()]);
@@ -305,6 +316,7 @@ function ProtocolForm({ protocols, media, base, initialProduct, onCancel, onSave
 
   const save = async () => {
     if (!name.trim()) return setMsg('Beri nama resep/proses.');
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(startDate)) return setMsg('Isi tanggal mulai.');
     if (base && !reason.trim()) return setMsg('Tulis alasan perubahan untuk versi baru.');
     setBusy(true);
     try {
@@ -319,7 +331,8 @@ function ProtocolForm({ protocols, media, base, initialProduct, onCancel, onSave
       for (const k of keepT) tMedia.push(await toMedia(k.f));
       await addProtocolVersion(
         {
-          id, key, version, product, name: name.trim(), author: author.trim(), reason: reason.trim(),
+          id, key, version, product, name: name.trim(), author: author.trim(), reason: reason.trim(), startDate,
+          assistants: assistants.split(',').map((a) => a.trim()).filter(Boolean),
           ingredients: keepI.map(({ x }) => x),
           steps: keepS.map(({ x }) => x),
           tools: keepT.map(({ x }) => ({ ...x, name: x.name.trim() })),
@@ -344,7 +357,13 @@ function ProtocolForm({ protocols, media, base, initialProduct, onCancel, onSave
           </select>
         </label>
         <TextInput label="Nama resep/proses" value={name} onChange={setName} placeholder="mis. Kopra oven bertahap" testId="proto-name" />
-        <TextInput label="Dibuat/diubah oleh" value={author} onChange={setAuthor} placeholder="nama kamu" testId="proto-author" />
+        <label className="flex flex-col gap-1.5">
+          <span className="label-mono">Tanggal mulai</span>
+          <input type="date" className="field" value={startDate} disabled={!!base?.startDate} onChange={(e) => setStartDate(e.target.value)} data-testid="proto-start" />
+          <span className="text-xs text-muted">Tanggal selesai terisi otomatis dari laporan penutup.</span>
+        </label>
+        <TextInput label="Pembuat" value={author} onChange={setAuthor} placeholder="nama kamu" testId="proto-author" />
+        <TextInput label="Asisten (pisahkan dengan koma)" value={assistants} onChange={setAssistants} placeholder="mis. Rina, Budi" testId="proto-assistants" />
         <TextInput label={base ? 'Alasan perubahan (wajib)' : 'Catatan versi'} value={reason} onChange={setReason} testId="proto-reason" />
       </div>
 
@@ -383,21 +402,21 @@ function ProtocolForm({ protocols, media, base, initialProduct, onCancel, onSave
       </fieldset>
 
       <fieldset className="flex flex-col gap-2">
-        <legend className="label-mono mb-2">Urutan langkah</legend>
+        <legend className="label-mono mb-2">Urutan hari — kegiatan tiap hari, lanjut ke hari berikutnya</legend>
         {steps.map((st, i) => (
           <div key={i} className="flex flex-col gap-2 rounded-xl border-3 border-ink p-2">
-            <div className="grid gap-2 sm:grid-cols-[2rem_1fr_8rem_12rem_auto] sm:items-center">
-              <span className="font-mono text-xs">{i + 1}.</span>
-              <input className="field min-h-[44px] font-sans text-sm font-normal" placeholder="Langkah" value={st.text} onChange={(e) => setSteps(steps.map((x, j) => (j === i ? { ...x, text: e.target.value } : x)))} data-testid={`proto-step-${i}`} />
-              <input className="field min-h-[44px] text-sm" placeholder="Waktu" value={st.duration} onChange={(e) => setSteps(steps.map((x, j) => (j === i ? { ...x, duration: e.target.value } : x)))} />
+            <div className="grid gap-2 sm:grid-cols-[5.5rem_1fr_8rem_12rem_auto] sm:items-center">
+              <span className="rounded-full bg-acid px-2 py-1 text-center font-mono text-[11px] font-semibold" data-testid={`proto-day-${i}`}>Hari ke-{i + 1}</span>
+              <input className="field min-h-[44px] font-sans text-sm font-normal" placeholder="Kegiatan hari ini" value={st.text} onChange={(e) => setSteps(steps.map((x, j) => (j === i ? { ...x, text: e.target.value } : x)))} data-testid={`proto-step-${i}`} />
+              <input className="field min-h-[44px] text-sm" placeholder="Lama / jam" value={st.duration} onChange={(e) => setSteps(steps.map((x, j) => (j === i ? { ...x, duration: e.target.value } : x)))} />
               <input className="field min-h-[44px] font-sans text-sm font-normal" placeholder="Kondisi (suhu, dll.)" value={st.conditions} onChange={(e) => setSteps(steps.map((x, j) => (j === i ? { ...x, conditions: e.target.value } : x)))} />
-              <button type="button" aria-label="Hapus langkah" className="font-mono text-xs underline" onClick={() => { setSteps(steps.length > 1 ? steps.filter((_, j) => j !== i) : [blankStep()]); setStepFiles(stepFiles.length > 1 ? stepFiles.filter((_, j) => j !== i) : [[]]); }}>×</button>
+              <button type="button" aria-label="Hapus hari" className="font-mono text-xs underline" onClick={() => { setSteps(steps.length > 1 ? steps.filter((_, j) => j !== i) : [blankStep()]); setStepFiles(stepFiles.length > 1 ? stepFiles.filter((_, j) => j !== i) : [[]]); }}>×</button>
             </div>
             <Thumbs ids={st.mediaIds} media={media} />
             <FilePick list={stepFiles[i] ?? []} onChange={(l) => setStepFiles(stepFiles.map((x, j) => (j === i ? l : x)))} testId={`proto-step-files-${i}`} />
           </div>
         ))}
-        <button type="button" className="btn-ghost self-start" onClick={() => { setSteps([...steps, blankStep()]); setStepFiles([...stepFiles, []]); }}>+ Langkah</button>
+        <button type="button" className="btn-ghost self-start" onClick={() => { setSteps([...steps, blankStep()]); setStepFiles([...stepFiles, []]); }} data-testid="proto-day-add">+ Hari ke-{steps.length + 1}</button>
       </fieldset>
 
       <div className="flex flex-wrap items-center gap-3">

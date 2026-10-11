@@ -3,7 +3,7 @@
  * identitas → komposisi (+foto) → alat → langkah (+foto) → riwayat versi → laporan harian → penutup.
  * Hanya dari data tercatat; kosong = "belum dicatat".
  */
-import { LAB_PRODUCTS, NOT_RECORDED, researchStatus, toolList, type DailyEntry, type MediaItem, type ProtocolVersion } from './labStore';
+import { dayNumber, LAB_PRODUCTS, NOT_RECORDED, researchDates, researchStatus, toolList, type DailyEntry, type MediaItem, type ProtocolVersion } from './labStore';
 
 export interface ReportImage {
   name: string;
@@ -43,6 +43,12 @@ export function buildResearchReport(key: string, versions: readonly ProtocolVers
   const byId = new Map(media.map((m) => [m.id, m]));
   const pics = (ids?: string[]) => (ids ?? []).map((id) => byId.get(id)).filter((m): m is MediaItem => !!m).map(img);
   const status = researchStatus(days);
+  const start = latest.startDate ?? vs[0]!.startDate;
+  const dates = researchDates(start, days);
+  const dayLabel = (date: string) => {
+    const n = dayNumber(start, date);
+    return n ? `Hari ke-${n} · ` : '';
+  };
 
   const blocks: ReportBlock[] = [
     {
@@ -51,8 +57,9 @@ export function buildResearchReport(key: string, versions: readonly ProtocolVers
       lines: [
         `Kode: ${key} · Produk: ${productName(latest.product)}`,
         `Status: ${STATUS[status]}`,
-        `Versi terakhir: ${latest.id} (${latest.createdAt.slice(0, 10)}) · oleh ${or(latest.author)}`,
-        `Mulai: ${vs[0]!.createdAt.slice(0, 10)} · Laporan harian: ${days.length}`,
+        `Pembuat: ${or(latest.author)} · Asisten: ${latest.assistants?.length ? latest.assistants.join(', ') : NOT_RECORDED}`,
+        `Tanggal mulai: ${or(dates.start)} · Tanggal selesai: ${dates.end ? `${dates.end} (otomatis dari laporan penutup)` : 'belum selesai'}${dates.days ? ` · Durasi: ${dates.days} hari` : ''}`,
+        `Versi terakhir: ${latest.id} (${latest.createdAt.slice(0, 10)}) · Laporan harian: ${days.length}`,
       ],
       images: [],
     },
@@ -71,21 +78,21 @@ export function buildResearchReport(key: string, versions: readonly ProtocolVers
       images: toolList(latest).flatMap((t) => pics(t.mediaIds).map((p) => ({ ...p, caption: `Alat · ${t.name}${p.caption ? ` — ${p.caption}` : ''}` }))),
     },
     {
-      heading: 'Urutan langkah',
+      heading: 'Urutan hari',
       level: 1,
-      lines: latest.steps.length ? latest.steps.map((st, i) => `${i + 1}. ${st.text}${st.duration ? ` · ${st.duration}` : ''}${st.conditions ? ` · ${st.conditions}` : ''}`) : [NOT_RECORDED],
-      images: latest.steps.flatMap((st, i) => pics(st.mediaIds).map((p) => ({ ...p, caption: `Langkah ${i + 1}${p.caption ? ` — ${p.caption}` : ''}` }))),
+      lines: latest.steps.length ? latest.steps.map((st, i) => `Hari ke-${i + 1}: ${st.text}${st.duration ? ` · ${st.duration}` : ''}${st.conditions ? ` · ${st.conditions}` : ''}`) : [NOT_RECORDED],
+      images: latest.steps.flatMap((st, i) => pics(st.mediaIds).map((p) => ({ ...p, caption: `Hari ke-${i + 1}${p.caption ? ` — ${p.caption}` : ''}` }))),
     },
     {
       heading: 'Riwayat versi',
       level: 1,
       lines: [],
-      table: { head: ['Versi', 'Tanggal', 'Oleh', 'Alasan perubahan'], rows: vs.map((v) => [v.id, v.createdAt.slice(0, 10), or(v.author), or(v.reason)]) },
+      table: { head: ['Versi', 'Tanggal', 'Oleh & asisten', 'Alasan perubahan'], rows: vs.map((v) => [v.id, v.createdAt.slice(0, 10), [or(v.author), ...(v.assistants ?? [])].join(', '), or(v.reason)]) },
       images: [],
     },
     { heading: 'Laporan harian', level: 1, lines: days.length ? [] : ['Belum ada laporan harian.'], images: [] },
     ...days.map<ReportBlock>((d) => ({
-      heading: `${d.entryDate} · ${d.id}${d.finished ? ' · LAPORAN PENUTUP (SELESAI)' : ''}`,
+      heading: `${dayLabel(d.entryDate)}${d.entryDate} · ${d.id}${d.finished ? ' · LAPORAN PENUTUP (SELESAI)' : ''}`,
       level: 2,
       lines: [
         ...(d.protocolId ? [`Versi resep: ${d.protocolId}`] : []),
@@ -107,7 +114,7 @@ export function buildResearchReport(key: string, versions: readonly ProtocolVers
       heading: 'Penutup',
       level: 1,
       lines: [
-        status === 'selesai' ? 'Riset ditandai SELESAI oleh pengguna.' : 'Riset belum ditandai selesai.',
+        status === 'selesai' ? `Riset ditandai SELESAI oleh pengguna pada ${dates.end}.` : 'Riset belum ditandai selesai.',
         'Isi laporan = catatan pengguna. Tidak ada saran AI; bukan klaim produk aman, memenuhi standar, atau siap jual.',
         'Video asli tersimpan di aplikasi & file cadangan; di laporan hanya gambar pratinjau dan nama berkas.',
       ],

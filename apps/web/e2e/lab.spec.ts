@@ -209,6 +209,9 @@ test.describe('GEMA RnD Lab', () => {
     const pid = (await page.getByTestId('proto-id').textContent())!;
     const key = pid.replace(/-v1$/, '');
     await page.getByTestId('proto-name').fill('Kopra oven E2E');
+    await page.getByTestId('proto-start').fill('2026-10-11');
+    await page.getByTestId('proto-author').fill('Owner');
+    await page.getByTestId('proto-assistants').fill('Rina, Budi');
     await page.getByTestId('proto-ing-name-0').fill('Daging kelapa');
     await page.getByTestId('proto-ing-amount-0').fill('2');
     await page.getByTestId('proto-ing-unit-0').fill('kg');
@@ -220,6 +223,9 @@ test.describe('GEMA RnD Lab', () => {
     await page.getByTestId('proto-tool-add').click();
     await page.getByTestId('proto-tool-name-1').fill('Timbangan digital');
     await page.getByTestId('proto-step-0').fill('Belah dan tiriskan');
+    await page.getByTestId('proto-day-add').click();
+    await expect(page.getByTestId('proto-day-1')).toHaveText('Hari ke-2');
+    await page.getByTestId('proto-step-1').fill('Oven 60 °C');
     await page.getByTestId('proto-step-files-0').setInputFiles({ name: 'belah.png', mimeType: 'image/png', buffer: png });
     await page.getByTestId('proto-save').click();
     await expect(page.getByTestId(`proto-${key}`)).toContainText('belum ada laporan');
@@ -229,7 +235,10 @@ test.describe('GEMA RnD Lab', () => {
     await expect(latest).toContainText('Oven listrik');
     await expect(latest.locator('img')).toHaveCount(3);
     await expect(latest).toContainText('Timbangan digital');
+    await expect(page.getByTestId('rp-dates')).toContainText('Rina, Budi');
+    await expect(page.getByTestId('rp-end')).toHaveText('belum selesai');
     await page.getByTestId('day-new').click();
+    await page.getByTestId('day-date').fill('2026-10-12');
     await page.getByTestId('day-actual').fill('Oven 60 °C, 8 jam');
     await page.getByTestId('day-meas-name-0').fill('Kadar air');
     await page.getByTestId('day-meas-value-0').fill('9,5');
@@ -237,10 +246,13 @@ test.describe('GEMA RnD Lab', () => {
     await page.getByTestId('day-save').click();
     await expect(page.getByTestId('rp-status')).toHaveText('berjalan');
     await page.getByTestId('day-new').click();
+    await page.getByTestId('day-date').fill('2026-10-13');
     await page.getByTestId('day-actual').fill('Kering, dikemas');
     await page.getByTestId('day-finish').check();
     await page.getByTestId('day-save').click();
     await expect(page.getByTestId('rp-status')).toHaveText('SELESAI');
+    await expect(page.getByTestId('rp-end')).toHaveText('2026-10-13 · 3 hari');
+    await expect(page.getByTestId('lab-daily')).toContainText('Hari ke-2');
 
     const { readFileSync } = await import('node:fs');
     for (const [k, magic] of [['pdf', '%PDF-'], ['docx', 'PK'], ['pptx', 'PK']] as const) {

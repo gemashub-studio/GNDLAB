@@ -1,8 +1,9 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   addEntry,
+  dayNumber,
   nextEntryId,
   NOT_RECORDED,
   type DailyEntry,
@@ -52,6 +53,8 @@ export function DailyLog({
   onSaved,
   finishable = false,
   title = 'Catatan harian',
+  startDate,
+  dayPlan,
 }: {
   e: Experiment;
   entries: DailyEntry[];
@@ -61,8 +64,13 @@ export function DailyLog({
   /** Riset produk: boleh menandai laporan penutup (riset selesai). */
   finishable?: boolean;
   title?: string;
+  /** Riset produk: tanggal mulai (untuk label Hari ke-N). */
+  startDate?: string;
+  /** Rencana hari ke-N dari resep (diisikan otomatis, tetap bisa diubah). */
+  dayPlan?: (day: number) => string;
 }) {
   const [finish, setFinish] = useState(false);
+  const lastAuto = useRef('');
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState(blankForm);
   const [files, setFiles] = useState<PendingFile[]>([]);
@@ -70,6 +78,14 @@ export function DailyLog({
   const [busy, setBusy] = useState(false);
   const mine = protocols.filter((p) => p.product === e.product);
   const id = nextEntryId(e.id, entries.map((x) => x.id));
+  // Rencana otomatis = kegiatan Hari ke-N dari resep; ikut tanggal selama belum diketik sendiri.
+  useEffect(() => {
+    if (!open || !dayPlan) return;
+    const n = dayNumber(startDate, form.entryDate);
+    const auto = n ? dayPlan(n) : '';
+    setForm((f) => ((f.plan === '' || f.plan === lastAuto.current) && f.plan !== auto ? { ...f, plan: auto } : f));
+    lastAuto.current = auto;
+  }, [open, form.entryDate, startDate, dayPlan]);
   const set = (k: 'entryDate' | 'protocolId' | 'plan' | 'actual' | 'tools' | 'conditions' | 'deviations' | 'interpretation' | 'nextStep' | 'correctsEntryId') => (v: string) =>
     setForm((f) => ({ ...f, [k]: v }));
 
@@ -237,7 +253,7 @@ export function DailyLog({
       {entries.length ? (
         <ol className="flex flex-col gap-3" data-testid="day-list">
           {[...entries].reverse().map((x) => (
-            <EntryCard key={x.id} x={x} media={media.filter((m) => m.entryId === x.id)} protocols={protocols} onPdf={() => void pdfDaily(x)} />
+            <EntryCard key={x.id} x={x} day={dayNumber(startDate, x.entryDate)} media={media.filter((m) => m.entryId === x.id)} protocols={protocols} onPdf={() => void pdfDaily(x)} />
           ))}
         </ol>
       ) : (
@@ -290,7 +306,7 @@ function Rows<T extends object>({
   );
 }
 
-function EntryCard({ x, media, protocols, onPdf }: { x: DailyEntry; media: MediaItem[]; protocols: ProtocolVersion[]; onPdf: () => void }) {
+function EntryCard({ x, day, media, protocols, onPdf }: { x: DailyEntry; day?: number; media: MediaItem[]; protocols: ProtocolVersion[]; onPdf: () => void }) {
   const urls = useMemo(() => media.map((m) => URL.createObjectURL(m.blob)), [media]);
   useEffect(() => () => urls.forEach((u) => URL.revokeObjectURL(u)), [urls]);
   const p = protocols.find((q) => q.id === x.protocolId);
@@ -305,6 +321,7 @@ function EntryCard({ x, media, protocols, onPdf }: { x: DailyEntry; media: Media
     <li className="flex flex-col gap-3 rounded-2xl border-3 border-ink bg-surface p-4" data-testid={`day-${x.id}`}>
       <div className="flex flex-wrap items-center gap-2">
         <span className="font-mono text-xs font-semibold">{x.id}</span>
+        {day && <span className="rounded-full bg-acid px-2.5 py-0.5 font-mono text-[11px] font-semibold" data-testid={`day-num-${x.id}`}>Hari ke-{day}</span>}
         <span className="font-mono text-xs text-muted">{x.entryDate}</span>
         {p && <span className="rounded-full bg-paper px-2.5 py-0.5 font-mono text-[11px]">{p.id} · {p.name}</span>}
         {x.correctsEntryId && <span className="rounded-full bg-safety px-2.5 py-0.5 font-mono text-[11px]">koreksi {x.correctsEntryId}</span>}

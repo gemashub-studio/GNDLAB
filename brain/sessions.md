@@ -139,3 +139,4 @@
 - Owner: ganti Protokol → Riset Produk; foto/video bahan, alat (seperti bahan), langkah; laporan harian sampai selesai; laporan docx/ppt/pdf.
 - officeExport.ts (zip store + OOXML) — DOCX & PPTX divalidasi dibuka Word & PowerPoint via COM (baca saja): 4 tabel/3 gambar; 13 slide/3 gambar.
 - Test: web unit 72, E2E lab 11/11, run_all_checks LULUS.
+- (lanjutan) DEC-053: tanggal mulai/selesai otomatis, asisten, Urutan hari (Hari ke-N), rencana harian otomatis. Unit 74, E2E lab 11/11, Word/PPT tervalidasi.
