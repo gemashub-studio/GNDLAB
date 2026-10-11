@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { useMemo, useState } from 'react';
 import { ChoiceGroup, NumberField } from '@/components/ui/fields';
 import { Stat } from '@/components/ui/Stat';
+import { StepFlow, type FlowStep, type PictoName } from '@/components/ui/StepFlow';
 import { WarningList } from '@/components/ui/Warnings';
 import { fmt } from '@/lib/format';
 import { Note, paramText, safe, Sources, useFormula } from './shared';
@@ -14,39 +15,40 @@ type Horizon = '30' | '90' | '365';
 const HORIZON_TEXT: Record<Horizon, string> = { '30': '1 bulan', '90': '3 bulan', '365': '1 tahun' };
 
 /** Langkah kerja khusus tiap metode (dari sumber metode di dataset). */
-function steps(m: MethodSI<VinegarMethodRaw>, tempText: string): string[] {
+function steps(m: MethodSI<VinegarMethodRaw>, tempText: string): FlowStep[] {
+  const st = (icon: PictoName, text: string): FlowStep => ({ icon, text });
   const f = m.p.withdraw_fraction;
   const pct = f ? `${fmt(f.min * 100, 0)}–${fmt(f.max * 100, 0)}%` : '';
   switch (m.id) {
     case 'statis':
       return [
-        'Cairan alkohol (B2) disaring ke wadah ⅔–¾ penuh, tambah starter cuka hidup, tutup kain rapat.',
-        `Diamkan ${tempText} — JANGAN diaduk (mother tenggelam/pecah). Titrasi tiap minggu.`,
-        'Asam ≥4% → angkat mother (bahan bioleather BLT-M / starter), tarik semua cuka ke klarifikasi.',
+        st('cover', 'Cairan alkohol (B2) disaring ke wadah ⅔–¾ penuh, tambah starter cuka hidup, tutup kain rapat.'),
+        st('thermo', `Diamkan ${tempText} — JANGAN diaduk (mother tenggelam/pecah). Titrasi tiap minggu.`),
+        st('tap', 'Asam ≥4% → angkat mother (bahan bioleather BLT-M / starter), tarik semua cuka ke klarifikasi.'),
       ];
     case 'semikontinu':
       return [
-        'Siklus pertama sama dengan statis sampai asam ≥4%.',
-        `Tarik ${pct} volume lewat keran bawah (mother tetap utuh di permukaan); sisanya = starter siklus berikut.`,
-        'Isi ulang pelan dengan cairan alkohol baru sebanyak yang ditarik — tuang lewat tepi/selang agar mother tidak pecah.',
-        'Titrasi tiap tarikan; bila keasaman sisa turun atau ada bau busuk, hentikan siklus & mulai ulang dari statis.',
+        st('vessel', 'Siklus pertama sama dengan statis sampai asam ≥4%.'),
+        st('tap', `Tarik ${pct} volume lewat keran bawah (mother tetap utuh di permukaan); sisanya = starter siklus berikut.`),
+        st('drop', 'Isi ulang pelan dengan cairan alkohol baru sebanyak yang ditarik — tuang lewat tepi/selang agar mother tidak pecah.'),
+        st('burette', 'Titrasi tiap tarikan; bila keasaman sisa turun atau ada bau busuk, hentikan siklus & mulai ulang dari statis.'),
       ];
     case 'generator':
       return [
-        'Isi tabung acetifier dengan tongkol jagung/serutan kayu bersih; rendam dengan mother vinegar (cuka hidup) sampai basah merata.',
-        'Teteskan cairan alkohol dari atas (alat penetes), tampung di bak bawah, ulangi (sirkulasi). Udara masuk lewat lubang bawah.',
-        `Run kondisi ${paramText(m.p.startup_runs!, 0)}× sampai bakteri menempel; setelahnya ±${paramText(m.p.acetify_h!, 0)} jam per run ke ≥4%.`,
-        'Titrasi tiap run; jaga suhu cairan keluar; bersihkan & ganti isian bila berlendir/berbau.',
+        st('cob', 'Isi tabung acetifier dengan tongkol jagung/serutan kayu bersih; rendam dengan mother vinegar (cuka hidup) sampai basah merata.'),
+        st('drop', 'Teteskan cairan alkohol dari atas (alat penetes), tampung di bak bawah, ulangi (sirkulasi). Udara masuk lewat lubang bawah.'),
+        st('clock', `Run kondisi ${paramText(m.p.startup_runs!, 0)}× sampai bakteri menempel; setelahnya ±${paramText(m.p.acetify_h!, 0)} jam per run ke ≥4%.`),
+        st('burette', 'Titrasi tiap run; jaga suhu cairan keluar; bersihkan & ganti isian bila berlendir/berbau.'),
       ];
     case 'aerasi':
       return [
-        'Tangki food-grade dengan difuser (batu aerator) & pompa udara food-grade; tutup berkasa.',
-        `Isi cairan alkohol + starter cuka hidup, aerasi terus-menerus, suhu ${tempText}.`,
-        `Tiap ${paramText(m.p.acetify_d!, 0)} hari: titrasi; bila ≥4% tarik ${pct} volume, isi ulang cairan alkohol baru.`,
-        'Aerasi jangan berlebihan (alkohol ikut menguap → rendemen turun); catat busa & bau.',
+        st('bubbles', 'Tangki food-grade dengan difuser (batu aerator) & pompa udara food-grade; tutup berkasa.'),
+        st('thermo', `Isi cairan alkohol + starter cuka hidup, aerasi terus-menerus, suhu ${tempText}.`),
+        st('burette', `Tiap ${paramText(m.p.acetify_d!, 0)} hari: titrasi; bila ≥4% tarik ${pct} volume, isi ulang cairan alkohol baru.`),
+        st('shield', 'Aerasi jangan berlebihan (alkohol ikut menguap → rendemen turun); catat busa & bau.'),
       ];
     default:
-      return ['Hanya sebagai KONTROL R&D: air kelapa tanpa gula difermentasi seperti metode statis untuk membuktikan keasamannya di bawah standar.'];
+      return [st('check', 'Hanya sebagai KONTROL R&D: air kelapa tanpa gula difermentasi seperti metode statis untuk membuktikan keasamannya di bawah standar.')];
   }
 }
 
@@ -168,7 +170,7 @@ export function CukaMethods({ acetifyL, aceticPct, waterL, starterPct }: { aceti
         Asam asetat = potensi dari must di atas (sama untuk semua metode; generator/aerasi bisa sedikit lebih rendah karena alkohol menguap). Batas minimum {fmt(minAcid, 0)}%. Waktu & fraksi tarik dari sumber tiap metode. Liter per periode menganggap cairan alkohol baru selalu siap (kebutuhan alkohol ≈ liter cuka ditarik); metode statis di sini sudah memakai starter cuka hidup.
       </p>
 
-      <div className="grid gap-4 md:grid-cols-2" data-testid="cm-detail">
+      <div className="flex flex-col gap-4" data-testid="cm-detail">
         <div className="flex flex-col gap-2">
           <h4 className="text-xl">{m.name_id}</h4>
           <div className="grid grid-cols-2 gap-2">
@@ -190,11 +192,7 @@ export function CukaMethods({ acetifyL, aceticPct, waterL, starterPct }: { aceti
         </div>
         <div className="flex flex-col gap-2">
           <p className="font-mono text-[11px] font-bold uppercase">Langkah kerja metode</p>
-          <ol className="flex list-decimal flex-col gap-1.5 pl-5 text-sm" data-testid="cm-steps">
-            {steps(m, tempText).map((s, i) => (
-              <li key={i}>{s}</li>
-            ))}
-          </ol>
+          <StepFlow steps={steps(m, tempText)} testId="cm-steps" />
           {sel.plan && !sel.plan.ok && <p className="bg-safety p-2 text-sm font-bold">{sel.plan.message}</p>}
           {m.id === 'alami' && natural.ok && <WarningList warnings={natural.v.warnings} />}
         </div>

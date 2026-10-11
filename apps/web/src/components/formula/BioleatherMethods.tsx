@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useMemo, useState } from 'react';
 import { ChoiceGroup, NumberField } from '@/components/ui/fields';
 import { Stat } from '@/components/ui/Stat';
+import { Picto } from '@/components/ui/StepFlow';
 import { fmt } from '@/lib/format';
 import { Bom, CalcError, Note, paramText, safe, Sources, useFormula } from './shared';
 
@@ -92,7 +93,7 @@ export function BioleatherMethods({ mediaL, cultureDays, areaCm2 }: { mediaL: nu
 
       {/* 1. Kultur */}
       <div className="flex flex-col gap-2">
-        <h4 className="text-xl">1 · Metode kultur ({fmt(mediaL, 1)} L media, {fmt(cultureDays, 0)} hari)</h4>
+        <h4 className="flex items-center gap-3 text-xl"><Picto name="sheet" />1 · Metode kultur ({fmt(mediaL, 1)} L media, {fmt(cultureDays, 0)} hari)</h4>
         <div className="grid gap-2 sm:grid-cols-3" data-testid="bl-culture">
           {culture.map(({ m, r }) => (
             <div key={m.id} className="flex flex-col gap-1 border-3 border-ink p-3" data-testid={`bl-culture-${m.id}`}>
@@ -114,7 +115,7 @@ export function BioleatherMethods({ mediaL, cultureDays, areaCm2 }: { mediaL: nu
 
       {/* 2. Plastisasi */}
       <div className="flex flex-col gap-2">
-        <h4 className="text-xl">2 · Plastisasi (agar lentur)</h4>
+        <h4 className="flex items-center gap-3 text-xl"><Picto name="soak" />2 · Plastisasi (agar lentur)</h4>
         <ChoiceGroup
           legend="Resep"
           columns={3}
@@ -153,7 +154,7 @@ export function BioleatherMethods({ mediaL, cultureDays, areaCm2 }: { mediaL: nu
 
       {/* 3. Pewarnaan */}
       <div className="flex flex-col gap-2">
-        <h4 className="text-xl">3 · Pewarnaan alami (opsional)</h4>
+        <h4 className="flex items-center gap-3 text-xl"><Picto name="drop" />3 · Pewarnaan alami (opsional)</h4>
         <ChoiceGroup
           legend="Pewarna"
           columns={4}
@@ -185,7 +186,7 @@ export function BioleatherMethods({ mediaL, cultureDays, areaCm2 }: { mediaL: nu
 
       {/* 4. Finishing */}
       <div className="flex flex-col gap-2">
-        <h4 className="text-xl">4 · Finishing tahan air</h4>
+        <h4 className="flex items-center gap-3 text-xl"><Picto name="brush" />4 · Finishing tahan air</h4>
         <ChoiceGroup legend="Bahan" columns={2} value={finishId} onChange={setFinishId} options={b.finishes.map((x) => ({ value: x.id, label: x.name_id, testId: `bl-fin-${x.id}` }))} />
         <div className="grid gap-3 sm:grid-cols-3">
           <Stat label="Luas lembar" value={`${fmt(areaM2, 2)} m²`} sub="dari ukuran baki di atas" />

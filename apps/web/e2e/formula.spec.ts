@@ -164,7 +164,7 @@ test.describe('Ceklis', () => {
 });
 
 test.describe('HP 360 px', () => {
-  for (const path of ['/formula?p=cuka', '/formula?p=shisha', '/produksi', '/ceklis']) {
+  for (const path of ['/formula?p=cuka', '/formula?p=bioleather', '/formula?p=shisha', '/produksi', '/ceklis']) {
     test(`@mobile ${path} tanpa geser horizontal`, async ({ page }) => {
       await page.goto(path);
       await expect(page.locator('main h1')).toBeVisible();

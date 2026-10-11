@@ -4,6 +4,7 @@ import { kilnPlan, point, sievePlan, type Param } from '@gemas/calc-engine';
 import { useMemo, useState } from 'react';
 import { ChoiceGroup, NumberField } from '@/components/ui/fields';
 import { Stat } from '@/components/ui/Stat';
+import { StepFlow } from '@/components/ui/StepFlow';
 import { WarningList } from '@/components/ui/Warnings';
 import { fmt } from '@/lib/format';
 import { PackCalculator, usePackOptions } from './KemasTab';
@@ -136,7 +137,17 @@ export function ArangTab() {
 
       <section className="flex flex-col gap-2" aria-label="Fase karbonisasi">
         <h3 className="text-xl">Fase bakar — patokan warna asap</h3>
-        <Table testId="arang-phases" head={['Fase', 'Ciri asap', 'Tindakan']} rows={c.raw.charcoal.phases.map((p) => [<strong key="n">{p.name_id}</strong>, p.smoke, p.action])} />
+        <StepFlow
+          testId="arang-phases"
+          steps={c.raw.charcoal.phases.map((p, i) => ({
+            icon: i === 0 ? 'fire' : i === c.raw.charcoal.phases.length - 1 ? 'cover' : 'smoke',
+            text: (
+              <>
+                <strong>{p.name_id.replace(/^\d+\.\s*/, '')}</strong> — asap: {p.smoke}. <em>{p.action}.</em>
+              </>
+            ),
+          }))}
+        />
         <ChainSources ids={c.raw.charcoal.phases_source_ids} confidence="C" />
       </section>
 

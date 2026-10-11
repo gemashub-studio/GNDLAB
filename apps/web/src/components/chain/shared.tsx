@@ -4,6 +4,7 @@ import type { Confidence } from '@gemas/calc-engine';
 import { bundledChainDataset, bundledProcessDataset, getForm, type ChainDatasetSI } from '@gemas/dataset';
 import type { ReactNode } from 'react';
 import { ConfidenceBadge } from '@/components/ui/badges';
+import { Picto, StepFlow, type FlowStep } from '@/components/ui/StepFlow';
 import { useFormula } from '@/components/formula/shared';
 import { useDataset } from '@/lib/useDataset';
 
@@ -36,15 +37,11 @@ export function ChainSources({ ids, confidence }: { ids: readonly string[]; conf
 }
 
 /** Daftar langkah SOP bernomor + alat & K3 — teks dari dataset/SOP bersumber. */
-export function SopList({ title, steps, tools, safety, testId }: { title: string; steps: ReactNode[]; tools?: ReactNode[]; safety?: ReactNode; testId?: string }) {
+export function SopList({ title, steps, tools, safety, testId }: { title: string; steps: FlowStep[]; tools?: ReactNode[]; safety?: ReactNode; testId?: string }) {
   return (
     <section className="flex flex-col gap-3 border-3 border-ink bg-surface p-3 shadow-hard-sm" data-testid={testId}>
       <p className="font-mono text-[11px] font-bold uppercase tracking-[0.1em]">SOP · {title}</p>
-      <ol className="flex list-decimal flex-col gap-1.5 pl-5 text-sm">
-        {steps.map((s, i) => (
-          <li key={i}>{s}</li>
-        ))}
-      </ol>
+      <StepFlow steps={steps} {...(testId && { testId: `${testId}-steps` })} />
       {tools && tools.length > 0 && (
         <div>
           <p className="font-mono text-[11px] font-bold uppercase">Alat & bahan</p>
@@ -58,9 +55,12 @@ export function SopList({ title, steps, tools, safety, testId }: { title: string
         </div>
       )}
       {safety && (
-        <div className="border-l-4 border-safety px-3 py-2 text-[13px]" role="note">
-          <p className="font-extrabold uppercase">K3</p>
-          {safety}
+        <div className="flex items-start gap-3 border-l-4 border-safety px-3 py-2 text-[13px]" role="note">
+          <Picto name="shield" size="sm" tone="safety" />
+          <div>
+            <p className="font-extrabold uppercase">K3</p>
+            {safety}
+          </div>
         </div>
       )}
     </section>

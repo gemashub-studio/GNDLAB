@@ -3,6 +3,10 @@
 Format: [Keep a Changelog](https://keepachangelog.com/id/1.1.0/) · Versi dataset mengikuti SemVer (ADR-002).
 Waktu dalam WIB (UTC+7).
 
+## [aplikasi ilustrasi langkah] — 2026-10-11
+### Ditambahkan
+- Setiap langkah SOP (8 tab Rantai Produksi), langkah metode cuka, fase bakar arang, panel bioleather, dan tombol tahap wizard Formula R&D kini berilustrasi: kartu infografis "stiker" bernomor dengan piktogram dua warna (35 gambar), panah alur, selotip, efek tegak-terangkat saat disentuh.
+
 ## [aplikasi R&D metode] — 2026-10-11
 ### Ditambahkan
 - Formula R&D → Cuka: panel "Bandingkan metode asetifikasi" (statis, semi-kontinu, generator, aerasi, kontrol tanpa gula) — cuka pertama, siklus, liter per siklus & per 1/3/12 bulan, status asam ≥4%, alat, plus-minus, langkah kerja.

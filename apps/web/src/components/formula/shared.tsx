@@ -4,6 +4,7 @@ import type { Confidence, Param, Range } from '@gemas/calc-engine';
 import { bundledFormulaDataset, type FormulaDatasetSI } from '@gemas/dataset';
 import { useState, type ReactNode } from 'react';
 import { ConfidenceBadge } from '@/components/ui/badges';
+import { guessPicto, Picto, type PictoName } from '@/components/ui/StepFlow';
 import { fmt } from '@/lib/format';
 
 /** Dataset formula ter-bundle (divalidasi Zod sekali, di-cache paket dataset). */
@@ -67,6 +68,8 @@ export interface WizardStep {
   title: string;
   tag: string;
   body: ReactNode;
+  /** Piktogram tahap; kosong = ditebak dari judul. */
+  icon?: PictoName;
 }
 
 /**
@@ -88,15 +91,21 @@ export function Wizard({ steps, label, testId }: { steps: WizardStep[]; label: s
             data-testid={`wstep-${s.id}`}
             className={`flex min-h-[52px] flex-col items-start justify-center border-3 border-ink px-2 text-left ${n === i ? 'bg-acid' : 'bg-surface'}`}
           >
-            <span className="font-mono text-[11px] font-bold">
-              {String(n + 1).padStart(2, '0')} · {s.tag}
+            <span className="flex w-full items-center justify-between gap-1">
+              <span className="font-mono text-[11px] font-bold">
+                {String(n + 1).padStart(2, '0')} · {s.tag}
+              </span>
+              <span className="hidden sm:inline-flex">
+                <Picto name={s.icon ?? guessPicto(s.title)} size="sm" tone={n === i ? 'paper' : 'acid'} />
+              </span>
             </span>
             <span className="text-xs font-extrabold uppercase leading-tight">{s.title}</span>
           </button>
         ))}
       </nav>
       <section className="card flex flex-col gap-4" aria-labelledby={`h-${step.id}`}>
-        <h3 id={`h-${step.id}`} className="text-2xl">
+        <h3 id={`h-${step.id}`} className="flex items-center gap-3 text-2xl">
+          <Picto name={step.icon ?? guessPicto(step.title)} />
           {String(i + 1).padStart(2, '0')} · {step.title}
         </h3>
         {step.body}

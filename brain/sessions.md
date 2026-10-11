@@ -97,3 +97,8 @@
 - Dataset formula v1.1.0 (F24–F29), engine formula-methods.ts (9 uji), panel metode di /formula?p=cuka & ?p=bioleather, 4 ceklis R&D baru + deep link /ceklis?id=, draf parameter M5 118.
 - Test: engine 159, dataset 72, E2E formula+rantai 28/28, run_all_checks + DB LULUS.
 - GAP: dosis tanin & secang, takaran oles finishing, hasil mother cuka, basis FeSO₄ 1%.
+
+### 2026-10-11 · Ilustrasi langkah infografis
+- Owner: tiap langkah pakai ilustrasi gambar sederhana seperti infografis; visual elegan, unik, fun.
+- StepFlow + Picto (35 piktogram SVG dua warna, token saja) dipasang di SopList (semua tab /rantai), langkah metode cuka, fase bakar arang, panel bioleather, wizard Formula. lib/picto.ts = tebakan ikon (diuji). DEC-043.
+- Test: web unit +2, E2E formula+rantai 29/29.
