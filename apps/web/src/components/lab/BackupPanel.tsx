@@ -50,7 +50,7 @@ export function BackupPanel({ onRestored }: { onRestored: () => Promise<void> })
     }
   };
 
-  const n = plan && plan.add.experiments.length + plan.add.entries.length + plan.add.protocols.length + plan.add.media.length;
+  const n = plan && plan.add.experiments.length + plan.add.entries.length + plan.add.protocols.length + plan.add.media.length + plan.add.drafts.length;
 
   return (
     <Section title="Cadangan & pulihkan" testId="lab-backup-panel">
@@ -68,7 +68,7 @@ export function BackupPanel({ onRestored }: { onRestored: () => Promise<void> })
       {plan && (
         <div className="flex flex-col gap-2 rounded-xl bg-paper p-3 text-sm" data-testid="lab-restore-plan">
           <span>
-            Akan ditambahkan: {plan.add.experiments.length} eksperimen, {plan.add.entries.length} catatan harian, {plan.add.protocols.length} versi riset produk, {plan.add.media.length} media.
+            Akan ditambahkan: {plan.add.experiments.length} eksperimen, {plan.add.entries.length} catatan harian, {plan.add.protocols.length} versi riset produk, {plan.add.drafts.length} draf, {plan.add.media.length} media.
           </span>
           {plan.skipped.length > 0 && <span className="text-muted">Dilewati (sudah ada, tidak ditimpa): {plan.skipped.map((s) => s.id).join(', ')}</span>}
           <button type="button" className="btn-primary self-start" disabled={busy || !n} onClick={() => void restore()} data-testid="lab-restore-apply">

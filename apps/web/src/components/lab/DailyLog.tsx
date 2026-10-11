@@ -14,6 +14,7 @@ import {
   type ProtocolVersion,
 } from '@/lib/labStore';
 import { downloadBlob, fmtBytes, makeThumb } from '@/lib/labMedia';
+import { MediaPicker } from './MediaPicker';
 import { Section, TextArea, TextInput } from './ui';
 
 const today = () => new Date().toISOString().slice(0, 10);
@@ -220,14 +221,7 @@ export function DailyLog({
 
           <div className="flex flex-col gap-2">
             <span className="label-mono">Foto / video</span>
-            <input
-              type="file"
-              accept="image/*,video/*"
-              multiple
-              className="field py-2.5 font-sans text-sm font-normal"
-              onChange={(ev) => setFiles((cur) => [...cur, ...Array.from(ev.target.files ?? []).map((file) => ({ file, caption: '' }))])}
-              data-testid="day-files"
-            />
+            <MediaPicker testId="day-files" onFiles={(fs) => setFiles((cur) => [...cur, ...fs.map((file) => ({ file, caption: '' }))])} />
             {files.map((f, i) => (
               <div key={`${f.file.name}-${i}`} className="flex flex-col gap-2 rounded-xl border-3 border-ink bg-surface p-2 sm:flex-row sm:items-center">
                 <span className="min-w-0 flex-1 truncate font-mono text-xs">{f.file.name} · {fmtBytes(f.file.size)}</span>

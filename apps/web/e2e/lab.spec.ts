@@ -64,17 +64,17 @@ test.describe('GEMA RnD Lab', () => {
     await page.getByTestId('proto-ing-amount-0').fill('2');
     await page.getByTestId('proto-ing-unit-0').fill('L');
     await page.getByTestId('proto-step-0').fill('Saring');
-    await page.getByTestId('proto-save').click();
+    await page.getByTestId('proto-finish').click();
     const key = pid.replace(/-v1$/, '');
     await expect(page.getByTestId(`proto-${key}`)).toContainText('1 versi');
     await page.getByTestId(`proto-newver-${key}`).click();
     await expect(page.getByTestId('proto-id')).toHaveText(`${key}-v2`);
     await expect(page.getByTestId('proto-ing-amount-0')).toHaveValue('2');
     await page.getByTestId('proto-ing-amount-0').fill('3');
-    await page.getByTestId('proto-save').click();
+    await page.getByTestId('proto-finish').click();
     await expect(page.getByTestId('proto-form')).toContainText('Tulis alasan');
     await page.getByTestId('proto-reason').fill('naikkan volume');
-    await page.getByTestId('proto-save').click();
+    await page.getByTestId('proto-finish').click();
     await expect(page.getByTestId(`proto-${key}`)).toContainText('2 versi');
 
     await page.getByTestId('lab-tab-eksperimen').click();
@@ -227,7 +227,7 @@ test.describe('GEMA RnD Lab', () => {
     await expect(page.getByTestId('proto-day-1')).toHaveText('Hari ke-2');
     await page.getByTestId('proto-step-1').fill('Oven 60 °C');
     await page.getByTestId('proto-step-files-0').setInputFiles({ name: 'belah.png', mimeType: 'image/png', buffer: png });
-    await page.getByTestId('proto-save').click();
+    await page.getByTestId('proto-finish').click();
     await expect(page.getByTestId(`proto-${key}`)).toContainText('belum ada laporan');
 
     await page.getByTestId(`proto-open-${key}`).click();
@@ -264,6 +264,55 @@ test.describe('GEMA RnD Lab', () => {
       await d.saveAs(out);
       expect(readFileSync(out).subarray(0, magic.length).toString()).toBe(magic);
     }
+  });
+  test('resep: Simpan = draf (buka lagi besok lewat On going proses) → Selesai = versi resmi', async ({ page }) => {
+    const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==', 'base64');
+    await page.goto('/lab?t=protokol');
+    await page.getByTestId('proto-filter').selectOption('AR');
+    await page.getByTestId('proto-new').click();
+    await page.getByTestId('proto-name').fill('Arang draf E2E');
+    await page.getByTestId('proto-ing-name-0').fill('Batok kelapa');
+    await page.getByTestId('proto-ing-files-0').setInputFiles({ name: 'batok.png', mimeType: 'image/png', buffer: png });
+    await page.getByTestId('proto-save').click();
+    await expect(page.getByRole('status').filter({ hasText: 'On going proses' })).toBeVisible();
+
+    await page.reload(); // "besok"
+    await page.getByTestId('proto-ongoing').click();
+    const list = page.getByTestId('ongoing-list');
+    await expect(list).toContainText('Arang draf E2E');
+    await expect(list).toContainText('DRAF');
+    await list.getByRole('button', { name: 'Lanjutkan' }).first().click();
+    await expect(page.getByTestId('proto-name')).toHaveValue('Arang draf E2E');
+    await expect(page.getByTestId('proto-ing-name-0')).toHaveValue('Batok kelapa');
+    await expect(page.getByTestId('proto-form')).toContainText('batok.png');
+    await page.getByTestId('proto-ing-amount-0').fill('10');
+    await page.getByTestId('proto-ing-unit-0').fill('kg');
+    await page.getByTestId('proto-finish').click();
+    await expect(page.getByTestId('proto-list')).toContainText('Arang draf E2E');
+    await page.getByTestId('proto-ongoing').click();
+    await expect(page.getByTestId('ongoing-list')).not.toContainText('DRAF');
+    await expect(page.getByTestId('ongoing-list')).toContainText('BERJALAN');
+  });
+  test('kamera: ambil foto & rekam video dari webcam (kamera palsu) ke bahan; tombol Foto/Video memakai kamera HP', async ({ page }) => {
+    await page.goto('/lab?t=protokol');
+    await page.getByTestId('proto-new').click();
+    await expect(page.getByTestId('proto-ing-files-0-photo')).toHaveAttribute('capture', 'environment');
+    await expect(page.getByTestId('proto-ing-files-0-video')).toHaveAttribute('accept', 'video/*');
+    await page.getByTestId('proto-ing-files-0-cam').click();
+    const dlg = page.getByTestId('proto-ing-files-0-camdlg');
+    await expect(dlg).toBeVisible();
+    await expect.poll(() => dlg.locator('video').evaluate((v: HTMLVideoElement) => v.videoWidth)).toBeGreaterThan(0);
+    await page.getByTestId('proto-ing-files-0-camdlg-snap').click();
+    await page.getByTestId('proto-ing-files-0-camdlg-rec').click();
+    await expect(dlg).toContainText('MEREKAM');
+    await page.waitForTimeout(1500);
+    await page.getByTestId('proto-ing-files-0-camdlg-rec').click();
+    await expect(page.getByTestId('proto-ing-files-0-camdlg-close')).toContainText('(2)');
+    await page.getByTestId('proto-ing-files-0-camdlg-close').click();
+    await expect(dlg).toHaveCount(0);
+    const form = page.getByTestId('proto-form');
+    await expect(form).toContainText(/foto-\d{8}-\d{6}\.jpg/);
+    await expect(form).toContainText(/video-\d{8}-\d{6}\.(webm|mp4)/);
   });
 });
 

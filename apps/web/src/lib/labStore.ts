@@ -152,6 +152,31 @@ export const toolList = (v: Pick<ProtocolVersion, 'tools'>): ProtocolTool[] => (
 /** Berkas yang akan dilampirkan saat menyimpan versi riset produk. */
 export type NewMedia = Omit<MediaItem, 'id' | 'entryId' | 'experimentId' | 'createdAt'>;
 
+/**
+ * DRAF resep riset produk (DEC-054): isian yang belum selesai — BOLEH diubah & disimpan ulang
+ * ("Simpan"), dibuka lagi kapan saja ("On going proses"). "Selesai" mengubahnya menjadi versi resmi
+ * yang tidak bisa diubah, lalu draf dihapus dalam transaksi yang sama.
+ */
+export interface ProtocolDraft {
+  /** Mis. D-lx3k9a. */
+  id: string;
+  /** Bila draf = versi baru dari resep yang ada. */
+  baseId?: string;
+  product: LabProductId;
+  name: string;
+  author: string;
+  assistants: string;
+  startDate: string;
+  reason: string;
+  ingredients: ProtocolIngredient[];
+  tools: ProtocolTool[];
+  steps: ProtocolStep[];
+  /** Foto/video yang sudah dipilih tapi belum jadi versi resmi (per baris). */
+  pending: { ingredients: NewMedia[][]; tools: NewMedia[][]; steps: NewMedia[][] };
+  createdAt: string;
+  updatedAt: string;
+}
+
 /** Versi protokol buatan pengguna — tidak pernah diubah setelah disimpan. */
 export interface ProtocolVersion {
   /** Mis. KE-P01-v2. */
@@ -295,11 +320,12 @@ export interface LabDb extends DBSchema {
   entries: { key: string; value: DailyEntry; indexes: { experimentId: string } };
   media: { key: string; value: MediaItem; indexes: { experimentId: string; entryId: string } };
   protocols: { key: string; value: ProtocolVersion; indexes: { product: string; key: string } };
+  drafts: { key: string; value: ProtocolDraft };
 }
 
 let dbp: Promise<IDBPDatabase<LabDb>> | undefined;
 export const labDb = () =>
-  (dbp ??= openDB<LabDb>('gemas-lab', 2, {
+  (dbp ??= openDB<LabDb>('gemas-lab', 3, {
     upgrade(d, oldVersion) {
       if (oldVersion < 1) d.createObjectStore('experiments', { keyPath: 'id' }).createIndex('createdAt', 'createdAt');
       if (oldVersion < 2) {
@@ -311,6 +337,7 @@ export const labDb = () =>
         p.createIndex('product', 'product');
         p.createIndex('key', 'key');
       }
+      if (oldVersion < 3) d.createObjectStore('drafts', { keyPath: 'id' });
     },
   }));
 
@@ -366,7 +393,7 @@ export async function listMedia(experimentId?: string): Promise<MediaItem[]> {
  */
 export async function addProtocolVersion(
   p: Omit<ProtocolVersion, 'createdAt'>,
-  media: { ingredients?: NewMedia[][]; steps?: NewMedia[][]; tools?: NewMedia[][] } = {},
+  media: { ingredients?: NewMedia[][]; steps?: NewMedia[][]; tools?: NewMedia[][]; /** Draf yang diselesaikan (dihapus dalam transaksi yang sama). */ draftId?: string } = {},
 ): Promise<ProtocolVersion> {
   const now = new Date().toISOString();
   const items: MediaItem[] = [];
@@ -387,11 +414,24 @@ export async function addProtocolVersion(
     createdAt: now,
   };
   const d = await labDb();
-  const tx = d.transaction(['protocols', 'media'], 'readwrite');
+  const tx = d.transaction(['protocols', 'media', 'drafts'], 'readwrite');
   await tx.objectStore('protocols').add(full);
   for (const m of items) await tx.objectStore('media').add(m);
+  if (media.draftId) await tx.objectStore('drafts').delete(media.draftId);
   await tx.done;
   return full;
+}
+
+/** Simpan/perbarui draf (boleh ditimpa — draf belum jadi catatan resmi). */
+export async function saveDraft(dr: Omit<ProtocolDraft, 'createdAt' | 'updatedAt'> & { createdAt?: string }): Promise<ProtocolDraft> {
+  const now = new Date().toISOString();
+  const full: ProtocolDraft = { ...dr, createdAt: dr.createdAt ?? now, updatedAt: now };
+  await (await labDb()).put('drafts', full);
+  return full;
+}
+
+export async function listDrafts(): Promise<ProtocolDraft[]> {
+  return (await (await labDb()).getAll('drafts')).sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
 }
 
 /** Hari ke-N dari tanggal mulai (Hari ke-1 = tanggal mulai); undefined bila tanggal tak valid/sebelum mulai. */

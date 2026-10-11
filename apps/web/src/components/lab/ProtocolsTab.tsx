@@ -4,6 +4,8 @@ import { useEffect, useMemo, useState } from 'react';
 import { downloadBlob, fmtBytes, makeThumb } from '@/lib/labMedia';
 import {
   addProtocolVersion,
+  listDrafts,
+  saveDraft,
   LAB_PRODUCTS,
   nextProtocolKey,
   nextProtocolVersion,
@@ -15,12 +17,14 @@ import {
   type LabProductId,
   type MediaItem,
   type NewMedia,
+  type ProtocolDraft,
   type ProtocolIngredient,
   type ProtocolStep,
   type ProtocolTool,
   type ProtocolVersion,
 } from '@/lib/labStore';
 import { DailyLog } from './DailyLog';
+import { MediaPicker } from './MediaPicker';
 import { ProductMark, Section, TextInput } from './ui';
 
 const blankIng = (): ProtocolIngredient => ({ name: '', amount: '', unit: '' });
@@ -34,8 +38,15 @@ const STATUS_TEXT = { 'belum-mulai': 'belum ada laporan', berjalan: 'berjalan', 
  */
 export function ProtocolsTab({ protocols, entries, media, refresh }: { protocols: ProtocolVersion[]; entries: DailyEntry[]; media: MediaItem[]; refresh: () => Promise<void> }) {
   const [product, setProduct] = useState<LabProductId | 'all'>('all');
-  const [editing, setEditing] = useState<{ base?: ProtocolVersion; product: LabProductId } | undefined>();
+  const [editing, setEditing] = useState<{ base?: ProtocolVersion; product: LabProductId; draft?: ProtocolDraft } | undefined>();
   const [openKey, setOpenKey] = useState<string>();
+  const [drafts, setDrafts] = useState<ProtocolDraft[]>([]);
+  const [ongoing, setOngoing] = useState(false);
+  const loadDrafts = () => listDrafts().then(setDrafts).catch(() => setDrafts([]));
+  useEffect(() => {
+    void loadDrafts();
+  }, []);
+  const running = [...new Set(protocols.map((p) => p.key))].filter((k) => researchStatus(entries.filter((e) => e.experimentId === k)) !== 'selesai');
   const keys = [...new Set(protocols.filter((p) => product === 'all' || p.product === product).map((p) => p.key))];
 
   if (openKey && !editing) {
@@ -58,18 +69,57 @@ export function ProtocolsTab({ protocols, entries, media, refresh }: { protocols
             </select>
           </label>
           <button type="button" className="btn-primary" onClick={() => setEditing({ product: product === 'all' ? 'KE' : product })} data-testid="proto-new">+ Resep baru</button>
+          <button type="button" className="btn-ghost" aria-expanded={ongoing} onClick={() => setOngoing((o) => !o)} data-testid="proto-ongoing">
+            On going proses ({drafts.length + running.length})
+          </button>
         </div>
       </div>
 
+      {ongoing && (
+        <Section title="On going proses" testId="ongoing-list">
+          <p className="text-xs text-muted">Draf = resep yang masih bisa diubah (belum ditekan Selesai). Riset berjalan = resep resmi yang belum punya laporan penutup.</p>
+          {drafts.length === 0 && running.length === 0 && <p className="text-sm text-muted">Tidak ada proses yang sedang berjalan.</p>}
+          <ul className="flex flex-col gap-2">
+            {drafts.map((d) => (
+              <li key={d.id} className="flex flex-wrap items-center gap-3 rounded-xl border-3 border-ink p-3">
+                <span className="rounded-full bg-safety px-2.5 py-0.5 font-mono text-[11px] font-semibold">DRAF</span>
+                <span className="flex flex-1 flex-col">
+                  <span className="font-semibold">{d.name || '(tanpa nama)'}</span>
+                  <span className="font-mono text-[11px] text-muted">{LAB_PRODUCTS.find((p) => p.id === d.product)?.name} · disimpan {d.updatedAt.slice(0, 16).replace('T', ' ')}</span>
+                </span>
+                <button type="button" className="btn-primary" onClick={() => { setOngoing(false); setEditing({ product: d.product, draft: d, ...(d.baseId && { base: protocols.find((p) => p.id === d.baseId) }) }); }} data-testid={`draft-open-${d.id}`}>Lanjutkan</button>
+              </li>
+            ))}
+            {running.map((k) => {
+              const latest = protocols.filter((p) => p.key === k).sort((a, b) => b.version - a.version)[0]!;
+              return (
+                <li key={k} className="flex flex-wrap items-center gap-3 rounded-xl border-3 border-ink p-3">
+                  <span className="rounded-full bg-acid px-2.5 py-0.5 font-mono text-[11px] font-semibold">BERJALAN</span>
+                  <span className="flex flex-1 flex-col">
+                    <span className="font-semibold">{latest.name}</span>
+                    <span className="font-mono text-[11px] text-muted">{k} · mulai {latest.startDate ?? '–'} · {entries.filter((e) => e.experimentId === k).length} laporan harian</span>
+                  </span>
+                  <button type="button" className="btn-ghost" onClick={() => { setOngoing(false); setOpenKey(k); }} data-testid={`ongoing-open-${k}`}>Buka riset</button>
+                </li>
+              );
+            })}
+          </ul>
+        </Section>
+      )}
+
       {editing && (
         <ProtocolForm
+          key={editing.draft?.id ?? 'new'}
           protocols={protocols}
           media={media}
           base={editing.base}
+          draft={editing.draft}
+          onDraftSaved={loadDrafts}
           initialProduct={editing.product}
           onCancel={() => setEditing(undefined)}
           onSaved={async (key) => {
             setEditing(undefined);
+            await loadDrafts();
             await refresh();
             setOpenKey((k) => (k ? key : k));
           }}
@@ -267,11 +317,10 @@ interface Pending {
 function FilePick({ list, onChange, testId }: { list: Pending[]; onChange: (l: Pending[]) => void; testId: string }) {
   return (
     <div className="flex flex-col gap-1.5">
-      <label className="flex cursor-pointer items-center gap-2 font-mono text-[11px] text-muted">
-        <span className="rounded-full border-3 border-ink bg-surface px-2.5 py-1 text-ink">+ Foto/video</span>
-        <input type="file" accept="image/*,video/*" multiple className="sr-only" onChange={(e) => onChange([...list, ...Array.from(e.target.files ?? []).map((file) => ({ file, caption: '' }))])} data-testid={testId} />
-        {list.length ? `${list.length} berkas dipilih` : ''}
-      </label>
+      <div className="flex flex-wrap items-center gap-2">
+        <MediaPicker compact testId={testId} onFiles={(fs) => onChange([...list, ...fs.map((file) => ({ file, caption: '' }))])} />
+        {list.length > 0 && <span className="font-mono text-[11px] text-muted">{list.length} berkas dipilih</span>}
+      </div>
       {list.map((p, i) => (
         <div key={`${p.file.name}-${i}`} className="flex flex-wrap items-center gap-2 text-xs">
           <span className="font-mono">{p.file.name} · {fmtBytes(p.file.size)}</span>
@@ -289,31 +338,59 @@ const toMedia = async (list: Pending[]): Promise<NewMedia[]> => {
   return out;
 };
 
-function ProtocolForm({ protocols, media, base, initialProduct, onCancel, onSaved }: {
+function ProtocolForm({ protocols, media, base, draft, onDraftSaved, initialProduct, onCancel, onSaved }: {
   protocols: ProtocolVersion[];
   media: MediaItem[];
   base?: ProtocolVersion;
+  draft?: ProtocolDraft;
+  onDraftSaved: () => Promise<void>;
   initialProduct: LabProductId;
   onCancel: () => void;
   onSaved: (key: string) => Promise<void>;
 }) {
-  const [product, setProduct] = useState<LabProductId>(base?.product ?? initialProduct);
-  const [name, setName] = useState(base?.name ?? '');
-  const [author, setAuthor] = useState(base?.author ?? '');
-  const [assistants, setAssistants] = useState((base?.assistants ?? []).join(', '));
-  const [startDate, setStartDate] = useState(base?.startDate ?? new Date().toISOString().slice(0, 10));
-  const [reason, setReason] = useState(base ? '' : 'versi awal');
-  const [ings, setIngs] = useState<ProtocolIngredient[]>(base ? base.ingredients.map((i) => ({ ...i })) : [blankIng()]);
-  const [steps, setSteps] = useState<ProtocolStep[]>(base ? base.steps.map((s) => ({ ...s })) : [blankStep()]);
-  const [tools, setTools] = useState<ProtocolTool[]>(base && toolList(base).length ? toolList(base).map((t) => ({ ...t })) : [{ name: '' }]);
-  const [toolFiles, setToolFiles] = useState<Pending[][]>(() => (base && toolList(base).length ? toolList(base).map(() => []) : [[]]));
-  const [ingFiles, setIngFiles] = useState<Pending[][]>(() => (base ? base.ingredients.map(() => []) : [[]]));
-  const [stepFiles, setStepFiles] = useState<Pending[][]>(() => (base ? base.steps.map(() => []) : [[]]));
+  const fromDraft = (rows: NewMedia[][]): Pending[][] => rows.map((r) => r.map((m) => ({ file: new File([m.blob], m.name, { type: m.type }), caption: m.caption })));
+  const [draftId] = useState(draft?.id ?? `D-${Date.now().toString(36)}`);
+  const [product, setProduct] = useState<LabProductId>(draft?.product ?? base?.product ?? initialProduct);
+  const [name, setName] = useState(draft?.name ?? base?.name ?? '');
+  const [author, setAuthor] = useState(draft?.author ?? base?.author ?? '');
+  const [assistants, setAssistants] = useState(draft?.assistants ?? (base?.assistants ?? []).join(', '));
+  const [startDate, setStartDate] = useState(draft?.startDate ?? base?.startDate ?? new Date().toISOString().slice(0, 10));
+  const [reason, setReason] = useState(draft?.reason ?? (base ? '' : 'versi awal'));
+  const [ings, setIngs] = useState<ProtocolIngredient[]>(draft?.ingredients ?? (base ? base.ingredients.map((i) => ({ ...i })) : [blankIng()]));
+  const [steps, setSteps] = useState<ProtocolStep[]>(draft?.steps ?? (base ? base.steps.map((s) => ({ ...s })) : [blankStep()]));
+  const [tools, setTools] = useState<ProtocolTool[]>(draft?.tools ?? (base && toolList(base).length ? toolList(base).map((t) => ({ ...t })) : [{ name: '' }]));
+  const [toolFiles, setToolFiles] = useState<Pending[][]>(() => (draft ? fromDraft(draft.pending.tools) : base && toolList(base).length ? toolList(base).map(() => []) : [[]]));
+  const [ingFiles, setIngFiles] = useState<Pending[][]>(() => (draft ? fromDraft(draft.pending.ingredients) : base ? base.ingredients.map(() => []) : [[]]));
+  const [stepFiles, setStepFiles] = useState<Pending[][]>(() => (draft ? fromDraft(draft.pending.steps) : base ? base.steps.map(() => []) : [[]]));
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState('');
   const key = base?.key ?? nextProtocolKey(product, protocols);
   const { id, version } = nextProtocolVersion(key, protocols);
 
+  /** "Simpan" = draf, bisa dibuka & diubah lagi besok (On going proses). */
+  const keepDraft = async () => {
+    setBusy(true);
+    try {
+      const pend = async (rows: Pending[][]) => {
+        const out: NewMedia[][] = [];
+        for (const r of rows) out.push(await toMedia(r));
+        return out;
+      };
+      await saveDraft({
+        id: draftId, ...(base && { baseId: base.id }), ...(draft && { createdAt: draft.createdAt }),
+        product, name, author, assistants, startDate, reason, ingredients: ings, tools, steps,
+        pending: { ingredients: await pend(ingFiles), tools: await pend(toolFiles), steps: await pend(stepFiles) },
+      });
+      await onDraftSaved();
+      setMsg(`Tersimpan ${new Date().toLocaleTimeString('id-ID')}. Buka lagi kapan saja lewat "On going proses"; tekan Selesai bila resep sudah final.`);
+    } catch {
+      setMsg('Gagal menyimpan draf (penyimpanan penuh?).');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  /** "Selesai" = jadi versi resmi (tidak bisa diubah); draf dihapus. */
   const save = async () => {
     if (!name.trim()) return setMsg('Beri nama resep/proses.');
     if (!/^\d{4}-\d{2}-\d{2}$/.test(startDate)) return setMsg('Isi tanggal mulai.');
@@ -337,7 +414,7 @@ function ProtocolForm({ protocols, media, base, initialProduct, onCancel, onSave
           steps: keepS.map(({ x }) => x),
           tools: keepT.map(({ x }) => ({ ...x, name: x.name.trim() })),
         },
-        { ingredients: iMedia, steps: sMedia, tools: tMedia },
+        { ingredients: iMedia, steps: sMedia, tools: tMedia, draftId },
       );
       await onSaved(key);
     } catch {
@@ -348,7 +425,11 @@ function ProtocolForm({ protocols, media, base, initialProduct, onCancel, onSave
   };
 
   return (
-    <Section title={base ? `Versi baru dari ${base.id}` : 'Resep/proses baru'} aside={<span className="tag-mono" data-testid="proto-id">{id}</span>} testId="proto-form">
+    <Section
+      title={`${draft ? 'Lanjutkan draf — ' : ''}${base ? `Versi baru dari ${base.id}` : 'Resep/proses baru'}`}
+      aside={<span className="tag-mono" title="Kode ini dipakai saat kamu menekan Selesai" data-testid="proto-id">{id}</span>}
+      testId="proto-form"
+    >
       <div className="grid gap-3 sm:grid-cols-2">
         <label className="flex flex-col gap-1.5">
           <span className="label-mono">Jalur produk</span>
@@ -420,8 +501,10 @@ function ProtocolForm({ protocols, media, base, initialProduct, onCancel, onSave
       </fieldset>
 
       <div className="flex flex-wrap items-center gap-3">
-        <button type="button" className="btn-primary" disabled={busy} onClick={() => void save()} data-testid="proto-save">{busy ? 'Menyimpan…' : `Simpan versi ${version}`}</button>
-        <button type="button" className="btn-ghost" onClick={onCancel}>Batal</button>
+        <button type="button" className="btn-ghost" disabled={busy} onClick={() => void keepDraft()} data-testid="proto-save">{busy ? 'Menyimpan…' : 'Simpan'}</button>
+        <button type="button" className="btn-primary" disabled={busy} onClick={() => void save()} data-testid="proto-finish">Selesai</button>
+        <button type="button" className="btn-ghost" onClick={onCancel}>Tutup</button>
+        <span className="w-full text-xs text-muted">Simpan = bisa dilanjutkan besok · Selesai = jadi versi {version} resmi, tidak bisa diubah lagi.</span>
         {msg && <span className="font-mono text-xs" role="status">{msg}</span>}
       </div>
     </Section>

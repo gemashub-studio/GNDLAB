@@ -20,7 +20,12 @@ export default defineConfig({
     trace: 'retain-on-failure',
   },
   projects: [
-    { name: 'desktop', use: { ...devices['Desktop Edge'], channel: 'msedge' }, grepInvert: /@mobile/ },
+    {
+      name: 'desktop',
+      // Kamera & mikrofon palsu bawaan Chromium untuk menguji Kamera/Ambil foto/Rekam video (DEC-055).
+      use: { ...devices['Desktop Edge'], channel: 'msedge', launchOptions: { args: ['--use-fake-ui-for-media-stream', '--use-fake-device-for-media-stream'] } },
+      grepInvert: /@mobile/,
+    },
     { name: 'hp-360', use: { channel: 'msedge', viewport: { width: 360, height: 780 }, isMobile: false, hasTouch: true }, grep: /@mobile/ },
   ],
   // Uji PWA memakai server produksi terpisah (PWA_URL) → jangan nyalakan dev server.
