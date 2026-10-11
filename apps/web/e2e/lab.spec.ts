@@ -176,6 +176,30 @@ test.describe('GEMA RnD Lab', () => {
     expect(pdf.subarray(0, 5).toString()).toBe('%PDF-');
     expect(pdf.length).toBeGreaterThan(5000);
   });
+  test('eksperimen lama tanpa desain → Tambah desain (riwayat versi tetap) → lembar data muncul', async ({ page }) => {
+    await page.goto('/lab?t=eksperimen');
+    await page.getByTestId('lab-new').click();
+    await page.getByTestId('lab-title').fill('E2E tanpa desain');
+    await page.getByTestId('wiz-next').click();
+    await page.getByTestId('wiz-free').check();
+    await page.getByTestId('wiz-next').click();
+    await page.getByTestId('lab-save').click();
+    await expect(page.getByTestId('lab-no-design')).toBeVisible();
+    await expect(page.getByTestId('lab-sheet')).toHaveCount(0);
+    await page.getByTestId('lab-add-design').click();
+    await page.getByTestId('wiz-f0-name').fill('Lama jemur');
+    await page.getByTestId('wiz-f0-unit').fill('hari');
+    await page.getByTestId('wiz-f0-levels').fill('3, 5');
+    await page.getByTestId('wiz-resp-name').fill('Berat akhir');
+    await page.getByTestId('wiz-resp-unit').fill('kg');
+    await page.getByTestId('wiz-resp-add').click();
+    await page.getByTestId('wiz-next').click();
+    await expect(page.getByTestId('wiz-run-count')).toContainText('2 × 3 = 6 unit');
+    await page.getByTestId('lab-save').click();
+    await expect(page.getByTestId('lab-design')).toContainText('Lama jemur: 3 / 5 hari');
+    await expect(page.getByTestId('lab-sheet')).toBeVisible();
+    await expect(page.getByTestId('lab-detail')).toContainText('1 versi lama tersimpan');
+  });
 });
 
 test.describe('GEMA RnD Lab — HP 360 px', () => {

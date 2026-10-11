@@ -27,7 +27,7 @@ export function paramText(p: Param, digits = 1, unit = ''): string {
 /** Baris sumber: kode sumber → judul (tooltip) + keyakinan. Traceability NFR-05. */
 export function Sources({ ids, confidence }: { ids: readonly string[]; confidence?: Confidence }) {
   const f = useFormula();
-  const list = ids.map((id) => f.sources.find((s) => s.id === id)).filter((s): s is NonNullable<typeof s> => !!s);
+  const list = [...new Set(ids)].map((id) => f.sources.find((s) => s.id === id)).filter((s): s is NonNullable<typeof s> => !!s);
   if (!list.length) return null;
   return (
     <p className="flex flex-wrap items-center gap-1.5 font-mono text-[11px] text-muted">

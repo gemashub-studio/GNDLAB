@@ -133,3 +133,4 @@
 - Selesai L1–L7 (brain/plan.md): wizard desain, lembar data, ringkasan deskriptif, PDF laporan lengkap; draf parameter → JSON aplikasi.
 - Test: web unit 67 (labDesign 6), E2E lab+formula 28/28, run_all_checks LULUS. PDF diperiksa visual (simbol ≥ − diganti teks karena font PDF).
 - Berikutnya: ubah/tambah desain pada eksperimen lama (greenhouse 1 milik owner belum punya desain); bandingkan 2 eksperimen; impor parameter terkonfirmasi owner ke rnd_param_def.
+- (lanjutan) Tambah desain untuk eksperimen lama (lewat riwayat versi) — greenhouse 1 milik owner kini bisa diberi desain. Kunci ganda sumber (F01) di komponen Sources diperbaiki. E2E formula+rantai+lab 41/41.

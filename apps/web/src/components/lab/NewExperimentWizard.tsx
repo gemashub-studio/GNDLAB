@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import { buildRuns, DRAFT_STATUS, MAX_FACTORS, parseLevels, responseSuggestions, type ExperimentDesign, type Factor, type ResponseVar } from '@/lib/labDesign';
-import { addExperiment, LAB_PRODUCTS, nextExperimentId, type Experiment, type LabProductId, type ProtocolVersion } from '@/lib/labStore';
+import { addExperiment, LAB_PRODUCTS, nextExperimentId, updateExperiment, type Experiment, type LabProductId, type ProtocolVersion } from '@/lib/labStore';
 import { Section, TextArea, TextInput } from './ui';
 
 const today = () => new Date().toISOString().slice(0, 10);
@@ -13,20 +13,20 @@ const blankFactor = (): FactorDraft => ({ name: '', unit: '', levels: '' });
  * Eksperimen baru dalam 3 langkah (DEC-051): Pertanyaan → Desain → Tinjau.
  * Desain opsional — "Catatan bebas" tetap bisa. Semua isi = keputusan pengguna; saran variabel = draf.
  */
-export function NewExperimentWizard({ items, protocols, initialProduct, onSaved }: { items: Experiment[]; protocols: ProtocolVersion[]; initialProduct: LabProductId; onSaved: (id: string) => Promise<void> }) {
-  const [step, setStep] = useState(0);
-  const [product, setProduct] = useState<LabProductId>(initialProduct);
-  const [q, setQ] = useState({ title: '', startedAt: today(), question: '', hypothesis: '', objective: '' });
+export function NewExperimentWizard({ items, protocols, initialProduct, onSaved, existing }: { items: Experiment[]; protocols: ProtocolVersion[]; initialProduct: LabProductId; onSaved: (id: string) => Promise<void>; /** Tambah desain ke eksperimen lama (disimpan lewat riwayat versi). */ existing?: Experiment }) {
+  const [step, setStep] = useState(existing ? 1 : 0);
+  const [product, setProduct] = useState<LabProductId>(existing?.product ?? initialProduct);
+  const [q, setQ] = useState({ title: existing?.title ?? '', startedAt: existing?.startedAt ?? today(), question: existing?.question ?? '', hypothesis: existing?.hypothesis ?? '', objective: existing?.objective ?? '' });
   const [useDesign, setUseDesign] = useState(true);
   const [factors, setFactors] = useState<FactorDraft[]>([blankFactor()]);
   const [control, setControl] = useState('');
   const [reps, setReps] = useState(3);
   const [responses, setResponses] = useState<ResponseVar[]>([]);
   const [custom, setCustom] = useState({ name: '', unit: '' });
-  const [protocolId, setProtocolId] = useState('');
+  const [protocolId, setProtocolId] = useState(existing?.methodVersion ?? '');
   const [msg, setMsg] = useState('');
 
-  const id = nextExperimentId(product, q.startedAt, items.map((e) => e.id));
+  const id = existing ? existing.id : nextExperimentId(product, q.startedAt, items.map((e) => e.id));
   const suggestions = useMemo(() => responseSuggestions(product), [product]);
   const parsed: Factor[] = factors.map((f) => ({ name: f.name.trim(), unit: f.unit.trim(), levels: parseLevels(f.levels) }));
   const allLevels = parsed.flatMap((f) => f.levels.map((l) => `${f.name} = ${l}${f.unit ? ` ${f.unit}` : ''}`));
@@ -62,6 +62,12 @@ export function NewExperimentWizard({ items, protocols, initialProduct, onSaved 
     const design: ExperimentDesign | undefined =
       useDesign && runs?.ok ? { factors: parsed.filter((f) => f.name && f.levels.length), control: control || 'tanpa kontrol', replicates: reps, responses, runs: runs.v } : undefined;
     try {
+      if (existing) {
+        if (!design) return setMsg('Lengkapi desain dulu.');
+        await updateExperiment(existing.id, { design, hypothesis: q.hypothesis.trim(), methodVersion: protocolId, ...(!existing.processConditions && { processConditions: design.factors.map((f) => `${f.name}: ${f.levels.join(' / ')}${f.unit ? ` ${f.unit}` : ''}`).join('; ') }) });
+        await onSaved(existing.id);
+        return;
+      }
       await addExperiment({
         id,
         product,
@@ -85,7 +91,7 @@ export function NewExperimentWizard({ items, protocols, initialProduct, onSaved 
 
   const steps = ['Pertanyaan', 'Desain', 'Tinjau'];
   return (
-    <Section title="Eksperimen baru" aside={<span className="tag-mono" data-testid="lab-id">{id ?? 'ID: isi tanggal'}</span>} testId="lab-form">
+    <Section title={existing ? `Tambah desain — ${existing.id}` : 'Eksperimen baru'} aside={<span className="tag-mono" data-testid="lab-id">{id ?? 'ID: isi tanggal'}</span>} testId="lab-form">
       <ol className="flex gap-2 font-mono text-[11px]" aria-label="Langkah">
         {steps.map((s, i) => (
           <li key={s} className={`rounded-full px-3 py-1 ${i === step ? 'bg-ink text-acid' : i < step ? 'bg-acid text-ink' : 'bg-paper text-muted'}`}>{i + 1}. {s}</li>
@@ -117,10 +123,11 @@ export function NewExperimentWizard({ items, protocols, initialProduct, onSaved 
 
       {step === 1 && (
         <div className="flex flex-col gap-4" data-testid="wiz-design">
-          <label className="flex items-center gap-2 text-sm">
+          {existing && <TextArea label="Dugaan (hipotesis)" value={q.hypothesis} onChange={(v) => setQ((x) => ({ ...x, hypothesis: v }))} testId="lab-hypothesis" />}
+          {!existing && <label className="flex items-center gap-2 text-sm">
             <input type="checkbox" checked={!useDesign} onChange={(e) => setUseDesign(!e.target.checked)} className="h-4 w-4" data-testid="wiz-free" />
             Lewati desain — catatan bebas saja
-          </label>
+          </label>}
           {useDesign && (
             <>
               <fieldset className="flex flex-col gap-2">
@@ -230,11 +237,11 @@ export function NewExperimentWizard({ items, protocols, initialProduct, onSaved 
       )}
 
       <div className="flex flex-wrap items-center gap-3">
-        {step > 0 && <button type="button" className="btn-ghost" onClick={() => setStep((s) => s - 1)}>← Kembali</button>}
+        {step > (existing ? 1 : 0) && <button type="button" className="btn-ghost" onClick={() => setStep((s) => s - 1)}>← Kembali</button>}
         {step < 2 ? (
           <button type="button" className="btn-primary" onClick={next} data-testid="wiz-next">Lanjut →</button>
         ) : (
-          <button type="button" className="btn-primary" onClick={() => void save()} data-testid="lab-save">Simpan eksperimen</button>
+          <button type="button" className="btn-primary" onClick={() => void save()} data-testid="lab-save">{existing ? 'Simpan desain' : 'Simpan eksperimen'}</button>
         )}
         {msg && <span className="font-mono text-xs" role="status" data-testid="lab-msg">{msg}</span>}
       </div>

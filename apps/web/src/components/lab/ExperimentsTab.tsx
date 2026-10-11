@@ -148,6 +148,7 @@ function ExperimentDetail({
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState<ExperimentEditable>(e);
   const [step, setStep] = useState('');
+  const [addDesign, setAddDesign] = useState(false);
   const [msg, setMsg] = useState('');
   const set = (k: keyof ExperimentEditable) => (v: string) => setDraft((d) => ({ ...d, [k]: v }));
 
@@ -200,7 +201,16 @@ function ExperimentDetail({
 
       {msg && <p className="font-mono text-xs" role="status" data-testid="lab-detail-msg">{msg}</p>}
 
-      {e.design && <DesignView d={e.design} />}
+      {e.design ? (
+        <DesignView d={e.design} />
+      ) : addDesign ? (
+        <NewExperimentWizard items={[]} protocols={protocols} initialProduct={e.product} existing={e} onSaved={async () => { setAddDesign(false); await refresh(); setMsg('Desain tersimpan. Versi sebelumnya tetap ada di riwayat.'); }} />
+      ) : (
+        <div className="card flex flex-wrap items-center justify-between gap-3" data-testid="lab-no-design">
+          <p className="text-sm">Eksperimen ini belum punya desain (faktor, ulangan, yang diukur). Tambahkan supaya bisa memakai lembar data & ringkasan otomatis.</p>
+          <button type="button" className="btn-primary" onClick={() => setAddDesign(true)} data-testid="lab-add-design">Tambah desain</button>
+        </div>
+      )}
       {e.design && <DataSheet e={e} entries={entries} onSaved={refresh} />}
       {e.design && <ResultsSummary e={e} entries={entries} />}
       <DailyLog e={e} entries={entries} media={media} protocols={protocols} onSaved={refresh} />
