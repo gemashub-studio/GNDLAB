@@ -141,3 +141,13 @@ Link owner untuk dicek: 1 TikTok vt, IG rifai_big, TikTok bonumcommune, 18 YouTu
 - [x] G6 Briket (campuran asal, perekat, air, bentuk, oven, packing)
 - [x] G7 Bioleather + selulosa tambahan; cuka
 - [x] G8 E2E, logs, run_all_checks, commit (UI cea5319)
+
+## M5 lanjutan — GEMA RnD Lab "peneliti" (owner 2026-10-11, otonom)
+Tujuan: isian semudah mungkin + PDF laporan lengkap awal–akhir.
+- [x] L1 Data: draf parameter (`07-rnd/parameter_kora_draft.csv`) → `apps/web/src/data/rndParamDraft.json` lewat skrip (DATA, bukan hardcode); saran variabel ukur berlabel "draf, belum dikonfirmasi".
+- [x] L2 Model: `Experiment.hypothesis` + `design` {factors[{name,unit,levels[]}], control, replicates, responses[{name,unit}], runs[{code,treatment,order}]} — perubahan tetap lewat applyUpdate (riwayat).
+- [x] L3 UI: wizard eksperimen baru 3 langkah (Pertanyaan → Desain → Tinjau), desain opsional.
+- [x] L4 Lembar data: grid unit × respon → simpan = DailyEntry baru (group = kode unit).
+- [x] L5 Analisis deskriptif per perlakuan (n, rata-rata, SD, min, maks; nilai terakhir per unit) + grafik.
+- [x] L6 PDF "laporan lengkap" awal–akhir (kompilasi diperluas).
+- [x] L7 Uji unit + E2E + logs (DEC-051) + run_all_checks + commit.

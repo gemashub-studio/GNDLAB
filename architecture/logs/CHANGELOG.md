@@ -3,6 +3,13 @@
 Format: [Keep a Changelog](https://keepachangelog.com/id/1.1.0/) · Versi dataset mengikuti SemVer (ADR-002).
 Waktu dalam WIB (UTC+7).
 
+## [aplikasi GEMA RnD mode peneliti] — 2026-10-11
+### Ditambahkan
+- Eksperimen baru lewat wizard 3 langkah: pertanyaan & dugaan, desain (faktor & level, pembanding, ulangan, yang diukur — saran dari draf parameter), tinjau daftar unit percobaan dengan urutan kerja acak.
+- Lembar data (tabel unit × variabel) — setiap simpan jadi catatan harian baru; nilai terakhir tampil sebagai petunjuk.
+- Ringkasan hasil per perlakuan (n, rata-rata, SD, min, maks) + grafik batang; tanpa uji beda nyata.
+- PDF "Laporan eksperimen — lengkap": identitas → pertanyaan/dugaan → desain & unit → ringkasan & grafik → protokol → grafik waktu → catatan harian → hasil & kesimpulan → langkah berikutnya → lampiran per catatan.
+
 ## Dataset formula v1.2.0 & rantai v1.1.0 + audit kalkulator — 2026-10-11
 ### Diubah
 - **Perlakuan sulfur kopra tanpa dosis otomatis** (DEC-048, ADR-013): blok `kopra.sulfur` kini berisi status, bukti, & batas residu (UE 50 mg/kg kelapa kering = produk akhir). Parameter dosis/jadwal belerang & `bisulfite_soak_pct` dihapus; dataset rantai menghapus `sulfur_exposure_h`, `sulfur_ventilate_h`, `sulfur_room_per_point_m3`, `sulfur_dose_ref`.

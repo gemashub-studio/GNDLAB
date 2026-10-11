@@ -4,7 +4,7 @@
  * nama berkas; video asli ada di file cadangan, tidak ditanam di PDF). Hasil gagal tidak disembunyikan.
  * Dimuat dinamis saat tombol ditekan.
  */
-import { Circle, Document, G, Image, Line, Page, Polyline, StyleSheet, Svg, Text, View, pdf } from '@react-pdf/renderer';
+import { Circle, Document, G, Image, Line, Page, Polyline, Rect, StyleSheet, Svg, Text, View, pdf } from '@react-pdf/renderer';
 import {
   chartable,
   LAB_PRODUCTS,
@@ -17,6 +17,7 @@ import {
   type ProtocolVersion,
   type Series,
 } from './labStore';
+import { summarize, type ResponseSummary } from './labDesign';
 
 const C = { ink: '#0E1A1F', paper: '#F3F6F7', grid: '#E2E8EA', mint: '#1FA88F', mintLight: '#63E6CF', amber: '#F5A524', muted: '#5B6B72' };
 const SERIES_COLORS = [C.mint, C.amber, C.ink, '#7C5CBF', '#D9534F', '#3B82F6'];
@@ -118,6 +119,39 @@ function Chart({ series }: { series: Series }) {
   );
 }
 
+/** Batang rata-rata ± SD per perlakuan — hanya bila ≥ 2 perlakuan punya data. */
+function SummaryBars({ sum }: { sum: ResponseSummary }) {
+  const rows = sum.rows.filter((r) => r.mean !== undefined);
+  if (rows.length < 2) return <Text style={[s.empty, { marginBottom: 6 }]}>Grafik muncul bila minimal 2 perlakuan punya data.</Text>;
+  const W = 500;
+  const H = 150;
+  const hi = Math.max(...rows.map((r) => r.mean! + (r.sd ?? 0)), 0);
+  const lo = Math.min(0, ...rows.map((r) => r.mean! - (r.sd ?? 0)));
+  const bw = (W - 40) / rows.length;
+  const y = (v: number) => 8 + (1 - (v - lo) / (hi - lo || 1)) * (H - 30);
+  const f = (v: number) => String(Number(v.toPrecision(4))).replace('.', ',');
+  return (
+    <View wrap={false} style={{ marginBottom: 8 }}>
+      <Svg width={W} height={H}>
+        <Line x1={40} x2={W} y1={y(0)} y2={y(0)} stroke={C.grid} strokeWidth={1} />
+        <Text x={2} y={y(hi) + 3} style={{ fontSize: 7, fontFamily: 'Courier' }}>{f(hi)}</Text>
+        <Text x={2} y={y(0) + 3} style={{ fontSize: 7, fontFamily: 'Courier' }}>{f(0)}</Text>
+        {rows.map((r, i) => {
+          const x0 = 40 + i * bw;
+          return (
+            <G key={r.treatment}>
+              <Rect x={x0 + bw * 0.2} y={Math.min(y(r.mean!), y(0))} width={bw * 0.6} height={Math.abs(y(0) - y(r.mean!))} fill={C.mintLight} stroke={C.ink} strokeWidth={0.8} />
+              {r.sd !== undefined && <Line x1={x0 + bw / 2} x2={x0 + bw / 2} y1={y(r.mean! - r.sd)} y2={y(r.mean! + r.sd)} stroke={C.ink} strokeWidth={1.2} />}
+              <Text x={x0 + bw / 2 - 6} y={H - 8} style={{ fontSize: 8, fontFamily: 'Courier' }}>{r.treatment}</Text>
+            </G>
+          );
+        })}
+      </Svg>
+      <Text style={{ fontSize: 7.5, color: C.muted }}>Batang = rata-rata nilai terakhir tiap unit; garis = +/- SD (n-1). Deskriptif, tanpa uji beda nyata.</Text>
+    </View>
+  );
+}
+
 function SeriesSection({ entries }: { entries: DailyEntry[] }) {
   const series = measurementSeries(entries);
   if (!series.length) return <Text style={s.empty}>Belum ada hasil ukur tercatat — tidak ada grafik.</Text>;
@@ -215,14 +249,46 @@ function CompileDoc({ e, entries, protocols, media, at }: { e: Experiment; entri
   return (
     <Document title={`${e.id} — kompilasi`} author="GEMA RnD">
       <Page size="A4" style={s.page}>
-        <Header title="Laporan kompilasi eksperimen" e={e} sub={`${entries.length} catatan harian`} />
+        <Header title="Laporan eksperimen — lengkap" e={e} sub={`${entries.length} catatan harian`} />
         <Text style={s.h2} minPresenceAhead={60}>{e.title}</Text>
         <Block label="Pertanyaan" value={e.question} />
         <Block label="Tujuan" value={e.objective} />
-        <Block label="Versi metode" value={e.methodVersion} />
+        <Block label="Dugaan (hipotesis)" value={e.hypothesis ?? ''} />
+        <Block label="Versi metode / protokol" value={e.methodVersion} />
         <Block label="Kondisi proses (ringkas)" value={e.processConditions} />
-        <Block label="Hasil (ringkasan pengguna)" value={e.resultSummary} />
-        <Block label="Kesimpulan sementara (pengguna)" value={e.conclusion} />
+
+        {e.design && (
+          <>
+            <Text style={s.h2} minPresenceAhead={60}>Desain eksperimen</Text>
+            <Table
+              head={['Faktor', 'Level', 'Satuan']}
+              widths={[35, 50, 15]}
+              rows={e.design.factors.map((f) => [f.name, f.levels.join(' / '), f.unit])}
+            />
+            <Text style={{ marginBottom: 4 }}>Pembanding: {e.design.control} · Ulangan: {e.design.replicates} per perlakuan · {e.design.runs.length} unit percobaan</Text>
+            <Text style={{ marginBottom: 6 }}>Diukur: {e.design.responses.map((r) => `${r.name}${r.unit ? ` (${r.unit})` : ''}`).join(', ')}</Text>
+            <Table
+              head={['Urutan', 'Kode unit', 'Perlakuan']}
+              widths={[14, 18, 68]}
+              rows={[...e.design.runs].sort((a, b) => a.order - b.order).map((r) => [String(r.order), r.code, r.label])}
+            />
+            <Text style={s.h2} minPresenceAhead={60}>Ringkasan hasil per perlakuan</Text>
+            {summarize(e.design, entries).map((sum) => (
+              <View key={`${sum.response.name}|${sum.response.unit}`} style={{ marginBottom: 6 }} wrap={false}>
+                <Text style={{ fontFamily: 'Helvetica-Bold', marginBottom: 3 }}>{sum.response.name}{sum.response.unit ? ` (${sum.response.unit})` : ''}</Text>
+                <Table
+                  head={['Perlakuan', 'n', 'Rata-rata', 'SD', 'Min', 'Maks', 'Tanpa data']}
+                  widths={[34, 8, 13, 11, 11, 11, 12]}
+                  rows={sum.rows.map((r) => {
+                    const f = (v?: number) => (v === undefined ? '–' : String(Number(v.toPrecision(4))).replace('.', ','));
+                    return [`${r.treatment} ${r.label}`, String(r.n), f(r.mean), f(r.sd), f(r.min), f(r.max), String(r.missing)];
+                  })}
+                />
+                <SummaryBars sum={sum} />
+              </View>
+            ))}
+          </>
+        )}
 
         <Text style={s.h2} minPresenceAhead={60}>Protokol yang dipakai</Text>
         {usedProtocols.length ? (
@@ -249,6 +315,16 @@ function CompileDoc({ e, entries, protocols, media, at }: { e: Experiment; entri
           />
         ) : (
           <Text style={s.empty}>Belum ada catatan harian.</Text>
+        )}
+
+        <Text style={s.h2} minPresenceAhead={60}>Hasil & kesimpulan</Text>
+        <Block label="Hasil (ringkasan pengguna)" value={e.resultSummary} />
+        <Block label="Kesimpulan sementara (pengguna)" value={e.conclusion} />
+        <Text style={s.label}>Langkah berikutnya</Text>
+        {e.nextSteps.length ? (
+          e.nextSteps.map((st) => <Text key={st.id}>{st.done ? '[selesai] ' : '[ ] '}{st.action}</Text>)
+        ) : (
+          <Text style={s.empty}>{NOT_RECORDED}</Text>
         )}
         <Footer at={at} />
       </Page>

@@ -2,11 +2,9 @@
 
 import { useMemo, useState } from 'react';
 import {
-  addExperiment,
   filterExperiments,
   LAB_PRODUCTS,
   LAB_STATUS,
-  nextExperimentId,
   updateExperiment,
   type DailyEntry,
   type Experiment,
@@ -18,10 +16,10 @@ import {
 } from '@/lib/labStore';
 import { downloadBlob } from '@/lib/labMedia';
 import { DailyLog } from './DailyLog';
+import { DataSheet, DesignView, ResultsSummary } from './DesignPanels';
+import { NewExperimentWizard } from './NewExperimentWizard';
 import { Field, ProductMark, productName, Section, StatusPill, TextArea, TextInput } from './ui';
 
-const today = () => new Date().toISOString().slice(0, 10);
-const blank = () => ({ title: '', startedAt: today(), question: '', objective: '', methodVersion: '', processConditions: '', status: 'rencana' as LabStatus });
 
 export function ExperimentsTab({
   items,
@@ -94,8 +92,9 @@ export function ExperimentsTab({
       </div>
 
       {creating && (
-        <NewExperimentForm
+        <NewExperimentWizard
           items={items}
+          protocols={protocols}
           initialProduct={product === 'all' ? 'KE' : product}
           onSaved={async (id) => {
             await refresh();
@@ -128,73 +127,6 @@ export function ExperimentsTab({
         <p className="text-sm text-muted">{items.length ? 'Tidak ada eksperimen yang cocok dengan pencarian/saringan.' : 'Belum ada eksperimen. Tekan "+ Eksperimen baru".'}</p>
       )}
     </div>
-  );
-}
-
-function NewExperimentForm({ items, initialProduct, onSaved }: { items: Experiment[]; initialProduct: LabProductId; onSaved: (id: string) => Promise<void> }) {
-  const [product, setProduct] = useState<LabProductId>(initialProduct);
-  const [form, setForm] = useState(blank);
-  const [msg, setMsg] = useState('');
-  const id = nextExperimentId(product, form.startedAt, items.map((e) => e.id));
-  const set = (k: keyof ReturnType<typeof blank>) => (v: string) => setForm((f) => ({ ...f, [k]: v }));
-
-  const save = async () => {
-    if (!id || !form.title.trim()) return setMsg('Isi judul dan tanggal mulai dulu.');
-    try {
-      await addExperiment({
-        id,
-        product,
-        title: form.title.trim(),
-        startedAt: form.startedAt,
-        question: form.question.trim(),
-        objective: form.objective.trim(),
-        methodVersion: form.methodVersion.trim(),
-        processConditions: form.processConditions.trim(),
-        resultSummary: '',
-        conclusion: '',
-        status: form.status,
-      });
-      setForm(blank());
-      await onSaved(id);
-    } catch {
-      setMsg('Gagal menyimpan (ID sudah dipakai?). Coba lagi.');
-    }
-  };
-
-  return (
-    <Section title="Eksperimen baru" aside={<span className="tag-mono" data-testid="lab-id">{id ?? 'ID: isi tanggal'}</span>} testId="lab-form">
-      <div className="grid gap-3 sm:grid-cols-2">
-        <label className="flex flex-col gap-1.5">
-          <span className="label-mono">Jalur produk</span>
-          <select className="field" value={product} onChange={(e) => setProduct(e.target.value as LabProductId)} data-testid="lab-product">
-            {LAB_PRODUCTS.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-          </select>
-        </label>
-        <label className="flex flex-col gap-1.5">
-          <span className="label-mono">Tanggal mulai</span>
-          <input type="date" className="field" value={form.startedAt} onChange={(e) => set('startedAt')(e.target.value)} data-testid="lab-date" />
-        </label>
-        <div className="sm:col-span-2">
-          <TextInput label="Judul percobaan" value={form.title} onChange={set('title')} placeholder="mis. Uji suhu oven 60 vs 80 °C" testId="lab-title" />
-        </div>
-        <TextArea label="Pertanyaan — apa yang mau diketahui?" value={form.question} onChange={set('question')} testId="lab-question" />
-        <TextArea label="Tujuan — hasil apa yang dicari?" value={form.objective} onChange={set('objective')} testId="lab-objective" />
-        <TextInput label="Versi metode / SOP" value={form.methodVersion} onChange={set('methodVersion')} placeholder="mis. SOP-KE v1" testId="lab-method" />
-        <label className="flex flex-col gap-1.5">
-          <span className="label-mono">Status</span>
-          <select className="field" value={form.status} onChange={(e) => set('status')(e.target.value)} data-testid="lab-status">
-            {LAB_STATUS.map((s) => <option key={s.id} value={s.id}>{s.label}</option>)}
-          </select>
-        </label>
-        <div className="sm:col-span-2">
-          <TextArea label="Kondisi proses yang diukur/dicatat" value={form.processConditions} onChange={set('processConditions')} placeholder="Hanya yang benar-benar diukur: suhu, lama, kadar air…" testId="lab-conditions" />
-        </div>
-      </div>
-      <div className="flex flex-wrap items-center gap-3">
-        <button type="button" className="btn-primary" onClick={() => void save()} data-testid="lab-save">Simpan eksperimen</button>
-        {msg && <span className="font-mono text-xs" role="status" data-testid="lab-msg">{msg}</span>}
-      </div>
-    </Section>
   );
 }
 
@@ -260,7 +192,7 @@ function ExperimentDetail({
             }}
             data-testid="lab-compile-pdf"
           >
-            PDF kompilasi
+            Laporan lengkap (PDF)
           </button>
         </div>
         {e.history?.length ? <span className="font-mono text-[11px] text-muted-ink">{e.history.length} versi lama tersimpan · terakhir diubah {e.updatedAt?.slice(0, 16).replace('T', ' ')}</span> : null}
@@ -268,6 +200,9 @@ function ExperimentDetail({
 
       {msg && <p className="font-mono text-xs" role="status" data-testid="lab-detail-msg">{msg}</p>}
 
+      {e.design && <DesignView d={e.design} />}
+      {e.design && <DataSheet e={e} entries={entries} onSaved={refresh} />}
+      {e.design && <ResultsSummary e={e} entries={entries} />}
       <DailyLog e={e} entries={entries} media={media} protocols={protocols} onSaved={refresh} />
 
       {editing ? (
@@ -276,6 +211,7 @@ function ExperimentDetail({
             <div className="sm:col-span-2"><TextInput label="Judul" value={draft.title} onChange={set('title')} /></div>
             <TextArea label="Pertanyaan" value={draft.question} onChange={set('question')} />
             <TextArea label="Tujuan" value={draft.objective} onChange={set('objective')} />
+            <div className="sm:col-span-2"><TextArea label="Dugaan (hipotesis)" value={draft.hypothesis ?? ''} onChange={set('hypothesis')} /></div>
             <TextInput label="Versi metode / SOP" value={draft.methodVersion} onChange={set('methodVersion')} />
             <label className="flex flex-col gap-1.5">
               <span className="label-mono">Status</span>
@@ -306,6 +242,7 @@ function ExperimentDetail({
         <Section title="Catatan eksperimen" aside={<button type="button" className="btn-ghost" onClick={() => { setDraft(e); setEditing(true); }} data-testid="lab-edit-open">Lengkapi / ubah</button>}>
           <dl className="grid gap-4 sm:grid-cols-2">
             <Field k="Pertanyaan" v={e.question} />
+            <Field k="Dugaan (hipotesis)" v={e.hypothesis ?? ''} />
             <Field k="Tujuan" v={e.objective} />
             <Field k="Versi metode" v={e.methodVersion} />
             <Field k="Kondisi proses" v={e.processConditions} />

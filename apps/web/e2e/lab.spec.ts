@@ -12,6 +12,9 @@ test.describe('GEMA RnD Lab', () => {
     await expect(page.getByTestId('lab-id')).toHaveText(/^BR-2610-\d{3}$/);
     const id = (await page.getByTestId('lab-id').textContent())!;
     await page.getByTestId('lab-title').fill('E2E uji perekat');
+    await page.getByTestId('wiz-next').click();
+    await page.getByTestId('wiz-free').check();
+    await page.getByTestId('wiz-next').click();
     await page.getByTestId('lab-save').click();
 
     await expect(page.getByTestId('lab-detail-id')).toHaveText(id);
@@ -78,6 +81,9 @@ test.describe('GEMA RnD Lab', () => {
     await page.getByTestId('lab-new').click();
     await page.getByTestId('lab-product').selectOption('CK');
     await page.getByTestId('lab-title').fill('E2E cuka harian');
+    await page.getByTestId('wiz-next').click();
+    await page.getByTestId('wiz-free').check();
+    await page.getByTestId('wiz-next').click();
     await page.getByTestId('lab-save').click();
     const id = (await page.getByTestId('lab-detail-id').textContent())!;
 
@@ -124,6 +130,51 @@ test.describe('GEMA RnD Lab', () => {
     await page.getByTestId('lab-restore-file').setInputFiles(backupPath);
     await expect(page.getByTestId('lab-restore-plan')).toContainText('Akan ditambahkan: 0 eksperimen, 0 catatan harian');
     await expect(page.getByTestId('lab-restore-apply')).toBeDisabled();
+  });
+  test('peneliti: wizard desain (faktor × ulangan) → lembar data → ringkasan per perlakuan → laporan PDF lengkap', async ({ page }) => {
+    await page.goto('/lab?t=eksperimen');
+    await page.getByTestId('lab-new').click();
+    await page.getByTestId('lab-product').selectOption('KE');
+    await page.getByTestId('lab-title').fill('E2E suhu oven');
+    await page.getByTestId('lab-hypothesis').fill('70 °C lebih cepat kering');
+    await page.getByTestId('wiz-next').click();
+    await page.getByTestId('wiz-next').click();
+    await expect(page.getByTestId('lab-msg')).toContainText('faktor');
+    await page.getByTestId('wiz-f0-name').fill('Suhu oven');
+    await page.getByTestId('wiz-f0-unit').fill('°C');
+    await page.getByTestId('wiz-f0-levels').fill('60, 70');
+    await page.getByTestId('wiz-reps').fill('2');
+    await page.getByTestId('wiz-control').selectOption({ index: 1 });
+    await page.getByTestId('wiz-next').click();
+    await expect(page.getByTestId('lab-msg')).toContainText('diukur');
+    await page.getByTestId('wiz-sug-ka_akhir_pct').click();
+    await page.getByTestId('wiz-resp-name').fill('Warna');
+    await page.getByTestId('wiz-resp-unit').fill('skor');
+    await page.getByTestId('wiz-resp-add').click();
+    await expect(page.getByTestId('wiz-responses')).toContainText('Kadar air akhir');
+    await page.getByTestId('wiz-next').click();
+    await expect(page.getByTestId('wiz-run-count')).toContainText('2 × 2 = 4 unit');
+    await expect(page.getByTestId('wiz-runs')).toContainText('P2-U2');
+    await page.getByTestId('lab-save').click();
+
+    const id = (await page.getByTestId('lab-detail-id').textContent())!;
+    await expect(page.getByTestId('lab-design')).toContainText('Suhu oven: 60 / 70 °C');
+    const vals: Record<string, string> = { 'P1-U1': '6,0', 'P1-U2': '7,0', 'P2-U1': '5,0', 'P2-U2': '5,5' };
+    for (const [code, v] of Object.entries(vals)) await page.getByTestId(`cell-${code}-0`).fill(v);
+    await page.getByTestId('sheet-save').click();
+    await expect(page.getByTestId('sheet-msg')).toContainText(`${id}-H01`);
+    const sum = page.getByTestId('sum-Kadar air akhir');
+    await expect(sum).toContainText('6,50');
+    await expect(sum).toContainText('5,25');
+    await expect(page.getByTestId(`cell-P1-U1-0`)).toHaveAttribute('placeholder', '6,0');
+
+    const dl = page.waitForEvent('download');
+    await page.getByTestId('lab-compile-pdf').click();
+    const path = await (await dl).path();
+    const { readFileSync } = await import('node:fs');
+    const pdf = readFileSync(path!);
+    expect(pdf.subarray(0, 5).toString()).toBe('%PDF-');
+    expect(pdf.length).toBeGreaterThan(5000);
   });
 });
 

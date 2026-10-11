@@ -127,3 +127,9 @@
 - Hasil: ADR-013, DEC-048/049/050, ISS-043/044, FND-034/035. Dataset formula v1.2.0, rantai v1.1.0. Engine: sulfurDose dihapus, dryingLoadPlan baru. UI: SulfurPanel (log manual `gemas-perlakuan`), Assumptions + ActualLoad, label jenis angka, SaveProtocol → Lab. Library 29 sumber berkategori; `sources.md` dibangkitkan `scripts/gen_gema_sources.py`.
 - Test: engine 160, dataset 74, web unit 65, E2E penuh 67 lulus + 1 skip. Ditemukan & diperbaiki regresi dari commit tema 7bf9a82: uji simulator gudang masih mencari warna lama #C6F135.
 - Menunggu owner: basis gliserol (v/v atau b/v); pasar tujuan kopra edibel; baca naskah SNI via Akses SNI; lampiran BPOM 11/2019 untuk batas sulfit.
+
+### 2026-10-11 · GEMA RnD Lab mode peneliti (DEC-051)
+- Owner: fokus R&D Lab, isian semudah mungkin, PDF awal–akhir, otonom. Limit dicek: 5 jam 5%, mingguan 21%.
+- Selesai L1–L7 (brain/plan.md): wizard desain, lembar data, ringkasan deskriptif, PDF laporan lengkap; draf parameter → JSON aplikasi.
+- Test: web unit 67 (labDesign 6), E2E lab+formula 28/28, run_all_checks LULUS. PDF diperiksa visual (simbol ≥ − diganti teks karena font PDF).
+- Berikutnya: ubah/tambah desain pada eksperimen lama (greenhouse 1 milik owner belum punya desain); bandingkan 2 eksperimen; impor parameter terkonfirmasi owner ke rnd_param_def.

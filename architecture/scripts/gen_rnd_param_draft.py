@@ -203,14 +203,21 @@ for r in rows:
     w.writerow([fmt(x) for x in r])
 content = buf.getvalue()
 
+# Salinan untuk aplikasi (saran variabel di GEMA RnD Lab) — DATA, bukan hardcode; status draf.
+JSON_OUT = ROOT.parent / "apps" / "web" / "src" / "data" / "rndParamDraft.json"
+json_rows = [dict(zip(HEADER, [fmt(x) for x in r])) for r in rows]
+json_content = json.dumps({"status": "draf — belum dikonfirmasi owner", "source": "architecture/07-rnd/parameter_kora_draft.csv", "params": json_rows}, ensure_ascii=False, indent=1) + "\n"
+
 if "--check" in sys.argv:
     current = OUT.read_text(encoding="utf-8") if OUT.exists() else ""
-    if current != content:
-        print("parameter_kora_draft.csv tidak sinkron dengan dataset formula — jalankan gen_rnd_param_draft.py")
+    current_json = JSON_OUT.read_text(encoding="utf-8") if JSON_OUT.exists() else ""
+    if current != content or current_json != json_content:
+        print("parameter_kora_draft.csv / rndParamDraft.json tidak sinkron dengan dataset formula — jalankan gen_rnd_param_draft.py")
         sys.exit(1)
-    print(f"parameter_kora_draft.csv sinkron ({len(rows)} parameter)")
+    print(f"parameter_kora_draft.csv & rndParamDraft.json sinkron ({len(rows)} parameter)")
 else:
     OUT.write_text(content, encoding="utf-8", newline="")
+    JSON_OUT.write_text(json_content, encoding="utf-8", newline="")
     by = {}
     for r in rows:
         by[r[0]] = by.get(r[0], 0) + 1

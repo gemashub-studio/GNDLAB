@@ -10,6 +10,7 @@
  */
 import { openDB, type DBSchema, type IDBPDatabase } from 'idb';
 import { parseNum } from './format';
+import type { ExperimentDesign } from './labDesign';
 
 export const LAB_PRODUCTS = [
   { id: 'KE', name: 'Kopra Edibel' },
@@ -45,6 +46,10 @@ export interface ExperimentEditable {
   conclusion: string;
   status: LabStatus;
   nextSteps: NextStep[];
+  /** Dugaan yang diuji (opsional). */
+  hypothesis?: string;
+  /** Desain: faktor, level, ulangan, variabel ukur, unit percobaan (DEC-051). */
+  design?: ExperimentDesign;
 }
 
 export interface Experiment extends ExperimentEditable {
@@ -226,6 +231,8 @@ const editable = (e: Experiment): ExperimentEditable => ({
   conclusion: e.conclusion,
   status: e.status,
   nextSteps: (e.nextSteps ?? []).map((s) => ({ ...s })),
+  ...(e.hypothesis !== undefined && { hypothesis: e.hypothesis }),
+  ...(e.design && { design: structuredClone(e.design) }),
 });
 
 /** Terapkan perubahan; versi lama disalin ke `history` (tidak ada yang dibuang). */
