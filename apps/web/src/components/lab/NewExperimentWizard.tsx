@@ -214,7 +214,7 @@ export function NewExperimentWizard({ items, protocols, initialProduct, onSaved,
             )}
           </dl>
           <label className="flex flex-col gap-1.5">
-            <span className="label-mono">Protokol/resep yang dipakai (opsional)</span>
+            <span className="label-mono">Riset produk (resep) yang dipakai (opsional)</span>
             <select className="field" value={protocolId} onChange={(e) => setProtocolId(e.target.value)}>
               <option value="">— belum ada —</option>
               {mine.map((p) => <option key={p.id} value={p.id}>{p.id} · {p.name}</option>)}

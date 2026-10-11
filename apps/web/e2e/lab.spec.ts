@@ -200,6 +200,59 @@ test.describe('GEMA RnD Lab', () => {
     await expect(page.getByTestId('lab-sheet')).toBeVisible();
     await expect(page.getByTestId('lab-detail')).toContainText('1 versi lama tersimpan');
   });
+  test('riset produk: foto bahan & langkah + alat → laporan harian sampai SELESAI → laporan PDF, Word, PowerPoint', async ({ page }) => {
+    const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==', 'base64');
+    await page.goto('/lab?t=protokol');
+    await expect(page.getByTestId('lab-tab-protokol')).toHaveText('Riset Produk');
+    await page.getByTestId('proto-filter').selectOption('KE');
+    await page.getByTestId('proto-new').click();
+    const pid = (await page.getByTestId('proto-id').textContent())!;
+    const key = pid.replace(/-v1$/, '');
+    await page.getByTestId('proto-name').fill('Kopra oven E2E');
+    await page.getByTestId('proto-ing-name-0').fill('Daging kelapa');
+    await page.getByTestId('proto-ing-amount-0').fill('2');
+    await page.getByTestId('proto-ing-unit-0').fill('kg');
+    await page.getByTestId('proto-ing-files-0').setInputFiles({ name: 'daging.png', mimeType: 'image/png', buffer: png });
+    await page.getByTestId('proto-tool-name-0').fill('Oven listrik');
+    await page.getByTestId('proto-tool-amount-0').fill('1');
+    await page.getByTestId('proto-tool-unit-0').fill('unit');
+    await page.getByTestId('proto-tool-files-0').setInputFiles({ name: 'oven.png', mimeType: 'image/png', buffer: png });
+    await page.getByTestId('proto-tool-add').click();
+    await page.getByTestId('proto-tool-name-1').fill('Timbangan digital');
+    await page.getByTestId('proto-step-0').fill('Belah dan tiriskan');
+    await page.getByTestId('proto-step-files-0').setInputFiles({ name: 'belah.png', mimeType: 'image/png', buffer: png });
+    await page.getByTestId('proto-save').click();
+    await expect(page.getByTestId(`proto-${key}`)).toContainText('belum ada laporan');
+
+    await page.getByTestId(`proto-open-${key}`).click();
+    const latest = page.getByTestId('rp-latest');
+    await expect(latest).toContainText('Oven listrik');
+    await expect(latest.locator('img')).toHaveCount(3);
+    await expect(latest).toContainText('Timbangan digital');
+    await page.getByTestId('day-new').click();
+    await page.getByTestId('day-actual').fill('Oven 60 °C, 8 jam');
+    await page.getByTestId('day-meas-name-0').fill('Kadar air');
+    await page.getByTestId('day-meas-value-0').fill('9,5');
+    await page.getByTestId('day-meas-unit-0').fill('%');
+    await page.getByTestId('day-save').click();
+    await expect(page.getByTestId('rp-status')).toHaveText('berjalan');
+    await page.getByTestId('day-new').click();
+    await page.getByTestId('day-actual').fill('Kering, dikemas');
+    await page.getByTestId('day-finish').check();
+    await page.getByTestId('day-save').click();
+    await expect(page.getByTestId('rp-status')).toHaveText('SELESAI');
+
+    const { readFileSync } = await import('node:fs');
+    for (const [k, magic] of [['pdf', '%PDF-'], ['docx', 'PK'], ['pptx', 'PK']] as const) {
+      const dl = page.waitForEvent('download');
+      await page.getByTestId(`rp-${k}`).click();
+      const d = await dl;
+      expect(d.suggestedFilename()).toBe(`${key}-riset-produk.${k}`);
+      const out = `test-results/riset-produk.${k}`;
+      await d.saveAs(out);
+      expect(readFileSync(out).subarray(0, magic.length).toString()).toBe(magic);
+    }
+  });
 });
 
 test.describe('GEMA RnD Lab — HP 360 px', () => {

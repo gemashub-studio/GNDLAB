@@ -151,3 +151,10 @@ Tujuan: isian semudah mungkin + PDF laporan lengkap awal–akhir.
 - [x] L5 Analisis deskriptif per perlakuan (n, rata-rata, SD, min, maks; nilai terakhir per unit) + grafik.
 - [x] L6 PDF "laporan lengkap" awal–akhir (kompilasi diperluas).
 - [x] L7 Uji unit + E2E + logs (DEC-051) + run_all_checks + commit.
+
+## M5 lanjutan — "Riset Produk" (owner 2026-10-11, otonom)
+- [x] R1 Ganti label Protokol → Riset Produk (id URL `protokol` tetap).
+- [x] R2 Resep: foto/video per bahan & per langkah (media store, experimentId = kunci riset), daftar Alat.
+- [x] R3 Laporan harian per riset (DailyEntry experimentId = kunci riset, append-only) + tandai selesai.
+- [x] R4 Laporan gabungan PDF + DOCX + PPTX tanpa dependensi baru (zip "store" + XML Office sendiri, offline).
+- [x] R5 Uji (unit: zip/docx/pptx struktur; E2E) + logs DEC-052 + commit.

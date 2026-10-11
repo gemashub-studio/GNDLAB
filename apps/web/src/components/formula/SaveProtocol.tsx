@@ -55,7 +55,7 @@ export function SaveProtocol({ product, defaultName, ingredients, context, testI
         ingredients,
         steps: [],
       });
-      setMsg(`Tersimpan sebagai ${id}. Langkah proses bisa kamu lengkapi sebagai versi berikutnya di Lab → Protokol.`);
+      setMsg(`Tersimpan sebagai ${id}. Langkah proses bisa kamu lengkapi sebagai versi berikutnya di Lab → Riset Produk.`);
       setOpen(false);
     } catch {
       setMsg('Gagal menyimpan (ID versi sudah ada?). Coba lagi.');
@@ -66,7 +66,7 @@ export function SaveProtocol({ product, defaultName, ingredients, context, testI
     <div className="flex flex-col gap-2" data-testid={testId}>
       <div className="flex flex-wrap items-center gap-3">
         <button type="button" className="btn-ghost" aria-expanded={open} onClick={() => setOpen((o) => !o)} data-testid={`${testId}-open`}>
-          {open ? 'Batal' : 'Simpan sebagai versi protokol'}
+          {open ? 'Batal' : 'Simpan sebagai riset produk'}
         </button>
         {msg && <span className="font-mono text-xs" role="status" data-testid={`${testId}-msg`}>{msg} <Link href="/lab?t=protokol" className="underline">Buka Lab</Link></span>}
       </div>

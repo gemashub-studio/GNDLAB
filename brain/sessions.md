@@ -134,3 +134,8 @@
 - Test: web unit 67 (labDesign 6), E2E lab+formula 28/28, run_all_checks LULUS. PDF diperiksa visual (simbol ≥ − diganti teks karena font PDF).
 - Berikutnya: ubah/tambah desain pada eksperimen lama (greenhouse 1 milik owner belum punya desain); bandingkan 2 eksperimen; impor parameter terkonfirmasi owner ke rnd_param_def.
 - (lanjutan) Tambah desain untuk eksperimen lama (lewat riwayat versi) — greenhouse 1 milik owner kini bisa diberi desain. Kunci ganda sumber (F01) di komponen Sources diperbaiki. E2E formula+rantai+lab 41/41.
+
+### 2026-10-11 · Riset Produk (DEC-052)
+- Owner: ganti Protokol → Riset Produk; foto/video bahan, alat (seperti bahan), langkah; laporan harian sampai selesai; laporan docx/ppt/pdf.
+- officeExport.ts (zip store + OOXML) — DOCX & PPTX divalidasi dibuka Word & PowerPoint via COM (baca saja): 4 tabel/3 gambar; 13 slide/3 gambar.
+- Test: web unit 72, E2E lab 11/11, run_all_checks LULUS.

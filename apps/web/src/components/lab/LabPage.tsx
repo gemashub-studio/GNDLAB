@@ -14,7 +14,7 @@ import { StandardsTab } from './StandardsTab';
 const TABS = [
   { id: 'ringkasan', label: 'Ringkasan' },
   { id: 'eksperimen', label: 'Eksperimen' },
-  { id: 'protokol', label: 'Protokol' },
+  { id: 'protokol', label: 'Riset Produk' },
   { id: 'library', label: 'Library' },
   { id: 'standar', label: 'Standar' },
 ] as const;
@@ -130,7 +130,7 @@ export function LabPage() {
       {tab === 'eksperimen' && (
         <ExperimentsTab items={items} entries={entries} media={media} protocols={protocols} product={product} setProduct={setProduct} openId={openId} setOpenId={setOpenId} refresh={refresh} />
       )}
-      {tab === 'protokol' && <ProtocolsTab protocols={protocols} refresh={refresh} />}
+      {tab === 'protokol' && <ProtocolsTab protocols={protocols} entries={entries} media={media} refresh={refresh} />}
       {tab === 'library' && <LibraryTab />}
       {tab === 'standar' && <StandardsTab product={stdProduct} setProduct={setStdProduct} />}
 

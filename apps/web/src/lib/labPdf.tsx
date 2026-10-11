@@ -18,6 +18,7 @@ import {
   type Series,
 } from './labStore';
 import { summarize, type ResponseSummary } from './labDesign';
+import type { ResearchReport } from './researchReport';
 
 const C = { ink: '#0E1A1F', paper: '#F3F6F7', grid: '#E2E8EA', mint: '#1FA88F', mintLight: '#63E6CF', amber: '#F5A524', muted: '#5B6B72' };
 const SERIES_COLORS = [C.mint, C.amber, C.ink, '#7C5CBF', '#D9534F', '#3B82F6'];
@@ -173,7 +174,7 @@ function EntryBody({ e, protocols, media }: { e: DailyEntry; protocols: Protocol
   return (
     <View>
       {e.correctsEntryId && <Text style={{ color: C.amber, marginBottom: 4 }}>Koreksi atas entri {e.correctsEntryId} (entri lama tetap tersimpan).</Text>}
-      <Block label="Protokol yang dipakai" value={p ? `${p.id} — ${p.name} (versi ${p.version})` : e.protocolId} />
+      <Block label="Riset produk yang dipakai" value={p ? `${p.id} — ${p.name} (versi ${p.version})` : e.protocolId} />
       <Block label="Rencana (pengguna)" value={e.plan} />
       <Block label="Realisasi — yang benar-benar dilakukan" value={e.actual} />
       <Text style={s.label}>Bahan & batch</Text>
@@ -290,7 +291,7 @@ function CompileDoc({ e, entries, protocols, media, at }: { e: Experiment; entri
           </>
         )}
 
-        <Text style={s.h2} minPresenceAhead={60}>Protokol yang dipakai</Text>
+        <Text style={s.h2} minPresenceAhead={60}>Riset produk yang dipakai</Text>
         {usedProtocols.length ? (
           usedProtocols.map((p) => (
             <View key={p.id} style={s.box} wrap={false}>
@@ -300,7 +301,7 @@ function CompileDoc({ e, entries, protocols, media, at }: { e: Experiment; entri
             </View>
           ))
         ) : (
-          <Text style={s.empty}>Tidak ada catatan harian yang merujuk protokol.</Text>
+          <Text style={s.empty}>Tidak ada catatan harian yang merujuk riset produk.</Text>
         )}
 
         <Text style={s.h2} minPresenceAhead={60}>Grafik hasil ukur (semua catatan)</Text>
@@ -309,7 +310,7 @@ function CompileDoc({ e, entries, protocols, media, at }: { e: Experiment; entri
         <Text style={s.h2} minPresenceAhead={60}>Ringkasan catatan harian</Text>
         {entries.length ? (
           <Table
-            head={['Entri', 'Tanggal', 'Protokol', 'Hasil ukur', 'Penyimpangan']}
+            head={['Entri', 'Tanggal', 'Riset produk', 'Hasil ukur', 'Penyimpangan']}
             widths={[20, 13, 17, 12, 38]}
             rows={entries.map((x) => [x.id, x.entryDate, x.protocolId, String(x.measurements.length), x.deviations])}
           />
@@ -347,4 +348,45 @@ export function dailyPdfBlob(e: Experiment, entry: DailyEntry, protocols: Protoc
 
 export function compilePdfBlob(e: Experiment, entries: DailyEntry[], protocols: ProtocolVersion[], media: MediaItem[]): Promise<Blob> {
   return pdf(<CompileDoc e={e} entries={entries} protocols={protocols} media={media} at={now()} />).toBlob();
+}
+
+// ------------------------------------------------------------------ laporan riset produk (DEC-052)
+
+function ResearchDoc({ r }: { r: ResearchReport }) {
+  return (
+    <Document title={r.title} author="GEMA RnD">
+      <Page size="A4" style={s.page}>
+        <View style={s.head}>
+          <Text style={s.brand}>GEMA RnD Lab · Riset Produk</Text>
+          <Text style={s.title}>{r.title}</Text>
+          <Text style={s.meta}>{r.subtitle}</Text>
+        </View>
+        {r.blocks.map((b, i) => (
+          <View key={i} style={{ marginBottom: 8 }}>
+            <Text style={b.level === 1 ? s.h2 : { fontFamily: 'Helvetica-Bold', fontSize: 10.5, color: C.mint, marginTop: 6, marginBottom: 3 }} minPresenceAhead={50}>
+              {b.heading}
+            </Text>
+            {b.lines.map((l, k) => <Text key={k} style={{ marginBottom: 2 }}>{l}</Text>)}
+            {b.table && <Table head={b.table.head} rows={b.table.rows} widths={b.table.head.map(() => 100 / b.table!.head.length)} />}
+            {b.images.length > 0 && (
+              <View style={s.thumbs}>
+                {b.images.map((im, k) => (
+                  <View key={k} style={s.thumb} wrap={false}>
+                    {im.dataUrl ? <Image src={im.dataUrl} style={{ width: 150, borderRadius: 4 }} /> : null}
+                    <Text style={{ fontSize: 7.5, fontFamily: 'Courier' }}>{im.video ? 'VIDEO · ' : ''}{im.name}</Text>
+                    {im.caption ? <Text style={{ fontSize: 7.5 }}>{im.caption}</Text> : null}
+                  </View>
+                ))}
+              </View>
+            )}
+          </View>
+        ))}
+        <Text style={s.foot} fixed render={({ pageNumber, totalPages }) => `${r.footer}. Hal. ${pageNumber}/${totalPages}`} />
+      </Page>
+    </Document>
+  );
+}
+
+export function researchPdfBlob(r: ResearchReport): Promise<Blob> {
+  return pdf(<ResearchDoc r={r} />).toBlob();
 }

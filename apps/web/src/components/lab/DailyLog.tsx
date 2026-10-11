@@ -50,13 +50,19 @@ export function DailyLog({
   media,
   protocols,
   onSaved,
+  finishable = false,
+  title = 'Catatan harian',
 }: {
   e: Experiment;
   entries: DailyEntry[];
   media: MediaItem[];
   protocols: ProtocolVersion[];
   onSaved: () => Promise<void>;
+  /** Riset produk: boleh menandai laporan penutup (riset selesai). */
+  finishable?: boolean;
+  title?: string;
 }) {
+  const [finish, setFinish] = useState(false);
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState(blankForm);
   const [files, setFiles] = useState<PendingFile[]>([]);
@@ -92,11 +98,13 @@ export function DailyLog({
           interpretation: form.interpretation.trim(),
           nextStep: form.nextStep.trim(),
           ...(form.correctsEntryId && { correctsEntryId: form.correctsEntryId }),
+          ...(finishable && finish && { finished: true }),
         },
         prepared,
       );
       setForm(blankForm());
       setFiles([]);
+      setFinish(false);
       setOpen(false);
       setMsg(`Tersimpan: ${id}. Catatan harian tidak bisa diubah; koreksi = catatan baru.`);
       await onSaved();
@@ -114,7 +122,7 @@ export function DailyLog({
 
   return (
     <Section
-      title={`Catatan harian (${entries.length})`}
+      title={`${title} (${entries.length})`}
       aside={
         <button type="button" className="btn-primary" aria-expanded={open} onClick={() => setOpen((o) => !o)} data-testid="day-new">
           {open ? 'Tutup' : '+ Catatan hari ini'}
@@ -136,9 +144,9 @@ export function DailyLog({
               <input type="date" className="field" value={form.entryDate} onChange={(ev) => set('entryDate')(ev.target.value)} data-testid="day-date" />
             </label>
             <label className="flex flex-col gap-1.5">
-              <span className="label-mono">Protokol yang dipakai</span>
+              <span className="label-mono">Riset produk (resep) yang dipakai</span>
               <select className="field" value={form.protocolId} onChange={(ev) => set('protocolId')(ev.target.value)} data-testid="day-protocol">
-                <option value="">— tanpa protokol —</option>
+                <option value="">— tanpa riset produk —</option>
                 {mine.map((p) => <option key={p.id} value={p.id}>{p.id} · {p.name}</option>)}
               </select>
             </label>
@@ -214,6 +222,12 @@ export function DailyLog({
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
+            {finishable && (
+              <label className="flex items-center gap-2 text-sm font-semibold">
+                <input type="checkbox" className="h-4 w-4" checked={finish} onChange={(ev) => setFinish(ev.target.checked)} data-testid="day-finish" />
+                Laporan penutup — tandai riset SELESAI
+              </label>
+            )}
             <button type="button" className="btn-primary" disabled={busy} onClick={() => void save()} data-testid="day-save">{busy ? 'Menyimpan…' : 'Simpan catatan'}</button>
             <span className="text-xs text-muted">Setelah disimpan, catatan ini tidak bisa diubah.</span>
           </div>
@@ -294,6 +308,7 @@ function EntryCard({ x, media, protocols, onPdf }: { x: DailyEntry; media: Media
         <span className="font-mono text-xs text-muted">{x.entryDate}</span>
         {p && <span className="rounded-full bg-paper px-2.5 py-0.5 font-mono text-[11px]">{p.id} · {p.name}</span>}
         {x.correctsEntryId && <span className="rounded-full bg-safety px-2.5 py-0.5 font-mono text-[11px]">koreksi {x.correctsEntryId}</span>}
+        {x.finished && <span className="rounded-full bg-ink px-2.5 py-0.5 font-mono text-[11px] text-acid">SELESAI</span>}
         <button type="button" className="btn-ghost ml-auto min-h-[40px] px-3" onClick={onPdf} data-testid={`day-pdf-${x.id}`}>PDF harian</button>
       </div>
       <div className="grid gap-3 sm:grid-cols-2">

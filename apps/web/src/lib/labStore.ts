@@ -105,6 +105,8 @@ export interface DailyEntry {
   mediaIds: string[];
   /** Bila entri ini mengoreksi entri lain (entri lama tetap ada). */
   correctsEntryId?: string;
+  /** Laporan harian riset produk: tandai riset SELESAI (laporan penutup). */
+  finished?: boolean;
 }
 
 export interface MediaItem {
@@ -125,12 +127,30 @@ export interface ProtocolIngredient {
   name: string;
   amount: string;
   unit: string;
+  /** Foto/video bahan (id di store media). */
+  mediaIds?: string[];
 }
 export interface ProtocolStep {
   text: string;
   duration: string;
   conditions: string;
+  /** Foto/video langkah (id di store media). */
+  mediaIds?: string[];
 }
+
+/** Alat yang digunakan (bisa dengan foto/video). */
+export interface ProtocolTool {
+  name: string;
+  amount?: string;
+  unit?: string;
+  mediaIds?: string[];
+}
+
+/** Daftar alat ternormalisasi (versi awal fitur menyimpan teks saja). */
+export const toolList = (v: Pick<ProtocolVersion, 'tools'>): ProtocolTool[] => (v.tools ?? []).map((t) => (typeof t === 'string' ? { name: t } : t));
+
+/** Berkas yang akan dilampirkan saat menyimpan versi riset produk. */
+export type NewMedia = Omit<MediaItem, 'id' | 'entryId' | 'experimentId' | 'createdAt'>;
 
 /** Versi protokol buatan pengguna — tidak pernah diubah setelah disimpan. */
 export interface ProtocolVersion {
@@ -143,6 +163,8 @@ export interface ProtocolVersion {
   name: string;
   ingredients: ProtocolIngredient[];
   steps: ProtocolStep[];
+  /** Alat yang digunakan (teks lama = string). */
+  tools?: (ProtocolTool | string)[];
   reason: string;
   author: string;
   createdAt: string;
@@ -334,10 +356,44 @@ export async function listMedia(experimentId?: string): Promise<MediaItem[]> {
 }
 
 /** Simpan versi protokol baru; gagal bila ID versi sudah ada (versi lama tidak bisa ditimpa). */
-export async function addProtocolVersion(p: Omit<ProtocolVersion, 'createdAt'>): Promise<ProtocolVersion> {
-  const full = { ...p, createdAt: new Date().toISOString() };
-  await (await labDb()).add('protocols', full);
+/**
+ * Simpan versi riset produk baru beserta foto/video BARU per bahan & per langkah (satu transaksi).
+ * Media lama (dari versi sebelumnya) tetap dirujuk lewat mediaIds — tidak disalin, tidak diubah.
+ */
+export async function addProtocolVersion(
+  p: Omit<ProtocolVersion, 'createdAt'>,
+  media: { ingredients?: NewMedia[][]; steps?: NewMedia[][]; tools?: NewMedia[][] } = {},
+): Promise<ProtocolVersion> {
+  const now = new Date().toISOString();
+  const items: MediaItem[] = [];
+  const attach = (prefix: string, list: NewMedia[] | undefined, existing: string[] | undefined) => {
+    const ids = [...(existing ?? [])];
+    (list ?? []).forEach((m, k) => {
+      const id = `${p.id}-${prefix}-M${String(k + 1).padStart(2, '0')}`;
+      items.push({ ...m, id, entryId: p.id, experimentId: p.key, createdAt: now });
+      ids.push(id);
+    });
+    return ids.length ? { mediaIds: ids } : {};
+  };
+  const full: ProtocolVersion = {
+    ...p,
+    ingredients: p.ingredients.map((x, i) => ({ ...x, ...attach(`I${i + 1}`, media.ingredients?.[i], x.mediaIds) })),
+    steps: p.steps.map((x, i) => ({ ...x, ...attach(`S${i + 1}`, media.steps?.[i], x.mediaIds) })),
+    tools: toolList(p).map((x, i) => ({ ...x, ...attach(`T${i + 1}`, media.tools?.[i], x.mediaIds) })),
+    createdAt: now,
+  };
+  const d = await labDb();
+  const tx = d.transaction(['protocols', 'media'], 'readwrite');
+  await tx.objectStore('protocols').add(full);
+  for (const m of items) await tx.objectStore('media').add(m);
+  await tx.done;
   return full;
+}
+
+/** Status riset produk: selesai bila ada laporan harian bertanda `finished`. */
+export function researchStatus(entries: readonly DailyEntry[]): 'berjalan' | 'selesai' | 'belum-mulai' {
+  if (!entries.length) return 'belum-mulai';
+  return entries.some((e) => e.finished) ? 'selesai' : 'berjalan';
 }
 
 export async function listProtocols(): Promise<ProtocolVersion[]> {

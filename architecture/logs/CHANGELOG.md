@@ -3,6 +3,14 @@
 Format: [Keep a Changelog](https://keepachangelog.com/id/1.1.0/) · Versi dataset mengikuti SemVer (ADR-002).
 Waktu dalam WIB (UTC+7).
 
+## [aplikasi GEMA RnD riset produk] — 2026-10-11
+### Diubah
+- Tab "Protokol" bernama "Riset Produk".
+### Ditambahkan
+- Resep: foto/video per bahan, per alat, & per langkah; alat diisi seperti bahan (nama, jumlah, satuan).
+- Halaman riset: resep versi terakhir, laporan harian sampai "Laporan penutup — riset SELESAI", riwayat versi.
+- Laporan gabungan riset produk: PDF, Word (.docx), PowerPoint (.pptx) — offline, tanpa library baru.
+
 ## [aplikasi GEMA RnD mode peneliti] — 2026-10-11
 ### Ditambahkan
 - Eksperimen baru lewat wizard 3 langkah: pertanyaan & dugaan, desain (faktor & level, pembanding, ulangan, yang diukur — saran dari draf parameter), tinjau daftar unit percobaan dengan urutan kerja acak.
