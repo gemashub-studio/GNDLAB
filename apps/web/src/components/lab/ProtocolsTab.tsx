@@ -57,7 +57,7 @@ const STATUS_TEXT = { 'belum-mulai': 'belum ada laporan', berjalan: 'berjalan', 
  * Aplikasi TIDAK mengisi angka resep. Versi tersimpan tidak bisa diubah; perubahan = versi baru.
  */
 export function ProtocolsTab({ protocols, entries, media, refresh }: { protocols: ProtocolVersion[]; entries: DailyEntry[]; media: MediaItem[]; refresh: () => Promise<void> }) {
-  const [editing, setEditing] = useState<{ base?: ProtocolVersion; product: LabProductId; draft?: ProtocolDraft } | undefined>();
+  const [editing, setEditing] = useState<{ base?: ProtocolVersion; product: LabProductId; draft?: ProtocolDraft; nonce: number } | undefined>();
   const [openKey, setOpenKey] = useState<string>();
   const [drafts, setDrafts] = useState<ProtocolDraft[]>([]);
   const [ongoing, setOngoing] = useState(false);
@@ -65,13 +65,12 @@ export function ProtocolsTab({ protocols, entries, media, refresh }: { protocols
   useEffect(() => {
     void loadDrafts();
   }, []);
-  const running = [...new Set(protocols.map((p) => p.key))].filter((k) => researchStatus(entries.filter((e) => e.experimentId === k)) !== 'selesai');
   const keys = [...new Set(protocols.map((p) => p.key))];
   const [verSel, setVerSel] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState('');
 
   if (openKey && !editing) {
-    return <ResearchDetail rkey={openKey} protocols={protocols} entries={entries} media={media} refresh={refresh} onBack={() => setOpenKey(undefined)} onNewVersion={(base) => setEditing({ base, product: base.product })} />;
+    return <ResearchDetail rkey={openKey} protocols={protocols} entries={entries} media={media} refresh={refresh} onBack={() => setOpenKey(undefined)} onNewVersion={(base) => setEditing({ base, product: base.product, nonce: Date.now() })} />;
   }
 
   return (
@@ -82,17 +81,17 @@ export function ProtocolsTab({ protocols, entries, media, refresh }: { protocols
           Tiap perubahan menjadi <strong>versi baru</strong>; versi lama tetap utuh. Catat laporan harian sampai riset selesai, lalu unduh laporan gabungan (PDF, Word, PowerPoint). Aplikasi tidak mengisi angka resep.
         </p>
         <div className="flex flex-wrap items-end gap-3">
-          <button type="button" className="btn-primary" onClick={() => setEditing({ product: 'KE' })} data-testid="proto-new">+ Resep baru</button>
+          <button type="button" className="btn-primary" onClick={() => setEditing({ product: 'KE', nonce: Date.now() })} data-testid="proto-new">+ Resep baru</button>
           <button type="button" className="btn-ghost" aria-expanded={ongoing} onClick={() => setOngoing((o) => !o)} data-testid="proto-ongoing">
-            On going proses ({drafts.length + running.length})
+            On going proses ({drafts.length})
           </button>
         </div>
       </div>
 
       {ongoing && (
         <Section title="On going proses" testId="ongoing-list">
-          <p className="text-xs text-muted">Draf = resep yang masih bisa diubah (belum ditekan Selesai) — bisa dilanjutkan atau dihapus. Riset berjalan = resep resmi yang belum punya laporan penutup (tidak bisa dihapus; catatan resmi).</p>
-          {drafts.length === 0 && running.length === 0 && <p className="text-sm text-muted">Tidak ada proses yang sedang berjalan.</p>}
+          <p className="text-xs text-muted">Resep yang belum ditekan Selesai. Setelah Selesai, resep pindah ke Hasil riset.</p>
+          {drafts.length === 0 && <p className="text-sm text-muted">Tidak ada proses yang sedang berjalan.</p>}
           <ul className="flex flex-col gap-2">
             {drafts.map((d) => (
               <li key={d.id} className="flex flex-wrap items-center gap-3 rounded-xl border-3 border-ink p-3">
@@ -101,7 +100,7 @@ export function ProtocolsTab({ protocols, entries, media, refresh }: { protocols
                   <span className="font-semibold">{d.name || '(tanpa nama)'}</span>
                   <span className="font-mono text-[11px] text-muted">{LAB_PRODUCTS.find((p) => p.id === d.product)?.name} · disimpan {d.updatedAt.slice(0, 16).replace('T', ' ')}</span>
                 </span>
-                <button type="button" className="btn-primary" onClick={() => { setOngoing(false); setEditing({ product: d.product, draft: d, ...(d.baseId && { base: protocols.find((p) => p.id === d.baseId) }) }); }} data-testid={`draft-open-${d.id}`}>Lanjutkan</button>
+                <button type="button" className="btn-primary" onClick={() => { setOngoing(false); setEditing({ product: d.product, draft: d, nonce: Date.now(), ...(d.baseId && { base: protocols.find((p) => p.id === d.baseId) }) }); }} data-testid={`draft-open-${d.id}`}>Lanjutkan</button>
                 <button
                   type="button"
                   className="btn-ghost"
@@ -115,26 +114,13 @@ export function ProtocolsTab({ protocols, entries, media, refresh }: { protocols
                 </button>
               </li>
             ))}
-            {running.map((k) => {
-              const latest = protocols.filter((p) => p.key === k).sort((a, b) => b.version - a.version)[0]!;
-              return (
-                <li key={k} className="flex flex-wrap items-center gap-3 rounded-xl border-3 border-ink p-3">
-                  <span className="rounded-full bg-acid px-2.5 py-0.5 font-mono text-[11px] font-semibold">BERJALAN</span>
-                  <span className="flex flex-1 flex-col">
-                    <span className="font-semibold">{latest.name}</span>
-                    <span className="font-mono text-[11px] text-muted">{k} · mulai {latest.startDate ?? '–'} · {entries.filter((e) => e.experimentId === k).length} laporan harian</span>
-                  </span>
-                  <button type="button" className="btn-ghost" onClick={() => { setOngoing(false); setOpenKey(k); }} data-testid={`ongoing-open-${k}`}>Lanjutkan</button>
-                </li>
-              );
-            })}
           </ul>
         </Section>
       )}
 
       {editing && (
         <ProtocolForm
-          key={editing.draft?.id ?? 'new'}
+          key={editing.draft?.id ?? `new-${editing.nonce}`}
           protocols={protocols}
           media={media}
           base={editing.base}
@@ -167,7 +153,7 @@ export function ProtocolsTab({ protocols, entries, media, refresh }: { protocols
                     <span className="font-display text-lg font-semibold">{latest.name}</span>
                   </div>
                   <button type="button" className="btn-primary" onClick={() => setOpenKey(k)} data-testid={`proto-open-${k}`}>Buka riset</button>
-                  <button type="button" className="btn-ghost" onClick={() => setEditing({ base: latest, product: latest.product })} data-testid={`proto-newver-${k}`}>Buat versi baru</button>
+                  <button type="button" className="btn-ghost" onClick={() => setEditing({ base: latest, product: latest.product, nonce: Date.now() })} data-testid={`proto-newver-${k}`}>Buat versi baru</button>
                 </div>
                 <div className="flex flex-wrap items-center gap-2 rounded-xl bg-paper p-2" data-testid={`hr-dl-${k}`}>
                   <label className="flex items-center gap-2 text-xs">

@@ -290,8 +290,16 @@ test.describe('GEMA RnD Lab', () => {
     await page.getByTestId('proto-finish').click();
     await expect(page.getByTestId('proto-list')).toContainText('Arang draf E2E');
     await page.getByTestId('proto-ongoing').click();
-    await expect(page.getByTestId('ongoing-list')).not.toContainText('DRAF');
-    await expect(page.getByTestId('ongoing-list')).toContainText('BERJALAN');
+    await expect(page.getByTestId('ongoing-list')).not.toContainText('Arang draf E2E');
+    // ada draf terbuka → "+ Resep baru" tetap membuka formulir KOSONG baru (draf lama tidak tertimpa)
+    await page.getByTestId('proto-new').click();
+    await page.getByTestId('proto-name').fill('Draf A');
+    await page.getByTestId('proto-save').click();
+    await page.getByTestId('proto-new').click();
+    await expect(page.getByTestId('proto-name')).toHaveValue('');
+    await page.getByTestId('proto-name').fill('Draf B');
+    await page.getByTestId('proto-save').click();
+    await expect(page.getByTestId('proto-ongoing')).toContainText('(2)');
   });
   test('kamera: ambil foto & rekam video dari webcam (kamera palsu) ke bahan; tombol Foto/Video memakai kamera HP', async ({ page }) => {
     await page.goto('/lab?t=protokol');
