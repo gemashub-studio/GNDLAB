@@ -1,6 +1,6 @@
 'use client';
 
-import { greenhouseServices, rackRoomDesign, sunDryingArea, type RackRoomResult } from '@gemas/calc-engine';
+import { dryingLoadPlan, greenhouseServices, rackRoomDesign, sunDryingArea, type RackRoomResult } from '@gemas/calc-engine';
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
 import { ChoiceGroup, NumberField } from '@/components/ui/fields';
@@ -8,6 +8,9 @@ import { Stat } from '@/components/ui/Stat';
 import { WarningList } from '@/components/ui/Warnings';
 import { fmt } from '@/lib/format';
 import { BigResult, CalcError, ChainSources, Note, paramText, safe, SopList, useChain, useFormula, useProcess } from './shared';
+import { SulfurPanel } from './SulfurPanel';
+
+type Tray = { L?: number; W?: number; end?: number; halves?: number };
 
 type Method = 'greenhouse' | 'sun' | 'oven';
 
@@ -46,8 +49,8 @@ function FrontView({ W, H, r, depth, pitch }: { W: number; H: number; r: RackRoo
 function RackInputs({ dims, setDims, tray, setTray, prefix }: {
   dims: { L?: number; W?: number; H?: number };
   setDims: (f: (d: { L?: number; W?: number; H?: number }) => { L?: number; W?: number; H?: number }) => void;
-  tray: { L?: number; W?: number; end?: number };
-  setTray: (f: (d: { L?: number; W?: number; end?: number }) => { L?: number; W?: number; end?: number }) => void;
+  tray: Tray;
+  setTray: (f: (d: Tray) => Tray) => void;
   prefix: string;
 }) {
   return (
@@ -58,11 +61,13 @@ function RackInputs({ dims, setDims, tray, setTray, prefix }: {
       <NumberField label="Panjang tray" unit="m" min={0.2} max={10} value={tray.L} onValue={(v) => setTray((t) => ({ ...t, L: v }))} hint="Kosong = hitung luasan (cara KORA)" testId={`${prefix}-trayL`} />
       <NumberField label="Lebar tray" unit="m" min={0.2} max={2} value={tray.W} onValue={(v) => setTray((t) => ({ ...t, W: v }))} hint="Kosong = selebar rak" testId={`${prefix}-trayW`} />
       <NumberField label="Jarak bebas tiap ujung" unit="m" min={0} max={20} value={tray.end} onValue={(v) => setTray((t) => ({ ...t, end: v }))} hint="Ruang pintu/kipas; 0 = rak sepanjang ruang" />
+      <NumberField label="Belahan per tray (hitung sendiri)" unit="belahan" integer min={1} max={10_000} value={tray.halves} onValue={(v) => setTray((t) => ({ ...t, halves: v }))}
+        hint="Isi bila sudah coba tata satu tray; kosong = perkiraan dari kerapatan" testId={`${prefix}-halves`} />
     </div>
   );
 }
 
-function useRack(dims: { L?: number; W?: number; H?: number }, tray: { L?: number; W?: number; end?: number }) {
+function useRack(dims: { L?: number; W?: number; H?: number }, tray: Tray) {
   const c = useChain();
   const f = useFormula();
   const g = c.greenhouse;
@@ -82,6 +87,7 @@ function useRack(dims: { L?: number; W?: number; H?: number }, tray: { L?: numbe
               ...(tray.L && { trayL: tray.L }),
               ...(tray.W && { trayW: tray.W }),
               ...(tray.end !== undefined && { endClearanceM: tray.end }),
+              ...(tray.L && tray.halves && { halvesPerTrayCounted: tray.halves }),
               datasetVersion: `rantai.${c.version}`,
             }),
           )
@@ -112,44 +118,95 @@ function RackResult({ r, prefix, trays }: { r: RackRoomResult; prefix: string; t
   );
 }
 
+/** Asumsi & satuan di balik kapasitas — semua ditampilkan, bukan disembunyikan di rumus. */
+function Assumptions({ tray, r }: { tray: Tray; r: RackRoomResult }) {
+  const c = useChain();
+  const f = useFormula();
+  const g = c.greenhouse;
+  const rows: [string, string, string][] = [
+    ['Kedalaman rak', `${fmt(g.rack_depth_m.typ, 2)} m`, `dataset rantai (${g.rack_depth_m.sourceIds.join(', ')}, keyakinan ${g.rack_depth_m.confidence})`],
+    ['Jarak antar tingkat', `${fmt(g.tier_pitch_m.typ, 2)} m`, `dataset rantai (${g.tier_pitch_m.sourceIds.join(', ')}, ${g.tier_pitch_m.confidence})`],
+    ['Lorong minimum', `${fmt(g.aisle_min_m.typ, 2)} m`, `dataset rantai (${g.aisle_min_m.sourceIds.join(', ')}, ${g.aisle_min_m.confidence})`],
+    ['Ruang bebas atap', `${fmt(g.roof_clearance_m.typ, 2)} m`, `dataset rantai (${g.roof_clearance_m.sourceIds.join(', ')}, ${g.roof_clearance_m.confidence})`],
+    tray.L && tray.halves
+      ? ['Belahan per tray', `${fmt(tray.halves, 0)} belahan`, 'hitungan kamu sendiri']
+      : ['Kerapatan belahan', paramText(f.kopra.greenhouseHalves, 0, 'belahan/m²'), `dataset formula (${f.kopra.greenhouseHalves.sourceIds.join(', ')}, ${f.kopra.greenhouseHalves.confidence}) — perkiraan`],
+    ['Belahan per butir', '2', 'definisi (1 butir dibelah dua)'],
+    [
+      'Cara hitung',
+      tray.L ? `tray ${fmt(tray.L, 2)} × ${fmt(tray.W ?? g.rack_depth_m.typ, 2)} m × ${fmt(r.trays, 0)} tray` : `luas rak ${fmt(r.totalAreaM2, 1)} m² × kerapatan`,
+      tray.L ? 'jumlah tray utuh × belahan/tray ÷ 2' : 'luasan ÷ 2 — isi ukuran tray agar lebih nyata',
+    ],
+  ];
+  return (
+    <details className="rounded-xl bg-paper p-3 text-sm" data-testid="dry-assumptions">
+      <summary className="cursor-pointer font-semibold">Asumsi & satuan kapasitas</summary>
+      <table className="mt-2 w-full">
+        <tbody>
+          {rows.map(([k, v, why]) => (
+            <tr key={k} className="border-t border-paper-grid">
+              <th className="py-1 pr-3 text-left font-normal">{k}</th>
+              <td className="py-1 pr-3 font-mono">{v}</td>
+              <td className="py-1 text-xs text-muted">{why}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <p className="mt-2 text-xs text-muted">Ukuran ruang & tray = isianmu. Rak, tingkat & lorong pakai angka dataset (keyakinan C = wajib dicek di fasilitasmu).</p>
+    </details>
+  );
+}
+
+/** Muatan aktual: kelapa yang benar-benar dibelah vs kapasitas per angkatan. */
+function ActualLoad({ cap, halvesPerTray, trays, prefix }: { cap: number; halvesPerTray?: number; trays?: number; prefix: string }) {
+  const [split, setSplit] = useState<number | undefined>();
+  const plan = useMemo(
+    () => (split !== undefined && cap >= 1 ? safe(() => dryingLoadPlan({ capacityNuts: cap, splitNuts: split, ...(halvesPerTray && { halvesPerTray }), ...(trays && { trays }) })) : undefined),
+    [split, cap, halvesPerTray, trays],
+  );
+  const p = plan?.ok ? plan.v : undefined;
+  return (
+    <section className="card flex flex-col gap-3" aria-label="Muatan aktual" data-testid={`${prefix}-load`}>
+      <h3 className="text-xl">Kelapa yang benar-benar dibelah</h3>
+      <NumberField label="Jumlah dibelah" unit="butir" integer min={0} max={10_000_000} value={split} onValue={setSplit} hint={`Kapasitas per angkatan ${fmt(cap, 0)} butir`} testId={`${prefix}-split`} />
+      {plan && !plan.ok && <CalcError message={plan.message} />}
+      {p && (
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+          <Stat label="Belahan" value={fmt(p.halves, 0)} sub="2 per butir" />
+          <Stat label="Angkatan" value={fmt(p.batches, 0)} sub={p.batches > 1 ? `terakhir ${fmt(p.lastBatchNuts, 0)} butir` : 'cukup satu kali'} testId={`${prefix}-batches`} accent />
+          <Stat label="Isi angkatan pertama" value={`${fmt(p.firstBatchFillPct, 0)}%`} sub="dari kapasitas" testId={`${prefix}-fill`} />
+          <Stat
+            label={halvesPerTray ? 'Tray terpakai (angkatan 1)' : 'Ruang kosong'}
+            value={halvesPerTray ? fmt(p.traysUsedFirstBatch, 0) : `${fmt(p.spareNuts, 0)} butir`}
+            sub={halvesPerTray ? `${fmt(halvesPerTray, 0)} belahan/tray` : 'di angkatan terakhir'}
+          />
+        </div>
+      )}
+    </section>
+  );
+}
+
 function Greenhouse() {
   const c = useChain();
   const f = useFormula();
   const g = c.greenhouse;
   const ref = c.raw.greenhouse.ref_room_m;
   const [dims, setDims] = useState<{ L?: number; W?: number; H?: number }>({ L: ref.L, W: ref.W, H: ref.H });
-  const [tray, setTray] = useState<{ L?: number; W?: number; end?: number }>({ end: 0 });
-  const [load, setLoad] = useState<number | undefined>();
+  const [tray, setTray] = useState<Tray>({ end: 0 });
   const rack = useRack(dims, tray);
   const r = rack?.ok ? rack.v.result : undefined;
   const byTray = tray.L !== undefined;
   const cap = r ? (byTray ? r.typ.nutsByTrays : r.typ.nutsByArea) : 0;
-  const nuts = load ?? cap;
   const svc = useMemo(
-    () =>
-      r
-        ? safe(() =>
-            greenhouseServices({
-              roomM3: r.typ.roomM3,
-              nuts,
-              aisles: r.typ.aisles,
-              refRoomM3: ref.L * ref.W * ref.H,
-              fansPerRefRoom: g.fans_per_ref_room,
-              sulfurGPerNut: f.kopra.sulfurGPerNut,
-              sulfurGPerM3: f.kopra.sulfurGPerM3,
-              roomPerPointM3: g.sulfur_room_per_point_m3,
-              datasetVersion: `rantai.${c.version}`,
-            }),
-          )
-        : undefined,
-    [r, nuts, ref, g, f, c.version],
+    () => (r ? safe(() => greenhouseServices({ roomM3: r.typ.roomM3, aisles: r.typ.aisles, refRoomM3: ref.L * ref.W * ref.H, fansPerRefRoom: g.fans_per_ref_room, datasetVersion: `rantai.${c.version}` })) : undefined),
+    [r, ref, g, c.version],
   );
   const s = svc?.ok ? svc.v.result : undefined;
 
   return (
     <div className="flex flex-col gap-4" data-testid="gh">
       <Note>
-        Isi ukuran greenhouse kamu — rak, tingkat, lorong, tray, kipas, dan belerang dihitung otomatis. Angka bawaan = contoh greenhouse KORA {fmt(ref.W, 0)}×{fmt(ref.L, 0)}×{fmt(ref.H, 1)} m.
+        Isi ukuran greenhouse kamu — rak, tingkat, lorong, tray, dan kipas dihitung dari ukuran itu. Perlakuan sulfur tidak dihitung; ada pencatatan manual di bawah. Angka bawaan = contoh greenhouse KORA {fmt(ref.W, 0)}×{fmt(ref.L, 0)}×{fmt(ref.H, 1)} m.
       </Note>
       <RackInputs dims={dims} setDims={setDims} tray={tray} setTray={setTray} prefix="gh" />
       {rack && !rack.ok && <CalcError message={rack.message} />}
@@ -171,7 +228,9 @@ function Greenhouse() {
             <FrontView W={dims.W!} H={dims.H!} r={r.typ} depth={g.rack_depth_m.typ} pitch={g.tier_pitch_m.typ} />
           </div>
           <RackResult r={r.typ} prefix="gh" trays={byTray} />
+          <Assumptions tray={tray} r={r.typ} />
           <ChainSources ids={[...g.rack_depth_m.sourceIds, ...f.kopra.greenhouseHalves.sourceIds]} confidence="C" />
+          <ActualLoad cap={cap} prefix="gh" {...(byTray && { halvesPerTray: r.typ.halvesPerTray, trays: r.typ.trays })} />
 
           <section className="card flex flex-col gap-3" aria-label="Kemiringan">
             <h3 className="text-xl">Penataan & kemiringan</h3>
@@ -184,32 +243,23 @@ function Greenhouse() {
             <ChainSources ids={g.face_up_tilt_deg.sourceIds} confidence={g.face_up_tilt_deg.confidence} />
           </section>
 
-          <section className="card flex flex-col gap-3" aria-label="Kipas & belerang">
-            <h3 className="text-xl">Kipas sirkulasi & belerang</h3>
-            <NumberField label="Isi kelapa angkatan ini" unit="butir" integer min={1} max={1_000_000} value={load} onValue={setLoad}
-              hint={`Kosong = kapasitas penuh ${fmt(cap, 0)} butir`} testId="gh-load" />
+          <section className="card flex flex-col gap-3" aria-label="Kipas sirkulasi">
+            <h3 className="text-xl">Kipas sirkulasi</h3>
             {svc && !svc.ok && <CalcError message={svc.message} />}
             {s && (
               <>
                 <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
                   <Stat label="Kipas Ø16–20″" value={`${fmt(s.min.fans, 0)}–${fmt(s.max.fans, 0)} unit`} sub={`posisi: ${fmt(s.typ.fanPositions, 0)} titik (ujung tiap lorong)`} testId="gh-fans" accent />
-                  <Stat label="Jam kipas" value={`${fmt(g.fan_run_h.typ, 0)} jam/hari`} sub="10.00–15.00 · MATI saat fumigasi" />
-                  <Stat label="Belerang (per butir)" value={`${fmt(s.min.sulfurByNutsG / 1000, 2)}–${fmt(s.max.sulfurByNutsG / 1000, 2)} kg`} sub={`${paramText(f.kopra.sulfurGPerNut, 1)} g/butir`} testId="gh-sulfur" accent />
-                  <Stat label="Belerang (per ruang)" value={`${fmt(s.min.sulfurByRoomG / 1000, 2)}–${fmt(s.max.sulfurByRoomG / 1000, 2)} kg`} sub={`${paramText(f.kopra.sulfurGPerM3, 0)} g/m³ — bila tataan renggang`} />
-                  <Stat label="Titik bakar" value={fmt(s.typ.burnPoints, 0)} sub={`±${fmt(s.typ.sulfurPerPointG, 0)} g/titik · lantai lorong tengah`} testId="gh-points" />
-                  <Stat label="Waktu paparan" value={`${fmt(g.sulfur_exposure_h.min, 0)}–${fmt(g.sulfur_exposure_h.max, 0)} jam`} sub="malam, ruang tertutup rapat" />
-                  <Stat label="Ventilasi sebelum masuk" value={`${fmt(g.sulfur_ventilate_h.min * 60, 0)}–${fmt(g.sulfur_ventilate_h.max * 60, 0)} menit`} sub="buka pintu + exhaust" />
+                  <Stat label="Jam kipas" value={`${fmt(g.fan_run_h.typ, 0)} jam/hari`} sub="10.00–15.00" />
                   <Stat label="Suhu target siang" value={`${fmt(g.day_temp_c.min, 0)}–${fmt(g.day_temp_c.max, 0)} °C`} sub={`ventilasi dibuka ${fmt(g.vent_open_pct.min, 0)}–${fmt(g.vent_open_pct.max, 0)}%`} />
                 </div>
                 <WarningList warnings={svc!.ok ? svc!.v.warnings : []} />
-                <ChainSources ids={[...g.fans_per_ref_room.sourceIds, ...f.kopra.sulfurGPerNut.sourceIds]} confidence="C" />
-                <p className="text-sm">
-                  Jadwal bertahap malam berikutnya (bila darurat lembap), batas malam & uji residu SO₂: lihat{' '}
-                  <Link href="/formula?p=kopra">Formula R&amp;D → Kopra</Link>.
-                </p>
+                <ChainSources ids={g.fans_per_ref_room.sourceIds} confidence="C" />
               </>
             )}
           </section>
+
+          <SulfurPanel place={`greenhouse ${fmt(dims.W ?? 0, 1)}×${fmt(dims.L ?? 0, 1)}×${fmt(dims.H ?? 0, 1)} m`} />
 
           <SopList
             title="Greenhouse kopra putih"
@@ -218,13 +268,11 @@ function Greenhouse() {
               'Belahan yang sudah ditiriskan masuk rak maksimal 4 jam sejak dibelah; isi tray dari tingkat atas ke bawah, satu lot asal per rak (label kode lot).',
               `Hari 1–${fmt(g.face_down_days.max, 0)}: telungkup. Hari berikutnya: balik terlentang, miring ${fmt(g.face_up_tilt_deg.min, 0)}–${fmt(g.face_up_tilt_deg.max, 0)}° ke arah sinar/aliran udara.`,
               `Siang: greenhouse tertutup (efek rumah kaca), kipas nyala 10.00–15.00, kisi berkasa dibuka ${fmt(g.vent_open_pct.min, 0)}–${fmt(g.vent_open_pct.max, 0)}% untuk buang uap. Catat suhu & RH tiap tingkat 2× sehari.`,
-              'Malam pertama (setelah air tiris): matikan SEMUA kipas, tutup rapat semua ventilasi dengan terpal/plastik.',
-              'Letakkan wadah tahan api berkaki di lantai lorong tengah (bukan di bawah rak kayu/bambu), nyalakan bara kecil (sabut/arang), taburkan belerang sesuai dosis hingga asap putih kekuningan.',
-              `Biarkan tertutup ${fmt(g.sulfur_exposure_h.min, 0)}–${fmt(g.sulfur_exposure_h.max, 0)} jam. Pagi: buka semua pintu + exhaust ${fmt(g.sulfur_ventilate_h.min * 60, 0)}–${fmt(g.sulfur_ventilate_h.max * 60, 0)} menit sebelum orang masuk.`,
+              'Perlakuan sulfur (bila dipakai): dosis, cara bakar, lama paparan & waktu masuk kembali BELUM ditetapkan di aplikasi — tentukan bersama ahli/regulator, lalu catat di log perlakuan sulfur.',
               'Ukur kadar air harian (alarm 24/48 jam di Formula Kopra); bila tertinggal jadwal, pindahkan sebagian ke oven.',
             ]}
-            tools={['Rak + tray berlubang (bambu serut/plastik food-grade)', 'Plastik UV atap', `Kipas sirkulasi Ø16–20″`, 'Exhaust fan', 'Termometer & higrometer', 'Wadah bakar tahan api berkaki', 'Belerang bubuk + timbangan', 'Terpal penutup ventilasi', 'Timer', 'APAR']}
-            safety="SO₂ iritan: hanya petugas terlatih dengan respirator gas asam; tidak ada orang di dalam saat fumigasi; rambu di pintu; alat ukur SO₂ portabel bila ada. Gas belerang korosif — cek baut/rangka & plastik UV berkala."
+            tools={['Rak + tray berlubang (bambu serut/plastik food-grade)', 'Plastik UV atap', `Kipas sirkulasi Ø16–20″`, 'Exhaust fan', 'Termometer & higrometer', 'Moisture meter', 'Timer', 'APAR']}
+            safety="Bila memakai sulfur: SO₂ adalah gas iritan. Prosedur keselamatan, lama paparan & waktu masuk kembali tidak ditetapkan oleh aplikasi — jangan masuk ruang berasap; minta panduan ahli K3."
           />
         </>
       )}
@@ -275,18 +323,21 @@ function Oven() {
   const ov = p.dryingMethods.find((m) => m.id === 'oven')!;
   const ref = c.raw.oven.ref_room_m;
   const [dims, setDims] = useState<{ L?: number; W?: number; H?: number }>({ L: ref.L, W: ref.W, H: ref.H });
-  const [tray, setTray] = useState<{ L?: number; W?: number; end?: number }>({ end: 0 });
+  const [tray, setTray] = useState<Tray>({ end: 0 });
   const rack = useRack(dims, tray);
   const r = rack?.ok ? rack.v.result : undefined;
   return (
     <div className="flex flex-col gap-4" data-testid="oven">
-      <Note>Ruang oven contoh KORA {fmt(ref.W, 0)}×{fmt(ref.L, 0)}×{fmt(ref.H, 0)} m dengan tungku terpisah — rak dihitung dengan prinsip yang sama dengan greenhouse. {c.raw.oven.note}</Note>
+      <Note>Ruang oven contoh KORA {fmt(ref.W, 0)}×{fmt(ref.L, 0)}×{fmt(ref.H, 0)} m dengan tungku terpisah — ganti dengan ukuran ovenmu; rak dihitung dengan prinsip yang sama dengan greenhouse. {c.raw.oven.note}</Note>
+      <Note title="Oven tidak memakai fumigasi">Tidak ada perlakuan sulfur/asap di jalur oven: panas tidak langsung, asap tungku tidak boleh menyentuh kopra.</Note>
       <RackInputs dims={dims} setDims={setDims} tray={tray} setTray={setTray} prefix="oven" />
       {rack && !rack.ok && <CalcError message={rack.message} />}
       {r && (
         <>
           <BigResult label="KAPASITAS OVEN PER ANGKATAN" value={fmt(tray.L !== undefined ? r.typ.nutsByTrays : r.typ.nutsByArea, 0)} unit="BUTIR" sub={`luasan ${fmt(r.min.nutsByArea, 0)}–${fmt(r.max.nutsByArea, 0)} butir`} confidence={rack!.ok ? rack!.v.confidence : undefined} testId="oven-cap" />
           <RackResult r={r.typ} prefix="oven" trays={tray.L !== undefined} />
+          <Assumptions tray={tray} r={r.typ} />
+          <ActualLoad cap={tray.L !== undefined ? r.typ.nutsByTrays : r.typ.nutsByArea} prefix="oven" {...(tray.L !== undefined && { halvesPerTray: r.typ.halvesPerTray, trays: r.typ.trays })} />
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
             <Stat label="Suhu" value={`${fmt(ov.temperatureC!.min, 0)}–${fmt(ov.temperatureC!.max, 0)} °C`} sub={`maks ${paramText(f.kopra.oven_max_temp_c, 0)} °C`} accent />
             <Stat label="Lama" value={`${fmt(ov.duration.min, 0)}–${fmt(ov.duration.max, 0)} jam`} />

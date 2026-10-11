@@ -116,3 +116,9 @@ Disimpan di `architecture/07-rnd/GEMA_RnD_brief.md`. Selisih dengan PRD_RnD/sche
 
 ### FND-033 · 2026-10-11 · SNI bisa dibaca gratis; angka SNI di repo masih sekunder
 FAQ Pesta BSN: SNI gratis dibaca di akses-sni.bsn.go.id; Pesta hanya menampilkan SNI berstatus berlaku. Katalog dicek: SNI 01-3946-1995 Kopra, 01-4371-1996 Cuka fermentasi, 01-3711-1995 Cuka makan, 1683:2021 Arang kayu = Berlaku. SNI 01-1682-1996 & 01-6235-2000 tidak bisa dikonfirmasi ulang (timeout). Angka SNI di 00-research berasal dari sumber sekunder → ISS-042. ISO 3377-2 kini edisi 2025; Codex CXC 1-1969 revisi 2022.
+
+### FND-034 · 2026-10-11 · Dosis sulfur kopra edibel: tidak ada sumber resmi/primer
+Penelusuran: E3S 2024 (Apriyanto dkk.) satu studi deskriptif tanpa jumlah kelapa & residu; BAFS TB-09 tanpa dosis; SOP KORA internal. UE: SO₂ ≤50 mg/kg kelapa kering (produk akhir). → DEC-048: tanpa dosis otomatis, log manual.
+
+### FND-035 · 2026-10-11 · 60 parameter formula berkeyakinan terlalu tinggi
+Parameter A/B yang hanya bersumber SOP KORA (F01–F06), atau jurnal yang hanya dikutip lewat SOP (F10–F21), diturunkan ke C / maks B (DEC-049). Plastisasi bioleather A/B/C berlabel A padahal hanya F03. Basis gliserol 1% (v/v vs b/v) tidak diketahui (ISS-043).

@@ -121,3 +121,9 @@
 - Data owner di browser pane: eksperimen "greenhouse 1" (KE-2610-001) — JANGAN dihapus/ubah; upgrade v2 mempertahankannya.
 - Test: tsc bersih; unit 59 (lab 13); E2E lab 3 + HP 5, formula+rantai lulus; video webm nyata → thumbnail & PDF diverifikasi visual.
 - Berikutnya: hasil ukur memilih variabel dari draf `rnd_param_def`/parameter owner; daftar calon variabel per produk dari literatur (berlabel "temuan literatur", bukan resep); bandingkan eksperimen.
+
+### 2026-10-11 · Audit kalkulator (kopra pengeringan/sulfur, cuka, bioleather) + standar 5 jalur
+- Owner minta audit: greenhouse/oven dengan ukuran sendiri + muatan aktual; sulfur tanpa dosis otomatis kecuali ada sumber resmi/primer; audit cuka & bioleather; riset standar 5 jalur.
+- Hasil: ADR-013, DEC-048/049/050, ISS-043/044, FND-034/035. Dataset formula v1.2.0, rantai v1.1.0. Engine: sulfurDose dihapus, dryingLoadPlan baru. UI: SulfurPanel (log manual `gemas-perlakuan`), Assumptions + ActualLoad, label jenis angka, SaveProtocol → Lab. Library 29 sumber berkategori; `sources.md` dibangkitkan `scripts/gen_gema_sources.py`.
+- Test: engine 160, dataset 74, web unit 65, E2E penuh 67 lulus + 1 skip. Ditemukan & diperbaiki regresi dari commit tema 7bf9a82: uji simulator gudang masih mencari warna lama #C6F135.
+- Menunggu owner: basis gliserol (v/v atau b/v); pasar tujuan kopra edibel; baca naskah SNI via Akses SNI; lampiran BPOM 11/2019 untuk batas sulfit.

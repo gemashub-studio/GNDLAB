@@ -7,14 +7,15 @@ KE,3,PROSES,metode_pengering,Metode pengering,,choice,Greenhouse;Greenhouse + be
 KE,3,PROSES,suhu_pengering_c,Suhu pengering,°C,number,,,70,1,false,"Batas oven; sumber F01, F08"
 KE,3,PROSES,ka_24_jam_pct,Kadar air jam ke-24,%,number,,,35,1,false,
 KE,3,PROSES,ka_48_jam_pct,Kadar air jam ke-48,%,number,,,20,1,true,
-KE,3,PROSES,malam_belerang,Malam fumigasi belerang,malam,number,,,4,0,false,
+KE,3,PROSES,malam_belerang,Malam perlakuan sulfur,malam,number,,,,0,false,Dicatat apa adanya; dosis/jadwal belum ditetapkan (DEC-048)
+KE,3,PROSES,sulfur_dipakai_g,Jumlah sulfur dipakai,g,number,,,,1,false,Catat manual apa adanya; aplikasi tidak menghitung dosis (DEC-048)
 KE,5,HASIL / QC,ka_akhir_pct,Kadar air akhir,%,number,,4.5,6,1,true,"sumber F01, F09"
 KE,5,HASIL / QC,warna,Warna,,choice,Putih bersih;Putih kekuningan;Kecoklatan,,,0,true,
 KE,5,HASIL / QC,jamur_pct,Potong berjamur,%,number,,,0,1,true,
 KE,5,HASIL / QC,ffa_pct,FFA (lab),%,number,,,1,2,false,
 KE,5,HASIL / QC,minyak_pct,Kadar minyak (lab),%,number,,60,,1,false,
 KE,5,HASIL / QC,aflatoksin_ppb,Aflatoksin (lab),ppb,number,,,5,1,false,
-KE,5,HASIL / QC,so2_mg_kg,Residu SO2 (lab),mg/kg,number,,,50,1,false,Wajib bila fumigasi ≥3 malam
+KE,5,HASIL / QC,so2_mg_kg,Residu SO2 (lab),mg/kg,number,,,50,1,false,"Batas UE kelapa kering = produk akhir, bukan dosis; uji lab bila ada perlakuan sulfur. sumber F31"
 KE,5,HASIL / QC,rendemen_pct,Rendemen berat akhir/awal,%,number,,,,1,false,
 KA,1,BAHAN,berat_awal_kg,Berat kelapa awal,kg,number,,,,2,true,
 KA,3,PROSES,durasi_asap_jam,Durasi pengasapan,jam,number,,24,,1,false,"sumber F01, F10"

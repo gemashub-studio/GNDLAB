@@ -81,7 +81,7 @@ export function buildLine(id: LineId, f: FormulaDatasetSI, proc: ProcessDatasetS
       const cap = greenhouseCapacityNuts(f.kopra.greenhouseArea, f.kopra.greenhouseHalves);
       stations.push({
         id: 'greenhouse',
-        nameId: 'Greenhouse 3×10 m + belerang',
+        nameId: 'Greenhouse 3×10 m',
         kind: 'batch',
         batchSize: withOverride({ ...f.kopra.greenhouseHalves, key: 'greenhouse.capacity', unit: 'count', ...cap }, ov('greenhouse').batch),
         cycleH: withOverride(f.kopra.greenhouseCycleH, ov('greenhouse').cycleH),

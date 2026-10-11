@@ -44,7 +44,6 @@ test.describe('Rantai produksi', () => {
     await expect(page.getByTestId('gh-racks')).toContainText('3');
     await expect(page.getByTestId('gh-tiers')).toContainText('6');
     await expect(page.getByTestId('gh-fans')).toContainText('2–4 unit');
-    await expect(page.getByTestId('gh-points')).toContainText('1');
     await expect(page.getByTestId('gh-tilt')).toContainText('15–30°');
     await page.getByTestId('gh-trayL').fill('0,65');
     await expect(page.getByTestId('gh-cap-value')).toHaveText('1.215');
@@ -52,7 +51,43 @@ test.describe('Rantai produksi', () => {
     await page.getByTestId('gh-W').fill('6');
     await expect(page.getByTestId('gh-racks')).toContainText('5');
     await expect(page.getByTestId('gh-aisle')).toContainText('0,69');
-    await expect(page.getByText('Angka kipas/belerang hasil skala')).toBeVisible();
+    await expect(page.getByText('Jumlah kipas hasil skala')).toBeVisible();
+  });
+
+  test('pengeringan: muatan aktual & belahan/tray sendiri; sulfur tanpa dosis + log manual; oven tanpa fumigasi (DEC-048)', async ({ page }) => {
+    await page.goto('/rantai?t=kering');
+    await page.getByTestId('gh-trayL').fill('0,65');
+    await expect(page.getByTestId('gh-cap-value')).toHaveText('1.215');
+    await page.getByTestId('gh-halves').fill('12');
+    await expect(page.getByTestId('gh-cap-value')).toHaveText('1.620'); // 270 tray × 12 ÷ 2
+    await page.getByTestId('gh-split').fill('2000');
+    await expect(page.getByTestId('gh-batches')).toContainText('2');
+    await expect(page.getByTestId('gh-fill')).toContainText('100%');
+    await page.getByTestId('dry-assumptions').locator('summary').click();
+    await expect(page.getByTestId('dry-assumptions')).toContainText('hitungan kamu sendiri');
+
+    const sul = page.getByTestId('sulfur-panel');
+    await expect(page.getByTestId('sulfur-status')).toHaveText('DOSIS BELUM DITETAPKAN');
+    await expect(sul).not.toContainText('g/butir');
+    await expect(sul).not.toContainText('g/m³');
+    await expect(sul).not.toContainText('kg belerang');
+    await expect(page.getByTestId('sulfur-residue')).toContainText('50 mg/kg');
+    await expect(page.getByTestId('sulfur-residue')).toContainText('bukan dosis');
+    await page.getByTestId('sul-new').click();
+    await page.getByTestId('sul-save').click();
+    await expect(page.getByTestId('sul-msg')).toContainText('dasar penentuan jumlah');
+    await page.getByTestId('sul-startedAt').fill('2026-10-11T19:00');
+    await page.getByTestId('sul-amount').fill('500');
+    await page.getByTestId('sul-basis').fill('Uji E2E — keputusan owner');
+    await page.getByTestId('sul-save').click();
+    await expect(page.getByTestId('sul-msg')).toContainText(/S-261011-\d{2}/);
+    await expect(page.getByTestId('sul-list')).toContainText('Uji E2E');
+
+    await page.getByTestId('kering-oven').click();
+    await expect(page.getByText('Oven tidak memakai fumigasi')).toBeVisible();
+    await expect(page.getByTestId('sulfur-panel')).toHaveCount(0);
+    await page.getByTestId('oven-split').fill('100');
+    await expect(page.getByTestId('oven-batches')).toContainText('1');
   });
 
   test('arang kolam: 2×2×1,5 m → 1.053 kg/angkatan; tepung → waktu giling', async ({ page }) => {

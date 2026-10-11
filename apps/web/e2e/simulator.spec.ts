@@ -77,7 +77,7 @@ test.describe('Simulator (M3)', () => {
     await simPrimary(page, s);
     const stacks = idNum((await page.getByTestId('sim-stacks').textContent()) ?? '');
     expect(stacks).toBe(40);
-    await expect(page.getByTestId('plan-warehouse').locator('svg rect[fill="#C6F135"]')).toHaveCount(40);
+    await expect(page.getByTestId('plan-warehouse').locator('svg rect[fill="#63E6CF"]')).toHaveCount(40);
     await page.getByTestId('plan-warehouse').screenshot({ path: 'test-results/simulator-gudang.png' });
   });
 

@@ -61,14 +61,15 @@ choice("KE", 3, "PROSES", "metode_pengering", "Metode pengering", ["Greenhouse",
 num("KE", 3, "PROSES", "suhu_pengering_c", "Suhu pengering", "°C", hi=K["oven_max_temp_c"]["typ"], dec=1, note="Batas oven; " + src(*K["oven_max_temp_c"]["source_ids"]))
 num("KE", 3, "PROSES", "ka_24_jam_pct", "Kadar air jam ke-24", "%", hi=K["alarm_moisture_24h_max_pct"]["typ"], dec=1)
 num("KE", 3, "PROSES", "ka_48_jam_pct", "Kadar air jam ke-48", "%", hi=K["alarm_moisture_48h_max_pct"]["typ"], dec=1, req=True)
-num("KE", 3, "PROSES", "malam_belerang", "Malam fumigasi belerang", "malam", hi=K["sulfur"]["max_nights"], dec=0)
+num("KE", 3, "PROSES", "malam_belerang", "Malam perlakuan sulfur", "malam", dec=0, note="Dicatat apa adanya; dosis/jadwal belum ditetapkan (DEC-048)")
+num("KE", 3, "PROSES", "sulfur_dipakai_g", "Jumlah sulfur dipakai", "g", dec=1, note="Catat manual apa adanya; aplikasi tidak menghitung dosis (DEC-048)")
 num("KE", 5, "HASIL / QC", "ka_akhir_pct", "Kadar air akhir", "%", lo=K["min_final_moisture_pct"]["typ"], hi=e["moisture_max_pct"], dec=1, req=True, note=src(*e["source_ids"]))
 choice("KE", 5, "HASIL / QC", "warna", "Warna", ["Putih bersih", "Putih kekuningan", "Kecoklatan"], req=True)
 num("KE", 5, "HASIL / QC", "jamur_pct", "Potong berjamur", "%", hi=e["mould_max_pct"], dec=1, req=True)
 num("KE", 5, "HASIL / QC", "ffa_pct", "FFA (lab)", "%", hi=e["ffa_max_pct"], dec=2)
 num("KE", 5, "HASIL / QC", "minyak_pct", "Kadar minyak (lab)", "%", lo=e["oil_min_pct"], dec=1)
 num("KE", 5, "HASIL / QC", "aflatoksin_ppb", "Aflatoksin (lab)", "ppb", hi=e["aflatoxin_max_ppb"], dec=1)
-num("KE", 5, "HASIL / QC", "so2_mg_kg", "Residu SO2 (lab)", "mg/kg", hi=K["sulfur"]["so2_residue_eu_max_mg_kg"], dec=1, note="Wajib bila fumigasi ≥3 malam")
+num("KE", 5, "HASIL / QC", "so2_mg_kg", "Residu SO2 (lab)", "mg/kg", hi=K["sulfur"]["residue_limits"][0]["max_mg_kg"], dec=1, note="Batas UE kelapa kering = produk akhir, bukan dosis; uji lab bila ada perlakuan sulfur. " + src(*K["sulfur"]["residue_limits"][0]["source_ids"]))
 num("KE", 5, "HASIL / QC", "rendemen_pct", "Rendemen berat akhir/awal", "%", dec=1)
 
 # ---------------------------------------------------------------- KA kopra asalan

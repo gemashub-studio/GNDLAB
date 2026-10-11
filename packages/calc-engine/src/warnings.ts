@@ -28,14 +28,12 @@ export const WARNING_MESSAGES = {
   NAOH_TOO_STRONG: 'NaOH di atas 0,1 M merusak serat selulosa (kuat tarik turun).',
   COOLING_TOO_SHORT: 'Pendinginan arang < 8 jam: risiko menyala ulang.',
   OVEN_TEMP_HIGH: 'Suhu oven di atas batas aman produk.',
-  SULFUR_NIGHTS_EXCEEDED: 'Fumigasi belerang melebihi 4 malam.',
-  SO2_TEST_REQUIRED: 'Fumigasi ≥3 malam: wajib uji residu SO₂ sebelum dikirim.',
   SPLIT_DELAY_EXCEEDED: 'Jeda belah → pengering melebihi 4 jam: maksimal grade Reguler.',
   DRYING_BEHIND_SCHEDULE: 'Kadar air belum mencapai alarm 24/48 jam: pindah ke pengering lebih panas.',
   YIELD_BELOW_REFERENCE: 'Rendemen di bawah acuan literatur.',
   // --- rantai produksi (ADR-010) ---
   PAYLOAD_LEGAL_CHECK: 'Payload truk dari data vendor: cek JBI di buku KIR (aturan ODOL).',
-  DERIVED_SCALING: 'Jumlah kipas/titik belerang diskalakan dari contoh KORA 105 m³ — uji suhu, RH & bau SO₂.',
+  DERIVED_SCALING: 'Jumlah kipas diskalakan dari contoh KORA 105 m³ — ukur suhu & RH tiap tingkat.',
   BLEND_OUT_OF_SPEC: 'Campuran asal batok tidak memenuhi batas spesifikasi.',
 } as const;
 

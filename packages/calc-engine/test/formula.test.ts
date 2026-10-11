@@ -18,7 +18,6 @@ import {
   shiftPlan,
   splitDelayCheck,
   sugarToBrixKg,
-  sulfurDose,
   titrationAcidity,
   trayMediaL,
   trialDesign,
@@ -226,22 +225,6 @@ describe('kopra — R&D', () => {
     expect(dryingCheck({ hours: 24, moisturePct: 36, alarm24MaxPct: 35, alarm48MaxPct: 20 }).warnings[0]?.code).toBe('DRYING_BEHIND_SCHEDULE');
     expect(dryingCheck({ hours: 48, moisturePct: 20, alarm24MaxPct: 35, alarm48MaxPct: 20 }).onTrack).toBe(true);
     expect(splitDelayCheck(4.5, 4).warnings[0]?.code).toBe('SPLIT_DELAY_EXCEEDED');
-  });
-  it('belerang 2.000 butir: 3–4 kg penuh; 2 malam = 150%; ≥3 malam wajib uji SO₂', () => {
-    const r = sulfurDose({
-      nuts: 2000, roomM3: 105,
-      gPerNut: P('gn', 'g', { min: 1.5, typ: 1.75, max: 2 }, 'C'), gPerM3: P('gm', 'g_m3', { min: 20, typ: 25, max: 30 }, 'C'),
-      nightSchedulePct: [100, 50, 25, 25], nights: 2, maxNights: 4, labTestFromNight: 3,
-    });
-    expect(r.result.min.fullDoseByNutsG).toBe(3000);
-    expect(r.result.max.fullDoseByNutsG).toBe(4000);
-    expect(r.result.typ.fullDoseByRoomG).toBe(2625);
-    expect(r.result.typ.totalByNutsG).toBeCloseTo(3500 * 1.5, 9);
-    expect(r.perNightPct).toEqual([100, 50]);
-    expect(r.warnings.map((w) => w.code)).not.toContain('SO2_TEST_REQUIRED');
-    const five = sulfurDose({ ...{ nuts: 2000, roomM3: 105, gPerNut: P('gn', 'g', 1.75), gPerM3: P('gm', 'g_m3', 25), nightSchedulePct: [100, 50, 25, 25], maxNights: 4, labTestFromNight: 3 }, nights: 5 });
-    expect(five.perNightPct).toEqual([100, 50, 25, 25, 25]);
-    expect(five.warnings.map((w) => w.code)).toEqual(expect.arrayContaining(['SULFUR_NIGHTS_EXCEEDED', 'SO2_TEST_REQUIRED']));
   });
   it('kapasitas greenhouse 117 m² × 25–30 belahan/m² → 1.462–1.755 butir (E7)', () => {
     const c = greenhouseCapacityNuts(P('a', 'count', 117), P('h', 'count', { min: 25, typ: 28, max: 30 }));

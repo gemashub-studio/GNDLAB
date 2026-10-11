@@ -10,7 +10,7 @@ import { KopraFormula } from './KopraFormula';
 import { useFormula } from './shared';
 
 const PRODUCTS = [
-  { id: 'kopra', label: 'Kopra', code: 'KE/KA', blurb: 'Desain uji, rendemen, pengeringan, belerang, grade.' },
+  { id: 'kopra', label: 'Kopra', code: 'KE/KA', blurb: 'Desain uji, rendemen, pengeringan, log perlakuan sulfur, grade.' },
   { id: 'arang', label: 'Arang', code: 'AR', blurb: 'Rencana bakar, rendemen aktual, fraksi ayak, standar.' },
   { id: 'shisha', label: 'Briket shisha', code: 'BS', blurb: 'Kubus — perekat, adonan, cetak, oven, uji mutu.' },
   { id: 'bbq', label: 'Briket BBQ', code: 'BB', blurb: 'Pillow 5×10 cm — abu putih, waktu bakar 2–3 jam.' },

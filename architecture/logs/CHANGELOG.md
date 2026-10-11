@@ -3,6 +3,17 @@
 Format: [Keep a Changelog](https://keepachangelog.com/id/1.1.0/) · Versi dataset mengikuti SemVer (ADR-002).
 Waktu dalam WIB (UTC+7).
 
+## Dataset formula v1.2.0 & rantai v1.1.0 + audit kalkulator — 2026-10-11
+### Diubah
+- **Perlakuan sulfur kopra tanpa dosis otomatis** (DEC-048, ADR-013): blok `kopra.sulfur` kini berisi status, bukti, & batas residu (UE 50 mg/kg kelapa kering = produk akhir). Parameter dosis/jadwal belerang & `bisulfite_soak_pct` dihapus; dataset rantai menghapus `sulfur_exposure_h`, `sulfur_ventilate_h`, `sulfur_room_per_point_m3`, `sulfur_dose_ref`.
+- **Keyakinan 60 parameter disesuaikan** dengan sumber yang benar-benar dibaca (DEC-049).
+- Sumber baru F30 (E3S 2024), F31 (EU FIP SO₂), F32 (BPOM 11/2019).
+- Engine: `sulfurDose` dihapus; `greenhouseServices` hanya kipas; baru `dryingLoadPlan` & `halvesPerTrayCounted`.
+### Ditambahkan
+- Pengeringan (greenhouse & oven): belahan per tray hitungan sendiri, muatan aktual (angkatan, isi %, tray terpakai), panel asumsi & satuan; log perlakuan sulfur manual (CSV); oven = tanpa fumigasi.
+- Cuka & bioleather: label jenis angka, "Simpan sebagai versi protokol" ke GEMA RnD Lab, basis gliserol v/v & b/v.
+- Library GEMA RnD: 29 sumber berkategori (standar produk, aturan keamanan, metode uji, panduan proses, …); `07-rnd/library/sumber/sources.md` dibangkitkan dari JSON.
+
 ## [aplikasi GEMA RnD catatan harian] — 2026-10-11
 ### Ditambahkan
 - Catatan harian per eksperimen (hanya bisa ditambah; koreksi = catatan baru): rencana, realisasi, bahan & batch, alat, kondisi, hasil ukur mentah (nilai + satuan + waktu + ulangan), penyimpangan, interpretasi, langkah berikutnya, foto/video dengan keterangan.

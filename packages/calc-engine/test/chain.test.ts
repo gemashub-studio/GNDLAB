@@ -4,6 +4,7 @@ import {
   celluloseAdditive,
   feasibleDtShare,
   formatLotCode,
+  dryingLoadPlan,
   greenhouseServices,
   kilnPlan,
   originBlend,
@@ -133,29 +134,35 @@ describe('desainer greenhouse (contoh KORA 3×10×3,5 m)', () => {
     expect(() => rackRoomDesign({ roomL: 10, roomW: 3, roomH: 3.5, ...base, trayW: 0.8 })).toThrow(/lebih lebar/);
   });
 
-  it('kipas & belerang: 105 m³ → 2–4 kipas, 1 titik bakar; 210 m³ → 4–8 kipas, 2 titik + peringatan skala', () => {
-    const svc = (roomM3: number) =>
-      greenhouseServices({
-        roomM3,
-        nuts: 1638,
-        aisles: 2,
-        refRoomM3: 105,
-        fansPerRefRoom: P('f', 'count', { min: 2, typ: 3, max: 4 }),
-        sulfurGPerNut: P('gn', 'g', { min: 1.5, typ: 1.75, max: 2 }),
-        sulfurGPerM3: P('gm', 'g_m3', { min: 20, typ: 25, max: 30 }),
-        roomPerPointM3: P('pp', 'm3', 105),
-      });
+  it('kipas: 105 m³ → 2–4 kipas; 210 m³ → 4–8 kipas + peringatan skala; TIDAK ada keluaran sulfur (DEC-048)', () => {
+    const svc = (roomM3: number) => greenhouseServices({ roomM3, aisles: 2, refRoomM3: 105, fansPerRefRoom: P('f', 'count', { min: 2, typ: 3, max: 4 }) });
     const a = svc(105);
     expect([a.result.min.fans, a.result.typ.fans, a.result.max.fans]).toEqual([2, 3, 4]);
-    expect(a.result.typ.burnPoints).toBe(1);
-    expect(a.result.typ.sulfurByNutsG).toBeCloseTo(2866.5);
-    expect(a.result.typ.sulfurByRoomG).toBeCloseTo(2625);
     expect(a.result.typ.fanPositions).toBe(4);
+    expect(Object.keys(a.result.typ).some((k) => /sulfur|burn/i.test(k))).toBe(false);
     expect(a.warnings.map((w) => w.code)).not.toContain('DERIVED_SCALING');
     const b = svc(210);
     expect([b.result.min.fans, b.result.max.fans]).toEqual([4, 8]);
-    expect(b.result.typ.burnPoints).toBe(2);
     expect(b.warnings.map((w) => w.code)).toContain('DERIVED_SCALING');
+  });
+
+  it('belahan per tray hasil hitung sendiri menggantikan perkiraan kerapatan', () => {
+    const r = rackRoomDesign({ roomL: 10, roomW: 3, roomH: 3.5, ...base, trayL: 0.65, halvesPerTrayCounted: 12 }).result;
+    expect(r.typ.halvesPerTray).toBe(12);
+    expect(r.min.halvesPerTray).toBe(12);
+    expect(r.typ.nutsByTrays).toBe(1620); // 270 tray × 12 ÷ 2
+    expect(() => rackRoomDesign({ roomL: 10, roomW: 3, roomH: 3.5, ...base, trayL: 0.65, halvesPerTrayCounted: 0 })).toThrow(/belahan per tray/);
+  });
+
+  it('muatan aktual vs kapasitas: 2.000 butir dibelah, kapasitas 1.215 → 2 angkatan, sisa 430', () => {
+    const r = dryingLoadPlan({ capacityNuts: 1215, splitNuts: 2000, halvesPerTray: 9, trays: 270 });
+    expect(r).toEqual({ halves: 4000, batches: 2, firstBatchFillPct: 100, lastBatchNuts: 785, spareNuts: 430, traysUsedFirstBatch: 270 });
+    const half = dryingLoadPlan({ capacityNuts: 1215, splitNuts: 600, halvesPerTray: 9 });
+    expect(half.batches).toBe(1);
+    expect(half.firstBatchFillPct).toBeCloseTo((600 / 1215) * 100);
+    expect(half.traysUsedFirstBatch).toBe(134); // ⌈1.200 ÷ 9⌉
+    expect(dryingLoadPlan({ capacityNuts: 100, splitNuts: 0 }).batches).toBe(0);
+    expect(() => dryingLoadPlan({ capacityNuts: 100, splitNuts: 10.5 })).toThrow(/bulat/);
   });
 
   it('jemur para-para: 1.000 butir → 2.000 belahan ÷ 25–30/m² = 66,7–80 m²', () => {

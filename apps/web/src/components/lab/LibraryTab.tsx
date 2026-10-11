@@ -1,14 +1,17 @@
 'use client';
 
 import { useState } from 'react';
-import { GEMA_SOURCES, GEMA_SOURCES_CHECKED, GEMA_SOURCES_DOC, SOURCE_STATUS, type SourceStatus } from '@/lib/gemaSources';
+import { GEMA_SOURCES, GEMA_SOURCES_CHECKED, GEMA_SOURCES_DOC, SOURCE_CATEGORIES, SOURCE_STATUS, type SourceCategory, type SourceStatus } from '@/lib/gemaSources';
 import { LAB_PRODUCTS, type LabProductId } from '@/lib/labStore';
 import { SourcePill } from './ui';
 
 export function LibraryTab() {
   const [status, setStatus] = useState<SourceStatus | 'all'>('all');
   const [product, setProduct] = useState<LabProductId | 'all'>('all');
-  const shown = GEMA_SOURCES.filter((s) => (status === 'all' || s.status === status) && (product === 'all' || s.products.includes(product)));
+  const [category, setCategory] = useState<SourceCategory | 'all'>('all');
+  const shown = GEMA_SOURCES.filter(
+    (s) => (status === 'all' || s.status === status) && (product === 'all' || s.products.includes(product)) && (category === 'all' || s.category === category),
+  );
 
   return (
     <div className="flex flex-col gap-5" data-testid="lab-library">
@@ -19,7 +22,14 @@ export function LibraryTab() {
         <ul className="flex flex-wrap gap-x-5 gap-y-1 text-xs text-muted">
           {SOURCE_STATUS.map((s) => <li key={s.id} className="flex items-center gap-2"><SourcePill status={s.id} /> {s.hint}</li>)}
         </ul>
-        <div className="grid gap-3 sm:grid-cols-2">
+        <div className="grid gap-3 sm:grid-cols-3">
+          <label className="flex flex-col gap-1.5">
+            <span className="label-mono">Jenis</span>
+            <select className="field" value={category} onChange={(e) => setCategory(e.target.value as SourceCategory | 'all')} data-testid="lib-filter-category">
+              <option value="all">Semua jenis</option>
+              {(Object.keys(SOURCE_CATEGORIES) as SourceCategory[]).map((k) => <option key={k} value={k}>{SOURCE_CATEGORIES[k]}</option>)}
+            </select>
+          </label>
           <label className="flex flex-col gap-1.5">
             <span className="label-mono">Status</span>
             <select className="field" value={status} onChange={(e) => setStatus(e.target.value as SourceStatus | 'all')} data-testid="lib-filter-status">
@@ -43,10 +53,13 @@ export function LibraryTab() {
             <div className="flex flex-wrap items-center gap-2">
               <span className="font-mono text-xs font-semibold">{s.id}</span>
               <SourcePill status={s.status} />
-              <span className="font-mono text-[11px] text-muted">{s.kind} · {s.org}{s.year !== '-' ? ` · ${s.year}` : ''}</span>
+              <span className="rounded-full bg-paper px-2 py-0.5 font-mono text-[10px] uppercase">{SOURCE_CATEGORIES[s.category]}</span>
+              <span className="font-mono text-[11px] text-muted">{s.org}{s.year !== '-' ? ` · ${s.year}` : ''}</span>
             </div>
             <a href={s.url} target="_blank" rel="noopener noreferrer" className="font-display text-lg font-semibold underline-offset-4 hover:underline">{s.title}</a>
             <dl className="grid gap-1 text-sm">
+              <div><dt className="label-mono inline">Ruang lingkup: </dt><dd className="inline">{s.scope}</dd></div>
+              <div><dt className="label-mono inline">Parameter diatur: </dt><dd className="inline">{s.regulates}</dd></div>
               <div><dt className="label-mono inline">Didukung: </dt><dd className="inline">{s.supports}</dd></div>
               <div><dt className="label-mono inline">Batasan: </dt><dd className="inline">{s.limits}</dd></div>
             </dl>

@@ -1,9 +1,9 @@
 {
  "meta": {
   "title": "Dataset Rantai Produksi Kelapa Jambul → Kopra, Air Kelapa, Arang, Briket (Fase G)",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "compiled": "2026-10-11",
-  "requires_formula_dataset": "1.1.0",
+  "requires_formula_dataset": "1.2.0",
   "requires_inventory_dataset": "1.0.4",
   "value_convention": "Sama dengan dataset formula: {min, typ, max} + unit + keyakinan A/B/C + source_ids. Angka yang SUDAH ada di dataset inventory/proses/formula DIRUJUK (field *_ref), tidak disalin. Ukuran desain milik pengguna (dimensi greenhouse, kolam, tray) adalah INPUT, bukan data.",
   "confidence_scale": {
@@ -647,41 +647,6 @@
    ],
    "note": "Target suhu udara siang"
   },
-  "sulfur_exposure_h": {
-   "min": 8,
-   "typ": 10,
-   "max": 12,
-   "unit": "h",
-   "confidence": "C",
-   "source_ids": [
-    "C02"
-   ],
-   "note": "Paparan semalam 8-12 jam (pembakaran praktik 3-4 jam)"
-  },
-  "sulfur_ventilate_h": {
-   "min": 0.5,
-   "typ": 0.75,
-   "max": 1,
-   "unit": "h",
-   "confidence": "C",
-   "source_ids": [
-    "C02",
-    "C03"
-   ],
-   "note": "Ventilasi total 30-60 menit sebelum orang masuk"
-  },
-  "sulfur_room_per_point_m3": {
-   "min": 105,
-   "typ": 105,
-   "max": 105,
-   "unit": "m3",
-   "confidence": "C",
-   "source_ids": [
-    "C02"
-   ],
-   "note": "Turunan: 1 wadah bakar di lorong tengah untuk ruang acuan 105 m³ → titik = ceil(V/105), sebar merata sepanjang lorong; GAP - belum ada uji sebaran SO₂"
-  },
-  "sulfur_dose_ref": "kopra.sulfur",
   "halves_per_m2_ref": "kopra.greenhouse.halves_per_m2",
   "cycle_h_ref": "kopra.greenhouse.cycle_h"
  },

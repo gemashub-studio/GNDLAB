@@ -1,7 +1,7 @@
 /**
  * Formula R&D kopra (KORA-SOP-KPR-01; Rencana R&D Ronde 1; ADR-009).
  * Neraca massa butir → kopra memakai `processChain` (ADR-007); modul ini menambah bagian R&D:
- * rendemen dari daging, grade dari KA, alarm KA 24/48 jam, aturan 4 jam, dosis belerang,
+ * rendemen dari daging, grade dari KA, alarm KA 24/48 jam, aturan 4 jam (dosis sulfur TIDAK dihitung — DEC-048),
  * kapasitas greenhouse, dan desain perlakuan × ulangan.
  */
 import { evaluateRange, type Param } from './range.ts';
@@ -82,45 +82,6 @@ export function splitDelayCheck(delayH: number, maxH: number): { ok: boolean; wa
   assertNonNegative(delayH, 'jeda');
   const ok = delayH <= maxH;
   return { ok, warnings: ok ? [] : [warning('SPLIT_DELAY_EXCEEDED', `${delayH} jam`)] };
-}
-
-export interface SulfurInput {
-  nuts: number;
-  roomM3: number;
-  gPerNut: Param;
-  gPerM3: Param;
-  /** Persen dosis per malam, mis. [100, 50, 25, 25]. */
-  nightSchedulePct: readonly number[];
-  nights: number;
-  maxNights: number;
-  labTestFromNight: number;
-  datasetVersion?: string;
-}
-
-export interface SulfurResult extends Record<string, number> {
-  fullDoseByNutsG: number;
-  fullDoseByRoomG: number;
-  totalByNutsG: number;
-  totalByRoomG: number;
-}
-
-/** Dosis penuh = butir · g/butir (cek silang: volume ruang · g/m³); malam berikutnya mengikuti jadwal %. */
-export function sulfurDose(i: SulfurInput): FormulaOutput<SulfurResult> & { perNightPct: number[] } {
-  assertPositive(i.nuts, 'jumlah butir');
-  assertPositive(i.roomM3, 'volume ruang');
-  if (!Number.isInteger(i.nights) || i.nights < 1) throw new RangeError('jumlah malam minimal 1');
-  const perNightPct = Array.from({ length: i.nights }, (_, n) => i.nightSchedulePct[Math.min(n, i.nightSchedulePct.length - 1)]!);
-  const factor = perNightPct.reduce((a, b) => a + b, 0) / 100;
-  const result = evaluateRange({ gn: i.gPerNut, gm: i.gPerM3 }, (v) => ({
-    fullDoseByNutsG: i.nuts * v.gn,
-    fullDoseByRoomG: i.roomM3 * v.gm,
-    totalByNutsG: i.nuts * v.gn * factor,
-    totalByRoomG: i.roomM3 * v.gm * factor,
-  }));
-  const warnings: CalcWarning[] = [];
-  if (i.nights > i.maxNights) warnings.push(warning('SULFUR_NIGHTS_EXCEEDED', `${i.nights} malam`));
-  if (i.nights >= i.labTestFromNight) warnings.push(warning('SO2_TEST_REQUIRED'));
-  return { ...formulaOutput(result, [i.gPerNut, i.gPerM3], warnings, i.datasetVersion), perNightPct };
 }
 
 /** Kapasitas greenhouse (butir) = luas rak · belahan/m² ÷ 2. */

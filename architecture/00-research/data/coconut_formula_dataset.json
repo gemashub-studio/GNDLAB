@@ -1,7 +1,7 @@
 {
   "meta": {
     "title": "Dataset Formula R&D, Produksi per Shift & Ceklis (kopra, arang, briket, cuka air kelapa, bioleather)",
-    "version": "1.1.0",
+    "version": "1.2.0",
     "compiled": "2026-10-11",
     "requires_process_dataset": "1.1.0",
     "requires_inventory_dataset": "1.0.4",
@@ -19,7 +19,7 @@
     "meat_per_nut_kg": { "min": 0.25, "typ": 0.3, "max": 0.4, "unit": "kg", "confidence": "C", "source_ids": ["F05"], "note": "Asumsi Rencana R&D Ronde 1; timbang sampel sendiri" },
     "water_per_nut_l": { "min": 0.15, "typ": 0.17, "max": 0.2, "unit": "L", "confidence": "C", "source_ids": ["F05"] },
     "copra_kg_per_1000_nuts": { "min": 150, "typ": 200, "max": 250, "unit": "kg", "confidence": "B", "source_ids": ["F01", "F19"], "note": "FAO/ILO; typ = titik tengah; tergantung varietas" },
-    "split_to_dryer_max_h": { "min": 4, "typ": 4, "max": 4, "unit": "h", "confidence": "A", "source_ids": ["F01", "F10"], "note": "Aturan 4 jam (FAO/APCC; BAFS) — titik kritis kapang & aflatoksin" },
+    "split_to_dryer_max_h": { "min": 4, "typ": 4, "max": 4, "unit": "h", "confidence": "B", "source_ids": ["F01", "F10"], "note": "Aturan 4 jam (FAO/APCC; BAFS) — titik kritis kapang & aflatoksin [sumber primer hanya dikutip lewat SOP KORA, belum dibaca langsung → maks B (DEC-049)]" },
     "alarm_moisture_24h_max_pct": { "min": 35, "typ": 35, "max": 35, "unit": "pct", "confidence": "B", "source_ids": ["F01", "F10"] },
     "alarm_moisture_48h_max_pct": { "min": 20, "typ": 20, "max": 20, "unit": "pct", "confidence": "B", "source_ids": ["F01", "F10"] },
     "min_final_moisture_pct": { "min": 4.5, "typ": 4.5, "max": 4.5, "unit": "pct", "confidence": "C", "source_ids": ["F01"], "note": "Di bawah ini kopra rapuh/pecah & bobot jual turun" },
@@ -29,15 +29,19 @@
       { "id": "asalan", "name_id": "Asalan", "moisture_max_pct": 13.9, "oil_min_pct": 55, "ffa_max_pct": 5, "foreign_max_pct": 2, "mould_max_pct": 20, "aflatoxin_max_ppb": 15, "confidence": "A", "source_ids": ["F01", "F09"] }
     ],
     "sulfur": {
-      "g_per_nut": { "min": 1.5, "typ": 1.75, "max": 2, "unit": "g", "confidence": "C", "source_ids": ["F01"], "note": "Dosis dasar SOP KORA; typ titik tengah" },
-      "g_per_m3": { "min": 20, "typ": 25, "max": 30, "unit": "g/m3", "confidence": "C", "source_ids": ["F01"], "note": "Cek silang volume ruang; kubung E3S 2024 ±80 g/m3 = batas atas kalibrasi, bukan dosis" },
-      "night_schedule_pct": [100, 50, 25, 25],
-      "max_nights": 4,
-      "lab_test_from_night": 3,
-      "so2_residue_eu_max_mg_kg": 50,
-      "source_ids": ["F01"]
+      "auto_dose": false,
+      "status": "Dosis fumigasi sulfur BELUM DITETAPKAN. Penelusuran 2026-10-11 tidak menemukan sumber resmi/primer yang menetapkan dosis proses khusus kopra edibel beserta basis hitungnya. Aplikasi tidak menghitung dosis, waktu bakar, paparan, atau waktu masuk kembali — perlakuan dicatat manual.",
+      "evidence": [
+        { "source_ids": ["F01"], "kind": "internal", "note": "SOP internal KORA mencantumkan dosis per butir & per volume ruang serta jadwal beberapa malam. Dokumen internal tanpa rujukan resmi/primer yang bisa diperiksa — angkanya tidak ditampilkan & tidak dipakai menghitung." },
+        { "source_ids": ["F05"], "kind": "internal", "note": "Rencana R&D internal menyebut rendam natrium bisulfit (perlakuan sulfit) tanpa durasi. Angkanya tidak ditampilkan & tidak dipakai menghitung." },
+        { "source_ids": ["F30"], "kind": "primary_single", "note": "Satu studi deskriptif (E3S 2024) membandingkan dua jumlah belerang per sesi malam di terowongan pengering. Tanpa jumlah kelapa per sesi, tanpa ulangan statistik yang jelas, tanpa data residu SO₂ — tidak bisa dijadikan dosis." }
+      ],
+      "residue_limits": [
+        { "jurisdiction": "EU", "max_mg_kg": 50, "scope": "Kelapa kering (dried coconut), kategori 04.2.1; E 220–228 dinyatakan sebagai SO₂ total dari semua sumber; ≤10 mg/kg dianggap tidak ada", "source_ids": ["F31"], "note": "Batas residu PRODUK AKHIR untuk pasar UE — bukan dosis fumigasi." }
+      ],
+      "residue_limit_id_note": "Batas sulfit untuk kopra/kelapa kering di Peraturan BPOM 11/2019 (BTP) belum dibaca dari lampirannya (F32).",
+      "source_ids": ["F01", "F05", "F30", "F31", "F32"]
     },
-    "bisulfite_soak_pct": { "min": 0.2, "typ": 0.2, "max": 0.2, "unit": "pct", "confidence": "C", "source_ids": ["F01", "F05"], "note": "Rendam natrium bisulfit 0,2% (studi Indragiri Hilir); durasi rendam GAP — mulai 15 menit" },
     "oven_profiles": [
       { "id": "waste_heat", "name_id": "Limbah panas ketel (tidak langsung)", "temp_c": 68, "hours": 7.9, "final_moisture_pct": 5.0, "ffa_pct": 1.0, "source_ids": ["F08"] },
       { "id": "electric", "name_id": "Oven listrik (280 kg/batch)", "temp_c": 68, "hours": 13, "final_moisture_pct": 5.0, "ffa_pct": 1.6, "batch_kg": 280, "source_ids": ["F08"] },
@@ -53,22 +57,22 @@
       "room_m3": { "min": 105, "typ": 105, "max": 105, "unit": "m3", "confidence": "C", "source_ids": ["F01"], "note": "Greenhouse 3 × 10 × 3,5 m" },
       "rack_area_m2": { "min": 117, "typ": 117, "max": 117, "unit": "m2", "confidence": "C", "source_ids": ["F01"], "note": "Greenhouse 3×10×3,5 m, rak bertingkat (perhitungan SOP KORA)" },
       "halves_per_m2": { "min": 25, "typ": 28, "max": 30, "unit": "count", "confidence": "C", "source_ids": ["F01"], "note": "Belahan Ø ±14 cm berjarak ±18 cm" },
-      "cycle_h": { "min": 72, "typ": 108, "max": 216, "unit": "h", "confidence": "B", "source_ids": ["F01"], "note": "108 jam kubung terkontrol (E3S 2024); KORA 3–5 hari kemarau, 6–9 hari hujan" }
+      "cycle_h": { "min": 72, "typ": 108, "max": 216, "unit": "h", "confidence": "C", "source_ids": ["F01"], "note": "108 jam kubung terkontrol (E3S 2024); KORA 3–5 hari kemarau, 6–9 hari hujan [hanya dokumen internal KORA → C (DEC-049)]" }
     },
     "smoke_min_h": { "min": 24, "typ": 24, "max": 24, "unit": "h", "confidence": "B", "source_ids": ["F01", "F10"], "note": "Pengasapan langsung minimal 24 jam, balik tiap ±8 jam (FAO HACCP via SOP KPR E4)" },
     "smoked_copra_per_kg_meat": { "min": 0.5, "typ": 0.5, "max": 0.5, "unit": "kg", "confidence": "C", "source_ids": ["F01"], "note": "Konversi teoretis KPI 1.A.1; ukur aktual" }
   },
   "arang": {
-    "yield_reference_pct": { "min": 28, "typ": 32, "max": 36, "unit": "pct", "confidence": "A", "source_ids": ["F02", "F15"], "note": "Drum 200 L 33,8–37,2% (Hudaya & Hartoyo 1990); operasi industri 28–33% (Unila); FAO/APCC ±33%" },
+    "yield_reference_pct": { "min": 28, "typ": 32, "max": 36, "unit": "pct", "confidence": "B", "source_ids": ["F02", "F15"], "note": "Drum 200 L 33,8–37,2% (Hudaya & Hartoyo 1990); operasi industri 28–33% (Unila); FAO/APCC ±33% [sumber primer hanya dikutip lewat SOP KORA, belum dibaca langsung → maks B (DEC-049)]" },
     "yield_kora_actual_pct": { "min": 18, "typ": 20, "max": 22, "unit": "pct", "confidence": "C", "source_ids": ["F02"], "note": "SOP lama 5:1 — DI BAWAH acuan; target ≥25% (3 bln) → ≥28% (6 bln)" },
     "yield_target_3m_pct": { "min": 25, "typ": 25, "max": 25, "unit": "pct", "confidence": "C", "source_ids": ["F02"], "note": "Target bertahap KORA (SOP ARG C0.2/I4)" },
     "yield_target_6m_pct": { "min": 28, "typ": 28, "max": 28, "unit": "pct", "confidence": "C", "source_ids": ["F02"] },
     "raw_max_pct": { "min": 5, "typ": 5, "max": 5, "unit": "pct", "confidence": "C", "source_ids": ["F02"], "note": "Key measure % arang mentah (kg mentah ÷ kg arang)" },
     "shell_moisture_max_pct": { "min": 15, "typ": 15, "max": 15, "unit": "pct", "confidence": "C", "source_ids": ["F02"], "note": "Standar internal (data industri 13%, FAO 12–18%)" },
-    "reactor_temp_c": { "min": 450, "typ": 475, "max": 500, "unit": "C", "confidence": "A", "source_ids": ["F02"], "note": "VM ≤15% butuh 450–600°C (Ahmad & Sulaiman 2021; Hasibuan & Pardede 2023)" },
+    "reactor_temp_c": { "min": 450, "typ": 475, "max": 500, "unit": "C", "confidence": "C", "source_ids": ["F02"], "note": "VM ≤15% butuh 450–600°C (Ahmad & Sulaiman 2021; Hasibuan & Pardede 2023) [hanya dokumen internal KORA → C (DEC-049)]" },
     "methods": [
-      { "id": "kombi", "name_id": "1.A Kombi (bakar langsung)", "batch_shell_kg": { "min": 80, "typ": 80, "max": 80, "unit": "kg", "confidence": "C", "source_ids": ["F02"], "note": "Drum ±80 kg batok (Trubus); kolam lebih besar" }, "burn_h": { "min": 4, "typ": 6, "max": 7, "unit": "h", "confidence": "B", "source_ids": ["F02"] }, "cooling_h": { "min": 8, "typ": 10, "max": 12, "unit": "h", "confidence": "B", "source_ids": ["F02"], "note": "Mati hampa ≥8 jam/semalam (CDB India; FAO)" }, "liquid_smoke": false },
-      { "id": "pirolisis", "name_id": "1.B/1.C Pirolisis (kolam/drum, jet burner)", "batch_shell_kg": { "min": 80, "typ": 80, "max": 80, "unit": "kg", "confidence": "C", "source_ids": ["F02"], "note": "GAP: kapasitas reaktor KORA belum tercatat — isi sendiri" }, "burn_h": { "min": 4, "typ": 4.5, "max": 5, "unit": "h", "confidence": "B", "source_ids": ["F02"], "note": "350–450°C ±4–5 jam (jurnal UISU)" }, "cooling_h": { "min": 8, "typ": 10, "max": 12, "unit": "h", "confidence": "B", "source_ids": ["F02"] }, "liquid_smoke": true }
+      { "id": "kombi", "name_id": "1.A Kombi (bakar langsung)", "batch_shell_kg": { "min": 80, "typ": 80, "max": 80, "unit": "kg", "confidence": "C", "source_ids": ["F02"], "note": "Drum ±80 kg batok (Trubus); kolam lebih besar" }, "burn_h": { "min": 4, "typ": 6, "max": 7, "unit": "h", "confidence": "C", "source_ids": ["F02"], "note": "[hanya dokumen internal KORA → C (DEC-049)]" }, "cooling_h": { "min": 8, "typ": 10, "max": 12, "unit": "h", "confidence": "C", "source_ids": ["F02"], "note": "Mati hampa ≥8 jam/semalam (CDB India; FAO) [hanya dokumen internal KORA → C (DEC-049)]" }, "liquid_smoke": false },
+      { "id": "pirolisis", "name_id": "1.B/1.C Pirolisis (kolam/drum, jet burner)", "batch_shell_kg": { "min": 80, "typ": 80, "max": 80, "unit": "kg", "confidence": "C", "source_ids": ["F02"], "note": "GAP: kapasitas reaktor KORA belum tercatat — isi sendiri" }, "burn_h": { "min": 4, "typ": 4.5, "max": 5, "unit": "h", "confidence": "C", "source_ids": ["F02"], "note": "350–450°C ±4–5 jam (jurnal UISU) [hanya dokumen internal KORA → C (DEC-049)]" }, "cooling_h": { "min": 8, "typ": 10, "max": 12, "unit": "h", "confidence": "C", "source_ids": ["F02"], "note": "[hanya dokumen internal KORA → C (DEC-049)]" }, "liquid_smoke": true }
     ],
     "liquid_smoke_l_per_kg_shell": { "min": 0.25, "typ": 0.275, "max": 0.3, "unit": "L", "confidence": "C", "source_ids": ["F02"], "note": "Indikatif (jurnal UISU)" },
     "weathering_days_export_min": 14,
@@ -81,7 +85,7 @@
     ],
     "hammer_mill_kg_h": { "min": 21, "typ": 21, "max": 157, "unit": "kg/h", "confidence": "C", "source_ids": ["F02"], "note": "2 HP 1.440 rpm ±21 kg/jam (IPB 2023); 3 HP 2.800 rpm ±157 kg/jam (UBL 2024) — isi kapasitas mesin sendiri" },
     "standards": [
-      { "id": "sni_1682", "name_id": "SNI 01-1682-1996 arang tempurung", "moisture_max_pct": 6, "ash_max_pct": 3, "vm_max_pct": 15, "confidence": "B", "source_ids": ["F02"], "note": "Cek status berlaku di BSN" },
+      { "id": "sni_1682", "name_id": "SNI 01-1682-1996 arang tempurung", "moisture_max_pct": 6, "ash_max_pct": 3, "vm_max_pct": 15, "confidence": "C", "source_ids": ["F02"], "note": "Cek status berlaku di BSN [hanya dokumen internal KORA → C (DEC-049)]" },
       { "id": "icc", "name_id": "ICC Coconut Shell Charcoal", "moisture_max_pct": 10, "ash_max_pct": 2, "vm_max_pct": 15, "fc_min_pct": 75, "foreign_max_pct": 0.5, "fines_max_pct": 5, "confidence": "A", "source_ids": ["F02", "F09"] }
     ]
   },
@@ -127,28 +131,28 @@
     ]
   },
   "cuka": {
-    "water_brix": { "min": 4, "typ": 4.5, "max": 5, "unit": "brix", "confidence": "A", "source_ids": ["F03", "F11"] },
-    "water_sugar_pct": { "min": 1, "typ": 1.8, "max": 2.6, "unit": "pct", "confidence": "A", "source_ids": ["F03", "F11"], "note": "Gula alami ±1% (FAO) s/d 2,56% (Gunathilake 2011); typ titik tengah" },
-    "water_ph": { "min": 5.0, "typ": 5.48, "max": 5.7, "unit": "pH", "confidence": "A", "source_ids": ["F03", "F11"] },
+    "water_brix": { "min": 4, "typ": 4.5, "max": 5, "unit": "brix", "confidence": "B", "source_ids": ["F03", "F11"], "note": "[sumber primer hanya dikutip lewat SOP KORA, belum dibaca langsung → maks B (DEC-049)]" },
+    "water_sugar_pct": { "min": 1, "typ": 1.8, "max": 2.6, "unit": "pct", "confidence": "B", "source_ids": ["F03", "F11"], "note": "Gula alami ±1% (FAO) s/d 2,56% (Gunathilake 2011); typ titik tengah [sumber primer hanya dikutip lewat SOP KORA, belum dibaca langsung → maks B (DEC-049)]" },
+    "water_ph": { "min": 5.0, "typ": 5.48, "max": 5.7, "unit": "pH", "confidence": "B", "source_ids": ["F03", "F11"], "note": "[sumber primer hanya dikutip lewat SOP KORA, belum dibaca langsung → maks B (DEC-049)]" },
     "water_density_kg_l": { "min": 1.015, "typ": 1.02, "max": 1.025, "unit": "kg/L", "confidence": "C", "source_ids": ["F20"], "note": "Larutan ±4–5 °Brix; turunan tabel sukrosa — ukur/timbang 1 L untuk presisi" },
     "water_max_cold_h": { "min": 48, "typ": 48, "max": 48, "unit": "h", "confidence": "C", "source_ids": ["F03"], "note": "≤10°C dalam ≤2 jam; olah hari sama; batas darurat 48 jam (internal)" },
-    "must_brix": { "min": 14, "typ": 15, "max": 17, "unit": "brix", "confidence": "A", "source_ids": ["F03", "F11"], "note": "FAO 'up to 15%'; PCA ±16%" },
-    "must_pasteurize_c": { "min": 60, "typ": 62.5, "max": 65, "unit": "C", "confidence": "B", "source_ids": ["F03"], "note": "10–15 menit (PCA)" },
-    "yeast_g_l": { "min": 1, "typ": 2, "max": 4, "unit": "g/L", "confidence": "B", "source_ids": ["F03"], "note": "PCA 0,7–0,8; Trinh Ngoc 4 g/L; KORA 1–4; typ titik tengah dibulatkan" },
-    "alcohol_days": { "min": 7, "typ": 10, "max": 14, "unit": "d", "confidence": "B", "source_ids": ["F03"] },
-    "ferment_temp_c": { "min": 28, "typ": 29, "max": 30, "unit": "C", "confidence": "B", "source_ids": ["F03"] },
+    "must_brix": { "min": 14, "typ": 15, "max": 17, "unit": "brix", "confidence": "B", "source_ids": ["F03", "F11"], "note": "FAO 'up to 15%'; PCA ±16% [sumber primer hanya dikutip lewat SOP KORA, belum dibaca langsung → maks B (DEC-049)]" },
+    "must_pasteurize_c": { "min": 60, "typ": 62.5, "max": 65, "unit": "C", "confidence": "C", "source_ids": ["F03"], "note": "10–15 menit (PCA) [hanya dokumen internal KORA → C (DEC-049)]" },
+    "yeast_g_l": { "min": 1, "typ": 2, "max": 4, "unit": "g/L", "confidence": "C", "source_ids": ["F03"], "note": "PCA 0,7–0,8; Trinh Ngoc 4 g/L; KORA 1–4; typ titik tengah dibulatkan [hanya dokumen internal KORA → C (DEC-049)]" },
+    "alcohol_days": { "min": 7, "typ": 10, "max": 14, "unit": "d", "confidence": "C", "source_ids": ["F03"], "note": "[hanya dokumen internal KORA → C (DEC-049)]" },
+    "ferment_temp_c": { "min": 28, "typ": 29, "max": 30, "unit": "C", "confidence": "C", "source_ids": ["F03"], "note": "[hanya dokumen internal KORA → C (DEC-049)]" },
     "ethanol_efficiency": { "min": 0.8, "typ": 0.88, "max": 0.95, "unit": "fraction", "confidence": "C", "source_ids": ["F20", "F11"], "note": "Fraksi dari teoretis 0,511 g etanol/g gula (Gay-Lussac); Gunathilake 17%→±9% ≈ 0,8" },
-    "starter_pct": { "min": 10, "typ": 15, "max": 20, "unit": "pct", "confidence": "A", "source_ids": ["F03"], "note": "FAO 10%; PCA 1:4 (20%)" },
-    "acetify_weeks": { "min": 3, "typ": 4, "max": 6, "unit": "wk", "confidence": "B", "source_ids": ["F03"] },
-    "acetify_temp_c": { "min": 27, "typ": 28.5, "max": 30, "unit": "C", "confidence": "B", "source_ids": ["F03"], "note": "Optimum ±30°C; NC State 27°C; typ titik tengah" },
-    "aging_weeks": { "min": 3, "typ": 3.5, "max": 4, "unit": "wk", "confidence": "A", "source_ids": ["F03", "F21"], "note": "Pematangan tertutup penuh setelah klarifikasi (Den & Marquez 1987)" },
+    "starter_pct": { "min": 10, "typ": 15, "max": 20, "unit": "pct", "confidence": "C", "source_ids": ["F03"], "note": "FAO 10%; PCA 1:4 (20%) [hanya dokumen internal KORA → C (DEC-049)]" },
+    "acetify_weeks": { "min": 3, "typ": 4, "max": 6, "unit": "wk", "confidence": "C", "source_ids": ["F03"], "note": "[hanya dokumen internal KORA → C (DEC-049)]" },
+    "acetify_temp_c": { "min": 27, "typ": 28.5, "max": 30, "unit": "C", "confidence": "C", "source_ids": ["F03"], "note": "Optimum ±30°C; NC State 27°C; typ titik tengah [hanya dokumen internal KORA → C (DEC-049)]" },
+    "aging_weeks": { "min": 3, "typ": 3.5, "max": 4, "unit": "wk", "confidence": "B", "source_ids": ["F03", "F21"], "note": "Pematangan tertutup penuh setelah klarifikasi (Den & Marquez 1987) [sumber primer hanya dikutip lewat SOP KORA, belum dibaca langsung → maks B (DEC-049)]" },
     "acetic_efficiency": { "min": 0.5, "typ": 0.75, "max": 0.9, "unit": "fraction", "confidence": "C", "source_ids": ["F20", "F21"], "note": "Fraksi dari teoretis 1,304 g asam/g etanol; aturan ≥8% alkohol untuk 4% asam ≈ 0,5" },
-    "acetic_min_pct": { "min": 4, "typ": 4, "max": 4, "unit": "pct", "confidence": "A", "source_ids": ["F03", "F13"] },
+    "acetic_min_pct": { "min": 4, "typ": 4, "max": 4, "unit": "pct", "confidence": "B", "source_ids": ["F03", "F13"], "note": "[sumber primer hanya dikutip lewat SOP KORA, belum dibaca langsung → maks B (DEC-049)]" },
     "acetic_target_pct": { "min": 5, "typ": 5, "max": 5, "unit": "pct", "confidence": "C", "source_ids": ["F03"] },
-    "residual_alcohol_max_pct": { "min": 0.5, "typ": 0.5, "max": 0.5, "unit": "pct", "confidence": "A", "source_ids": ["F13"] },
-    "egg_white_g_l": { "min": 7, "typ": 8, "max": 9, "unit": "g/L", "confidence": "A", "source_ids": ["F03", "F21"] },
+    "residual_alcohol_max_pct": { "min": 0.5, "typ": 0.5, "max": 0.5, "unit": "pct", "confidence": "B", "source_ids": ["F13"], "note": "[sumber primer hanya dikutip lewat SOP KORA, belum dibaca langsung → maks B (DEC-049)]" },
+    "egg_white_g_l": { "min": 7, "typ": 8, "max": 9, "unit": "g/L", "confidence": "B", "source_ids": ["F03", "F21"], "note": "[sumber primer hanya dikutip lewat SOP KORA, belum dibaca langsung → maks B (DEC-049)]" },
     "egg_white_per_egg_g": { "min": 30, "typ": 30, "max": 30, "unit": "g", "confidence": "C", "source_ids": ["F05"] },
-    "bottle_pasteurize_c": { "min": 60, "typ": 65, "max": 71, "unit": "C", "confidence": "B", "source_ids": ["F03"], "note": "Tahan ≥30 menit; jangan mendidih" },
+    "bottle_pasteurize_c": { "min": 60, "typ": 65, "max": 71, "unit": "C", "confidence": "C", "source_ids": ["F03"], "note": "Tahan ≥30 menit; jangan mendidih [hanya dokumen internal KORA → C (DEC-049)]" },
     "titration": { "naoh_n_default": 0.1, "sample_ml_default": 10, "acetic_g_mol": 60.05, "source_ids": ["F03", "F20"], "note": "% b/v = V·N·6,005 ÷ Vs (koreksi FND-022)" },
     "methods": [
       {"id": "statis", "name_id": "Statis Orleans (batch)", "kind": "batch", "acetify_d": {"min": 21, "typ": 28, "max": 42, "unit": "d", "confidence": "A", "source_ids": ["F03", "F24"], "note": "FAO ±1 bulan → ±6% asam; PCA 1 bulan; Gunathilake 40 hari"}, "withdraw_fraction": {"min": 1, "typ": 1, "max": 1, "unit": "fraction", "confidence": "C", "source_ids": ["F03"], "note": "Seluruh cuka ditarik; starter batch berikut dari cuka hidup lolos QC"}, "equipment": "Wadah kaca/plastik food-grade ⅔–¾ penuh, kain saring rapat, ruang 27–30 °C", "pros": "Paling sederhana & murah; aroma paling baik", "cons": "Paling lama; butuh banyak wadah untuk volume besar", "source_ids": ["F03", "F24"]},
@@ -159,38 +163,38 @@
     ]
   },
   "bioleather": {
-    "sucrose_g_l": { "min": 80, "typ": 100, "max": 100, "unit": "g/L", "confidence": "A", "source_ids": ["F03", "F12"], "note": "Optimum 10% (Jagannath 2008); 8–10% (Lin 2022)" },
-    "za_g_l": { "min": 5, "typ": 5, "max": 5, "unit": "g/L", "confidence": "A", "source_ids": ["F03", "F12"] },
-    "ph": { "min": 4.0, "typ": 4.25, "max": 4.5, "unit": "pH", "confidence": "A", "source_ids": ["F03", "F12"] },
-    "starter_pct": { "min": 10, "typ": 12.5, "max": 15, "unit": "pct", "confidence": "B", "source_ids": ["F03"], "note": "15% → kuat tarik terbaik 69,25 MPa (Sya'di 2025)" },
-    "culture_days": { "min": 7, "typ": 14, "max": 21, "unit": "d", "confidence": "B", "source_ids": ["F03"] },
-    "culture_temp_c": { "min": 28, "typ": 29, "max": 30, "unit": "C", "confidence": "B", "source_ids": ["F03"] },
-    "wet_yield_g_l_day": { "min": 12.4, "typ": 12.4, "max": 19, "unit": "g/L/d", "confidence": "B", "source_ids": ["F03"], "note": "Sekali panen 12,4; panen berkala mingguan ±19 (studi 2025)" },
-    "dry_fraction_of_wet": { "min": 0.01, "typ": 0.013, "max": 0.015, "unit": "fraction", "confidence": "B", "source_ids": ["F03"], "note": "8,17 g/L kering dari 625,6 g/L basah" },
+    "sucrose_g_l": { "min": 80, "typ": 100, "max": 100, "unit": "g/L", "confidence": "B", "source_ids": ["F03", "F12"], "note": "Optimum 10% (Jagannath 2008); 8–10% (Lin 2022) [sumber primer hanya dikutip lewat SOP KORA, belum dibaca langsung → maks B (DEC-049)]" },
+    "za_g_l": { "min": 5, "typ": 5, "max": 5, "unit": "g/L", "confidence": "B", "source_ids": ["F03", "F12"], "note": "[sumber primer hanya dikutip lewat SOP KORA, belum dibaca langsung → maks B (DEC-049)]" },
+    "ph": { "min": 4.0, "typ": 4.25, "max": 4.5, "unit": "pH", "confidence": "B", "source_ids": ["F03", "F12"], "note": "[sumber primer hanya dikutip lewat SOP KORA, belum dibaca langsung → maks B (DEC-049)]" },
+    "starter_pct": { "min": 10, "typ": 12.5, "max": 15, "unit": "pct", "confidence": "C", "source_ids": ["F03"], "note": "15% → kuat tarik terbaik 69,25 MPa (Sya'di 2025) [hanya dokumen internal KORA → C (DEC-049)]" },
+    "culture_days": { "min": 7, "typ": 14, "max": 21, "unit": "d", "confidence": "C", "source_ids": ["F03"], "note": "[hanya dokumen internal KORA → C (DEC-049)]" },
+    "culture_temp_c": { "min": 28, "typ": 29, "max": 30, "unit": "C", "confidence": "C", "source_ids": ["F03"], "note": "[hanya dokumen internal KORA → C (DEC-049)]" },
+    "wet_yield_g_l_day": { "min": 12.4, "typ": 12.4, "max": 19, "unit": "g/L/d", "confidence": "C", "source_ids": ["F03"], "note": "Sekali panen 12,4; panen berkala mingguan ±19 (studi 2025) [hanya dokumen internal KORA → C (DEC-049)]" },
+    "dry_fraction_of_wet": { "min": 0.01, "typ": 0.013, "max": 0.015, "unit": "fraction", "confidence": "C", "source_ids": ["F03"], "note": "8,17 g/L kering dari 625,6 g/L basah [hanya dokumen internal KORA → C (DEC-049)]" },
     "target_wet_thickness_mm": { "min": 10, "typ": 15, "max": 20, "unit": "mm", "confidence": "C", "source_ids": ["F03"] },
-    "naoh_m": { "min": 0.1, "typ": 0.1, "max": 0.1, "unit": "M", "confidence": "A", "source_ids": ["F03"], "note": "Batas keras: NaOH 2–8% merusak serat (Chen 2021)" },
-    "glycerol_pct": { "min": 1, "typ": 1, "max": 1, "unit": "pct", "confidence": "A", "source_ids": ["F03"], "note": "Pilihan A: rendam 33 jam (Rathinamoorthy 2022)" },
-    "dry_temp_c": { "min": 30, "typ": 35, "max": 40, "unit": "C", "confidence": "B", "source_ids": ["F03"] },
-    "tensile_min_mpa": { "min": 20, "typ": 20, "max": 20, "unit": "MPa", "confidence": "B", "source_ids": ["F03"] },
-    "fold_min": { "min": 100, "typ": 100, "max": 100, "unit": "count", "confidence": "B", "source_ids": ["F03"] },
+    "naoh_m": { "min": 0.1, "typ": 0.1, "max": 0.1, "unit": "M", "confidence": "C", "source_ids": ["F03"], "note": "Batas keras: NaOH 2–8% merusak serat (Chen 2021) [hanya dokumen internal KORA → C (DEC-049)]" },
+    "glycerol_pct": { "min": 1, "typ": 1, "max": 1, "unit": "pct", "confidence": "C", "source_ids": ["F03"], "note": "Pilihan A: rendam 33 jam (Rathinamoorthy 2022); basis % (v/v atau b/v) belum terverifikasi [hanya dokumen internal KORA → C (DEC-049)]" },
+    "dry_temp_c": { "min": 30, "typ": 35, "max": 40, "unit": "C", "confidence": "C", "source_ids": ["F03"], "note": "[hanya dokumen internal KORA → C (DEC-049)]" },
+    "tensile_min_mpa": { "min": 20, "typ": 20, "max": 20, "unit": "MPa", "confidence": "C", "source_ids": ["F03"], "note": "[hanya dokumen internal KORA → C (DEC-049)]" },
+    "fold_min": { "min": 100, "typ": 100, "max": 100, "unit": "count", "confidence": "C", "source_ids": ["F03"], "note": "[hanya dokumen internal KORA → C (DEC-049)]" },
     "culture_methods": [
-      {"id": "sekali", "name_id": "Statis — sekali panen", "wet_yield_g_l_day": {"min": 12.4, "typ": 12.4, "max": 12.4, "unit": "g/L/d", "confidence": "B", "source_ids": ["F03"]}, "grade": "A", "note": "Lembar utama; panen saat tebal target tercapai", "source_ids": ["F03"]},
-      {"id": "berkala", "name_id": "Statis — panen berkala mingguan + media baru", "wet_yield_g_l_day": {"min": 19, "typ": 19, "max": 19, "unit": "g/L/d", "confidence": "B", "source_ids": ["F03"]}, "grade": "A", "note": "Hasil naik ±19 vs 12,4 g/L/hari (studi 2025)", "source_ids": ["F03"]},
+      {"id": "sekali", "name_id": "Statis — sekali panen", "wet_yield_g_l_day": { "min": 12.4, "typ": 12.4, "max": 12.4, "unit": "g/L/d", "confidence": "C", "source_ids": ["F03"], "note": "[hanya dokumen internal KORA → C (DEC-049)]" }, "grade": "A", "note": "Lembar utama; panen saat tebal target tercapai", "source_ids": ["F03"]},
+      {"id": "berkala", "name_id": "Statis — panen berkala mingguan + media baru", "wet_yield_g_l_day": { "min": 19, "typ": 19, "max": 19, "unit": "g/L/d", "confidence": "C", "source_ids": ["F03"], "note": "[hanya dokumen internal KORA → C (DEC-049)]" }, "grade": "A", "note": "Hasil naik ±19 vs 12,4 g/L/hari (studi 2025)", "source_ids": ["F03"]},
       {"id": "mother", "name_id": "Mother dari jalur cuka (BLT-M)", "grade": "B", "note": "GAP: belum ada data hasil; keasaman menghambat selulosa → lembar lebih tipis. Pakai untuk produk kecil/lapisan dalam sampai uji ≥5 batch membuktikan setara", "source_ids": ["F03"]}
     ],
     "plasticizers": [
-      {"id": "A", "name_id": "A — lentur maksimal (gliserol 1%)", "glycerol_pct_bath": {"min": 1, "typ": 1, "max": 1, "unit": "pct", "confidence": "A", "source_ids": ["F03"], "note": "Rathinamoorthy et al. 2022"}, "soak_h": {"min": 33, "typ": 33, "max": 33, "unit": "h", "confidence": "A", "source_ids": ["F03"]}, "dry_c": {"min": 30, "typ": 30, "max": 30, "unit": "C", "confidence": "A", "source_ids": ["F03"]}, "note": "Gliserol lebih tinggi menurunkan kuat tarik & membuat lembar menyerap lembap", "source_ids": ["F03"]},
-      {"id": "B", "name_id": "B — kuat & lentur (gliserol 30% berat BC)", "glycerol_pct_of_bc": {"min": 30, "typ": 30, "max": 30, "unit": "pct", "confidence": "A", "source_ids": ["F03"], "note": "Kim, Kim & Song 2021 (Cellulose) — studi asli + protein nabati"}, "note": "Butuh bahan tambahan (protein nabati) & penelitian lanjut; basis berat BC kering", "source_ids": ["F03"]},
-      {"id": "C", "name_id": "C — cepat (gliserin : etanol 1 : 2)", "glycerin_ethanol_ratio": {"min": 0.5, "typ": 0.5, "max": 0.5, "unit": "fraction", "confidence": "A", "source_ids": ["F03"], "note": "Gliserin 100 mL : etanol 200 mL (Lisowski et al. 2026, Sci. Reports)"}, "soak_h": {"min": 0.5, "typ": 0.5, "max": 0.5, "unit": "h", "confidence": "A", "source_ids": ["F03"], "note": "Rendam 30 menit + putar 30 menit"}, "dry_c": {"min": 60, "typ": 60, "max": 60, "unit": "C", "confidence": "A", "source_ids": ["F03"]}, "dry_h": {"min": 24, "typ": 24, "max": 24, "unit": "h", "confidence": "A", "source_ids": ["F03"]}, "note": "Etanol mudah terbakar — ruang berventilasi, jauh dari api", "source_ids": ["F03"]}
+      {"id": "A", "name_id": "A — lentur maksimal (gliserol 1%)", "glycerol_pct_bath": { "min": 1, "typ": 1, "max": 1, "unit": "pct", "confidence": "C", "source_ids": ["F03"], "note": "Rathinamoorthy et al. 2022; basis % (v/v atau b/v) TIDAK tercantum di SOP dan makalah primer belum dibaca — kalkulator menampilkan keduanya [hanya dokumen internal KORA → C (DEC-049)]" }, "soak_h": { "min": 33, "typ": 33, "max": 33, "unit": "h", "confidence": "C", "source_ids": ["F03"], "note": "[hanya dokumen internal KORA → C (DEC-049)]" }, "dry_c": { "min": 30, "typ": 30, "max": 30, "unit": "C", "confidence": "C", "source_ids": ["F03"], "note": "[hanya dokumen internal KORA → C (DEC-049)]" }, "note": "Gliserol lebih tinggi menurunkan kuat tarik & membuat lembar menyerap lembap", "source_ids": ["F03"]},
+      {"id": "B", "name_id": "B — kuat & lentur (gliserol 30% berat BC)", "glycerol_pct_of_bc": { "min": 30, "typ": 30, "max": 30, "unit": "pct", "confidence": "C", "source_ids": ["F03"], "note": "Kim, Kim & Song 2021 (Cellulose) — studi asli + protein nabati [hanya dokumen internal KORA → C (DEC-049)]" }, "note": "Butuh bahan tambahan (protein nabati) & penelitian lanjut; basis berat BC kering", "source_ids": ["F03"]},
+      {"id": "C", "name_id": "C — cepat (gliserin : etanol 1 : 2)", "glycerin_ethanol_ratio": { "min": 0.5, "typ": 0.5, "max": 0.5, "unit": "fraction", "confidence": "C", "source_ids": ["F03"], "note": "Gliserin 100 mL : etanol 200 mL (Lisowski et al. 2026, Sci. Reports) [hanya dokumen internal KORA → C (DEC-049)]" }, "soak_h": { "min": 0.5, "typ": 0.5, "max": 0.5, "unit": "h", "confidence": "C", "source_ids": ["F03"], "note": "Rendam 30 menit + putar 30 menit [hanya dokumen internal KORA → C (DEC-049)]" }, "dry_c": { "min": 60, "typ": 60, "max": 60, "unit": "C", "confidence": "C", "source_ids": ["F03"], "note": "[hanya dokumen internal KORA → C (DEC-049)]" }, "dry_h": { "min": 24, "typ": 24, "max": 24, "unit": "h", "confidence": "C", "source_ids": ["F03"], "note": "[hanya dokumen internal KORA → C (DEC-049)]" }, "note": "Etanol mudah terbakar — ruang berventilasi, jauh dari api", "source_ids": ["F03"]}
     ],
     "dyes": [
-      {"id": "bawang", "name_id": "Kulit bawang / kulit delima / eukaliptus", "mordant": "Tawas", "mordant_g_l": {"min": 20, "typ": 20, "max": 20, "unit": "g/L", "confidence": "A", "source_ids": ["F03"], "note": "Amorim et al. 2022"}, "temp_c": {"min": 90, "typ": 90, "max": 90, "unit": "C", "confidence": "A", "source_ids": ["F03"]}, "time_h": {"min": 0.5, "typ": 0.5, "max": 0.5, "unit": "h", "confidence": "A", "source_ids": ["F03"]}, "salt_g_l": {"min": 20, "typ": 20, "max": 20, "unit": "g/L", "confidence": "A", "source_ids": ["F03"], "note": "NaCl 30 menit setelah pewarnaan"}, "source_ids": ["F03"]},
-      {"id": "kopi", "name_id": "Kopi", "dye_pct_of_fiber": {"min": 200, "typ": 200, "max": 200, "unit": "pct", "confidence": "A", "source_ids": ["F03"], "note": "200% dari berat serat (Kim & Kim 2022, PLOS ONE)"}, "temp_c": {"min": 70, "typ": 70, "max": 70, "unit": "C", "confidence": "A", "source_ids": ["F03"]}, "time_h": {"min": 0.5, "typ": 0.5, "max": 0.5, "unit": "h", "confidence": "A", "source_ids": ["F03"]}, "mordant": "FeSO₄ 1% (basis % ikuti sumber asli — cek sebelum uji)", "source_ids": ["F03"]},
+      {"id": "bawang", "name_id": "Kulit bawang / kulit delima / eukaliptus", "mordant": "Tawas", "mordant_g_l": { "min": 20, "typ": 20, "max": 20, "unit": "g/L", "confidence": "C", "source_ids": ["F03"], "note": "Amorim et al. 2022 [hanya dokumen internal KORA → C (DEC-049)]" }, "temp_c": { "min": 90, "typ": 90, "max": 90, "unit": "C", "confidence": "C", "source_ids": ["F03"], "note": "[hanya dokumen internal KORA → C (DEC-049)]" }, "time_h": { "min": 0.5, "typ": 0.5, "max": 0.5, "unit": "h", "confidence": "C", "source_ids": ["F03"], "note": "[hanya dokumen internal KORA → C (DEC-049)]" }, "salt_g_l": { "min": 20, "typ": 20, "max": 20, "unit": "g/L", "confidence": "C", "source_ids": ["F03"], "note": "NaCl 30 menit setelah pewarnaan [hanya dokumen internal KORA → C (DEC-049)]" }, "source_ids": ["F03"]},
+      {"id": "kopi", "name_id": "Kopi", "dye_pct_of_fiber": { "min": 200, "typ": 200, "max": 200, "unit": "pct", "confidence": "C", "source_ids": ["F03"], "note": "200% dari berat serat (Kim & Kim 2022, PLOS ONE) [hanya dokumen internal KORA → C (DEC-049)]" }, "temp_c": { "min": 70, "typ": 70, "max": 70, "unit": "C", "confidence": "C", "source_ids": ["F03"], "note": "[hanya dokumen internal KORA → C (DEC-049)]" }, "time_h": { "min": 0.5, "typ": 0.5, "max": 0.5, "unit": "h", "confidence": "C", "source_ids": ["F03"], "note": "[hanya dokumen internal KORA → C (DEC-049)]" }, "mordant": "FeSO₄ 1% (basis % ikuti sumber asli — cek sebelum uji)", "source_ids": ["F03"]},
       {"id": "secang", "name_id": "Kayu secang (brazilein)", "mordant": "— (bersamaan dengan gliserol dalam satu langkah)", "note": "Kuat tarik 26,46 MPa (Phan et al. 2023, Cellulose); dosis tidak dipublikasikan → GAP, uji 3 tingkat", "source_ids": ["F03"]}
     ],
     "finishes": [
-      {"id": "karnauba", "name_id": "Lilin karnauba + minyak (50 : 50)", "wax_share_pct": {"min": 50, "typ": 50, "max": 50, "unit": "pct", "confidence": "A", "source_ids": ["F03"], "note": "Amorim et al. 2022 — minyak tea tree"}, "apply_c": {"min": 75, "typ": 75, "max": 75, "unit": "C", "confidence": "A", "source_ids": ["F03"]}, "cure_h": {"min": 48, "typ": 48, "max": 48, "unit": "h", "confidence": "A", "source_ids": ["F03"], "note": "Angin-anginkan"}, "note": "Sudut kontak air ±84° — masih sedikit menyerap air. GAP: takaran oles (g/m²) belum dipublikasikan → timbang sendiri", "source_ids": ["F03"]},
-      {"id": "aeso", "name_id": "Resin minyak kedelai (AESO)", "apply_c": {"min": 90, "typ": 90, "max": 90, "unit": "C", "confidence": "A", "source_ids": ["F03"], "note": "Dikeringkan 90 °C"}, "cure_h": {"min": 3, "typ": 3, "max": 3, "unit": "h", "confidence": "A", "source_ids": ["F03"]}, "note": "Lebih tahan air (sudut kontak 79–138°) tapi kuat tarik turun <10 MPa (Fernandes et al. 2019)", "source_ids": ["F03"]}
+      {"id": "karnauba", "name_id": "Lilin karnauba + minyak (50 : 50)", "wax_share_pct": { "min": 50, "typ": 50, "max": 50, "unit": "pct", "confidence": "C", "source_ids": ["F03"], "note": "Amorim et al. 2022 — minyak tea tree [hanya dokumen internal KORA → C (DEC-049)]" }, "apply_c": { "min": 75, "typ": 75, "max": 75, "unit": "C", "confidence": "C", "source_ids": ["F03"], "note": "[hanya dokumen internal KORA → C (DEC-049)]" }, "cure_h": { "min": 48, "typ": 48, "max": 48, "unit": "h", "confidence": "C", "source_ids": ["F03"], "note": "Angin-anginkan [hanya dokumen internal KORA → C (DEC-049)]" }, "note": "Sudut kontak air ±84° — masih sedikit menyerap air. GAP: takaran oles (g/m²) belum dipublikasikan → timbang sendiri", "source_ids": ["F03"]},
+      {"id": "aeso", "name_id": "Resin minyak kedelai (AESO)", "apply_c": { "min": 90, "typ": 90, "max": 90, "unit": "C", "confidence": "C", "source_ids": ["F03"], "note": "Dikeringkan 90 °C [hanya dokumen internal KORA → C (DEC-049)]" }, "cure_h": { "min": 3, "typ": 3, "max": 3, "unit": "h", "confidence": "C", "source_ids": ["F03"], "note": "[hanya dokumen internal KORA → C (DEC-049)]" }, "note": "Lebih tahan air (sudut kontak 79–138°) tapi kuat tarik turun <10 MPa (Fernandes et al. 2019)", "source_ids": ["F03"]}
     ]
   },
   "production": {
@@ -401,6 +405,9 @@
     {"id": "F26", "title": "Development of low cost coconut water vinegar making process and evaluation of 'generator process' to accelerate the acetification (AGRIS) — 4% asam ±32 jam, 5 run", "url": "https://agris.fao.org/search/en/providers/122535/records/65de24930f3e94b9e5cb0da4", "grade": "B"},
     {"id": "F27", "title": "Vinegar fermentation (thesis, Louisiana State University 2007) — semi-kontinu terendam: tarik ⅔, siklus 5-7 hari, unit 47 L", "url": "https://ucfoodsafety.ucdavis.edu/sites/g/files/dgvnsk7366/files/inline-files/192137.pdf", "grade": "B"},
     {"id": "F28", "title": "Process Biochemistry (2013) — fermentasi semi-kontinu: rasio tarik/isi optimal 34% volume kerja", "url": "https://www.sciencedirect.com/science/article/abs/pii/S1359511313000329", "grade": "A"},
-    {"id": "F29", "title": "Conversion of coconut water to vinegar by acetic acid bacteria (2025) — 14 °Brix, inokulum 10% → 5,8 g/100 mL", "url": "https://www.sciencedirect.com/science/article/pii/S2772502225006249", "grade": "A"}
+    {"id": "F29", "title": "Conversion of coconut water to vinegar by acetic acid bacteria (2025) — 14 °Brix, inokulum 10% → 5,8 g/100 mL", "url": "https://www.sciencedirect.com/science/article/pii/S2772502225006249", "grade": "A"},
+    {"id": "F30", "title": "Apriyanto, Novianti, Fitriani, Suryadi & Razak 2024. Innovative Techniques for High-Quality White Copra Production: The Role of Sulfur Smoke and Kubung Dryers. E3S Web of Conferences 593:03003 — deskriptif; tanpa data residu SO₂", "url": "https://doi.org/10.1051/e3sconf/202459303003", "grade": "C"},
+    {"id": "F31", "title": "European Commission Food and Feed Information Portal — Sulphur dioxide–sulphites (E 220–228), kategori 04.2.1: ML 50 mg/kg only dried coconut (Reg. (EC) 1333/2008 Annex II; Reg. (EU) 1129/2011) — dibuka 2026-10-11", "url": "https://ec.europa.eu/food/food-feed-portal/screen/food-additives/search/details/POL-FAD-IMPORT-3044", "grade": "A"},
+    {"id": "F32", "title": "Peraturan BPOM Nomor 11 Tahun 2019 tentang Bahan Tambahan Pangan — status Berlaku (dicek 2026-10-11); lampiran batas sulfit per kategori pangan BELUM dibaca", "url": "https://peraturan.go.id/id/peraturan-bpom-no-11-tahun-2019", "grade": "A"}
   ]
 }

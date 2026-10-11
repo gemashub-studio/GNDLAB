@@ -183,3 +183,37 @@ export function CalcError({ message }: { message: string }) {
     </div>
   );
 }
+
+/** Jenis angka (permintaan owner 2026-10-11): jangan campur teori, literatur, isian, hasil uji, dan saran AI. */
+export type EvidenceKind = 'teoritis' | 'literatur' | 'input' | 'eksperimen' | 'ai';
+const EVIDENCE: Record<EvidenceKind, { label: string; cls: string; hint: string }> = {
+  teoritis: { label: 'Teoritis', cls: 'bg-ink text-acid', hint: 'Rumus kimia/fisika atau neraca massa dari isianmu — bukan hasil uji' },
+  literatur: { label: 'Literatur', cls: 'bg-paper text-ink', hint: 'Angka dari sumber tercatat (lihat kode sumber & keyakinan)' },
+  input: { label: 'Isian/resepmu', cls: 'bg-acid text-ink', hint: 'Kamu yang menentukan; angka awal di kolom hanya titik mulai dari literatur' },
+  eksperimen: { label: 'Hasil ujimu', cls: 'bg-safety text-ink', hint: 'Diukur di batchmu sendiri — dicatat di GEMA RnD Lab' },
+  ai: { label: 'Saran AI', cls: 'bg-surface text-muted', hint: 'Tidak ada saran AI di kalkulator ini' },
+};
+
+export function EvidenceTag({ kind }: { kind: EvidenceKind }) {
+  const e = EVIDENCE[kind];
+  return (
+    <span title={e.hint} className={`inline-flex items-center rounded-full border-3 border-ink px-2 py-0.5 font-mono text-[10px] font-semibold uppercase tracking-[0.08em] ${e.cls}`} data-evidence={kind}>
+      {e.label}
+    </span>
+  );
+}
+
+export function EvidenceLegend({ testId }: { testId?: string }) {
+  return (
+    <div className="flex flex-col gap-1.5 rounded-xl bg-paper p-3 text-xs" data-testid={testId}>
+      <span className="label-mono">Jenis angka di halaman ini</span>
+      <ul className="flex flex-col gap-1">
+        {(Object.keys(EVIDENCE) as EvidenceKind[]).map((k) => (
+          <li key={k} className="flex flex-wrap items-center gap-2">
+            <EvidenceTag kind={k} /> <span className="text-muted">{EVIDENCE[k].hint}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}

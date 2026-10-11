@@ -8,7 +8,8 @@ import { Stat } from '@/components/ui/Stat';
 import { WarningList } from '@/components/ui/Warnings';
 import { fmt } from '@/lib/format';
 import { CukaMethods } from './CukaMethods';
-import { BigResult, Bom, CalcError, Note, paramText, rangeText, safe, Sources, useFormula, Wizard } from './shared';
+import { SaveProtocol } from './SaveProtocol';
+import { BigResult, Bom, CalcError, EvidenceTag, Note, paramText, rangeText, safe, Sources, useFormula, Wizard } from './shared';
 
 export function CukaFormula() {
   const f = useFormula();
@@ -99,6 +100,24 @@ export function CukaFormula() {
           ]}
         />
       </div>
+      <div className="flex flex-col gap-2 text-xs" data-testid="cuka-evidence">
+        <p className="flex flex-wrap items-center gap-2"><EvidenceTag kind="teoritis" /> Gula ditambah & volume must = neraca massa dari isianmu (volume, °Brix awal & target).</p>
+        <p className="flex flex-wrap items-center gap-2"><EvidenceTag kind="input" /> Ragi g/L, starter %, putih telur g/L & ukuran botol = resepmu; angka awal di kolom berasal dari literatur, ubah sesuai keputusanmu.</p>
+        <p className="flex flex-wrap items-center gap-2"><EvidenceTag kind="eksperimen" /> pH, °Brix & keasaman titrasi batchmu dicatat di <a href="/lab" className="underline">GEMA RnD Lab</a> → catatan harian.</p>
+      </div>
+      <SaveProtocol
+        product="CK"
+        testId="cuka-proto"
+        defaultName={`Cuka air kelapa ${fmt(waterL)} L · ${fmt(brixTarget)} °Brix`}
+        context={`air ${fmt(waterL)} L, °Brix ${fmt(brixStart)}→${fmt(brixTarget)}, ragi ${fmt(yeast)} g/L, starter ${fmt(starter)}% v/v, putih telur ${fmt(egg)} g/L`}
+        ingredients={[
+          { name: 'Air kelapa tersaring', amount: fmt(waterL), unit: 'L' },
+          { name: 'Gula pasir (hitung neraca massa)', amount: fmt(t.sugarKg, 2), unit: 'kg' },
+          { name: 'Ragi S. cerevisiae', amount: fmt(t.yeastG, 0), unit: 'g' },
+          { name: 'Starter cuka hidup', amount: fmt(t.starterL, 1), unit: 'L' },
+          ...(egg > 0 ? [{ name: 'Putih telur (klarifikasi)', amount: fmt(t.eggWhiteG, 0), unit: 'g' }] : []),
+        ]}
+      />
       {phBad && (
         <Note tone="warn" title="Air kelapa tidak layak untuk cuka">
           pH ≤ 5 berarti sudah mulai asam/terfermentasi liar. Buang — jangan diselamatkan (SOP AKL A2). Boleh untuk bioleather hanya bila masih segar.
@@ -166,7 +185,7 @@ export function CukaFormula() {
                 <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
                   <NumberField label="Dosis ragi" unit="g/L" min={0.1} max={20} value={yeast} onValue={(v) => v && setYeast(v)} hint={`Literatur ${paramText(c.yeast_g_l)}`} testId="cuka-yeast" />
                   <Stat label="Ragi total" value={`${fmt(t.yeastG, 0)} g`} sub="Aktifkan dulu 10–15 mnt di must hangat" />
-                  <Stat label="Perkiraan alkohol" value={rangeText({ min: r.min.ethanolPctV, typ: t.ethanolPctV, max: r.max.ethanolPctV }, 1, '% v/v')} sub="Efisiensi ragi 80–95% dari teoretis" testId="cuka-ethanol" />
+                  <Stat label="Perkiraan alkohol" value={rangeText({ min: r.min.ethanolPctV, typ: t.ethanolPctV, max: r.max.ethanolPctV }, 1, '% v/v')} sub="Teoritis (Gay-Lussac) × efisiensi ragi dari literatur — bukan hasil ukur" testId="cuka-ethanol" />
                 </div>
                 <p className="text-sm">
                   Suhu {paramText(c.ferment_temp_c, 0, '°C')}, {paramText(c.alcohol_days, 0, 'hari')}. Selesai bila gelembung CO₂ berhenti DAN °Brix stabil 2 hari. Wadah diisi ⅔–¾.
@@ -187,7 +206,7 @@ export function CukaFormula() {
                   <Stat
                     label="Potensi asam asetat"
                     value={rangeText({ min: r.min.aceticPotentialPct, typ: t.aceticPotentialPct, max: r.max.aceticPotentialPct }, 1, '%')}
-                    sub={`Target ≥${fmt(c.acetic_min_pct.typ)}% (KORA ${fmt(c.acetic_target_pct.typ)}%)`}
+                    sub={`Teoritis × efisiensi literatur. Target ≥${fmt(c.acetic_min_pct.typ)}% (keyakinan ${c.acetic_min_pct.confidence}) · KORA ${fmt(c.acetic_target_pct.typ)}%`}
                     accent={t.aceticPotentialPct >= c.acetic_min_pct.typ}
                     testId="cuka-acetic"
                   />

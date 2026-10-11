@@ -145,16 +145,15 @@ export const FormulaDatasetSchema = z
       alarm_moisture_48h_max_pct: RangeP,
       min_final_moisture_pct: RangeP,
       grades: z.array(GradeSchema).min(1),
+      /** Perlakuan sulfur: TIDAK ada dosis otomatis (DEC-048) — hanya status, bukti, & batas residu produk akhir. */
       sulfur: z.object({
-        g_per_nut: RangeP,
-        g_per_m3: RangeP,
-        night_schedule_pct: z.array(z.number().positive().max(100)).min(1),
-        max_nights: z.number().int().positive(),
-        lab_test_from_night: z.number().int().positive(),
-        so2_residue_eu_max_mg_kg: z.number().positive(),
+        auto_dose: z.literal(false),
+        status: z.string().min(1),
+        evidence: z.array(z.object({ source_ids: Ids, kind: z.enum(['internal', 'primary_single', 'official']), note: z.string() })).min(1),
+        residue_limits: z.array(z.object({ jurisdiction: z.string(), max_mg_kg: z.number().positive(), scope: z.string(), source_ids: Ids, note: z.string() })),
+        residue_limit_id_note: z.string(),
         source_ids: Ids,
       }),
-      bisulfite_soak_pct: RangeP,
       oven_profiles: z
         .array(
           z.object({
@@ -380,8 +379,6 @@ export interface FormulaDatasetSI {
   compiled: string;
   raw: RawFormulaDataset;
   kopra: ReturnType<typeof params<RawFormulaDataset['kopra']>> & {
-    sulfurGPerNut: Param;
-    sulfurGPerM3: Param;
     greenhouseRoomM3: Param;
     greenhouseArea: Param;
     greenhouseHalves: Param;
@@ -425,8 +422,6 @@ export function loadFormulaDataset(raw: unknown, process: ProcessDatasetSI): For
     raw: d,
     kopra: {
       ...params('kopra', d.kopra),
-      sulfurGPerNut: toParam('kopra.sulfur.g_per_nut', d.kopra.sulfur.g_per_nut),
-      sulfurGPerM3: toParam('kopra.sulfur.g_per_m3', d.kopra.sulfur.g_per_m3),
       greenhouseRoomM3: toParam('kopra.greenhouse.room_m3', d.kopra.greenhouse.room_m3),
       greenhouseArea: toParam('kopra.greenhouse.rack_area_m2', d.kopra.greenhouse.rack_area_m2),
       greenhouseHalves: toParam('kopra.greenhouse.halves_per_m2', d.kopra.greenhouse.halves_per_m2),

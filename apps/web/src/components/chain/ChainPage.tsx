@@ -16,7 +16,7 @@ const STEPS = [
   { id: 'angkut', label: 'Angkut', blurb: 'Truk & container (ft): butir per rit, pembatas ruang/berat, jumlah rit.' },
   { id: 'terima', label: 'Terima & lot', blurb: 'Kode lot DR/DT dari ketinggian kebun, register, gudang per asal.' },
   { id: 'belah', label: 'Belah & sortir', blurb: 'Bersihkan jambul, belah, sortir kondisi, tampung & dinginkan air kelapa.' },
-  { id: 'kering', label: 'Pengeringan', blurb: 'Desainer greenhouse (rak, tray, kemiringan, kipas, belerang), jemur, oven.' },
+  { id: 'kering', label: 'Pengeringan', blurb: 'Desainer greenhouse & oven (rak, tray, muatan aktual, kipas), log sulfur manual, jemur.' },
   { id: 'kemas', label: 'Congkel & kemas', blurb: 'QC & grade kopra, kalkulator kemas gudang/truk/container.' },
   { id: 'arang', label: 'Arang', blurb: 'Batok per asal: drum/kolam, fase asap, ayak rotari 2×, hammer mill, kemas.' },
   { id: 'briket', label: 'Briket', blurb: 'Campuran DT:DR dari hasil lab, bahan baku per asal, bentuk, kemas.' },

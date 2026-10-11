@@ -7,8 +7,9 @@ const load = (raw: unknown) => loadChainDataset(raw, bundledFormulaDataset(), bu
 describe('dataset rantai produksi (ADR-010)', () => {
   const c = bundledChainDataset();
 
-  it('valid & terkunci ke dataset formula v1.1.0 + inventory v1.0.4', () => {
-    expect(c.version).toBe('1.0.1');
+  it('valid & terkunci ke dataset formula v1.2.0 + inventory v1.0.4; tanpa parameter fumigasi (DEC-048)', () => {
+    expect(c.version).toBe('1.1.0');
+    expect(Object.keys(c.raw.greenhouse).filter((k) => k.startsWith('sulfur'))).toEqual([]);
     expect(() => load({ ...clone(), meta: { ...clone().meta, requires_formula_dataset: '9.9.9' } })).toThrow(/butuh dataset formula/);
     expect(() => load({ ...clone(), meta: { ...clone().meta, requires_inventory_dataset: '9.9.9' } })).toThrow(/butuh dataset inventory/);
   });

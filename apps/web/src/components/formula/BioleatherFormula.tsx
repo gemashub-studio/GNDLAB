@@ -7,7 +7,8 @@ import { Stat } from '@/components/ui/Stat';
 import { WarningList } from '@/components/ui/Warnings';
 import { fmt } from '@/lib/format';
 import { BioleatherMethods } from './BioleatherMethods';
-import { BigResult, Bom, CalcError, Note, paramText, rangeText, safe, Sources, useFormula, Wizard } from './shared';
+import { SaveProtocol } from './SaveProtocol';
+import { BigResult, Bom, CalcError, EvidenceTag, Note, paramText, rangeText, safe, Sources, useFormula, Wizard } from './shared';
 
 type Harvest = 'once' | 'weekly';
 
@@ -96,10 +97,34 @@ export function BioleatherFormula() {
             { name: 'Cuka / asam asetat', amount: 'secukupnya', note: `sampai pH ${paramText(b.ph, 1)}` },
             { name: 'Starter K. xylinus', amount: `${fmt(t.starterMl, 0)} mL`, note: `${fmt(starter, 1)}% v/v` },
             { name: 'NaOH (pemurnian)', amount: `${fmt(t.naohG, 1)} g`, note: `${fmt(naohM, 2)} M dalam ${fmt(media, 1)} L air` },
-            { name: 'Gliserol (plastisasi)', amount: `${fmt(t.glycerolMl, 0)} mL`, note: `${fmt(glycerol, 1)}% dalam ${fmt(media, 1)} L` },
+            { name: 'Gliserol (plastisasi)', amount: `${fmt(t.glycerolMl, 0)} mL atau ${fmt(t.glycerolMl, 0)} g`, note: `${fmt(glycerol, 1)}% dalam ${fmt(media, 1)} L — mL bila % v/v, g bila % b/v (basis sumber belum terverifikasi)` },
           ]}
         />
       </div>
+
+      <div className="flex flex-col gap-2 text-xs" data-testid="blt-evidence">
+        <p className="flex flex-wrap items-center gap-2"><EvidenceTag kind="input" /> Ukuran & jumlah baki, gula g/L, starter %, NaOH M, gliserol % = resepmu (angka awal dari literatur/SOP).</p>
+        <p className="flex flex-wrap items-center gap-2"><EvidenceTag kind="teoritis" /> Bahan per batch = isian × volume media (stoikiometri NaOH 40 g/mol).</p>
+        <p className="flex flex-wrap items-center gap-2"><EvidenceTag kind="literatur" /> Lembar basah/kering = laju hasil & fraksi kering dari literatur (keyakinan {b.wet_yield_g_l_day.confidence}) — perkiraan, bukan janji hasil.</p>
+        <p className="flex flex-wrap items-center gap-2"><EvidenceTag kind="eksperimen" /> Berat lembar, tebal, kuat tarik batchmu dicatat di <a href="/lab" className="underline">GEMA RnD Lab</a>.</p>
+      </div>
+      <Note tone="warn" title="Basis gliserol belum terverifikasi" testId="blt-glycerol-basis">
+        Sumber hanya menyebut “gliserol {fmt(glycerol, 1)}%” tanpa menyebut % v/v atau % b/v, dan makalah primernya belum dibaca langsung. Untuk {fmt(media, 1)} L: {fmt(t.glycerolMl, 0)} mL (bila v/v) atau {fmt(t.glycerolMl, 0)} g (bila b/v) — bukan jumlah yang sama karena gliserol lebih berat dari air. Tentukan basismu sendiri dan catat di protokol.
+      </Note>
+      <SaveProtocol
+        product="BL"
+        testId="blt-proto"
+        defaultName={`Bioleather ${tray.count} baki ${tray.lengthCm}×${tray.widthCm} cm`}
+        context={`${tray.count} baki ${tray.lengthCm}×${tray.widthCm}×${tray.depthCm} cm, gula ${fmt(sucrose)} g/L, starter ${fmt(starter, 1)}%, NaOH ${fmt(naohM, 2)} M, gliserol ${fmt(glycerol, 1)}% (basis ditentukan pengguna)`}
+        ingredients={[
+          { name: 'Air kelapa tersaring', amount: fmt(media, 2), unit: 'L' },
+          { name: 'Gula pasir (sukrosa)', amount: fmt(t.sucroseG, 0), unit: 'g' },
+          { name: 'ZA (amonium sulfat) food-grade', amount: fmt(t.zaG, 1), unit: 'g' },
+          { name: 'Starter K. xylinus', amount: fmt(t.starterMl, 0), unit: 'mL' },
+          { name: 'NaOH (pemurnian)', amount: fmt(t.naohG, 1), unit: 'g' },
+          { name: `Gliserol ${fmt(glycerol, 1)}% (basis: isi sendiri v/v atau b/v)`, amount: fmt(t.glycerolMl, 0), unit: 'mL atau g' },
+        ]}
+      />
 
       <Wizard
         label="Tahap bioleather"
@@ -218,7 +243,7 @@ export function BioleatherFormula() {
             body: (
               <>
                 <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-                  <Stat label="Kuat tarik" value={`≥ ${fmt(b.tensile_min_mpa.typ)} MPa`} sub="ISO 3376 (lab)" />
+                  <Stat label="Kuat tarik" value={`≥ ${fmt(b.tensile_min_mpa.typ)} MPa`} sub={`Target internal (keyakinan ${b.tensile_min_mpa.confidence}) · ISO 3376 = metode untuk kulit, kesesuaian belum divalidasi`} />
                   <Stat label="Uji lipat 180°" value={`≥ ${fmt(b.fold_min.typ)}×`} sub="tanpa retak" />
                   <Stat label="Tebal" value="±10%" sub="5 titik" />
                   <Stat label="Kering / basah" value={paramText({ ...b.dry_fraction_of_wet, min: b.dry_fraction_of_wet.min * 100, typ: b.dry_fraction_of_wet.typ * 100, max: b.dry_fraction_of_wet.max * 100 }, 1, '%')} />

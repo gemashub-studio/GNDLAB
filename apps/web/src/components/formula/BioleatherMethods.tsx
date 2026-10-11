@@ -132,7 +132,7 @@ export function BioleatherMethods({ mediaL, cultureDays, areaCm2 }: { mediaL: nu
               testId="bl-plast-bom"
               title={`Resep ${plast.id}`}
               rows={[
-                ...(pr.v.result.typ.glycerolG > 0 ? [{ name: 'Gliserol', amount: `${fmt(pr.v.result.typ.glycerolG, 1)} g`, note: plast.p.glycerol_pct_bath ? `${paramText(plast.p.glycerol_pct_bath, 0)}% dari larutan` : `${paramText(plast.p.glycerol_pct_of_bc!, 0)}% dari ${fmt(bcDryG, 1)} g BC kering` }] : []),
+                ...(pr.v.result.typ.glycerolG > 0 ? [{ name: 'Gliserol', amount: plast.p.glycerol_pct_bath ? `${fmt(pr.v.result.typ.glycerolG, 1)} g atau mL` : `${fmt(pr.v.result.typ.glycerolG, 1)} g`, note: plast.p.glycerol_pct_bath ? `${paramText(plast.p.glycerol_pct_bath, 0)}% dari larutan — g bila % b/v, mL bila % v/v (basis sumber belum terverifikasi)` : `${paramText(plast.p.glycerol_pct_of_bc!, 0)}% dari ${fmt(bcDryG, 1)} g BC kering` }] : []),
                 ...(pr.v.result.typ.glycerinMl > 0
                   ? [
                       { name: 'Gliserin', amount: `${fmt(pr.v.result.typ.glycerinMl, 0)} mL` },

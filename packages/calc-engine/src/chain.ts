@@ -180,6 +180,8 @@ export interface RackRoomInput {
   /** Ukuran tray (m). Default tray persegi selebar rak. */
   trayL?: number;
   trayW?: number;
+  /** Belahan per tray hasil hitung/isi sendiri — bila diisi, menggantikan perkiraan dari kerapatan belahan/m². */
+  halvesPerTrayCounted?: number;
   datasetVersion?: string;
 }
 
@@ -231,9 +233,10 @@ export function rackRoomDesign(i: RackRoomInput): FormulaOutput<RackRoomResult> 
   const trays = racks * tiers * traysPerTier;
   const tierAreaM2 = d * rackLenM;
   const totalAreaM2 = racks * tiers * tierAreaM2;
+  if (i.halvesPerTrayCounted !== undefined) assertPositive(i.halvesPerTrayCounted, 'belahan per tray');
   const result = evaluateRange({ h: i.halvesPerM2 }, (v) => {
     const c = 1 / Math.sqrt(v.h);
-    const halvesPerTray = Math.floor(trayL / c + 1e-9) * Math.floor(trayW / c + 1e-9);
+    const halvesPerTray = i.halvesPerTrayCounted ?? Math.floor(trayL / c + 1e-9) * Math.floor(trayW / c + 1e-9);
     return {
       racks,
       aisles,
@@ -257,13 +260,9 @@ export function rackRoomDesign(i: RackRoomInput): FormulaOutput<RackRoomResult> 
 
 export interface GreenhouseServicesInput {
   roomM3: number;
-  nuts: number;
   aisles: number;
   refRoomM3: number;
   fansPerRefRoom: Param;
-  sulfurGPerNut: Param;
-  sulfurGPerM3: Param;
-  roomPerPointM3: Param;
   datasetVersion?: string;
 }
 
@@ -271,31 +270,67 @@ export interface GreenhouseServicesResult extends Record<string, number> {
   fans: number;
   /** Posisi kipas yang disarankan: kedua ujung tiap lorong. */
   fanPositions: number;
-  sulfurByNutsG: number;
-  sulfurByRoomG: number;
-  burnPoints: number;
-  sulfurPerPointG: number;
 }
 
-/** Kipas & belerang diskalakan linear dari ruang acuan KORA (turunan, keyakinan C). */
+/**
+ * Kipas sirkulasi diskalakan linear dari ruang acuan KORA (turunan, keyakinan C).
+ * Perlakuan sulfur SENGAJA tidak dihitung (DEC-048): belum ada dosis proses resmi/primer untuk kopra edibel.
+ */
 export function greenhouseServices(i: GreenhouseServicesInput): FormulaOutput<GreenhouseServicesResult> {
   assertPositive(i.roomM3, 'volume ruang');
-  assertNonNegative(i.nuts, 'jumlah butir');
   assertPositive(i.refRoomM3, 'volume ruang acuan');
-  const result = evaluateRange({ f: i.fansPerRefRoom, gn: i.sulfurGPerNut, gm: i.sulfurGPerM3, pp: i.roomPerPointM3 }, (v) => {
-    const burnPoints = Math.max(1, Math.ceil(i.roomM3 / v.pp - 1e-9));
-    const sulfurByNutsG = i.nuts * v.gn;
-    return {
-      fans: Math.max(1, Math.ceil((i.roomM3 * v.f) / i.refRoomM3 - 1e-9)),
-      fanPositions: 2 * Math.max(1, i.aisles),
-      sulfurByNutsG,
-      sulfurByRoomG: i.roomM3 * v.gm,
-      burnPoints,
-      sulfurPerPointG: sulfurByNutsG / burnPoints,
-    };
-  });
+  const result = evaluateRange({ f: i.fansPerRefRoom }, (v) => ({
+    fans: Math.max(1, Math.ceil((i.roomM3 * v.f) / i.refRoomM3 - 1e-9)),
+    fanPositions: 2 * Math.max(1, i.aisles),
+  }));
   const warnings = Math.abs(i.roomM3 - i.refRoomM3) / i.refRoomM3 > 0.05 ? [warning('DERIVED_SCALING', `${Math.round(i.roomM3)} m³ vs acuan ${i.refRoomM3} m³`)] : [];
-  return formulaOutput(result, [i.fansPerRefRoom, i.sulfurGPerNut, i.sulfurGPerM3, i.roomPerPointM3], warnings, i.datasetVersion);
+  return formulaOutput(result, [i.fansPerRefRoom], warnings, i.datasetVersion);
+}
+
+export interface DryingLoadInput {
+  /** Kapasitas satu angkatan (butir) dari rak/tray atau luasan. */
+  capacityNuts: number;
+  /** Kelapa yang BENAR-BENAR dibelah untuk dikeringkan (butir). */
+  splitNuts: number;
+  /** Belahan per tray (untuk jumlah tray terpakai); kosong = tidak dihitung. */
+  halvesPerTray?: number;
+  /** Jumlah tray tersedia per angkatan. */
+  trays?: number;
+}
+
+export interface DryingLoadResult {
+  halves: number;
+  batches: number;
+  /** Isi angkatan pertama terhadap kapasitas (%). >100 tidak mungkin: sisa masuk angkatan berikut. */
+  firstBatchFillPct: number;
+  /** Kelapa di angkatan terakhir. */
+  lastBatchNuts: number;
+  /** Ruang kosong di angkatan terakhir (butir). */
+  spareNuts: number;
+  /** Tray yang terisi di angkatan pertama (0 bila belahan/tray tidak diketahui). */
+  traysUsedFirstBatch: number;
+}
+
+/** Muatan aktual vs kapasitas: 1 butir = 2 belahan; angkatan = ⌈butir ÷ kapasitas⌉. */
+export function dryingLoadPlan(i: DryingLoadInput): DryingLoadResult {
+  assertPositive(i.capacityNuts, 'kapasitas per angkatan');
+  assertNonNegative(i.splitNuts, 'kelapa dibelah');
+  if (!Number.isInteger(i.splitNuts)) throw new RangeError('Jumlah kelapa dibelah harus bilangan bulat');
+  const cap = Math.floor(i.capacityNuts);
+  if (cap < 1) throw new RangeError('Kapasitas per angkatan kurang dari 1 butir');
+  const batches = i.splitNuts === 0 ? 0 : Math.ceil(i.splitNuts / cap);
+  const first = Math.min(i.splitNuts, cap);
+  const lastBatchNuts = batches === 0 ? 0 : i.splitNuts - (batches - 1) * cap;
+  const halvesFirst = first * 2;
+  const traysUsedFirstBatch = i.halvesPerTray && i.halvesPerTray > 0 ? Math.min(i.trays ?? Infinity, Math.ceil(halvesFirst / i.halvesPerTray)) : 0;
+  return {
+    halves: i.splitNuts * 2,
+    batches,
+    firstBatchFillPct: (first / cap) * 100,
+    lastBatchNuts,
+    spareNuts: batches === 0 ? cap : cap - lastBatchNuts,
+    traysUsedFirstBatch,
+  };
 }
 
 /** Luas jemur satu lapis (para-para) untuk `nuts` butir (2 belahan/butir). */

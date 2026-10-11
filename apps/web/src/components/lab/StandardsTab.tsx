@@ -1,6 +1,6 @@
 'use client';
 
-import { GEMA_DOSSIERS, sourceById } from '@/lib/gemaSources';
+import { GEMA_DOSSIERS, SOURCE_CATEGORIES, sourceById, type SourceCategory } from '@/lib/gemaSources';
 import { LAB_PRODUCTS, type LabProductId } from '@/lib/labStore';
 import { ProductMark, SourcePill } from './ui';
 
@@ -28,24 +28,32 @@ export function StandardsTab({ product, setProduct }: { product: LabProductId; s
           </div>
         </header>
 
-        <section className="flex flex-col gap-2">
-          <h3 className="label-mono">Standar & metode kandidat</h3>
-          <ul className="flex flex-col gap-2">
-            {d.standards.map((id) => {
-              const s = sourceById(id)!;
-              return (
-                <li key={id} className="flex flex-col gap-1 rounded-xl bg-paper p-3">
-                  <span className="flex flex-wrap items-center gap-2">
-                    <span className="font-mono text-xs font-semibold">{id}</span>
-                    <SourcePill status={s.status} />
-                  </span>
-                  <a href={s.url} target="_blank" rel="noopener noreferrer" className="font-semibold underline-offset-4 hover:underline">{s.title}</a>
-                  <span className="text-sm text-muted">{s.limits}</span>
-                </li>
-              );
-            })}
-          </ul>
-        </section>
+        {(Object.keys(SOURCE_CATEGORIES) as SourceCategory[]).map((cat) => {
+          const ids = d.standards.filter((id) => sourceById(id)?.category === cat);
+          if (!ids.length) return null;
+          return (
+            <section key={cat} className="flex flex-col gap-2" data-testid={`std-cat-${cat}`}>
+              <h3 className="label-mono">{SOURCE_CATEGORIES[cat]}</h3>
+              <ul className="flex flex-col gap-2">
+                {ids.map((id) => {
+                  const s = sourceById(id)!;
+                  return (
+                    <li key={id} className="flex flex-col gap-1 rounded-xl bg-paper p-3">
+                      <span className="flex flex-wrap items-center gap-2">
+                        <span className="font-mono text-xs font-semibold">{id}</span>
+                        <SourcePill status={s.status} />
+                        <span className="font-mono text-[11px] text-muted">{s.org} · {s.year}</span>
+                      </span>
+                      <a href={s.url} target="_blank" rel="noopener noreferrer" className="font-semibold underline-offset-4 hover:underline">{s.title}</a>
+                      <span className="text-sm"><span className="label-mono">Mengatur: </span>{s.regulates}</span>
+                      <span className="text-sm text-muted">{s.limits}</span>
+                    </li>
+                  );
+                })}
+              </ul>
+            </section>
+          );
+        })}
 
         <section className="flex flex-col gap-1.5 rounded-xl border-3 border-safety p-4">
           <h3 className="label-mono">Belum boleh disimpulkan</h3>

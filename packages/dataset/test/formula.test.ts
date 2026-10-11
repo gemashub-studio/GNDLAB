@@ -8,7 +8,7 @@ describe('dataset formula (ADR-009)', () => {
   const f = bundledFormulaDataset();
 
   it('valid, versi & kompatibilitas dengan dataset proses v1.1.0', () => {
-    expect(f.version).toBe('1.1.0');
+    expect(f.version).toBe('1.2.0');
     expect(bundledProcessDataset().version).toBe('1.1.0');
     expect(() => loadFormulaDataset({ ...clone(), meta: { ...clone().meta, requires_process_dataset: '9.9.9' } }, bundledProcessDataset())).toThrow(/butuh dataset proses/);
   });
@@ -104,5 +104,34 @@ describe('dataset formula (ADR-009)', () => {
     const bad2 = clone();
     bad2.bioleather.plasticizers[0].glycerol_pct_of_bc = bad2.bioleather.plasticizers[0].glycerol_pct_bath;
     expect(() => loadFormulaDataset(bad2, bundledProcessDataset())).toThrow(/tepat satu basis/);
+  });
+
+  it('sulfur kopra (DEC-048): tidak ada dosis otomatis; batas residu UE = produk akhir, bukan dosis', () => {
+    const sul = f.raw.kopra.sulfur;
+    expect(sul.auto_dose).toBe(false);
+    expect(sul).not.toHaveProperty('g_per_nut');
+    expect(sul).not.toHaveProperty('night_schedule_pct');
+    expect(sul.residue_limits[0]).toMatchObject({ jurisdiction: 'EU', max_mg_kg: 50 });
+    expect(sul.residue_limits[0]!.note).toMatch(/bukan dosis/);
+    expect(f.raw.kopra).not.toHaveProperty('bisulfite_soak_pct');
+    // catatan bukti tidak boleh memuat angka dosis (g, kg, g/m³, %) — angka bisa terbaca sebagai anjuran
+    for (const e of sul.evidence) expect(e.note).not.toMatch(/\d+(?:[.,]\d+)?\s*(?:g|kg|%|g\/m)/);
+    const bad = { ...clone(), kopra: { ...clone().kopra, sulfur: { ...clone().kopra.sulfur, auto_dose: true } } };
+    expect(() => loadFormulaDataset(bad, bundledProcessDataset())).toThrow(/sulfur/);
+  });
+
+  it('DEC-049: tidak ada parameter A/B yang HANYA bersumber dokumen internal KORA (F01–F06)', () => {
+    const internal = new Set(['F01', 'F02', 'F03', 'F04', 'F05', 'F06']);
+    const offenders: string[] = [];
+    const walk = (o: unknown, path: string) => {
+      if (Array.isArray(o)) return o.forEach((v, i) => walk(v, `${path}[${i}]`));
+      if (!o || typeof o !== 'object') return;
+      const r = o as Record<string, unknown>;
+      if (typeof r.confidence === 'string' && Array.isArray(r.source_ids) && r.confidence !== 'C' && (r.source_ids as string[]).every((id) => internal.has(id))) offenders.push(path);
+      for (const [k, v] of Object.entries(r)) if (k !== 'sources') walk(v, `${path}.${k}`);
+    };
+    walk(rawFormulaDataset, '');
+    expect(offenders).toEqual([]);
+    expect(f.bioleather.plasticizers[0]!.p.glycerol_pct_bath!.confidence).toBe('C');
   });
 });

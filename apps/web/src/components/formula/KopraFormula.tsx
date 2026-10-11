@@ -7,7 +7,6 @@ import {
   gradeForMoisture,
   greenhouseCapacityNuts,
   splitDelayCheck,
-  sulfurDose,
   trialDesign,
   type CalcWarning,
 } from '@gemas/calc-engine';
@@ -16,6 +15,7 @@ import { useMemo, useState } from 'react';
 import { ChoiceGroup, NumberField } from '@/components/ui/fields';
 import { Stat } from '@/components/ui/Stat';
 import { WarningList } from '@/components/ui/Warnings';
+import { SulfurPanel } from '@/components/chain/SulfurPanel';
 import { fmt } from '@/lib/format';
 import { BigResult, Bom, CalcError, Note, paramText, rangeText, safe, Sources, useFormula, Wizard } from './shared';
 
@@ -34,9 +34,6 @@ export function KopraFormula() {
   const [hours, setHours] = useState<number | undefined>(48);
   const [mcNow, setMcNow] = useState<number | undefined>();
   const [delay, setDelay] = useState<number | undefined>();
-  // Belerang
-  const [nights, setNights] = useState(1);
-  const [roomM3, setRoomM3] = useState(k.greenhouseRoomM3.typ);
   // Grading
   const [mcAvg, setMcAvg] = useState<number | undefined>();
 
@@ -60,22 +57,6 @@ export function KopraFormula() {
       ),
     [nuts, k, grade, f.version],
   );
-  const sulfur = useMemo(
-    () =>
-      safe(() =>
-        sulfurDose({
-          nuts,
-          roomM3,
-          gPerNut: k.sulfurGPerNut,
-          gPerM3: k.sulfurGPerM3,
-          nightSchedulePct: f.raw.kopra.sulfur.night_schedule_pct,
-          nights,
-          maxNights: f.raw.kopra.sulfur.max_nights,
-          labTestFromNight: f.raw.kopra.sulfur.lab_test_from_night,
-        }),
-      ),
-    [nuts, roomM3, nights, k, f.raw.kopra.sulfur],
-  );
   const capacity = greenhouseCapacityNuts(k.greenhouseArea, k.greenhouseHalves);
   const dry = hours !== undefined && mcNow !== undefined ? dryingCheck({ hours, moisturePct: mcNow, alarm24MaxPct: k.alarm_moisture_24h_max_pct.typ, alarm48MaxPct: k.alarm_moisture_48h_max_pct.typ }) : undefined;
   const split = delay !== undefined ? splitDelayCheck(delay, k.split_to_dryer_max_h.typ) : undefined;
@@ -84,7 +65,6 @@ export function KopraFormula() {
 
   const warnings: CalcWarning[] = dedupeWarnings([
     ...(yieldOut.ok ? (yieldOut.v.warnings as CalcWarning[]) : []),
-    ...(sulfur.ok ? (sulfur.v.warnings as CalcWarning[]) : []),
     ...(dry?.warnings ?? []),
     ...(split?.warnings ?? []),
   ]);
@@ -216,28 +196,14 @@ export function KopraFormula() {
           {
             id: 'belerang',
             tag: 'D3',
-            title: 'Belerang',
+            title: 'Perlakuan sulfur',
             body: (
               <>
-                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-                  <NumberField label="Volume ruang fumigasi" unit="m³" min={0.1} max={10000} value={roomM3} onValue={(v) => v && setRoomM3(v)} hint="Greenhouse 3×10×3,5 = 105 m³" testId="kopra-room" />
-                  <NumberField label="Jumlah malam" unit="malam" integer min={1} max={10} value={nights} onValue={(v) => v && setNights(v)} testId="kopra-nights" />
-                  <Stat label="Butir di dalam" value={fmt(nuts)} sub="dari desain uji di atas" />
-                </div>
-                {sulfur.ok && (
-                  <>
-                    <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-                      <Stat label="Dosis penuh (per butir)" value={rangeText({ min: sulfur.v.result.min.fullDoseByNutsG, typ: sulfur.v.result.typ.fullDoseByNutsG, max: sulfur.v.result.max.fullDoseByNutsG }, 0, 'g')} accent testId="kopra-sulfur" />
-                      <Stat label="Cek silang (per m³)" value={rangeText({ min: sulfur.v.result.min.fullDoseByRoomG, typ: sulfur.v.result.typ.fullDoseByRoomG, max: sulfur.v.result.max.fullDoseByRoomG }, 0, 'g')} />
-                      <Stat label="Total semua malam" value={`${fmt(sulfur.v.result.typ.totalByNutsG, 0)} g`} sub={`Jadwal ${sulfur.v.perNightPct.map((p) => `${p}%`).join(' → ')}`} />
-                    </div>
-                    <Note tone="warn" title="K3 fumigasi">
-                      Tidak ada orang di dalam, kipas OFF, ruang kedap, wadah tahan api di lantai lorong, rambu &quot;BAHAYA GAS SO₂&quot;, pintu dikunci. Pagi: ventilasi 30–60 menit sebelum masuk. Respirator gas asam.
-                    </Note>
-                  </>
-                )}
-                <Note>Alternatif tanpa asap: rendam natrium bisulfit {fmt(k.bisulfite_soak_pct.typ, 1)}% sebelum pengering (durasi rendam belum ada sumber — mulai 15 menit, catat). Tetap wajib uji residu SO₂ untuk ekspor (UE ≤{fmt(f.raw.kopra.sulfur.so2_residue_eu_max_mg_kg)} mg/kg).</Note>
-                <Sources ids={f.raw.kopra.sulfur.source_ids} confidence={k.sulfurGPerNut.confidence} />
+                <Note tone="warn" title="Tidak ada hitungan dosis" testId="kopra-sulfur-off">
+                  Dosis sulfur untuk kopra edibel belum punya dasar resmi/primer, jadi kalkulator ini tidak menghitung dosis, jadwal malam, lama paparan, atau waktu masuk
+                  kembali. Kalau kamu memakai perlakuan sulfur, catat apa adanya di log di bawah (tersimpan di perangkat, sama dengan log di Rantai → Pengeringan).
+                </Note>
+                <SulfurPanel />
               </>
             ),
           },
