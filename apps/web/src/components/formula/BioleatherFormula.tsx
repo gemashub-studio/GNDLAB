@@ -6,6 +6,7 @@ import { ChoiceGroup, NumberField } from '@/components/ui/fields';
 import { Stat } from '@/components/ui/Stat';
 import { WarningList } from '@/components/ui/Warnings';
 import { fmt } from '@/lib/format';
+import { BioleatherMethods } from './BioleatherMethods';
 import { BigResult, Bom, CalcError, Note, paramText, rangeText, safe, Sources, useFormula, Wizard } from './shared';
 
 type Harvest = 'once' | 'weekly';
@@ -230,6 +231,7 @@ export function BioleatherFormula() {
         ]}
       />
       <WarningList warnings={out.warnings as CalcWarning[]} />
+      <BioleatherMethods mediaL={media} cultureDays={days} areaCm2={tray.count * tray.lengthCm * tray.widthCm} />
     </div>
   );
 }

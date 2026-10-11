@@ -55,6 +55,16 @@ export function ChecklistPage() {
     void reload();
   }, [reload]);
 
+  // Tautan langsung dari kalkulator: /ceklis?id=rnd-cuka-metode → buka ceklis itu.
+  useEffect(() => {
+    const id = new URLSearchParams(window.location.search).get('id');
+    const c = id ? f.checklists.find((x) => x.id === id) : undefined;
+    if (!c) return;
+    setType(c.type);
+    setProduct(c.product);
+    setFill(blankFill(c));
+  }, [f]);
+
   const list = f.checklists.filter((c) => c.type === type && (product === 'all' || c.product === product));
   const def = fill ? f.checklists.find((c) => c.id === fill.checklistId) : undefined;
   const sum = useMemo(() => (def && fill ? summarize(def, fill.marks) : undefined), [def, fill]);

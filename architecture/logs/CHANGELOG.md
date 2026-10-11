@@ -3,6 +3,13 @@
 Format: [Keep a Changelog](https://keepachangelog.com/id/1.1.0/) · Versi dataset mengikuti SemVer (ADR-002).
 Waktu dalam WIB (UTC+7).
 
+## [aplikasi R&D metode] — 2026-10-11
+### Ditambahkan
+- Formula R&D → Cuka: panel "Bandingkan metode asetifikasi" (statis, semi-kontinu, generator, aerasi, kontrol tanpa gula) — cuka pertama, siklus, liter per siklus & per 1/3/12 bulan, status asam ≥4%, alat, plus-minus, langkah kerja.
+- Formula R&D → Bioleather: panel metode — kultur (sekali/berkala/mother), plastisasi A/B/C (takaran gliserol/gliserin/etanol), pewarna alami (mordan, garam, kopi), finishing (lilin karnauba+minyak, AESO).
+- 4 ceklis R&D baru (rnd-cuka-metode, rnd-blt-kultur, rnd-blt-plastis, rnd-blt-finish); tautan langsung `/ceklis?id=…`.
+- Dataset formula v1.1.0 (sumber F24–F29); dataset rantai v1.0.1; draf parameter R&D 118 (+7 pilihan metode).
+
 ## [aplikasi Fase G] — 2026-10-10
 ### Ditambahkan
 - Rantai Produksi `/rantai` (8 tahap): angkut truk & container (pickup → tronton wingbox, 20GP/40GP/40HC/45HC) dengan butir per rit, pembatas ruang/berat & jumlah rit; register lot asal DR ≤500 / DT >500 mdpl (kode lot otomatis, offline, CSV) + gudang per asal; belah–sortir–air kelapa (pendingin per 2 jam); desainer greenhouse (rak, tingkat, lorong, tray, kelapa/tray, kemiringan, kipas, belerang, titik bakar, gambar skematis), jemur, oven; grade & kalkulator kemas gudang/kendaraan; arang per asal drum/kolam + fase asap + ayak rotari 2× + hammer mill + kemas; briket campuran DT:DR dari hasil lab (selang rasio layak) + bahan baku per asal + bentuk pasar; bioleather + cocopeat/cocofiber/bahan lain.

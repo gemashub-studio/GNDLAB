@@ -91,3 +91,9 @@
 - Engine chain.ts (18 uji), dataset rantai v1.0.0 (5 uji), lotStore 1 uji, E2E rantai 11/11. run_all_checks + uji DB LULUS. Commit a3cbe08, 35448e2, cea5319.
 - GAP yang perlu data owner: dimensi kolam & lama bakar kolam KORA; kapasitas ayakan rotari & hammer mill aktual; hasil lab proksimat batok DT vs DR (n≥3/kelas) untuk rasio briket; dosis cocopeat/cocofiber bioleather (uji bertingkat); ukuran tray aktual greenhouse; payload legal (KIR) truk vendor.
 - Masih menunggu owner dari Fase F: revisi SOP gula/titrasi, data briket, konfirmasi draf parameter R&D → M5.
+
+### 2026-10-11 · R&D cuka & bioleather multi-metode SELESAI
+- Owner: "simpan dulu" (sudah tersimpan) + kalkulator R&D cuka & bioleather beberapa metode + ceklis.
+- Dataset formula v1.1.0 (F24–F29), engine formula-methods.ts (9 uji), panel metode di /formula?p=cuka & ?p=bioleather, 4 ceklis R&D baru + deep link /ceklis?id=, draf parameter M5 118.
+- Test: engine 159, dataset 72, E2E formula+rantai 28/28, run_all_checks + DB LULUS.
+- GAP: dosis tanin & secang, takaran oles finishing, hasil mother cuka, basis FeSO₄ 1%.

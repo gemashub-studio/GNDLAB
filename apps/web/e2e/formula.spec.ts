@@ -80,6 +80,42 @@ test.describe('Formula R&D', () => {
   });
 });
 
+test.describe('Metode R&D cuka & bioleather (formula v1.1.0)', () => {
+  test('cuka: 5 metode; 100 L statis = 200 L / 3 bulan; tanpa gula gagal 4%; generator 32 jam', async ({ page }) => {
+    await page.goto('/formula?p=cuka');
+    await expect(page.getByTestId('cm-table')).toBeVisible();
+    await page.getByTestId('cm-volume').fill('100');
+    await expect(page.getByTestId('cm-liters-statis')).toHaveText('200');
+    await expect(page.getByTestId('cm-acid-statis')).toContainText('✓');
+    await expect(page.getByTestId('cm-acid-alami')).toContainText('✗');
+    await page.getByTestId('cm-pick-generator').click();
+    await expect(page.getByTestId('cm-steps')).toContainText('32 jam');
+    await page.getByTestId('cm-pick-alami').click();
+    await expect(page.getByText('Cukanya bisa kurang asam')).toBeVisible();
+  });
+
+  test('bioleather: resep C 3 L → 1.000 mL gliserin + 2.000 mL etanol; kopi & finishing dihitung', async ({ page }) => {
+    await page.goto('/formula?p=bioleather');
+    await expect(page.getByTestId('bl-culture-berkala')).toContainText('19,0 g/L/hari');
+    await page.getByTestId('bl-plast-C').click();
+    await page.getByTestId('bl-bath').fill('3');
+    await expect(page.getByTestId('bl-plast-bom')).toContainText('1.000 mL');
+    await expect(page.getByTestId('bl-plast-bom')).toContainText('2.000 mL');
+    await page.getByTestId('bl-dye-kopi').click();
+    await expect(page.getByTestId('bl-dye-bom')).toContainText('Bubuk kopi');
+    await page.getByTestId('bl-coverage').fill('40');
+    await expect(page.getByTestId('bl-fin-bom')).toContainText('Lilin karnauba');
+  });
+
+  test('tautan ceklis dari kalkulator membuka ceklis R&D yang tepat', async ({ page }) => {
+    await page.goto('/formula?p=cuka');
+    await page.getByTestId('cm-checklist').click();
+    await expect(page).toHaveURL(/ceklis\?id=rnd-cuka-metode/);
+    await expect(page.getByText('Uji banding metode cuka', { exact: false }).first()).toBeVisible();
+    await expect(page.getByTestId('checklist-status')).toHaveAttribute('data-status', 'incomplete');
+  });
+});
+
 test.describe('Produksi per shift', () => {
   test('kopra + oven listrik: oven jadi pembatas (1 angkatan/hari pada 1 shift)', async ({ page }) => {
     await page.goto('/produksi');

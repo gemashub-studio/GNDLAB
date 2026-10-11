@@ -7,6 +7,7 @@ import { Hint } from '@/components/ui/Hint';
 import { Stat } from '@/components/ui/Stat';
 import { WarningList } from '@/components/ui/Warnings';
 import { fmt } from '@/lib/format';
+import { CukaMethods } from './CukaMethods';
 import { BigResult, Bom, CalcError, Note, paramText, rangeText, safe, Sources, useFormula, Wizard } from './shared';
 
 export function CukaFormula() {
@@ -256,6 +257,7 @@ export function CukaFormula() {
         ]}
       />
       <WarningList warnings={out.warnings as CalcWarning[]} />
+      <CukaMethods acetifyL={t.acetifyL} aceticPct={{ min: out.result.min.aceticPotentialPct, typ: t.aceticPotentialPct, max: out.result.max.aceticPotentialPct }} waterL={waterL} starterPct={starter} />
     </div>
   );
 }

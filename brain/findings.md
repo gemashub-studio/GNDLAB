@@ -104,3 +104,9 @@ SOP KORA: DR <100 / DT ≥600 mdpl. Owner memutuskan batas tunggal 500 mdpl (DR 
 
 ### FND-029 · 2026-10-10 · Desain rak greenhouse KORA = satu-satunya sumber angka rak
 Rak 0,65 m, 6 tingkat × 0,5 m, lorong ±0,5 m, pusat belahan 18 cm (25–30 belahan/m²), telungkup hari 1–2 lalu miring 15–30°, kipas 2–4 × Ø16–20″ per 105 m³, belerang 1,5–2 g/butir atau 20–30 g/m³. Semua keyakinan C → kalkulator memakai geometri murni + parameter ini, skala ruang lain ditandai turunan.
+
+### FND-030 · 2026-10-11 · Metode cuka: kecepatan vs keluaran
+Data sumber: statis (dengan starter cuka hidup) ±28 hari/siklus; semi-kontinu (Othaman 2014) ±4 minggu tapi hanya ⅔–¾ ditarik → per 3 bulan TIDAK lebih banyak dari statis; keunggulannya tanpa starter baru & lebih sedikit kerja. Generator ±32 jam/run setelah 5 run kondisi; aerasi 5–7 hari/siklus (pilot). Keluaran besar generator/aerasi menganggap cairan alkohol selalu siap → kapasitas fermentasi alkohol jadi pembatas baru. Kontrol tanpa gula: gula alami 1–2,6% → asam ±0,7% (gagal 4%).
+
+### FND-031 · 2026-10-11 · Bioleather: basis resep berbeda-beda
+Plastisasi A = % larutan (gliserol 1%), B = % berat BC kering (30%), C = rasio gliserin:etanol 1:2 → engine memisahkan basis agar tidak tertukar. Takaran oles lilin/AESO (g/m²), dosis secang & tanin = GAP (diisi uji). Basis "FeSO₄ 1%" pada pewarna kopi ambigu → tidak dihitung otomatis.
