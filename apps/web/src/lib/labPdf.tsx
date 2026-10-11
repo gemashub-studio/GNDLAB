@@ -19,6 +19,7 @@ import {
 } from './labStore';
 import { summarize, type ResponseSummary } from './labDesign';
 import type { ResearchReport } from './researchReport';
+import { CHART_H, CHART_W, chartLayout, type ChartSpec } from './reportCharts';
 
 const C = { ink: '#0E1A1F', paper: '#F3F6F7', grid: '#E2E8EA', mint: '#1FA88F', mintLight: '#63E6CF', amber: '#F5A524', muted: '#5B6B72' };
 const SERIES_COLORS = [C.mint, C.amber, C.ink, '#7C5CBF', '#D9534F', '#3B82F6'];
@@ -350,43 +351,183 @@ export function compilePdfBlob(e: Experiment, entries: DailyEntry[], protocols: 
   return pdf(<CompileDoc e={e} entries={entries} protocols={protocols} media={media} at={now()} />).toBlob();
 }
 
-// ------------------------------------------------------------------ laporan riset produk (DEC-052)
+// ------------------------------------------------------------------ laporan riset produk (DEC-052, desain DEC-058)
 
-function ResearchDoc({ r }: { r: ResearchReport }) {
+const r = StyleSheet.create({
+  cover: { padding: 44, fontFamily: 'Helvetica', color: '#FFFFFF', backgroundColor: C.ink },
+  brand: { fontFamily: 'Courier-Bold', fontSize: 9, color: C.mintLight, letterSpacing: 2 },
+  bar: { width: 64, height: 4, backgroundColor: C.mintLight, marginTop: 14, marginBottom: 18, borderRadius: 2 },
+  coverTitle: { fontFamily: 'Helvetica-Bold', fontSize: 28, lineHeight: 1.2 },
+  pill: { alignSelf: 'flex-start', marginTop: 14, paddingVertical: 4, paddingHorizontal: 10, borderRadius: 10, fontFamily: 'Helvetica-Bold', fontSize: 9, color: C.ink },
+  metaGrid: { flexDirection: 'row', flexWrap: 'wrap', marginTop: 26, borderTopWidth: 1, borderColor: '#2A3A41' },
+  metaCell: { width: '50%', paddingVertical: 8, paddingRight: 10, borderBottomWidth: 1, borderColor: '#2A3A41' },
+  metaLabel: { fontFamily: 'Courier', fontSize: 7.5, color: '#A9B8BE', textTransform: 'uppercase', marginBottom: 2 },
+  page: { paddingTop: 54, paddingHorizontal: 36, paddingBottom: 50, fontFamily: 'Helvetica', fontSize: 9.5, color: C.ink, backgroundColor: '#FFFFFF' },
+  runHead: { position: 'absolute', top: 20, left: 36, right: 36, flexDirection: 'row', justifyContent: 'space-between', borderBottomWidth: 1, borderColor: C.grid, paddingBottom: 6, fontFamily: 'Courier', fontSize: 7.5, color: C.muted },
+  secHead: { flexDirection: 'row', alignItems: 'center', marginTop: 14, marginBottom: 8, paddingBottom: 5, borderBottomWidth: 1.5, borderColor: C.mintLight },
+  secNum: { backgroundColor: C.ink, color: C.mintLight, fontFamily: 'Courier-Bold', fontSize: 9, paddingVertical: 2, paddingHorizontal: 6, borderRadius: 3, marginRight: 8 },
+  secTitle: { fontFamily: 'Helvetica-Bold', fontSize: 13 },
+  kpis: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 6 },
+  kpi: { width: '31.8%', backgroundColor: C.paper, borderLeftWidth: 3, borderColor: C.mint, borderRadius: 4, padding: 8 },
+  kpiVal: { fontFamily: 'Helvetica-Bold', fontSize: 18 },
+  kpiLabel: { fontFamily: 'Courier', fontSize: 7.5, color: C.muted, textTransform: 'uppercase', marginTop: 2 },
+  chartCard: { borderWidth: 1, borderColor: C.grid, borderRadius: 6, padding: 8, marginBottom: 10 },
+  chartTitle: { fontFamily: 'Helvetica-Bold', fontSize: 10, marginBottom: 4 },
+  note: { fontSize: 7.5, color: C.muted, marginTop: 3 },
+  kv: { flexDirection: 'row', marginBottom: 3 },
+  kvLabel: { width: 118, fontFamily: 'Courier-Bold', fontSize: 7.5, color: C.muted, textTransform: 'uppercase', paddingTop: 1.5 },
+  day: { borderLeftWidth: 3, borderColor: C.mintLight, backgroundColor: '#FAFCFC', borderRadius: 4, padding: 8, marginBottom: 10 },
+  dayHead: { fontFamily: 'Helvetica-Bold', fontSize: 10.5, color: C.mint, marginBottom: 5 },
+  gallery: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 4 },
+  photo: { width: 166, marginBottom: 4 },
+  foot: { position: 'absolute', bottom: 20, left: 36, right: 36, flexDirection: 'row', justifyContent: 'space-between', fontFamily: 'Courier', fontSize: 7, color: C.muted },
+});
+
+/** Grafik PDF = bentuk yang sama dengan SVG/PNG di Word & PowerPoint (chartLayout). */
+function SpecChart({ spec, width = 523 }: { spec: ChartSpec; width?: number }) {
+  const k = width / CHART_W;
   return (
-    <Document title={r.title} author="GEMA RnD">
-      <Page size="A4" style={s.page}>
-        <View style={s.head}>
-          <Text style={s.brand}>GEMA RnD Lab · Riset Produk</Text>
-          <Text style={s.title}>{r.title}</Text>
-          <Text style={s.meta}>{r.subtitle}</Text>
+    <Svg width={width} height={CHART_H * k} viewBox={`0 0 ${CHART_W} ${CHART_H}`}>
+      {chartLayout(spec).map((p, i) => {
+        switch (p.t) {
+          case 'rect':
+            return <Rect key={i} x={p.x} y={p.y} width={p.w} height={p.h} fill={p.fill} {...(p.rx && { rx: p.rx })} />;
+          case 'line':
+            return <Line key={i} x1={p.x1} y1={p.y1} x2={p.x2} y2={p.y2} stroke={p.stroke} strokeWidth={p.w} {...(p.dash && { strokeDasharray: '4 4' })} />;
+          case 'poly':
+            return <Polyline key={i} points={p.pts.map(([a, b]) => `${a},${b}`).join(' ')} fill="none" stroke={p.stroke} strokeWidth={p.w} strokeLinejoin="round" />;
+          case 'circle':
+            return <Circle key={i} cx={p.cx} cy={p.cy} r={p.r} fill={p.fill} {...(p.stroke && { stroke: p.stroke, strokeWidth: 2 })} />;
+          case 'text':
+            return (
+              <Text key={i} x={p.x} y={p.y} fill={p.fill} textAnchor={p.anchor} style={{ fontSize: p.size, fontFamily: p.bold ? 'Helvetica-Bold' : 'Helvetica' }}>
+                {p.s}
+              </Text>
+            );
+        }
+      })}
+    </Svg>
+  );
+}
+
+function ZebraTable({ head, rows }: { head: string[]; rows: string[][] }) {
+  const w = `${100 / head.length}%`;
+  return (
+    <View style={{ borderRadius: 4, overflow: 'hidden', marginBottom: 8, borderWidth: 1, borderColor: C.grid }}>
+      <View style={{ flexDirection: 'row', backgroundColor: C.ink }} fixed>
+        {head.map((h) => <Text key={h} style={{ width: w, padding: 5, fontFamily: 'Courier-Bold', fontSize: 7.5, color: C.mintLight }}>{h}</Text>)}
+      </View>
+      {rows.map((row, j) => (
+        <View key={j} style={{ flexDirection: 'row', backgroundColor: j % 2 ? C.paper : '#FFFFFF' }} wrap={false}>
+          {row.map((c, i) => <Text key={i} style={{ width: w, padding: 5, fontSize: 8.5 }}>{c || '–'}</Text>)}
         </View>
-        {r.blocks.map((b, i) => (
-          <View key={i} style={{ marginBottom: 8 }}>
-            <Text style={b.level === 1 ? s.h2 : { fontFamily: 'Helvetica-Bold', fontSize: 10.5, color: C.mint, marginTop: 6, marginBottom: 3 }} minPresenceAhead={50}>
-              {b.heading}
-            </Text>
-            {b.lines.map((l, k) => <Text key={k} style={{ marginBottom: 2 }}>{l}</Text>)}
-            {b.table && <Table head={b.table.head} rows={b.table.rows} widths={b.table.head.map(() => 100 / b.table!.head.length)} />}
-            {b.images.length > 0 && (
-              <View style={s.thumbs}>
-                {b.images.map((im, k) => (
-                  <View key={k} style={s.thumb} wrap={false}>
-                    {im.dataUrl ? <Image src={im.dataUrl} style={{ width: 150, borderRadius: 4 }} /> : null}
-                    <Text style={{ fontSize: 7.5, fontFamily: 'Courier' }}>{im.video ? 'VIDEO · ' : ''}{im.name}</Text>
-                    {im.caption ? <Text style={{ fontSize: 7.5 }}>{im.caption}</Text> : null}
-                  </View>
-                ))}
+      ))}
+    </View>
+  );
+}
+
+/** "Label: isi" → baris label-nilai; selain itu paragraf biasa. */
+function Line_({ text }: { text: string }) {
+  const m = /^([A-Za-z][^:·]{1,34}): (.+)$/.exec(text);
+  if (!m) return <Text style={{ marginBottom: 3 }}>{text}</Text>;
+  const empty = m[2] === NOT_RECORDED;
+  return (
+    <View style={r.kv} wrap={false}>
+      <Text style={r.kvLabel}>{m[1]}</Text>
+      <Text style={[{ flex: 1 }, empty ? s.empty : {}]}>{m[2]}</Text>
+    </View>
+  );
+}
+
+function Gallery({ images }: { images: ResearchReport['blocks'][number]['images'] }) {
+  return (
+    <View style={r.gallery}>
+      {images.map((im, k) => (
+        <View key={k} style={r.photo} wrap={false}>
+          {im.dataUrl ? <Image src={im.dataUrl} style={{ width: 166, height: 124, objectFit: 'cover', borderRadius: 4 }} /> : <View style={{ width: 166, height: 40, backgroundColor: C.paper, borderRadius: 4 }} />}
+          <Text style={{ fontSize: 7.5, marginTop: 2 }}>{im.caption || im.name}</Text>
+          <Text style={{ fontSize: 6.5, fontFamily: 'Courier', color: C.muted }}>{im.video ? 'VIDEO · ' : ''}{im.name}</Text>
+        </View>
+      ))}
+    </View>
+  );
+}
+
+function ResearchDoc({ r: rep }: { r: ResearchReport }) {
+  let sec = 0;
+  return (
+    <Document title={rep.title} author="GEMA RnD">
+      <Page size="A4" style={r.cover}>
+        <Text style={r.brand}>GEMA RND LAB · RISET PRODUK</Text>
+        <View style={r.bar} />
+        <Text style={r.coverTitle}>{rep.title}</Text>
+        <Text style={[r.pill, { backgroundColor: rep.cover.done ? C.mintLight : C.amber }]}>{rep.cover.status}</Text>
+        <View style={r.metaGrid}>
+          {rep.cover.meta.map(([k, v]) => (
+            <View key={k} style={r.metaCell}>
+              <Text style={r.metaLabel}>{k}</Text>
+              <Text style={{ fontSize: 11 }}>{v}</Text>
+            </View>
+          ))}
+        </View>
+        {rep.cover.image?.dataUrl ? <Image src={rep.cover.image.dataUrl} style={{ marginTop: 24, width: 523, height: 250, objectFit: 'cover', borderRadius: 8 }} /> : null}
+        <Text style={{ position: 'absolute', bottom: 36, left: 44, right: 44, fontFamily: 'Courier', fontSize: 7.5, color: '#A9B8BE' }}>
+          Dibuat {rep.generatedAt} dari catatan tersimpan di perangkat. Isi = catatan pengguna; bukan klaim produk aman/memenuhi standar.
+        </Text>
+      </Page>
+      <Page size="A4" style={r.page}>
+        <View style={r.runHead} fixed>
+          <Text>{rep.cover.code} · {rep.cover.product}</Text>
+          <Text>GEMA RnD Lab</Text>
+        </View>
+        <View style={r.secHead}>
+          <Text style={r.secNum}>{String(++sec).padStart(2, '0')}</Text>
+          <Text style={r.secTitle}>Ringkasan</Text>
+        </View>
+        <View style={r.kpis}>
+          {rep.kpis.map((k) => (
+            <View key={k.label} style={r.kpi}>
+              <Text style={r.kpiVal}>{k.value}</Text>
+              <Text style={r.kpiLabel}>{k.label}</Text>
+            </View>
+          ))}
+        </View>
+        {rep.blocks.map((b, i) =>
+          b.level === 1 ? (
+            <View key={i}>
+              <View style={r.secHead} minPresenceAhead={80}>
+                <Text style={r.secNum}>{String(++sec).padStart(2, '0')}</Text>
+                <Text style={r.secTitle}>{b.heading}</Text>
               </View>
-            )}
-          </View>
-        ))}
-        <Text style={s.foot} fixed render={({ pageNumber, totalPages }) => `${r.footer}. Hal. ${pageNumber}/${totalPages}`} />
+              {b.lines.map((l, k) => <Line_ key={k} text={l} />)}
+              {b.table && <ZebraTable head={b.table.head} rows={b.table.rows} />}
+              {b.charts?.map((c) => (
+                <View key={c.id} style={r.chartCard} wrap={false}>
+                  <Text style={r.chartTitle}>{c.title}</Text>
+                  <SpecChart spec={c} width={505} />
+                  <Text style={r.note}>{c.note}</Text>
+                </View>
+              ))}
+              {b.images.length > 0 && <Gallery images={b.images} />}
+            </View>
+          ) : (
+            <View key={i} style={r.day}>
+              <Text style={r.dayHead} minPresenceAhead={150}>{b.heading}</Text>
+              {b.lines.map((l, k) => <Line_ key={k} text={l} />)}
+              {b.table && <ZebraTable head={b.table.head} rows={b.table.rows} />}
+              {b.images.length > 0 && <Gallery images={b.images} />}
+            </View>
+          ),
+        )}
+        <View style={r.foot} fixed>
+          <Text>{rep.footer}</Text>
+          <Text render={({ pageNumber, totalPages }) => `Hal. ${pageNumber}/${totalPages}`} />
+        </View>
       </Page>
     </Document>
   );
 }
 
-export function researchPdfBlob(r: ResearchReport): Promise<Blob> {
-  return pdf(<ResearchDoc r={r} />).toBlob();
+export function researchPdfBlob(rep: ResearchReport): Promise<Blob> {
+  return pdf(<ResearchDoc r={rep} />).toBlob();
 }

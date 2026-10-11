@@ -177,3 +177,13 @@ Rancangan:
 4. PPTX: 1 slide sampul, 1 ringkasan KPI, 1 slide per grafik (besar), komposisi/alat/hari, foto 2 per slide, 1 slide per laporan harian ringkas.
 5. Eksperimen (labPdf CompileDoc) ikut gaya yang sama + sampul & KPI.
 6. Validasi: uji unit chartSvg/model; E2E unduh 3 format; buka DOCX/PPTX via Word/PowerPoint COM (baca saja) & cek jumlah gambar/grafik; PDF dibaca visual (Read pdf). Simbol ≥ − ± tidak ada di font PDF bawaan → pakai teks.
+
+## PERMINTAAN BARU — Tab "Laporan Belanja" (LPJ) (owner 2026-10-11)
+Contoh owner: Google Doc "LPJ_PR_Request_RnD_Kora_Revisi" (link di chat; dibaca via /mobilebasic). Struktur yang harus diikuti:
+1. Kop "INTERNAL OF MEMO · LEMBAR PERTANGGUNGJAWABAN"; Pengajuan NO (refer no. pengajuan) | kota, tanggal; Nomor surat; Perihal; Lampiran; Kepada Yth. + di tempat; salam & paragraf pembuka (no. pengajuan, tanggal, kebutuhan R&D produk).
+2. Anggaran pengajuan Rp + terbilang; Realisasi & alokasi Rp + terbilang (otomatis).
+3. Bukti per alokasi (berulang): judul alokasi, foto nota/bukti bayar, foto barang, total alokasi Rp + terbilang, deskripsi.
+4. Penutup, "Hormat kami", kota/tanggal, 2 penanda tangan (nama + jabatan).
+5. Lampiran 1 rincian alokasi: tabel per bagian (No, Alokasi, Bahan/perlengkapan, Jumlah beli, Satuan beli, Harga dasar, Faktor 1/0, Harga dipakai, Jumlah) + paragraf bagian + subtotal per alokasi + rekonsiliasi total. Aturan owner di dokumen: faktor 1 = harga dasar + batas atas 50%; faktor 0 = harga dasar; jumlah = jumlah beli × harga dipakai.
+6. Lampiran 2 timeline: No, Kegiatan, Mulai, Selesai, Hari (otomatis, inklusif) + catatan + output yang dituju.
+Status: dikerjakan setelah laporan berdesain + grafik selesai divalidasi.

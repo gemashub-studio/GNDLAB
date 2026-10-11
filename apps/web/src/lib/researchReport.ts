@@ -1,8 +1,9 @@
 /**
  * Laporan RISET PRODUK (DEC-052): satu model isi → PDF, DOCX, PPTX (isi sama). Urutan awal → akhir:
- * identitas → komposisi (+foto) → alat → langkah (+foto) → riwayat versi → laporan harian → penutup.
+ * identitas → ringkasan hasil & grafik (DEC-058) → komposisi (+foto) → alat → langkah (+foto) → riwayat versi → laporan harian → penutup.
  * Hanya dari data tercatat; kosong = "belum dicatat".
  */
+import { fmtNum, researchCharts, type ChartSpec } from './reportCharts';
 import { dayNumber, LAB_PRODUCTS, NOT_RECORDED, researchDates, researchStatus, toolList, type DailyEntry, type MediaItem, type ProtocolVersion } from './labStore';
 
 export interface ReportImage {
@@ -20,12 +21,31 @@ export interface ReportBlock {
   lines: string[];
   table?: { head: string[]; rows: string[][] };
   images: ReportImage[];
+  /** Grafik (DEC-058) — digambar dari spesifikasi yang sama di PDF/DOCX/PPTX. */
+  charts?: ChartSpec[];
+}
+
+export interface ReportCover {
+  code: string;
+  product: string;
+  status: string;
+  done: boolean;
+  /** [label, nilai] untuk kisi identitas di sampul. */
+  meta: [string, string][];
+  image?: ReportImage;
+}
+
+export interface ReportKpi {
+  label: string;
+  value: string;
 }
 
 export interface ResearchReport {
   title: string;
   subtitle: string;
   generatedAt: string;
+  cover: ReportCover;
+  kpis: ReportKpi[];
   blocks: ReportBlock[];
   footer: string;
 }
@@ -60,6 +80,21 @@ export function buildResearchReport(
     return n ? `Hari ke-${n} · ` : '';
   };
 
+  const res = researchCharts(start, days);
+  const ringkasan: ReportBlock = {
+    heading: 'Ringkasan hasil & grafik',
+    level: 1,
+    lines: res.summary.length ? res.insufficient : ['Belum ada hasil ukur angka di laporan harian — belum ada grafik.'],
+    ...(res.summary.length && {
+      table: {
+        head: ['Variabel', 'Kelompok', 'n', 'Awal', 'Akhir', 'Min', 'Maks'],
+        rows: res.summary.map((m) => [`${m.name}${m.unit ? ` (${m.unit})` : ''}`, m.group, String(m.n), `${fmtNum(m.first)} (${m.firstAt})`, `${fmtNum(m.last)} (${m.lastAt})`, fmtNum(m.min), fmtNum(m.max)]),
+      },
+    }),
+    images: [],
+    charts: res.charts,
+  };
+
   const blocks: ReportBlock[] = [
     {
       heading: 'Identitas riset',
@@ -73,6 +108,7 @@ export function buildResearchReport(
       ],
       images: [],
     },
+    ringkasan,
     {
       heading: `Komposisi bahan (versi ${latest.version})`,
       level: 1,
@@ -131,5 +167,31 @@ export function buildResearchReport(
       images: [],
     },
   ];
-  return { title: `Riset Produk — ${latest.name} (versi ${latest.version})`, subtitle: `${key} · ${productName(latest.product)} · ${STATUS[status]}`, generatedAt, blocks, footer: `GEMA RnD Lab · dibuat ${generatedAt}` };
+  const allImages = blocks.flatMap((b) => b.images);
+  const coverImage = allImages.find((im) => im.dataUrl && !im.video) ?? allImages.find((im) => im.dataUrl);
+  const cover: ReportCover = {
+    code: key,
+    product: productName(latest.product),
+    status: STATUS[status],
+    done: status === 'selesai',
+    meta: [
+      ['Kode', key],
+      ['Produk', productName(latest.product)],
+      ['Versi resep', `${latest.version} (${latest.createdAt.slice(0, 10)})`],
+      ['Tanggal mulai', or(dates.start)],
+      ['Tanggal selesai', dates.end ?? 'belum selesai'],
+      ['Pembuat', or(latest.author)],
+      ['Asisten', latest.assistants?.length ? latest.assistants.join(', ') : NOT_RECORDED],
+    ],
+    ...(coverImage && { image: coverImage }),
+  };
+  const kpis: ReportKpi[] = [
+    { label: 'Durasi', value: dates.days ? `${dates.days} hari` : 'berjalan' },
+    { label: 'Laporan harian', value: String(days.length) },
+    { label: 'Variabel diukur', value: String(new Set(res.summary.map((m) => `${m.name}|${m.unit}`)).size) },
+    { label: 'Titik data angka', value: String(res.summary.reduce((n, m) => n + m.n, 0)) },
+    { label: 'Grafik', value: String(res.charts.length) },
+    { label: 'Foto & video', value: String(allImages.length) },
+  ];
+  return { title: `Riset Produk — ${latest.name} (versi ${latest.version})`, subtitle: `${key} · ${productName(latest.product)} · ${STATUS[status]}`, generatedAt, cover, kpis, blocks, footer: `GEMA RnD Lab · dibuat ${generatedAt}` };
 }

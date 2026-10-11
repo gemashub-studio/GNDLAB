@@ -42,7 +42,9 @@ async function downloadResearch(kind: ExportKind, key: string, versionId: string
     downloadBlob(await researchPdfBlob(report), name);
   } else {
     const o = await import('@/lib/officeExport');
-    const bytes = kind === 'docx' ? o.buildDocx(report) : o.buildPptx(report);
+    const { chartPngs } = await import('@/lib/chartPng');
+    const charts = await chartPngs(report.blocks.flatMap((b) => b.charts ?? []));
+    const bytes = kind === 'docx' ? o.buildDocx(report, charts) : o.buildPptx(report, charts);
     downloadBlob(new Blob([bytes as Uint8Array<ArrayBuffer>], { type: kind === 'docx' ? o.DOCX_MIME : o.PPTX_MIME }), name);
   }
 }

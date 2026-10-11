@@ -43,23 +43,23 @@ describe('ekspor laporan riset produk (DEC-052)', () => {
   it('model laporan: urutan awal → akhir, status selesai dari laporan penutup', () => {
     const r = buildResearchReport('KE-P01', [v1], [day('KE-P01-H01'), day('KE-P01-H02', true)], [], 'x');
     expect(r.blocks.map((b) => b.heading)).toEqual([
-      'Identitas riset', 'Komposisi bahan (versi 1)', 'Alat yang digunakan', 'Urutan hari', 'Riwayat versi', 'Laporan harian',
+      'Identitas riset', 'Ringkasan hasil & grafik', 'Komposisi bahan (versi 1)', 'Alat yang digunakan', 'Urutan hari', 'Riwayat versi', 'Laporan harian',
       '2026-10-12 · KE-P01-H01', '2026-10-12 · KE-P01-H02 · LAPORAN PENUTUP (SELESAI)', 'Penutup',
     ]);
     expect(r.subtitle).toContain('SELESAI');
-    expect(r.blocks[2]!.table!.rows).toEqual([['1', 'Oven listrik', '1', 'unit'], ['2', 'Timbangan', '–', '–']]);
+    expect(r.blocks[3]!.table!.rows).toEqual([['1', 'Oven listrik', '1', 'unit'], ['2', 'Timbangan', '–', '–']]);
     expect(() => buildResearchReport('XX-P09', [v1], [], [])).toThrow(/tidak ditemukan/);
   });
 
   it('DOCX & PPTX berisi bagian Office wajib; teks di-escape', () => {
     const r = buildResearchReport('KE-P01', [v1], [day('KE-P01-H01')], [], 'x');
     const docx = buildDocx(r);
-    expect(zipNames(docx)).toEqual(['[Content_Types].xml', '_rels/.rels', 'word/document.xml', 'word/_rels/document.xml.rels']);
+    expect(zipNames(docx)).toEqual(['[Content_Types].xml', '_rels/.rels', 'word/document.xml', 'word/_rels/document.xml.rels', 'word/footer1.xml']);
     const docXml = new TextDecoder().decode(docx);
     expect(docXml).toContain('Kopra oven &lt;bertahap&gt; &amp; &quot;putih&quot;');
     const names = zipNames(buildPptx(r));
     for (const n of ['ppt/presentation.xml', 'ppt/slideMasters/slideMaster1.xml', 'ppt/slideLayouts/slideLayout1.xml', 'ppt/theme/theme1.xml', 'ppt/slides/slide1.xml']) expect(names).toContain(n);
-    expect(names.filter((n) => /^ppt\/slides\/slide\d+\.xml$/.test(n)).length).toBeGreaterThanOrEqual(r.blocks.length + 1);
+    expect(names.filter((n) => /^ppt\/slides\/slide\d+\.xml$/.test(n)).length).toBeGreaterThanOrEqual(r.blocks.length + 2);
   });
 
   it('ukuran JPEG dibaca dari penanda SOF', () => {
@@ -81,7 +81,7 @@ describe('tanggal riset produk', () => {
     expect(r.blocks[0]!.lines.join(' ')).toContain('Asisten: Rina');
     expect(r.blocks[0]!.lines.join(' ')).toContain('Tanggal selesai: 2026-10-12 (otomatis');
     expect(r.blocks.find((b) => b.heading.startsWith('Hari ke-2 · 2026-10-12'))).toBeDefined();
-    expect(r.blocks[3]!.lines[0]).toBe('Hari ke-1: Belah & tiriskan · 15 menit');
+    expect(r.blocks[4]!.lines[0]).toBe('Hari ke-1: Belah & tiriskan · 15 menit');
   });
 });
 
@@ -90,10 +90,63 @@ describe('laporan per versi', () => {
     const v2: ProtocolVersion = { ...v1, id: 'KE-P01-v2', version: 2, reason: 'naik suhu', ingredients: [{ name: 'Daging kelapa', amount: '3', unit: 'kg' }], createdAt: '2026-10-12T01:00:00.000Z' };
     const r1 = buildResearchReport('KE-P01', [v1, v2], [], [], 'x', 'KE-P01-v1');
     expect(r1.title).toContain('(versi 1)');
-    expect(r1.blocks[1]!.table!.rows[0]).toEqual(['1', 'Daging kelapa', '2', 'kg']);
+    expect(r1.blocks[2]!.table!.rows[0]).toEqual(['1', 'Daging kelapa', '2', 'kg']);
     expect(r1.blocks.find((b) => b.heading === 'Riwayat versi')!.table!.rows.map((r) => r[0])).toEqual(['KE-P01-v1']);
     const r2 = buildResearchReport('KE-P01', [v1, v2], [], [], 'x');
     expect(r2.title).toContain('(versi 2)');
     expect(() => buildResearchReport('KE-P01', [v1], [], [], 'x', 'KE-P01-v9')).toThrow(/tidak ditemukan/);
+  });
+});
+
+describe('grafik laporan (DEC-058)', () => {
+  const m = (name: string, value: string, at: string, group = '') => ({ name, value, unit: '%', at, group, note: '' });
+  const e = (id: string, date: string, ms: ReturnType<typeof m>[]): DailyEntry => ({ ...day(id), entryDate: date, measurements: ms });
+
+  it('garis per Hari ke-N, nilai terakhir per hari, hari kosong = null; batang bila ≥ 2 kelompok', async () => {
+    const { researchCharts } = await import('@/lib/reportCharts');
+    const days = [
+      e('a', '2026-10-11', [m('Kadar air', '50', '2026-10-11T08:00', 'A'), m('Kadar air', '48', '2026-10-11T16:00', 'A'), m('Kadar air', '51', '2026-10-11T08:00', 'B')]),
+      e('b', '2026-10-13', [m('Kadar air', '20', '2026-10-13T08:00', 'A')]),
+    ];
+    const { charts, summary, insufficient } = researchCharts('2026-10-11', days);
+    expect(insufficient).toEqual([]);
+    const line = charts.find((c) => c.kind === 'line')!;
+    expect(line.x).toEqual(['Hari 1', 'Hari 3']);
+    expect(line.series.map((s) => [s.name, s.values])).toEqual([['A', [48, 20]], ['B', [51, null]]]);
+    const bar = charts.find((c) => c.kind === 'bar')!;
+    expect(bar.series[0]!.values).toEqual([20, 51]);
+    expect(summary.find((s) => s.group === 'A')).toMatchObject({ n: 3, first: 50, last: 20, min: 20, max: 50, firstAt: 'Hari 1', lastAt: 'Hari 3' });
+  });
+
+  it('data kurang → tidak ada grafik, ditulis "data belum cukup"; nilai bukan angka dihitung', async () => {
+    const { researchCharts } = await import('@/lib/reportCharts');
+    const r = researchCharts(undefined, [e('a', '2026-10-11', [m('Warna', 'putih', '2026-10-11T08:00'), m('pH', '4,2', '2026-10-11T08:00')])]);
+    expect(r.charts).toEqual([]);
+    expect(r.insufficient.join(' ')).toContain('pH (%): data belum cukup');
+  });
+
+  it('chartSvg: SVG valid, angka format Indonesia, teks di-escape; garis putus di hari kosong', async () => {
+    const { chartSvg, chartLayout, niceTicks } = await import('@/lib/reportCharts');
+    const spec = { id: 'x', title: 't', unit: '%', kind: 'line' as const, x: ['H1', 'H2', 'H3', 'H4'], xTitle: 'Hari <ke>', note: '', series: [{ name: 'A&B', color: '#1FA88F', values: [1.5, 2, null, 3] }] };
+    const svg = chartSvg(spec);
+    expect(svg.startsWith('<svg xmlns="http://www.w3.org/2000/svg"')).toBe(true);
+    expect(svg).toContain('A&amp;B');
+    expect(svg).toContain('Hari &lt;ke&gt;');
+    expect(svg).toContain('>1,5<');
+    expect(chartLayout(spec).filter((p) => p.t === 'poly')).toHaveLength(1);
+    expect(niceTicks(0, 9.3)).toEqual([0, 2.5, 5, 7.5, 10]);
+  });
+
+  it('laporan: KPI, sampul, blok ringkasan; DOCX/PPTX menanam PNG grafik', () => {
+    const days = [e('KE-P01-H01', '2026-10-11', [m('Kadar air', '50', '2026-10-11T08:00')]), e('KE-P01-H02', '2026-10-12', [m('Kadar air', '30', '2026-10-12T08:00')])];
+    const r = buildResearchReport('KE-P01', [{ ...v1, startDate: '2026-10-11' }], days, [], 'x');
+    expect(r.kpis.find((k) => k.label === 'Grafik')!.value).toBe('1');
+    expect(r.cover.meta[0]).toEqual(['Kode', 'KE-P01']);
+    const ring = r.blocks[1]!;
+    expect(ring.table!.rows[0]).toEqual(['Kadar air (%)', 'semua', '2', '50 (Hari 1)', '30 (Hari 2)', '30', '50']);
+    const png = { bytes: new Uint8Array([0x89, 0x50, 0x4e, 0x47]), w: 1280, h: 600 };
+    const charts = new Map([[ring.charts![0]!.id, png]]);
+    expect(zipNames(buildDocx(r, charts))).toContain('word/media/image1.png');
+    expect(zipNames(buildPptx(r, charts)).some((n) => /^ppt\/media\/image\d+\.png$/.test(n))).toBe(true);
   });
 });

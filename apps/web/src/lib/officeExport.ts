@@ -1,6 +1,6 @@
 /**
  * Ekspor DOCX & PPTX TANPA dependensi (DEC-052): file Office = zip (metode "store") berisi XML
- * Office Open XML minimal. Gambar = thumbnail JPEG yang sudah tersimpan. Bekerja offline di browser.
+ * Office Open XML minimal. Gambar = thumbnail JPEG yang sudah tersimpan + grafik PNG (DEC-058). Offline di browser.
  */
 import type { ResearchReport } from './researchReport';
 
@@ -113,7 +113,23 @@ export function jpegSize(b: Uint8Array): { w: number; h: number } {
 }
 
 const EMU_PER_PX = 9525;
+const EMU_PER_IN = 914400;
 const CT_HEAD = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>';
+const INK = '0E1A1F';
+const MINT = '63E6CF';
+const MINT_D = '1FA88F';
+const PAPER = 'F3F6F7';
+const GRID = 'E2E8EA';
+const MUTED = '5B6B72';
+const AMBER = 'F5A524';
+
+/** Gambar grafik (PNG) per `ChartSpec.id`, dibuat di browser dari SVG yang sama dengan PDF (DEC-058). */
+export interface ChartPng {
+  bytes: Uint8Array;
+  w: number;
+  h: number;
+}
+export type ChartPngs = ReadonlyMap<string, ChartPng>;
 
 interface Pic {
   rid: string;
@@ -124,56 +140,145 @@ interface Pic {
   caption: string;
 }
 
+const imgCaption = (im: ResearchReport['blocks'][number]['images'][number]) => `${im.video ? 'VIDEO · ' : ''}${im.caption || im.name}`;
+/** "Label: isi" dipisah supaya label bisa ditebalkan; selain itu [undefined, teks]. */
+const splitLabel = (t: string): [string | undefined, string] => {
+  const m = /^([A-Za-z][^:·]{1,34}): (.+)$/.exec(t);
+  return m ? [m[1], m[2]!] : [undefined, t];
+};
+const pad2 = (n: number) => String(n).padStart(2, '0');
+
 // ------------------------------------------------------------------ DOCX
 
 const W_NS = 'xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture"';
 
-const wRun = (t: string, o: { b?: boolean; sz?: number; color?: string } = {}) =>
-  `<w:r><w:rPr>${o.b ? '<w:b/>' : ''}${o.color ? `<w:color w:val="${o.color}"/>` : ''}${o.sz ? `<w:sz w:val="${o.sz}"/>` : ''}</w:rPr><w:t xml:space="preserve">${xml(t)}</w:t></w:r>`;
-const wPara = (t: string, o: { b?: boolean; sz?: number; color?: string; after?: number } = {}) => `<w:p><w:pPr><w:spacing w:after="${o.after ?? 80}"/></w:pPr>${wRun(t, o)}</w:p>`;
+type RunOpt = { b?: boolean; sz?: number; color?: string; mono?: boolean; shade?: string; i?: boolean };
+const wRun = (t: string, o: RunOpt = {}) =>
+  `<w:r><w:rPr>${o.mono ? '<w:rFonts w:ascii="Consolas" w:hAnsi="Consolas"/>' : ''}${o.b ? '<w:b/>' : ''}${o.i ? '<w:i/>' : ''}${o.color ? `<w:color w:val="${o.color}"/>` : ''}${o.sz ? `<w:sz w:val="${o.sz}"/>` : ''}${o.shade ? `<w:shd w:val="clear" w:color="auto" w:fill="${o.shade}"/>` : ''}</w:rPr><w:t xml:space="preserve">${xml(t)}</w:t></w:r>`;
+const wP = (runs: string, o: { after?: number; before?: number; border?: string; keepNext?: boolean; jc?: string } = {}) =>
+  `<w:p><w:pPr>${o.keepNext ? '<w:keepNext/>' : ''}${o.border ?? ''}<w:spacing w:before="${o.before ?? 0}" w:after="${o.after ?? 80}"/>${o.jc ? `<w:jc w:val="${o.jc}"/>` : ''}</w:pPr>${runs}</w:p>`;
+const wPara = (t: string, o: RunOpt & { after?: number } = {}) => wP(wRun(t, o), { after: o.after ?? 80 });
+const PAGE_BREAK = '<w:p><w:r><w:br w:type="page"/></w:r></w:p>';
+const noBorders = '<w:tblBorders>' + ['top', 'left', 'bottom', 'right', 'insideH', 'insideV'].map((s) => `<w:${s} w:val="nil"/>`).join('') + '</w:tblBorders>';
+const cellPr = (fill?: string, extra = '') => `<w:tcPr>${extra}${fill ? `<w:shd w:val="clear" w:color="auto" w:fill="${fill}"/>` : ''}<w:tcMar><w:top w:w="70" w:type="dxa"/><w:left w:w="110" w:type="dxa"/><w:bottom w:w="70" w:type="dxa"/><w:right w:w="110" w:type="dxa"/></w:tcMar></w:tcPr>`;
+
+function wLine(t: string): string {
+  const [label, val] = splitLabel(t);
+  return label ? wP(wRun(`${label}  `, { b: true, sz: 17, color: MUTED }) + wRun(val, { sz: 20, ...(val === 'belum dicatat' && { i: true, color: MUTED }) })) : wPara(t, { sz: 20 });
+}
 
 function wTable(head: string[], rows: string[][]): string {
-  const border = '<w:tblBorders>' + ['top', 'left', 'bottom', 'right', 'insideH', 'insideV'].map((s) => `<w:${s} w:val="single" w:sz="4" w:color="A9B8BE"/>`).join('') + '</w:tblBorders>';
-  const cell = (t: string, h: boolean) => `<w:tc><w:tcPr>${h ? '<w:shd w:val="clear" w:color="auto" w:fill="E2E8EA"/>' : ''}</w:tcPr><w:p>${wRun(t, { b: h, sz: 18 })}</w:p></w:tc>`;
-  return `<w:tbl><w:tblPr><w:tblW w:w="5000" w:type="pct"/>${border}</w:tblPr>${[head, ...rows].map((r, i) => `<w:tr>${r.map((c) => cell(c, i === 0)).join('')}</w:tr>`).join('')}</w:tbl>${wPara('', { after: 120 })}`;
+  const border = '<w:tblBorders>' + ['top', 'bottom'].map((s) => `<w:${s} w:val="single" w:sz="6" w:color="${GRID}"/>`).join('') + `<w:insideH w:val="single" w:sz="4" w:color="${GRID}"/></w:tblBorders>`;
+  const cell = (t: string, h: boolean, zebra: boolean) => `<w:tc>${cellPr(h ? INK : zebra ? PAPER : undefined)}<w:p><w:pPr><w:spacing w:after="0"/></w:pPr>${wRun(t || '–', h ? { b: true, sz: 16, color: MINT, mono: true } : { sz: 18 })}</w:p></w:tc>`;
+  return `<w:tbl><w:tblPr><w:tblW w:w="5000" w:type="pct"/>${border}</w:tblPr>${[head, ...rows]
+    .map((r, i) => `<w:tr>${i === 0 ? '<w:trPr><w:tblHeader/></w:trPr>' : '<w:trPr><w:cantSplit/></w:trPr>'}${r.map((c) => cell(c, i === 0, i % 2 === 0)).join('')}</w:tr>`)
+    .join('')}</w:tbl>${wPara('', { after: 120 })}`;
 }
 
-function wImage(p: Pic, id: number): string {
-  const maxW = 260;
-  const k = Math.min(1, maxW / p.w);
-  const cx = Math.round(p.w * k * EMU_PER_PX);
-  const cy = Math.round(p.h * k * EMU_PER_PX);
-  return `<w:p><w:r><w:drawing><wp:inline distT="0" distB="0" distL="0" distR="0"><wp:extent cx="${cx}" cy="${cy}"/><wp:docPr id="${id}" name="Gambar ${id}"/><a:graphic><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:pic><pic:nvPicPr><pic:cNvPr id="${id}" name="${xml(p.file)}"/><pic:cNvPicPr/></pic:nvPicPr><pic:blipFill><a:blip r:embed="${p.rid}"/><a:stretch><a:fillRect/></a:stretch></pic:blipFill><pic:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="${cx}" cy="${cy}"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></pic:spPr></pic:pic></a:graphicData></a:graphic></wp:inline></w:drawing></w:r></w:p>${wPara(p.caption, { sz: 16, color: '5B6B72', after: 160 })}`;
+function wDrawing(rid: string, id: number, name: string, cx: number, cy: number): string {
+  return `<w:r><w:drawing><wp:inline distT="0" distB="0" distL="0" distR="0"><wp:extent cx="${cx}" cy="${cy}"/><wp:docPr id="${id}" name="Gambar ${id}"/><a:graphic><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:pic><pic:nvPicPr><pic:cNvPr id="${id}" name="${xml(name)}"/><pic:cNvPicPr/></pic:nvPicPr><pic:blipFill><a:blip r:embed="${rid}"/><a:stretch><a:fillRect/></a:stretch></pic:blipFill><pic:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="${cx}" cy="${cy}"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></pic:spPr></pic:pic></a:graphicData></a:graphic></wp:inline></w:drawing></w:r>`;
 }
 
-export function buildDocx(r: ResearchReport): Uint8Array {
-  const pics: Pic[] = [];
-  const body: string[] = [wPara(r.title, { b: true, sz: 36, after: 60 }), wPara(r.subtitle, { sz: 20, color: '5B6B72', after: 240 })];
-  for (const b of r.blocks) {
-    body.push(wPara(b.heading, { b: true, sz: b.level === 1 ? 28 : 22, color: b.level === 1 ? '0E1A1F' : '1FA88F', after: 100 }));
-    for (const l of b.lines) body.push(wPara(l, { sz: 20 }));
-    if (b.table) body.push(wTable(b.table.head, b.table.rows));
-    for (const im of b.images) {
-      const bytes = dataUrlBytes(im.dataUrl);
-      const cap = `${im.video ? 'VIDEO · ' : ''}${im.name}${im.caption ? ` — ${im.caption}` : ''}`;
-      if (!bytes) {
-        body.push(wPara(`[${cap}] (tanpa pratinjau)`, { sz: 16, color: '5B6B72' }));
-        continue;
-      }
-      const n = pics.length + 1;
-      const p: Pic = { rid: `rIdImg${n}`, file: `image${n}.jpeg`, bytes, ...jpegSize(bytes), caption: cap };
-      pics.push(p);
-      body.push(wImage(p, n));
-    }
+/** Ukuran di dalam kotak (inci) dengan rasio asli. */
+const fit = (w: number, h: number, maxW: number, maxH: number) => {
+  const k = Math.min(maxW / w, maxH / h);
+  return { cx: Math.round(w * k * EMU_PER_IN), cy: Math.round(h * k * EMU_PER_IN) };
+};
+
+export function buildDocx(r: ResearchReport, charts: ChartPngs = new Map()): Uint8Array {
+  const pics: (Pic & { ext: 'jpeg' | 'png' })[] = [];
+  const addPic = (bytes: Uint8Array, ext: 'jpeg' | 'png', w: number, h: number, caption: string) => {
+    const n = pics.length + 1;
+    const p = { rid: `rIdImg${n}`, file: `image${n}.${ext}`, bytes, w, h, caption, ext };
+    pics.push(p);
+    return { p, id: n };
+  };
+  const photo = (dataUrl: string, maxW: number, maxH: number, name: string) => {
+    const bytes = dataUrlBytes(dataUrl);
+    if (!bytes) return '';
+    const sz = jpegSize(bytes);
+    const { p, id } = addPic(bytes, 'jpeg', sz.w, sz.h, name);
+    const f = fit(sz.w, sz.h, maxW, maxH);
+    return wDrawing(p.rid, id, p.file, f.cx, f.cy);
+  };
+  const body: string[] = [];
+  let sec = 0;
+  const section = (title: string) =>
+    body.push(
+      wP(wRun(` ${pad2(++sec)} `, { b: true, sz: 20, color: MINT, shade: INK, mono: true }) + wRun(`  ${title}`, { b: true, sz: 30, color: INK }), {
+        before: 360,
+        after: 160,
+        keepNext: true,
+        border: `<w:pBdr><w:bottom w:val="single" w:sz="12" w:space="4" w:color="${MINT}"/></w:pBdr>`,
+      }),
+    );
+
+  // sampul
+  body.push(wPara('GEMA RND LAB · RISET PRODUK', { b: true, sz: 18, color: MINT_D, mono: true, after: 240 }));
+  body.push(wP(wRun(r.title, { b: true, sz: 52, color: INK }), { after: 200, border: `<w:pBdr><w:bottom w:val="single" w:sz="24" w:space="8" w:color="${MINT}"/></w:pBdr>` }));
+  body.push(wP(wRun(`  ${r.cover.status}  `, { b: true, sz: 20, color: INK, shade: r.cover.done ? MINT : AMBER }), { after: 280 }));
+  body.push(
+    `<w:tbl><w:tblPr><w:tblW w:w="5000" w:type="pct"/><w:tblBorders><w:insideH w:val="single" w:sz="4" w:color="${GRID}"/><w:bottom w:val="single" w:sz="4" w:color="${GRID}"/><w:top w:val="single" w:sz="4" w:color="${GRID}"/></w:tblBorders></w:tblPr>${r.cover.meta
+      .map(([k, v]) => `<w:tr><w:tc>${cellPr(undefined, '<w:tcW w:w="1400" w:type="pct"/>')}<w:p><w:pPr><w:spacing w:after="0"/></w:pPr>${wRun(k.toUpperCase(), { sz: 15, color: MUTED, mono: true })}</w:p></w:tc><w:tc>${cellPr()}<w:p><w:pPr><w:spacing w:after="0"/></w:pPr>${wRun(v, { sz: 22 })}</w:p></w:tc></w:tr>`)
+      .join('')}</w:tbl>`,
+  );
+  if (r.cover.image?.dataUrl) {
+    const d = photo(r.cover.image.dataUrl, 6.5, 3.4, r.cover.image.name);
+    if (d) body.push(wP(d, { before: 240, after: 60 }), wPara(imgCaption(r.cover.image), { sz: 16, color: MUTED }));
   }
-  body.push(wPara(r.footer, { sz: 16, color: '5B6B72' }));
-  const doc = `${CT_HEAD}<w:document ${W_NS}><w:body>${body.join('')}<w:sectPr><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="1134" w:right="1134" w:bottom="1134" w:left="1134" w:header="567" w:footer="567" w:gutter="0"/></w:sectPr></w:body></w:document>`;
-  const rels = `${CT_HEAD}<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">${pics.map((p) => `<Relationship Id="${p.rid}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/${p.file}"/>`).join('')}</Relationships>`;
+  body.push(wPara(`Dibuat ${r.generatedAt} dari catatan tersimpan di perangkat. Isi = catatan pengguna; bukan klaim produk aman/memenuhi standar.`, { sz: 16, color: MUTED, after: 0 }), PAGE_BREAK);
+
+  // ringkasan KPI (3 per baris)
+  section('Ringkasan');
+  const rows: string[] = [];
+  for (let i = 0; i < r.kpis.length; i += 3) {
+    rows.push(
+      `<w:tr>${r.kpis
+        .slice(i, i + 3)
+        .map((k) => `<w:tc>${cellPr(PAPER, `<w:tcW w:w="1666" w:type="pct"/><w:tcBorders><w:left w:val="single" w:sz="24" w:color="${MINT_D}"/><w:top w:val="single" w:sz="18" w:color="FFFFFF"/><w:bottom w:val="single" w:sz="18" w:color="FFFFFF"/><w:right w:val="single" w:sz="18" w:color="FFFFFF"/></w:tcBorders>`)}<w:p><w:pPr><w:spacing w:after="0"/></w:pPr>${wRun(k.value, { b: true, sz: 40, color: INK })}</w:p><w:p><w:pPr><w:spacing w:after="40"/></w:pPr>${wRun(k.label.toUpperCase(), { sz: 15, color: MUTED, mono: true })}</w:p></w:tc>`)
+        .join('')}</w:tr>`,
+    );
+  }
+  body.push(`<w:tbl><w:tblPr><w:tblW w:w="5000" w:type="pct"/>${noBorders}</w:tblPr>${rows.join('')}</w:tbl>`, wPara('', { after: 80 }));
+
+  for (const b of r.blocks) {
+    if (b.level === 1) section(b.heading);
+    else body.push(wP(wRun(b.heading, { b: true, sz: 23, color: MINT_D }), { before: 240, after: 100, keepNext: true, border: `<w:pBdr><w:left w:val="single" w:sz="24" w:space="6" w:color="${MINT}"/></w:pBdr>` }));
+    for (const l of b.lines) body.push(wLine(l));
+    if (b.table) body.push(wTable(b.table.head, b.table.rows));
+    for (const c of b.charts ?? []) {
+      body.push(wP(wRun(c.title, { b: true, sz: 21, color: INK }), { before: 160, after: 60, keepNext: true }));
+      const png = charts.get(c.id);
+      if (png) {
+        const { p, id } = addPic(png.bytes, 'png', png.w, png.h, c.title);
+        const f = fit(png.w, png.h, 6.5, 3.5);
+        body.push(wP(wDrawing(p.rid, id, p.file, f.cx, f.cy), { after: 40, keepNext: true }));
+      } else {
+        body.push(wPara('(gambar grafik tidak tersedia — lihat tabel ringkasan di atas)', { sz: 16, color: MUTED, i: true }));
+      }
+      body.push(wPara(c.note, { sz: 15, color: MUTED, after: 160 }));
+    }
+    // galeri 3 kolom
+    for (let i = 0; i < b.images.length; i += 3) {
+      const cells = b.images.slice(i, i + 3).map((im) => {
+        const d = im.dataUrl ? photo(im.dataUrl, 2.05, 1.6, im.name) : '';
+        return `<w:tc>${cellPr(undefined, '<w:tcW w:w="1666" w:type="pct"/>')}${d ? wP(d, { after: 40 }) : wPara('(tanpa pratinjau)', { sz: 15, color: MUTED, i: true })}${wPara(imgCaption(im), { sz: 15, after: 0 })}${wPara(im.name, { sz: 13, color: MUTED, mono: true, after: 60 })}</w:tc>`;
+      });
+      while (cells.length < 3) cells.push(`<w:tc>${cellPr(undefined, '<w:tcW w:w="1666" w:type="pct"/>')}<w:p/></w:tc>`);
+      body.push(`<w:tbl><w:tblPr><w:tblW w:w="5000" w:type="pct"/>${noBorders}</w:tblPr><w:tr><w:trPr><w:cantSplit/></w:trPr>${cells.join('')}</w:tr></w:tbl>`);
+    }
+    if (b.images.length) body.push(wPara('', { after: 80 }));
+  }
+
+  const footer = `${CT_HEAD}<w:ftr ${W_NS}><w:p><w:pPr><w:pBdr><w:top w:val="single" w:sz="4" w:space="4" w:color="${GRID}"/></w:pBdr><w:tabs><w:tab w:val="right" w:pos="9638"/></w:tabs></w:pPr>${wRun(r.footer, { sz: 14, color: MUTED, mono: true })}<w:r><w:tab/></w:r>${wRun('Hal. ', { sz: 14, color: MUTED, mono: true })}<w:r><w:rPr><w:sz w:val="14"/><w:color w:val="${MUTED}"/></w:rPr><w:fldChar w:fldCharType="begin"/></w:r><w:r><w:rPr><w:sz w:val="14"/></w:rPr><w:instrText xml:space="preserve"> PAGE </w:instrText></w:r><w:r><w:rPr><w:sz w:val="14"/></w:rPr><w:fldChar w:fldCharType="separate"/></w:r><w:r><w:rPr><w:sz w:val="14"/><w:color w:val="${MUTED}"/></w:rPr><w:t>1</w:t></w:r><w:r><w:rPr><w:sz w:val="14"/></w:rPr><w:fldChar w:fldCharType="end"/></w:r></w:p></w:ftr>`;
+  const doc = `${CT_HEAD}<w:document ${W_NS}><w:body>${body.join('')}<w:sectPr><w:footerReference w:type="default" r:id="rIdFtr1"/><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="1134" w:right="1134" w:bottom="1134" w:left="1134" w:header="567" w:footer="567" w:gutter="0"/><w:titlePg/></w:sectPr></w:body></w:document>`;
+  const rels = `${CT_HEAD}<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rIdFtr1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/footer" Target="footer1.xml"/>${pics.map((p) => `<Relationship Id="${p.rid}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/${p.file}"/>`).join('')}</Relationships>`;
   return zipStore([
-    { name: '[Content_Types].xml', data: txt(`${CT_HEAD}<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Default Extension="jpeg" ContentType="image/jpeg"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/></Types>`) },
+    { name: '[Content_Types].xml', data: txt(`${CT_HEAD}<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Default Extension="jpeg" ContentType="image/jpeg"/><Default Extension="png" ContentType="image/png"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/><Override PartName="/word/footer1.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.footer+xml"/></Types>`) },
     { name: '_rels/.rels', data: txt(`${CT_HEAD}<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>`) },
     { name: 'word/document.xml', data: txt(doc) },
     { name: 'word/_rels/document.xml.rels', data: txt(rels) },
+    { name: 'word/footer1.xml', data: txt(footer) },
     ...pics.map((p) => ({ name: `word/media/${p.file}`, data: p.bytes })),
   ]);
 }
@@ -187,67 +292,169 @@ const REL_NS = 'http://schemas.openxmlformats.org/officeDocument/2006/relationsh
 
 const emptyTree = '<p:nvGrpSpPr><p:cNvPr id="1" name=""/><p:cNvGrpSpPr/><p:nvPr/></p:nvGrpSpPr><p:grpSpPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="0" cy="0"/><a:chOff x="0" y="0"/><a:chExt cx="0" cy="0"/></a:xfrm></p:grpSpPr>';
 
-function pTextBox(id: number, x: number, y: number, w: number, h: number, paras: { t: string; sz: number; b?: boolean; color?: string }[], fill?: string): string {
-  const ps = paras.map((p) => `<a:p><a:r><a:rPr lang="id-ID" sz="${p.sz}"${p.b ? ' b="1"' : ''} dirty="0"><a:solidFill><a:srgbClr val="${p.color ?? '0E1A1F'}"/></a:solidFill></a:rPr><a:t>${xml(p.t)}</a:t></a:r></a:p>`).join('');
-  return `<p:sp><p:nvSpPr><p:cNvPr id="${id}" name="Teks ${id}"/><p:cNvSpPr txBox="1"/><p:nvPr/></p:nvSpPr><p:spPr><a:xfrm><a:off x="${x}" y="${y}"/><a:ext cx="${w}" cy="${h}"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom>${fill ? `<a:solidFill><a:srgbClr val="${fill}"/></a:solidFill>` : '<a:noFill/>'}</p:spPr><p:txBody><a:bodyPr wrap="square" lIns="91440" tIns="45720" rIns="91440" bIns="45720"><a:normAutofit/></a:bodyPr><a:lstStyle/>${ps || '<a:p><a:endParaRPr lang="id-ID"/></a:p>'}</p:txBody></p:sp>`;
+type PRun = { t: string; sz: number; b?: boolean; color?: string; mono?: boolean };
+type PPara = PRun | PRun[];
+const aRun = (p: PRun) => `<a:r><a:rPr lang="id-ID" sz="${p.sz}"${p.b ? ' b="1"' : ''} dirty="0"><a:solidFill><a:srgbClr val="${p.color ?? INK}"/></a:solidFill>${p.mono ? '<a:latin typeface="Consolas"/>' : ''}</a:rPr><a:t>${xml(p.t)}</a:t></a:r>`;
+const aParas = (paras: PPara[], spcAft = 300) => paras.map((p) => `<a:p><a:pPr><a:spcAft><a:spcPts val="${spcAft}"/></a:spcAft></a:pPr>${(Array.isArray(p) ? p : [p]).map(aRun).join('')}</a:p>`).join('') || '<a:p><a:endParaRPr lang="id-ID"/></a:p>';
+
+function pTextBox(id: number, x: number, y: number, w: number, h: number, paras: PPara[], o: { fill?: string; geom?: string; anchor?: 't' | 'ctr' | 'b'; autofit?: boolean } = {}): string {
+  return `<p:sp><p:nvSpPr><p:cNvPr id="${id}" name="Teks ${id}"/><p:cNvSpPr txBox="1"/><p:nvPr/></p:nvSpPr><p:spPr><a:xfrm><a:off x="${Math.round(x)}" y="${Math.round(y)}"/><a:ext cx="${Math.round(w)}" cy="${Math.round(h)}"/></a:xfrm><a:prstGeom prst="${o.geom ?? 'rect'}"><a:avLst/></a:prstGeom>${o.fill ? `<a:solidFill><a:srgbClr val="${o.fill}"/></a:solidFill>` : '<a:noFill/>'}<a:ln><a:noFill/></a:ln></p:spPr><p:txBody><a:bodyPr wrap="square" lIns="91440" tIns="45720" rIns="91440" bIns="45720" anchor="${o.anchor ?? 't'}">${o.autofit === false ? '' : '<a:normAutofit/>'}</a:bodyPr><a:lstStyle/>${aParas(paras)}</p:txBody></p:sp>`;
 }
 
+const pRect = (id: number, x: number, y: number, w: number, h: number, fill: string, geom = 'rect') =>
+  `<p:sp><p:nvSpPr><p:cNvPr id="${id}" name="Bentuk ${id}"/><p:cNvSpPr/><p:nvPr/></p:nvSpPr><p:spPr><a:xfrm><a:off x="${Math.round(x)}" y="${Math.round(y)}"/><a:ext cx="${Math.round(w)}" cy="${Math.round(h)}"/></a:xfrm><a:prstGeom prst="${geom}"><a:avLst/></a:prstGeom><a:solidFill><a:srgbClr val="${fill}"/></a:solidFill><a:ln><a:noFill/></a:ln></p:spPr></p:sp>`;
+
 function pPic(id: number, rid: string, x: number, y: number, w: number, h: number, name: string): string {
-  return `<p:pic><p:nvPicPr><p:cNvPr id="${id}" name="${xml(name)}"/><p:cNvPicPr><a:picLocks noChangeAspect="1"/></p:cNvPicPr><p:nvPr/></p:nvPicPr><p:blipFill><a:blip r:embed="${rid}"/><a:stretch><a:fillRect/></a:stretch></p:blipFill><p:spPr><a:xfrm><a:off x="${x}" y="${y}"/><a:ext cx="${w}" cy="${h}"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></p:spPr></p:pic>`;
+  return `<p:pic><p:nvPicPr><p:cNvPr id="${id}" name="${xml(name)}"/><p:cNvPicPr><a:picLocks noChangeAspect="1"/></p:cNvPicPr><p:nvPr/></p:nvPicPr><p:blipFill><a:blip r:embed="${rid}"/><a:stretch><a:fillRect/></a:stretch></p:blipFill><p:spPr><a:xfrm><a:off x="${Math.round(x)}" y="${Math.round(y)}"/><a:ext cx="${Math.round(w)}" cy="${Math.round(h)}"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></p:spPr></p:pic>`;
+}
+
+function pTable(id: number, x: number, y: number, w: number, head: string[], rows: string[][]): string {
+  const colW = Math.floor(w / head.length);
+  const rowH = 370000;
+  const cell = (t: string, h: boolean, zebra: boolean) =>
+    `<a:tc><a:txBody><a:bodyPr/><a:lstStyle/><a:p>${aRun({ t: t || '–', sz: h ? 1000 : 1100, b: h, color: h ? MINT : INK, mono: h })}</a:p></a:txBody><a:tcPr marL="76200" marR="76200" marT="45720" marB="45720"><a:lnL w="0"><a:noFill/></a:lnL><a:lnR w="0"><a:noFill/></a:lnR><a:lnT w="6350"><a:solidFill><a:srgbClr val="${GRID}"/></a:solidFill></a:lnT><a:lnB w="6350"><a:solidFill><a:srgbClr val="${GRID}"/></a:solidFill></a:lnB><a:solidFill><a:srgbClr val="${h ? INK : zebra ? PAPER : 'FFFFFF'}"/></a:solidFill></a:tcPr></a:tc>`;
+  return `<p:graphicFrame><p:nvGraphicFramePr><p:cNvPr id="${id}" name="Tabel ${id}"/><p:cNvGraphicFramePr><a:graphicFrameLocks noGrp="1"/></p:cNvGraphicFramePr><p:nvPr/></p:nvGraphicFramePr><p:xfrm><a:off x="${x}" y="${y}"/><a:ext cx="${colW * head.length}" cy="${rowH * (rows.length + 1)}"/></p:xfrm><a:graphic><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/table"><a:tbl><a:tblPr firstRow="1"/><a:tblGrid>${head.map(() => `<a:gridCol w="${colW}"/>`).join('')}</a:tblGrid>${[head, ...rows]
+    .map((r, i) => `<a:tr h="${rowH}">${r.map((c) => cell(c, i === 0, i % 2 === 0)).join('')}</a:tr>`)
+    .join('')}</a:tbl></a:graphicData></a:graphic></p:graphicFrame>`;
 }
 
 interface Slide {
   shapes: string;
-  pics: Pic[];
+  pics: (Pic & { ext: 'jpeg' | 'png' })[];
+  dark?: boolean;
 }
 
-const LINES_PER_SLIDE = 12;
+const LINES_PER_SLIDE = 9;
+const ROWS_PER_SLIDE = 9;
 
-export function buildPptx(r: ResearchReport): Uint8Array {
+export function buildPptx(r: ResearchReport, charts: ChartPngs = new Map()): Uint8Array {
   const slides: Slide[] = [];
-  const M = 457200;
-  const title = (t: string, sub?: string) => pTextBox(2, M, 300000, SW - 2 * M, 700000, [{ t, sz: 2600, b: true }, ...(sub ? [{ t: sub, sz: 1400, color: '5B6B72' }] : [])]);
-  const foot = pTextBox(90, M, SH - 420000, SW - 2 * M, 320000, [{ t: r.footer, sz: 900, color: '5B6B72' }]);
-
-  slides.push({ shapes: pTextBox(2, M, 2000000, SW - 2 * M, 2400000, [{ t: r.title, sz: 4000, b: true, color: '63E6CF' }, { t: r.subtitle, sz: 2000, color: 'F3F6F7' }, { t: r.generatedAt, sz: 1400, color: 'A9B8BE' }], '0E1A1F'), pics: [] });
-
+  const M = 500000;
+  const CW = SW - 2 * M;
   let picN = 0;
-  for (const b of r.blocks) {
-    const lines = [...b.lines, ...(b.table ? [b.table.head.join(' | '), ...b.table.rows.map((row) => row.join(' | '))] : [])];
-    const chunks: string[][] = [];
-    for (let i = 0; i < Math.max(lines.length, 1); i += LINES_PER_SLIDE) chunks.push(lines.slice(i, i + LINES_PER_SLIDE));
-    chunks.forEach((c, i) => {
-      slides.push({
-        shapes: title(b.heading + (i ? ' (lanjutan)' : '')) + pTextBox(3, M, 1150000, SW - 2 * M, SH - 1700000, c.map((t) => ({ t, sz: b.table && c.indexOf(t) >= b.lines.length ? 1200 : 1500 }))) + foot,
-        pics: [],
-      });
+  let sec = 0;
+  const title = (t: string, num?: number) =>
+    (num ? pTextBox(3, M, 330000, 620000, 420000, [{ t: pad2(num), sz: 1400, b: true, color: MINT, mono: true }], { fill: INK, geom: 'roundRect', anchor: 'ctr', autofit: false }) : '') +
+    pTextBox(2, num ? M + 720000 : M, 280000, CW - (num ? 720000 : 0), 560000, [{ t, sz: 2400, b: true }], { anchor: 'ctr' }) +
+    pRect(4, M, 900000, 900000, 50000, MINT);
+  const pic = (bytes: Uint8Array, ext: 'jpeg' | 'png', w: number, h: number, caption: string, s: Slide['pics']) => {
+    picN++;
+    const p = { rid: `rIdP${s.length + 2}`, file: `image${picN}.${ext}`, bytes, w, h, caption, ext };
+    s.push(p);
+    return p;
+  };
+  const fitBox = (w: number, h: number, bw: number, bh: number) => {
+    const k = Math.min(bw / w, bh / h);
+    return { w: w * k, h: h * k };
+  };
+  const linePara = (t: string): PPara => {
+    const [label, val] = splitLabel(t);
+    return label ? [{ t: `${label}  `, sz: 1200, b: true, color: MUTED }, { t: val, sz: 1500 }] : { t, sz: 1500 };
+  };
+
+  // sampul
+  {
+    const pics: Slide['pics'] = [];
+    let shapes = pRect(5, 0, 0, SW, SH, INK) + pRect(6, M, 1150000, 1100000, 60000, MINT);
+    shapes += pTextBox(7, M, 650000, CW, 400000, [{ t: 'GEMA RND LAB · RISET PRODUK', sz: 1200, b: true, color: MINT, mono: true }]);
+    const img = r.cover.image?.dataUrl ? dataUrlBytes(r.cover.image.dataUrl) : undefined;
+    const textW = img ? CW * 0.56 : CW;
+    shapes += pTextBox(8, M, 1350000, textW, 1500000, [{ t: r.title, sz: 3400, b: true, color: 'FFFFFF' }], { autofit: true });
+    shapes += pTextBox(9, M, 2950000, 2200000, 380000, [{ t: r.cover.status, sz: 1200, b: true, color: INK }], { fill: r.cover.done ? MINT : AMBER, geom: 'roundRect', anchor: 'ctr', autofit: false });
+    shapes += pTextBox(10, M, 3500000, textW, 2700000, r.cover.meta.map(([k, v]) => [{ t: `${k.toUpperCase()}   `, sz: 1000, color: 'A9B8BE', mono: true }, { t: v, sz: 1400, color: 'F3F6F7' }]), {});
+    if (img) {
+      const sz = jpegSize(img);
+      const p = pic(img, 'jpeg', sz.w, sz.h, 'sampul', pics);
+      const f = fitBox(sz.w, sz.h, CW * 0.4, 4200000);
+      shapes += pPic(11, p.rid, SW - M - f.w, 1350000, f.w, f.h, p.file);
+    }
+    shapes += pTextBox(12, M, SH - 600000, CW, 360000, [{ t: `Dibuat ${r.generatedAt} · isi = catatan pengguna; bukan klaim produk aman/memenuhi standar`, sz: 900, color: 'A9B8BE', mono: true }]);
+    slides.push({ shapes, pics, dark: true });
+  }
+
+  // ringkasan KPI
+  {
+    let shapes = title('Ringkasan', ++sec);
+    const cols = 3;
+    const gap = 250000;
+    const cw = (CW - gap * (cols - 1)) / cols;
+    const ch = 1900000;
+    r.kpis.forEach((k, i) => {
+      const x = M + (i % cols) * (cw + gap);
+      const y = 1300000 + Math.floor(i / cols) * (ch + gap);
+      shapes += pRect(20 + i * 3, x, y, cw, ch, PAPER, 'roundRect') + pRect(21 + i * 3, x, y + 200000, 70000, ch - 400000, MINT_D);
+      shapes += pTextBox(22 + i * 3, x + 250000, y + 250000, cw - 350000, ch - 500000, [{ t: k.value, sz: 4000, b: true }, { t: k.label.toUpperCase(), sz: 1100, color: MUTED, mono: true }], { anchor: 'ctr' });
     });
-    // foto: 2 per slide
-    for (let i = 0; i < b.images.length; i += 2) {
-      const pair = b.images.slice(i, i + 2);
-      const pics: Pic[] = [];
-      let shapes = title(`${b.heading} — foto/video`);
-      pair.forEach((im, k) => {
-        const x = M + k * ((SW - 2 * M) / 2);
-        const boxW = (SW - 2 * M) / 2 - 200000;
-        const cap = `${im.video ? 'VIDEO · ' : ''}${im.name}${im.caption ? ` — ${im.caption}` : ''}`;
+    slides.push({ shapes, pics: [] });
+  }
+
+  for (const b of r.blocks) {
+    const num = b.level === 1 ? ++sec : undefined;
+    const head = b.heading;
+    const lines = b.lines.map(linePara);
+    const tableRows = b.table?.rows ?? [];
+    const lineChunks: PPara[][] = [];
+    for (let i = 0; i < lines.length; i += LINES_PER_SLIDE) lineChunks.push(lines.slice(i, i + LINES_PER_SLIDE));
+    const rowChunks: string[][][] = [];
+    for (let i = 0; i < tableRows.length; i += ROWS_PER_SLIDE) rowChunks.push(tableRows.slice(i, i + ROWS_PER_SLIDE));
+    let first = true;
+    const t = () => {
+      const s = title(head + (first ? '' : ' (lanjutan)'), first ? num : undefined);
+      first = false;
+      return s;
+    };
+    // teks (+ tabel pertama bila muat)
+    if (lineChunks.length || !rowChunks.length) {
+      for (const [i, c] of (lineChunks.length ? lineChunks : [[]]).entries()) {
+        const isLast = i === Math.max(lineChunks.length, 1) - 1;
+        const fitsTable = isLast && rowChunks.length > 0 && c.length <= 3 && rowChunks[0]!.length <= 5;
+        const textH = fitsTable ? 1200000 : SH - 1900000;
+        let shapes = t() + pTextBox(30, M, 1150000, CW, textH, c.length ? c : [{ t: b.images.length || b.charts?.length ? '' : 'belum dicatat', sz: 1500, color: MUTED }]);
+        if (fitsTable) shapes += pTable(31, M, 1150000 + 1250000, CW, b.table!.head, rowChunks.shift()!);
+        slides.push({ shapes, pics: [] });
+      }
+    }
+    for (const rows of rowChunks) slides.push({ shapes: t() + pTable(31, M, 1200000, CW, b.table!.head, rows), pics: [] });
+    // grafik: satu slide besar per grafik
+    for (const c of b.charts ?? []) {
+      const pics: Slide['pics'] = [];
+      let shapes = title(c.title);
+      const png = charts.get(c.id);
+      if (png) {
+        const p = pic(png.bytes, 'png', png.w, png.h, c.title, pics);
+        const f = fitBox(png.w, png.h, CW, SH - 2300000);
+        shapes += pPic(40, p.rid, M + (CW - f.w) / 2, 1100000, f.w, f.h, p.file);
+      } else shapes += pTextBox(40, M, 1200000, CW, 800000, [{ t: '(gambar grafik tidak tersedia — lihat tabel ringkasan)', sz: 1400, color: MUTED }]);
+      shapes += pTextBox(41, M, SH - 1150000, CW, 450000, [{ t: c.note, sz: 1000, color: MUTED }]);
+      slides.push({ shapes, pics });
+    }
+    // foto: 3 per slide
+    for (let i = 0; i < b.images.length; i += 3) {
+      const pics: Slide['pics'] = [];
+      let shapes = title(`${head} — foto/video`);
+      const gap = 250000;
+      const boxW = (CW - 2 * gap) / 3;
+      b.images.slice(i, i + 3).forEach((im, k) => {
+        const x = M + k * (boxW + gap);
         const bytes = dataUrlBytes(im.dataUrl);
         if (bytes) {
-          picN++;
           const sz = jpegSize(bytes);
-          const boxH = 3800000;
-          const k2 = Math.min(boxW / (sz.w * EMU_PER_PX), boxH / (sz.h * EMU_PER_PX));
-          const w = Math.round(sz.w * EMU_PER_PX * k2);
-          const h = Math.round(sz.h * EMU_PER_PX * k2);
-          const p: Pic = { rid: `rIdP${pics.length + 2}`, file: `image${picN}.jpeg`, bytes, w: sz.w, h: sz.h, caption: cap };
-          pics.push(p);
-          shapes += pPic(10 + k, p.rid, Math.round(x), 1200000, w, h, p.file);
-        }
-        shapes += pTextBox(20 + k, Math.round(x), 5150000, Math.round(boxW), 700000, [{ t: bytes ? cap : `${cap} (tanpa pratinjau)`, sz: 1100, color: '5B6B72' }]);
+          const p = pic(bytes, 'jpeg', sz.w, sz.h, imgCaption(im), pics);
+          const f = fitBox(sz.w, sz.h, boxW, 3400000);
+          shapes += pPic(50 + k, p.rid, x + (boxW - f.w) / 2, 1200000, f.w, f.h, p.file);
+        } else shapes += pRect(50 + k, x, 1200000, boxW, 1200000, PAPER, 'roundRect');
+        shapes += pTextBox(60 + k, x, 4700000, boxW, 900000, [{ t: imgCaption(im), sz: 1100 }, { t: im.name, sz: 900, color: MUTED, mono: true }]);
       });
-      slides.push({ shapes: shapes + foot, pics });
+      slides.push({ shapes, pics });
     }
   }
+
+  // nomor halaman (setelah jumlah slide diketahui)
+  slides.forEach((s, i) => {
+    if (i === 0) return;
+    s.shapes += pTextBox(90, M, SH - 480000, CW * 0.8, 320000, [{ t: `${r.cover.code} · ${r.footer}`, sz: 800, color: MUTED, mono: true }]);
+    s.shapes += pTextBox(91, SW - M - 1200000, SH - 480000, 1200000, 320000, [{ t: `${i + 1} / ${slides.length}`, sz: 900, color: MUTED, mono: true }]);
+  });
 
   const files: ZipFile[] = [];
   const slideXml = (s: Slide) => `${CT_HEAD}<p:sld ${P_NS}><p:cSld><p:spTree>${emptyTree}${s.shapes}</p:spTree></p:cSld><p:clrMapOvr><a:masterClrMapping/></p:clrMapOvr></p:sld>`;
@@ -265,7 +472,7 @@ export function buildPptx(r: ResearchReport): Uint8Array {
   const layout = `${CT_HEAD}<p:sldLayout ${P_NS} type="blank" preserve="1"><p:cSld name="Kosong"><p:spTree>${emptyTree}</p:spTree></p:cSld><p:clrMapOvr><a:masterClrMapping/></p:clrMapOvr></p:sldLayout>`;
   const pres = `${CT_HEAD}<p:presentation ${P_NS} saveSubsetFonts="1"><p:sldMasterIdLst><p:sldMasterId id="2147483648" r:id="rId1"/></p:sldMasterIdLst><p:sldIdLst>${slides.map((_, i) => `<p:sldId id="${256 + i}" r:id="rId${i + 3}"/>`).join('')}</p:sldIdLst><p:sldSz cx="${SW}" cy="${SH}"/><p:notesSz cx="6858000" cy="9144000"/></p:presentation>`;
   const presRels = `${CT_HEAD}<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="${REL_NS}/slideMaster" Target="slideMasters/slideMaster1.xml"/><Relationship Id="rId2" Type="${REL_NS}/theme" Target="theme/theme1.xml"/>${slides.map((_, i) => `<Relationship Id="rId${i + 3}" Type="${REL_NS}/slide" Target="slides/slide${i + 1}.xml"/>`).join('')}</Relationships>`;
-  const types = `${CT_HEAD}<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Default Extension="jpeg" ContentType="image/jpeg"/><Override PartName="/ppt/presentation.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.presentation.main+xml"/><Override PartName="/ppt/slideMasters/slideMaster1.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slideMaster+xml"/><Override PartName="/ppt/slideLayouts/slideLayout1.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slideLayout+xml"/><Override PartName="/ppt/theme/theme1.xml" ContentType="application/vnd.openxmlformats-officedocument.theme+xml"/>${slides.map((_, i) => `<Override PartName="/ppt/slides/slide${i + 1}.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slide+xml"/>`).join('')}</Types>`;
+  const types = `${CT_HEAD}<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Default Extension="jpeg" ContentType="image/jpeg"/><Default Extension="png" ContentType="image/png"/><Override PartName="/ppt/presentation.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.presentation.main+xml"/><Override PartName="/ppt/slideMasters/slideMaster1.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slideMaster+xml"/><Override PartName="/ppt/slideLayouts/slideLayout1.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slideLayout+xml"/><Override PartName="/ppt/theme/theme1.xml" ContentType="application/vnd.openxmlformats-officedocument.theme+xml"/>${slides.map((_, i) => `<Override PartName="/ppt/slides/slide${i + 1}.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slide+xml"/>`).join('')}</Types>`;
   return zipStore([
     { name: '[Content_Types].xml', data: txt(types) },
     { name: '_rels/.rels', data: txt(`${CT_HEAD}<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="${REL_NS}/officeDocument" Target="ppt/presentation.xml"/></Relationships>`) },

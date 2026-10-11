@@ -3,6 +3,12 @@
 Format: [Keep a Changelog](https://keepachangelog.com/id/1.1.0/) · Versi dataset mengikuti SemVer (ADR-002).
 Waktu dalam WIB (UTC+7).
 
+## [aplikasi GEMA RnD laporan bergrafik] — 2026-10-11
+### Ditambahkan
+- Laporan riset produk (PDF/Word/PowerPoint) berdesain baru: sampul gelap Lab Futuristik, halaman Ringkasan (kartu KPI), bagian bernomor, tabel zebra, galeri foto 3 kolom, nomor halaman.
+- Bagian "Ringkasan hasil & grafik": tabel awal/akhir/min/maks per variabel & kelompok + grafik garis per Hari ke-N dan batang nilai terakhir per kelompok — hanya dari hasil ukur tercatat; data kurang ditulis "data belum cukup".
+- Grafik satu sumber (`reportCharts.ts`): bentuk yang sama digambar di PDF dan ditanam sebagai PNG di Word/PowerPoint.
+
 ## [aplikasi GEMA RnD riset produk] — 2026-10-11
 ### Diubah
 - Tab "Protokol" bernama "Riset Produk".
