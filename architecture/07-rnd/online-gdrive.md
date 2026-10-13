@@ -7,7 +7,7 @@ Keputusan: DEC-065 (2026-10-13). Owner minta "semuanya online, gratis, simpan da
 | Bagian | Layanan | Biaya |
 |---|---|---|
 | Aplikasi (semua halaman) | **Vercel**, paket Hobby, akun owner yang sudah terhubung | Gratis |
-| Data lab (eksperimen, riset produk, laporan belanja, foto/video) | **Google Drive owner**: satu file `gemasSTUDIO-lab-sinkron.json` | Gratis (kuota Drive 15 GB) |
+| Data lab (eksperimen, riset produk, laporan belanja, foto/video) | **Google Drive owner**: satu file JSON bernama gemasSTUDIO-lab-sinkron (di Drive, bukan di repo) | Gratis (kuota Drive 15 GB) |
 | Login & database server (Postgres: kalibrasi, usulan dataset, skenario tersimpan di server) | Belum diaktifkan online | — |
 
 Data tetap tersimpan di browser tiap perangkat, jadi aplikasi tetap jalan tanpa internet. Tombol **Sinkronkan dengan Google Drive** ada di `/lab` → tab Ringkasan. Saat ditekan:
