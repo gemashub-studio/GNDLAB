@@ -4,7 +4,7 @@
  * Hanya dari data tercatat; kosong = "belum dicatat".
  */
 import { fmtNum, researchCharts, type ChartSpec } from './reportCharts';
-import { coconutSummary, dayNumber, protocolProductName, TREATMENT_LABEL, type CoconutRow, type RawMaterial, NOT_RECORDED, researchDates, researchStatus, toolList, type DailyEntry, type MediaItem, type ProtocolVersion } from './labStore';
+import { coconutSummary, dayNumber, protocolProductName, variantLabel, type CoconutRow, type RawMaterial, NOT_RECORDED, researchDates, researchStatus, toolList, type DailyEntry, type MediaItem, type ProtocolVersion } from './labStore';
 
 export interface ReportImage {
   name: string;
@@ -64,11 +64,13 @@ function rawBlock(r: RawMaterial, versions: readonly ProtocolVersion[]): ReportB
     lines: [
       `Item: ${d(r.item)}`,
       `Barang: ${d(r.name)}`,
-      `Perlakuan: ${TREATMENT_LABEL[r.treatment]}`,
+      `Perlakuan air: ${r.waterVariant ? variantLabel(r.waterVariant) : NOT_RECORDED}`,
+      `Perlakuan daging: ${r.meatVariant ? variantLabel(r.meatVariant) : NOT_RECORDED}`,
       `Berat utuh (g): ${d(r.wholeWeight)}`,
       `Air (mL): ${d(r.water)}`,
-      ...(r.thickness === 'tebal-daging' ? [`Tebal daging (mm): ${d(r.meatThickness)}`] : []),
-      ...(r.refKeys.length ? [`Rujukan riset: ${r.refKeys.map((k) => `${k}${name(k) ? ` (${name(k)})` : ''}`).join('; ')}`] : []),
+      `Tebal daging (mm): ${d(r.meatThickness)}`,
+      ...(r.variant ? [`Jalur produk dari varian: ${variantLabel(r.variant)}`] : []),
+      ...(r.refKeys.length ? [`Riset varian sebelumnya: ${r.refKeys.map((k) => `${k}${name(k) ? ` (${name(k)})` : ''}`).join('; ')}`] : []),
     ],
     images: [],
   };

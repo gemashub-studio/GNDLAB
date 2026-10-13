@@ -164,3 +164,4 @@
 - DEC-064: penghitungan bahan baku kelapa di resep (form, draf, versi, laporan); dicek visual PDF. Satuan tebal mm = asumsi, tanyakan owner bila perlu.
 - ONLINE 2026-10-13: https://gemasstudio.vercel.app (Vercel project gemasstudio, root apps/web, build `pnpm run vercel-build`). Catatan: konektor Vercel MCP = akun lain (403) → pakai CLI (`vercel api`). Sisa owner: buat Google Client ID (online-gdrive.md).
 - DEC-067 navigasi ☰; DEC-068 menu Bahan Baku (knowledge = riset pengguna sendiri, maks 5/jalur — tafsiran "Cuka 1-5" dsb.; konfirmasi ke owner bila maksudnya lain). Tombol + Bahan kelapa dihapus.
+- DEC-069: Bahan Baku direvisi owner — perlakuan air (Cuka/Bioleather 1–10) & daging (Kopra 1–10) terpisah, tebal mm, varian = jalur produk Resep baru. E2E lab 20/20.

@@ -11,8 +11,9 @@ import {
   LAB_PRODUCTS,
   nextProtocolKey,
   productFromRaw,
-  knowledgeLines,
-  TREATMENT_LABEL,
+  findSlot,
+  VARIANT_MAX,
+  variantLabel,
   type RawMaterial,
   coconutFilled,
   type CoconutRow,
@@ -34,7 +35,6 @@ import {
   type ProtocolVersion,
 } from '@/lib/labStore';
 import { DailyLog } from './DailyLog';
-import { KnowledgeList } from './BahanBakuTab';
 import { MediaPicker } from './MediaPicker';
 import { ProductMark, Section, TextInput } from './ui';
 
@@ -77,11 +77,15 @@ export function ProtocolsTab({ protocols, entries, media, refresh, incomingRaw, 
   incomingRaw?: RawMaterial;
   onRawUsed?: () => void;
 }) {
-  const [editing, setEditing] = useState<{ base?: ProtocolVersion; product: string; draft?: ProtocolDraft; raw?: RawMaterial; nonce: number } | undefined>();
+  const [editing, setEditing] = useState<{ base?: ProtocolVersion; product: string; productText?: string; draft?: ProtocolDraft; raw?: RawMaterial; nonce: number } | undefined>();
   useEffect(() => {
     if (!incomingRaw) return;
-    setEditing({ product: productFromRaw(incomingRaw), raw: incomingRaw, nonce: Date.now() });
+    const slot = findSlot(incomingRaw.variant, protocols);
+    const raw = { ...incomingRaw, refKeys: slot?.research ? [slot.research.key] : [] };
+    // Varian terpilih = jalur produk Resep baru (mis. "Cuka3"); data bahan baku ikut masuk.
+    setEditing({ product: productFromRaw(raw), raw, nonce: Date.now(), ...(raw.variant && { productText: variantLabel(raw.variant) }) });
     onRawUsed?.();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [incomingRaw, onRawUsed]);
   const [openKey, setOpenKey] = useState<string>();
   const [drafts, setDrafts] = useState<ProtocolDraft[]>([]);
@@ -153,6 +157,7 @@ export function ProtocolsTab({ protocols, entries, media, refresh, incomingRaw, 
           onDraftSaved={loadDrafts}
           initialProduct={editing.product}
           {...(editing.raw && { initialRaw: editing.raw })}
+          {...(editing.productText && { initialProductText: editing.productText })}
           entries={entries}
           onCancel={() => setEditing(undefined)}
           onSaved={async (key) => {
@@ -294,10 +299,11 @@ function VersionView({ v, media }: { v: ProtocolVersion; media: MediaItem[] }) {
             {([
               ['Item', v.raw.item],
               ['Barang', v.raw.name],
-              ['Perlakuan', TREATMENT_LABEL[v.raw.treatment]],
+              ['Perlakuan air', v.raw.waterVariant ? variantLabel(v.raw.waterVariant) : ''],
+              ['Perlakuan daging', v.raw.meatVariant ? variantLabel(v.raw.meatVariant) : ''],
               ['Berat utuh (g)', v.raw.wholeWeight],
               ['Air (mL)', v.raw.water],
-              ...(v.raw.thickness === 'tebal-daging' ? [['Tebal daging (mm)', v.raw.meatThickness]] : []),
+              ['Tebal daging (mm)', v.raw.meatThickness],
             ] as [string, string][]).map(([k, val]) => (
               <div key={k}>
                 <dt className="font-mono text-[10px] uppercase text-muted">{k}</dt>
@@ -305,7 +311,7 @@ function VersionView({ v, media }: { v: ProtocolVersion; media: MediaItem[] }) {
               </div>
             ))}
           </dl>
-          {v.raw.refKeys.length > 0 && <p className="mt-1 text-sm"><span className="font-mono text-[10px] uppercase text-muted">Rujukan (knowledge): </span>{v.raw.refKeys.join(', ')}</p>}
+          {v.raw.variant && <p className="mt-1 text-sm"><span className="font-mono text-[10px] uppercase text-muted">Jalur produk dari varian: </span>{variantLabel(v.raw.variant)}</p>}
         </div>
       )}
       {v.coconuts?.length ? (
@@ -462,7 +468,7 @@ function RawFieldset({ raw, setRaw, protocols, entries }: { raw: RawMaterial; se
   const set = <K extends keyof RawMaterial>(k: K, v: RawMaterial[K]) => setRaw({ ...raw, [k]: v });
   return (
     <fieldset className="flex flex-col gap-3 rounded-xl border-3 border-acid bg-paper p-3" data-testid="proto-raw">
-      <legend className="label-mono px-1">Bahan baku — {raw.item}: {raw.name} · {TREATMENT_LABEL[raw.treatment]}</legend>
+      <legend className="label-mono px-1">Bahan baku — {raw.item}: {raw.name}{raw.waterVariant && ` · perlakuan air ${variantLabel(raw.waterVariant)}`}{raw.meatVariant && ` · perlakuan daging ${variantLabel(raw.meatVariant)}`}</legend>
       <div className="grid grid-cols-2 gap-3">
         <label className="flex flex-col gap-1.5">
           <span className="label-mono">Berat utuh (g)</span>
@@ -473,15 +479,18 @@ function RawFieldset({ raw, setRaw, protocols, entries }: { raw: RawMaterial; se
           <input className="field min-h-[44px] text-sm" inputMode="decimal" value={raw.water} onChange={(e) => set('water', e.target.value)} data-testid="proto-raw-water" />
         </label>
       </div>
-      {raw.thickness === 'tebal-daging' && (
+      {(
         <label className="flex flex-col gap-1.5">
           <span className="label-mono">Tebal daging (mm)</span>
           <input className="field min-h-[44px] text-sm" inputMode="decimal" value={raw.meatThickness} onChange={(e) => set('meatThickness', e.target.value)} data-testid="proto-raw-meat" />
         </label>
       )}
-      {knowledgeLines(raw).map((l) => (
-        <KnowledgeList key={l.product} label={l.label} product={l.product} protocols={protocols} entries={entries} picked={raw.refKeys} onToggle={(k) => set('refKeys', raw.refKeys.includes(k) ? raw.refKeys.filter((x) => x !== k) : [...raw.refKeys, k])} />
-      ))}
+      {raw.variant && (
+        <p className="text-sm" data-testid="proto-raw-variant">
+          <span className="font-mono text-[10px] uppercase text-muted">Varian: </span>
+          {variantLabel(raw.variant)} <span className="text-xs text-muted">(= jalur produk resep ini)</span>
+        </p>
+      )}
       <button type="button" className="self-start font-mono text-xs underline" onClick={() => setRaw(undefined)} data-testid="proto-raw-remove">Lepas bahan baku dari resep ini</button>
     </fieldset>
   );
@@ -511,10 +520,12 @@ const toMedia = async (list: Pending[]): Promise<NewMedia[]> => {
   return out;
 };
 
-function ProtocolForm({ protocols, entries, media, base, draft, onDraftSaved, initialProduct, initialRaw, onCancel, onSaved }: {
+function ProtocolForm({ protocols, entries, media, base, draft, onDraftSaved, initialProduct, initialRaw, initialProductText, onCancel, onSaved }: {
   protocols: ProtocolVersion[];
   entries: DailyEntry[];
   initialRaw?: RawMaterial;
+  /** Jalur produk awal berupa teks (mis. varian "Cuka3" dari menu Bahan Baku). */
+  initialProductText?: string;
   media: MediaItem[];
   base?: ProtocolVersion;
   draft?: ProtocolDraft;
@@ -527,7 +538,7 @@ function ProtocolForm({ protocols, entries, media, base, draft, onDraftSaved, in
   const [draftId] = useState(draft?.id ?? `D-${Date.now().toString(36)}`);
   // Jalur produk diisi bebas (DEC-063): nama preset → kode preset; nama lain → kode 2 huruf otomatis.
   const src = draft ?? base;
-  const [productText, setProductText] = useState(src ? protocolProductName(src) : protocolProductName({ product: initialProduct }));
+  const [productText, setProductText] = useState(src ? protocolProductName(src) : initialProductText ?? protocolProductName({ product: initialProduct }));
   const { product, productName } = base ? { product: base.product, ...(base.productName && { productName: base.productName }) } : resolveProduct(productText);
   const [name, setName] = useState(draft?.name ?? base?.name ?? '');
   const [author, setAuthor] = useState(draft?.author ?? base?.author ?? '');
@@ -623,6 +634,7 @@ function ProtocolForm({ protocols, entries, media, base, draft, onDraftSaved, in
           <input className="field" list="proto-product-list" value={productText} disabled={!!base} onChange={(e) => setProductText(e.target.value)} placeholder="pilih atau ketik, mis. Minyak Kelapa" data-testid="proto-product" />
           <datalist id="proto-product-list">
             {LAB_PRODUCTS.map((p) => <option key={p.id} value={p.name} />)}
+            {(['Cuka', 'Bioleather', 'Kopra'] as const).flatMap((l) => Array.from({ length: VARIANT_MAX }, (_, i) => <option key={`${l}${i + 1}`} value={`${l}${i + 1}`} />))}
           </datalist>
           <span className="text-xs text-muted" data-testid="proto-product-code">Kode jalur: {product}{productName ? ' (isian manual)' : ''}</span>
         </label>

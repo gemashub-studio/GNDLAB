@@ -189,32 +189,46 @@ describe('penghitungan bahan baku kelapa (DEC-064)', () => {
   });
 });
 
-describe('bahan baku & knowledge (DEC-068)', () => {
-  it('knowledge = maks. 5 riset terbaru per jalur (versi terakhir); jalur mengikuti perlakuan/tebal; produk awal resep', async () => {
-    const { knowledgeFor, knowledgeLines, productFromRaw, blankRaw } = await import('@/lib/labStore');
-    const v = (key: string, version: number, product: string, createdAt: string) => ({ id: `${key}-v${version}`, key, version, product, name: `${key} v${version}`, author: '', reason: '', createdAt, ingredients: [], steps: [] });
-    const ps = [v('CK-P01', 1, 'CK', '2026-10-01'), v('CK-P01', 2, 'CK', '2026-10-05'), ...[2, 3, 4, 5, 6].map((n) => v(`CK-P0${n}`, 1, 'CK', `2026-10-1${n}`)), v('KE-P01', 1, 'KE', '2026-10-02')];
-    const k = knowledgeFor('CK', ps);
-    expect(k).toHaveLength(5);
-    expect(k[0]!.key).toBe('CK-P06');
-    expect(k.map((x) => x.key)).not.toContain('CK-P01');
-    expect(knowledgeLines({ treatment: 'air', thickness: '' }).map((l) => l.label)).toEqual(['Cuka', 'Bioleather']);
-    expect(knowledgeLines({ treatment: 'daging', thickness: 'tebal-daging' }).map((l) => l.label)).toEqual(['Kopra']);
-    expect(knowledgeLines({ treatment: '', thickness: '' })).toEqual([]);
-    expect(productFromRaw({ ...blankRaw(), treatment: 'air' })).toBe('CK');
-    expect(productFromRaw({ ...blankRaw(), item: 'Arang' })).toBe('AR');
-    expect(productFromRaw(blankRaw())).toBe('KE');
+describe('bahan baku & varian (DEC-068/069)', () => {
+  const v = (key: string, product: string, productName: string | undefined, createdAt: string, version = 1) => ({ id: `${key}-v${version}`, key, version, product, ...(productName && { productName }), name: `resep ${key}`, author: '', reason: '', createdAt, ingredients: [], steps: [] });
+
+  it('slot varian 1–10 per jalur; terisi otomatis dari riset berjalur produk sama (versi terbaru)', async () => {
+    const { variantSlots, variantLabel } = await import('@/lib/labStore');
+    const ps = [v('CK-P01', 'CK', 'Cuka3', '2026-10-01'), v('CK-P01', 'CK', 'Cuka3', '2026-10-05', 2), v('BL-P01', 'BL', 'Bioleather1', '2026-10-02'), v('KE-P01', 'KE', undefined, '2026-10-03')];
+    const air = variantSlots('air', ps);
+    expect(air.map((x) => x.label)).toEqual([...Array.from({ length: 10 }, (_, i) => `Cuka${i + 1}`), ...Array.from({ length: 10 }, (_, i) => `Bioleather${i + 1}`)]);
+    expect(air.find((x) => x.label === 'Cuka3')!.research!.id).toBe('CK-P01-v2');
+    expect(air.find((x) => x.label === 'Bioleather1')!.research!.key).toBe('BL-P01');
+    expect(air.filter((x) => x.research)).toHaveLength(2);
+    const daging = variantSlots('daging', ps);
+    expect(daging).toHaveLength(10);
+    expect(daging[0]!.label).toBe('Kopra1');
+    expect(daging.some((x) => x.research)).toBe(false);
+    expect(variantLabel('BL-7')).toBe('Bioleather7');
   });
 
-  it('laporan: bagian Bahan baku + rujukan bila ada; tanpa bahan baku tidak muncul', async () => {
+  it('jalur produk mengenali nama varian → kode preset + nama varian; produk awal dari varian', async () => {
+    const { resolveProduct, productFromRaw, blankRaw } = await import('@/lib/labStore');
+    expect(resolveProduct('Cuka3')).toEqual({ product: 'CK', productName: 'Cuka3' });
+    expect(resolveProduct('bioleather 10')).toEqual({ product: 'BL', productName: 'Bioleather10' });
+    expect(resolveProduct('Kopra1')).toEqual({ product: 'KE', productName: 'Kopra1' });
+    expect(resolveProduct('Kopra11').product).not.toBe('KE');
+    expect(productFromRaw({ ...blankRaw(), waterVariant: 'BL-2', meatVariant: 'KE-1', variant: 'BL-2' })).toBe('BL');
+    expect(productFromRaw(blankRaw())).toBe('KE');
+    expect(productFromRaw({ ...blankRaw(), item: 'Arang' })).toBe('AR');
+  });
+
+  it('laporan: bagian Bahan baku + varian bila ada; tanpa bahan baku tidak muncul', async () => {
     const { blankRaw } = await import('@/lib/labStore');
     const { buildResearchReport } = await import('@/lib/researchReport');
-    const ref = { id: 'CK-P01-v1', key: 'CK-P01', version: 1, product: 'CK', name: 'Cuka lama', author: '', reason: '', createdAt: 'a', ingredients: [], steps: [] };
-    const v = { ...ref, id: 'CK-P02-v1', key: 'CK-P02', name: 'baru', raw: { ...blankRaw(), name: 'Kelapa 1', wholeWeight: '1200', treatment: 'air' as const, thickness: 'tebal-daging' as const, refKeys: ['CK-P01'] } };
-    const b = buildResearchReport('CK-P02', [ref, v], [], [], 'x').blocks.find((x) => x.heading === 'Bahan baku')!;
-    expect(b.lines).toContain('Perlakuan: Perlakuan air');
+    const ref = { ...v('CK-P01', 'CK', 'Cuka3', 'a'), name: 'Cuka lama' };
+    const nw = { ...v('CK-P02', 'CK', 'Cuka3', 'b'), raw: { ...blankRaw(), name: 'Kelapa 1', wholeWeight: '1200', waterVariant: 'CK-3', meatVariant: 'KE-2', variant: 'CK-3', refKeys: ['CK-P01'] } };
+    const b = buildResearchReport('CK-P02', [ref, nw], [], [], 'x').blocks.find((x) => x.heading === 'Bahan baku')!;
+    expect(b.lines).toContain('Perlakuan air: Cuka3');
+    expect(b.lines).toContain('Perlakuan daging: Kopra2');
+    expect(b.lines).toContain('Jalur produk dari varian: Cuka3');
     expect(b.lines).toContain('Tebal daging (mm): belum dicatat');
-    expect(b.lines).toContain('Rujukan riset: CK-P01 (Cuka lama)');
+    expect(b.lines).toContain('Riset varian sebelumnya: CK-P01 (Cuka lama)');
     expect(buildResearchReport('CK-P01', [ref], [], [], 'x').blocks.some((x) => x.heading === 'Bahan baku')).toBe(false);
   });
 });

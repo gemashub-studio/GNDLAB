@@ -352,52 +352,59 @@ test.describe('GEMA RnD Lab', () => {
 });
 
 test.describe('Hapus hasil riset', () => {
-  test('menu Bahan Baku: modal form → knowledge Cuka/Bioleather/Kopra → Konfirmasi membuka Resep baru terisi', async ({ page }) => {
+  test('menu Bahan Baku: perlakuan air (Cuka/Bioleather 1–10) & perlakuan daging (Kopra 1–10) terpisah, tebal mm → Konfirmasi: jalur produk = varian + data bahan baku', async ({ page }) => {
     await page.goto('/lab?t=protokol');
-    // riset rujukan milik pengguna (knowledge)
-    for (const [prod, nama] of [['Cuka Air Kelapa', 'Cuka rujukan E2E'], ['Kopra Edibel', 'Kopra rujukan E2E']] as const) {
-      await page.getByTestId('proto-new').click();
-      await page.getByTestId('proto-product').fill(prod);
-      await page.getByTestId('proto-name').fill(nama);
-      await page.getByTestId('proto-finish').click();
-      await expect(page.getByTestId('proto-list')).toContainText(nama);
-    }
+    // resep berjalur "Cuka2" → slot Cuka2 otomatis terisi
+    await page.getByTestId('proto-new').click();
+    await page.getByTestId('proto-product').fill('Cuka2');
+    await expect(page.getByTestId('proto-product-code')).toContainText('Kode jalur: CK');
+    await page.getByTestId('proto-name').fill('Cuka varian dua E2E');
+    await page.getByTestId('proto-finish').click();
+    await expect(page.getByTestId('proto-list')).toContainText('Cuka varian dua E2E');
     await expect(page.getByTestId('proto-coco-add')).toHaveCount(0);
+
     await page.getByTestId('lab-tab-bahan').click();
     await page.getByTestId('raw-new').click();
     const modal = page.getByTestId('raw-modal');
     await expect(modal.getByTestId('raw-item')).toContainText('Arang');
-    await modal.getByTestId('raw-confirm').click();
-    await expect(modal).toContainText('Isi nama barang');
     await modal.getByTestId('raw-name').fill('Kelapa tua butir 1');
     await modal.getByTestId('raw-whole').fill('1.200');
     await modal.getByTestId('raw-water').fill('300');
-    await modal.getByTestId('raw-treatment').selectOption('air');
-    await expect(modal.getByTestId('raw-kn-CK')).toContainText('Cuka 1 — Cuka rujukan E2E');
-    await expect(modal.getByTestId('raw-kn-BL')).toContainText('Belum ada riset Bioleather');
-    await modal.getByTestId('raw-kn-CK').getByRole('checkbox').first().check();
-    await modal.getByTestId('raw-thickness').selectOption('tebal-daging');
-    await expect(modal.getByTestId('raw-kn-KE')).toContainText('Kopra 1 — Kopra rujukan E2E');
+    // perlakuan air & perlakuan daging = dua dropdown terpisah, keduanya bisa diisi
+    await expect(modal.getByTestId('raw-meat-variant').locator('option')).toHaveCount(11);
+    await expect(modal.getByTestId('raw-meat-variant')).toContainText('Kopra10');
+    await expect(modal.getByTestId('raw-water-variant').locator('option')).toHaveCount(21);
+    await expect(modal.getByTestId('raw-water-variant')).toContainText('Cuka2 — Cuka varian dua E2E');
+    await expect(modal.getByTestId('raw-water-variant')).toContainText('Bioleather10');
+    await modal.getByTestId('raw-water-variant').selectOption('CK-2');
+    await expect(modal.getByTestId('raw-water-variant-info')).toContainText('Cuka2 sudah dipakai');
+    await modal.getByTestId('raw-meat-variant').selectOption('KE-3');
     await modal.getByTestId('raw-meat').fill('10,5');
     await modal.getByTestId('raw-confirm').click();
+    await expect(modal).toContainText('Pilih varian mana yang jadi jalur produk');
+    await modal.getByTestId('raw-jalur-CK-2').check();
+    await expect(modal.getByTestId('raw-jalur-info')).toContainText('Cuka2');
+    await modal.getByTestId('raw-confirm').click();
 
-    // otomatis ke Riset Produk, Resep baru sudah berisi bahan baku
+    // otomatis ke Riset Produk: jalur produk = Cuka2, data bahan baku sudah masuk
     await expect(page.getByTestId('lab-tab-protokol')).toHaveAttribute('aria-selected', 'true');
+    await expect(page.getByTestId('proto-product')).toHaveValue('Cuka2');
+    await expect(page.getByTestId('proto-product-code')).toContainText('CK');
     const raw = page.getByTestId('proto-raw');
     await expect(raw).toContainText('Kelapa tua butir 1');
     await expect(raw.getByTestId('proto-raw-whole')).toHaveValue('1.200');
     await expect(raw.getByTestId('proto-raw-water')).toHaveValue('300');
     await expect(raw.getByTestId('proto-raw-meat')).toHaveValue('10,5');
-    await expect(raw.getByTestId('raw-kn-KE')).toContainText('Kopra 1');
-    await expect(page.getByTestId('proto-product')).toHaveValue('Cuka Air Kelapa');
+    await expect(raw.getByTestId('proto-raw-variant')).toContainText('Cuka2');
+    await expect(raw).toContainText('perlakuan daging Kopra3');
     const key = (await page.getByTestId('proto-id').textContent())!.replace(/-v1$/, '');
     await page.getByTestId('proto-name').fill('Cuka dari bahan baku E2E');
     await page.getByTestId('proto-finish').click();
     await page.getByTestId(`proto-open-${key}`).click();
     const shown = page.getByTestId('rp-raw');
-    await expect(shown).toContainText('Perlakuan air');
+    await expect(shown).toContainText('Cuka2');
+    await expect(shown).toContainText('Kopra3');
     await expect(shown).toContainText('10,5');
-    await expect(shown).toContainText('CK-P');
   });
   test('jalur produk bisa diisi manual → kode otomatis, nama tersimpan', async ({ page }) => {
     await page.goto('/lab?t=protokol');

@@ -151,8 +151,9 @@ export interface ProtocolTool {
 export const RAW_ITEMS = ['Kelapa', 'Arang'] as const;
 
 /**
- * Bahan baku (DEC-068) — diisi di menu Bahan Baku lalu dibawa ke Resep baru. Semua isian pengguna.
- * perlakuan 'air' → rujukan riset Cuka & Bioleather; tebal 'tebal-daging' → kolom Tebal daging + rujukan riset Kopra.
+ * Bahan baku (DEC-068/069) — diisi di menu Bahan Baku lalu ikut ke Resep baru. Semua isian pengguna.
+ * Perlakuan air (Cuka1–10 / Bioleather1–10) & perlakuan daging (Kopra1–10) = dua pilihan TERPISAH;
+ * varian terpilih jadi jalur produk Resep baru. Tebal daging diisi langsung dalam mm.
  */
 export interface RawMaterial {
   item: string;
@@ -161,32 +162,63 @@ export interface RawMaterial {
   wholeWeight: string;
   /** Air (mL). */
   water: string;
-  treatment: '' | 'air' | 'daging';
-  thickness: '' | 'tebal-daging';
+  /** Perlakuan air: slot varian, mis. "CK-3" (Cuka3) / "BL-2" (Bioleather2); '' = tidak dipilih. */
+  waterVariant: string;
+  /** Perlakuan daging: slot varian, mis. "KE-1" (Kopra1); '' = tidak dipilih. */
+  meatVariant: string;
   /** Tebal daging (mm). */
   meatThickness: string;
-  /** Kunci riset produk yang dijadikan rujukan (knowledge). */
+  /** Varian yang dipakai sebagai jalur produk resep (salah satu dari dua di atas). */
+  variant: string;
+  /** Riset lain yang sudah memakai varian itu (rujukan). */
   refKeys: string[];
 }
 
-export const blankRaw = (): RawMaterial => ({ item: 'Kelapa', name: '', wholeWeight: '', water: '', treatment: '', thickness: '', meatThickness: '', refKeys: [] });
-export const TREATMENT_LABEL: Record<RawMaterial['treatment'], string> = { '': '—', air: 'Perlakuan air', daging: 'Perlakuan daging' };
+export const blankRaw = (): RawMaterial => ({ item: 'Kelapa', name: '', wholeWeight: '', water: '', waterVariant: '', meatVariant: '', meatThickness: '', variant: '', refKeys: [] });
 
-/** Jalur riset rujukan per pilihan: perlakuan air → Cuka & Bioleather; tebal daging → Kopra. */
-export const knowledgeLines = (r: Pick<RawMaterial, 'treatment' | 'thickness'>): { product: string; label: string }[] => [
-  ...(r.treatment === 'air' ? [{ product: 'CK', label: 'Cuka' }, { product: 'BL', label: 'Bioleather' }] : []),
-  ...(r.thickness === 'tebal-daging' ? [{ product: 'KE', label: 'Kopra' }] : []),
-];
+export type TreatmentKind = 'air' | 'daging';
 
-/** Maks. 5 riset terbaru satu jalur (versi terakhir tiap kunci), untuk daftar "Cuka 1–5" dst. */
-export function knowledgeFor(product: string, protocols: readonly ProtocolVersion[]): ProtocolVersion[] {
-  const latest = new Map<string, ProtocolVersion>();
-  for (const p of protocols) if (p.product === product && (latest.get(p.key)?.version ?? 0) < p.version) latest.set(p.key, p);
-  return [...latest.values()].sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, 5);
+/** Jumlah slot varian per jalur (owner: Cuka1…Cuka10, Bioleather1…10, Kopra1…10). */
+export const VARIANT_MAX = 10;
+
+/** Jalur varian per perlakuan: air → Cuka & Bioleather; daging → Kopra. */
+export const variantLines = (kind: TreatmentKind): { product: string; label: string }[] =>
+  kind === 'air' ? [{ product: 'CK', label: 'Cuka' }, { product: 'BL', label: 'Bioleather' }] : [{ product: 'KE', label: 'Kopra' }];
+
+export interface VariantSlot {
+  /** mis. "CK-3" */
+  id: string;
+  /** mis. "Cuka3" */
+  label: string;
+  product: string;
+  n: number;
+  /** Riset terbaru yang berjalur produk sama dengan slot ini; kosong = belum dipakai. */
+  research?: ProtocolVersion;
 }
 
+/** Slot varian terisi OTOMATIS dari Riset Produk: slot "Cuka3" terisi bila ada riset berjalur produk "Cuka3". */
+export function variantSlots(kind: TreatmentKind, protocols: readonly ProtocolVersion[]): VariantSlot[] {
+  return variantLines(kind).flatMap(({ product, label }) =>
+    Array.from({ length: VARIANT_MAX }, (_, i) => {
+      const name = `${label}${i + 1}`;
+      const research = protocols.filter((p) => (p.productName ?? '').toLowerCase() === name.toLowerCase()).sort((x, y) => y.createdAt.localeCompare(x.createdAt))[0];
+      return { id: `${product}-${i + 1}`, label: name, product, n: i + 1, ...(research && { research }) };
+    }),
+  );
+}
+
+/** Nama varian dari id slot: "CK-3" → "Cuka3". */
+export const variantLabel = (id: string) => {
+  const [p, n] = id.split('-');
+  const l = { CK: 'Cuka', BL: 'Bioleather', KE: 'Kopra' }[p ?? ''];
+  return l && n ? `${l}${n}` : id;
+};
+
+export const findSlot = (variant: string, protocols: readonly ProtocolVersion[]) =>
+  variant ? variantSlots(variant.startsWith('KE-') ? 'daging' : 'air', protocols).find((s) => s.id === variant) : undefined;
+
 /** Produk awal resep dari bahan baku. */
-export const productFromRaw = (r: RawMaterial): string => (r.item === 'Arang' ? 'AR' : r.treatment === 'air' ? 'CK' : 'KE');
+export const productFromRaw = (r: RawMaterial): string => (r.variant ? r.variant.split('-')[0]! : r.item === 'Arang' ? 'AR' : 'KE');
 
 /**
  * Penghitungan bahan baku kelapa (DEC-064) — satu baris per butir/bahan, semua angka & teks = isian pengguna.
@@ -338,6 +370,11 @@ export function productCode(name: string): string {
 /** Isian jalur produk (bebas) → kode + nama manual (kosong bila cocok dengan preset). */
 export function resolveProduct(text: string): { product: string; productName?: string } {
   const t = text.trim();
+  const v = /^(cuka|bioleather|kopra)\s*(\d{1,2})$/i.exec(t);
+  if (v && Number(v[2]) >= 1 && Number(v[2]) <= VARIANT_MAX) {
+    const k = v[1]!.toLowerCase();
+    return { product: k === 'cuka' ? 'CK' : k === 'bioleather' ? 'BL' : 'KE', productName: `${k[0]!.toUpperCase()}${k.slice(1)}${Number(v[2])}` };
+  }
   const preset = LAB_PRODUCTS.find((p) => p.name.toLowerCase() === t.toLowerCase() || p.id === t.toUpperCase());
   if (preset) return { product: preset.id };
   return t ? { product: productCode(t), productName: t } : { product: 'XX' };
