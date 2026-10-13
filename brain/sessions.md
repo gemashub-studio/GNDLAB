@@ -161,3 +161,4 @@
 
 ## 2026-10-13 · Claude — jalur produk manual
 - DEC-063: Jalur produk Riset Produk diisi bebas (datalist preset); kode otomatis; E2E lab desktop 12/12, unit lulus.
+- DEC-064: penghitungan bahan baku kelapa di resep (form, draf, versi, laporan); dicek visual PDF. Satuan tebal mm = asumsi, tanyakan owner bila perlu.

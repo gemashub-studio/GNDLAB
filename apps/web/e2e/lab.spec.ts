@@ -352,6 +352,40 @@ test.describe('GEMA RnD Lab', () => {
 });
 
 test.describe('Hapus hasil riset', () => {
+  test('penghitungan bahan baku kelapa: isi per butir + foto, ringkasan otomatis, tampil di riset', async ({ page }) => {
+    const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==', 'base64');
+    await page.goto('/lab?t=protokol');
+    await page.getByTestId('proto-new').click();
+    const key = (await page.getByTestId('proto-id').textContent())!.replace(/-v1$/, '');
+    await page.getByTestId('proto-name').fill('Kelapa dihitung E2E');
+    await page.getByTestId('proto-coco-add').click();
+    await page.getByTestId('proto-coco-wholeStart-0').fill('1.200');
+    await page.getByTestId('proto-coco-wholeEnd-0').fill('1.150');
+    await page.getByTestId('proto-coco-waterWeight-0').fill('300');
+    await page.getByTestId('proto-coco-waterVolume-0').fill('290');
+    await page.getByTestId('proto-coco-meatStart-0').fill('10,5');
+    await page.getByTestId('proto-coco-meatEnd-0').fill('9');
+    await page.getByTestId('proto-coco-waterProcess-0').fill('disaring lalu didinginkan');
+    await page.getByTestId('proto-coco-meatResult-0').fill('kopra putih');
+    await page.getByTestId('proto-coco-files-0').setInputFiles({ name: 'butir1.png', mimeType: 'image/png', buffer: png });
+    await page.getByTestId('proto-coco-add').click();
+    await page.getByTestId('proto-coco-wholeStart-1').fill('1000');
+    await expect(page.getByTestId('proto-coco-sum')).toContainText('2.200');
+    await page.getByTestId('proto-save').click();
+    await page.getByRole('button', { name: 'Tutup' }).click();
+    await page.getByTestId('proto-ongoing').click();
+    await page.getByTestId('ongoing-list').locator('li', { hasText: 'Kelapa dihitung E2E' }).getByRole('button', { name: 'Lanjutkan' }).click();
+    await expect(page.getByTestId('proto-coco-wholeStart-0')).toHaveValue('1.200');
+    await expect(page.getByTestId('proto-coco-waterProcess-0')).toHaveValue('disaring lalu didinginkan');
+    await expect(page.getByTestId('proto-form')).toContainText('butir1.png');
+    await page.getByTestId('proto-finish').click();
+    await page.getByTestId(`proto-open-${key}`).click();
+    const box = page.getByTestId('rp-coco');
+    await expect(box).toContainText('Kelapa 1');
+    await expect(box).toContainText('disaring lalu didinginkan');
+    await expect(box).toContainText('kopra putih');
+    await expect(box.locator('a')).toHaveCount(1);
+  });
   test('jalur produk bisa diisi manual → kode otomatis, nama tersimpan', async ({ page }) => {
     await page.goto('/lab?t=protokol');
     await page.getByTestId('proto-new').click();

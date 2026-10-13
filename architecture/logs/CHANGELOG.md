@@ -4,6 +4,8 @@ Format: [Keep a Changelog](https://keepachangelog.com/id/1.1.0/) · Versi datase
 Waktu dalam WIB (UTC+7).
 
 ## [aplikasi GEMA RnD jalur manual] — 2026-10-13
+### Ditambahkan
+- Resep baru: tabel "Penghitungan bahan baku kelapa" per butir (berat utuh awal/akhir, berat & volume air, tebal daging awal/akhir, proses & hasil proses air/daging, foto/video) + ringkasan jumlah/rata-rata; tampil di halaman riset & laporan PDF/Word/PowerPoint.
 ### Diubah
 - Riset Produk: kolom "Jalur produk" bisa diketik bebas (tetap ada saran 5 jalur); jalur baru otomatis dapat kode 2 huruf untuk kode riset (mis. Minyak Kelapa → MK-P01).
 

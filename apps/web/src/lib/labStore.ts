@@ -146,6 +146,60 @@ export interface ProtocolTool {
   mediaIds?: string[];
 }
 
+/**
+ * Penghitungan bahan baku kelapa (DEC-064) — satu baris per butir/bahan, semua angka & teks = isian pengguna.
+ * Berat dalam gram, volume dalam mL, ketebalan daging dalam mm.
+ */
+export interface CoconutRow {
+  name: string;
+  wholeStart: string;
+  wholeEnd: string;
+  waterWeight: string;
+  waterVolume: string;
+  meatStart: string;
+  meatEnd: string;
+  waterProcess: string;
+  meatProcess: string;
+  waterResult: string;
+  meatResult: string;
+  mediaIds?: string[];
+}
+
+export const blankCoconut = (n = 1): CoconutRow => ({ name: `Kelapa ${n}`, wholeStart: '', wholeEnd: '', waterWeight: '', waterVolume: '', meatStart: '', meatEnd: '', waterProcess: '', meatProcess: '', waterResult: '', meatResult: '' });
+
+/** Baris dianggap terisi bila ada salah satu isian selain nama. */
+export const coconutFilled = (r: CoconutRow) => (['wholeStart', 'wholeEnd', 'waterWeight', 'waterVolume', 'meatStart', 'meatEnd', 'waterProcess', 'meatProcess', 'waterResult', 'meatResult'] as const).some((k) => r[k].trim());
+
+export interface CoconutStat {
+  label: string;
+  unit: string;
+  n: number;
+  total?: number;
+  mean?: number;
+}
+
+/**
+ * Ringkasan penghitungan kelapa (label pendek: Utuh = berat utuh; Selisih utuh = awal - akhir per baris): jumlah & rata-rata tiap kolom angka (hanya isian yang berupa angka; n = jumlah
+ * baris terisi) + selisih berat utuh (awal - akhir) per baris yang keduanya terisi. Tanpa angka acuan/literatur.
+ */
+export function coconutSummary(rows: readonly CoconutRow[]): CoconutStat[] {
+  const col = (label: string, unit: string, vals: (number | undefined)[], withTotal = true): CoconutStat => {
+    const v = vals.filter((x): x is number => x !== undefined);
+    const total = v.reduce((a, b) => a + b, 0);
+    return { label, unit, n: v.length, ...(v.length && { ...(withTotal && { total }), mean: total / v.length }) };
+  };
+  const num = (s: string) => parseMeasure(s);
+  return [
+    col('Utuh awal', 'g', rows.map((r) => num(r.wholeStart))),
+    col('Utuh akhir', 'g', rows.map((r) => num(r.wholeEnd))),
+    col('Selisih utuh', 'g', rows.map((r) => { const a = num(r.wholeStart); const b = num(r.wholeEnd); return a !== undefined && b !== undefined ? a - b : undefined; })),
+    col('Berat air', 'g', rows.map((r) => num(r.waterWeight))),
+    col('Volume air', 'mL', rows.map((r) => num(r.waterVolume))),
+    col('Tebal daging awal', 'mm', rows.map((r) => num(r.meatStart)), false),
+    col('Tebal daging akhir', 'mm', rows.map((r) => num(r.meatEnd)), false),
+  ];
+}
+
 /** Daftar alat ternormalisasi (versi awal fitur menyimpan teks saja). */
 export const toolList = (v: Pick<ProtocolVersion, 'tools'>): ProtocolTool[] => (v.tools ?? []).map((t) => (typeof t === 'string' ? { name: t } : t));
 
@@ -174,8 +228,10 @@ export interface ProtocolDraft {
   ingredients: ProtocolIngredient[];
   tools: ProtocolTool[];
   steps: ProtocolStep[];
+  /** Penghitungan bahan baku kelapa (DEC-064). */
+  coconuts?: CoconutRow[];
   /** Foto/video yang sudah dipilih tapi belum jadi versi resmi (per baris). */
-  pending: { ingredients: NewMedia[][]; tools: NewMedia[][]; steps: NewMedia[][] };
+  pending: { ingredients: NewMedia[][]; tools: NewMedia[][]; steps: NewMedia[][]; coconuts?: NewMedia[][] };
   createdAt: string;
   updatedAt: string;
 }
@@ -200,6 +256,8 @@ export interface ProtocolVersion {
   assistants?: string[];
   /** Alat yang digunakan (teks lama = string). */
   tools?: (ProtocolTool | string)[];
+  /** Penghitungan bahan baku kelapa (DEC-064). */
+  coconuts?: CoconutRow[];
   reason: string;
   author: string;
   createdAt: string;
@@ -417,7 +475,7 @@ export async function listMedia(experimentId?: string): Promise<MediaItem[]> {
  */
 export async function addProtocolVersion(
   p: Omit<ProtocolVersion, 'createdAt'>,
-  media: { ingredients?: NewMedia[][]; steps?: NewMedia[][]; tools?: NewMedia[][]; /** Draf yang diselesaikan (dihapus dalam transaksi yang sama). */ draftId?: string } = {},
+  media: { ingredients?: NewMedia[][]; steps?: NewMedia[][]; tools?: NewMedia[][]; coconuts?: NewMedia[][]; /** Draf yang diselesaikan (dihapus dalam transaksi yang sama). */ draftId?: string } = {},
 ): Promise<ProtocolVersion> {
   const now = new Date().toISOString();
   const items: MediaItem[] = [];
@@ -435,6 +493,7 @@ export async function addProtocolVersion(
     ingredients: p.ingredients.map((x, i) => ({ ...x, ...attach(`I${i + 1}`, media.ingredients?.[i], x.mediaIds) })),
     steps: p.steps.map((x, i) => ({ ...x, ...attach(`S${i + 1}`, media.steps?.[i], x.mediaIds) })),
     tools: toolList(p).map((x, i) => ({ ...x, ...attach(`T${i + 1}`, media.tools?.[i], x.mediaIds) })),
+    ...(p.coconuts?.length && { coconuts: p.coconuts.map((x, i) => ({ ...x, ...attach(`K${i + 1}`, media.coconuts?.[i], x.mediaIds) })) }),
     createdAt: now,
   };
   const d = await labDb();

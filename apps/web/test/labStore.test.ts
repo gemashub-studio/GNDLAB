@@ -159,3 +159,32 @@ describe('jalur produk isian manual (DEC-063)', () => {
     expect(protocolProductName({ product: 'CK' })).toBe('Cuka Air Kelapa');
   });
 });
+
+describe('penghitungan bahan baku kelapa (DEC-064)', () => {
+  it('ringkasan: jumlah & rata-rata hanya dari angka terisi; selisih utuh per baris; tebal tidak dijumlah', async () => {
+    const { blankCoconut, coconutSummary, coconutFilled } = await import('@/lib/labStore');
+    const a = { ...blankCoconut(1), wholeStart: '1.200', wholeEnd: '1.150', waterWeight: '300', waterVolume: '290', meatStart: '10,5', meatEnd: '9' };
+    const b = { ...blankCoconut(2), wholeStart: '1000', waterWeight: 'tidak ditimbang', meatStart: '11,5' };
+    expect(coconutFilled(blankCoconut(3))).toBe(false);
+    expect(coconutFilled(b)).toBe(true);
+    const s = Object.fromEntries(coconutSummary([a, b]).map((x) => [x.label, x]));
+    expect(s['Utuh awal']).toMatchObject({ n: 2, total: 2200, mean: 1100 });
+    expect(s['Selisih utuh']).toMatchObject({ n: 1, total: 50 });
+    expect(s['Berat air']).toMatchObject({ n: 1, total: 300 });
+    expect(s['Tebal daging awal']).toEqual({ label: 'Tebal daging awal', unit: 'mm', n: 2, mean: 11 });
+    expect(s['Utuh akhir']!.n).toBe(1);
+  });
+
+  it('laporan: 2 bagian kelapa setelah komposisi bila ada data; tanpa data tidak muncul', async () => {
+    const { blankCoconut } = await import('@/lib/labStore');
+    const { buildResearchReport } = await import('@/lib/researchReport');
+    const v = { id: 'KE-P01-v1', key: 'KE-P01', version: 1, product: 'KE', name: 'x', author: '', reason: '', createdAt: '2026-10-13T00:00:00Z', ingredients: [], steps: [], coconuts: [{ ...blankCoconut(1), wholeStart: '1200', waterProcess: 'disaring' }] };
+    const r = buildResearchReport('KE-P01', [v], [], [], 'x');
+    const heads = r.blocks.map((b) => b.heading);
+    expect(heads.slice(2, 5)).toEqual(['Komposisi bahan (versi 1)', 'Bahan baku kelapa — berat & ukuran', 'Bahan baku kelapa — proses & hasil']);
+    expect(r.blocks[3]!.table!.rows[0]).toEqual(['Kelapa 1', '1200', '–', '–', '–', '–', '–']);
+    expect(r.blocks[3]!.lines[0]).toBe('Utuh awal (g): jumlah 1200 · rata-rata 1200 (n = 1)');
+    expect(r.blocks[4]!.table!.rows[0]![1]).toBe('disaring');
+    expect(buildResearchReport('KE-P01', [{ ...v, coconuts: undefined }], [], [], 'x').blocks.some((b) => b.heading.startsWith('Bahan baku kelapa'))).toBe(false);
+  });
+});

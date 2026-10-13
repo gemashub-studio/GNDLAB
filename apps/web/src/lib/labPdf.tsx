@@ -376,7 +376,7 @@ const r = StyleSheet.create({
   chartTitle: { fontFamily: 'Helvetica-Bold', fontSize: 10, marginBottom: 4 },
   note: { fontSize: 7.5, color: C.muted, marginTop: 3 },
   kv: { flexDirection: 'row', marginBottom: 3 },
-  kvLabel: { width: 118, fontFamily: 'Courier-Bold', fontSize: 7.5, color: C.muted, textTransform: 'uppercase', paddingTop: 1.5 },
+  kvLabel: { width: 130, fontFamily: 'Courier-Bold', fontSize: 7.5, color: C.muted, textTransform: 'uppercase', paddingTop: 1.5 },
   day: { borderLeftWidth: 3, borderColor: C.mintLight, backgroundColor: '#FAFCFC', borderRadius: 4, padding: 8, marginBottom: 10 },
   dayHead: { fontFamily: 'Helvetica-Bold', fontSize: 10.5, color: C.mint, marginBottom: 5 },
   gallery: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 4 },

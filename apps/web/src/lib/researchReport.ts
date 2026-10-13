@@ -4,7 +4,7 @@
  * Hanya dari data tercatat; kosong = "belum dicatat".
  */
 import { fmtNum, researchCharts, type ChartSpec } from './reportCharts';
-import { dayNumber, protocolProductName, NOT_RECORDED, researchDates, researchStatus, toolList, type DailyEntry, type MediaItem, type ProtocolVersion } from './labStore';
+import { coconutSummary, dayNumber, protocolProductName, type CoconutRow, NOT_RECORDED, researchDates, researchStatus, toolList, type DailyEntry, type MediaItem, type ProtocolVersion } from './labStore';
 
 export interface ReportImage {
   name: string;
@@ -53,6 +53,31 @@ export interface ResearchReport {
 const or = (v: string | undefined) => (v && v.trim() ? v.trim() : NOT_RECORDED);
 const img = (m: MediaItem): ReportImage => ({ name: m.name, caption: m.caption, dataUrl: m.thumb, video: m.type.startsWith('video/') });
 const STATUS: Record<ReturnType<typeof researchStatus>, string> = { 'belum-mulai': 'Belum ada laporan harian', berjalan: 'Berjalan', selesai: 'SELESAI' };
+
+/** Penghitungan bahan baku kelapa (DEC-064): tabel ukur + ringkasan, lalu tabel proses & hasil + foto. */
+function coconutBlocks(rows: CoconutRow[], pics: (ids?: string[]) => ReportImage[]): ReportBlock[] {
+  const d = (v: string) => v.trim() || '–';
+  const f = (v?: number) => (v === undefined ? '–' : fmtNum(v));
+  return [
+    {
+      heading: 'Bahan baku kelapa — berat & ukuran',
+      level: 1,
+      lines: coconutSummary(rows).map((st) => `${st.label} (${st.unit}): ${st.n ? `${st.total !== undefined ? `jumlah ${f(st.total)} · ` : ''}rata-rata ${f(st.mean)} (n = ${st.n})` : 'belum dicatat'}`),
+      table: {
+        head: ['Bahan', 'Utuh awal (g)', 'Utuh akhir (g)', 'Air (g)', 'Air (mL)', 'Tebal awal (mm)', 'Tebal akhir (mm)'],
+        rows: rows.map((r) => [r.name, d(r.wholeStart), d(r.wholeEnd), d(r.waterWeight), d(r.waterVolume), d(r.meatStart), d(r.meatEnd)]),
+      },
+      images: [],
+    },
+    {
+      heading: 'Bahan baku kelapa — proses & hasil',
+      level: 1,
+      lines: [],
+      table: { head: ['Bahan', 'Proses air', 'Hasil proses air', 'Proses daging', 'Hasil proses daging'], rows: rows.map((r) => [r.name, d(r.waterProcess), d(r.waterResult), d(r.meatProcess), d(r.meatResult)]) },
+      images: rows.flatMap((r) => pics(r.mediaIds).map((p) => ({ ...p, caption: `${r.name}${p.caption ? ` — ${p.caption}` : ''}` }))),
+    },
+  ];
+}
 
 export function buildResearchReport(
   key: string,
@@ -115,6 +140,7 @@ export function buildResearchReport(
       ...(latest.ingredients.length && { table: { head: ['No', 'Bahan', 'Jumlah', 'Satuan'], rows: latest.ingredients.map((x, i) => [String(i + 1), x.name, x.amount || '–', x.unit || '–']) } }),
       images: latest.ingredients.flatMap((x, i) => pics(x.mediaIds).map((p) => ({ ...p, caption: `Bahan ${i + 1} · ${x.name}${p.caption ? ` — ${p.caption}` : ''}` }))),
     },
+    ...(latest.coconuts?.length ? coconutBlocks(latest.coconuts, pics) : []),
     {
       heading: 'Alat yang digunakan',
       level: 1,

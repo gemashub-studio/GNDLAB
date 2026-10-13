@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import { fmtMeasure } from '@/lib/format';
 import { downloadBlob, fmtBytes, makeThumb } from '@/lib/labMedia';
 import {
   addProtocolVersion,
@@ -10,6 +11,10 @@ import {
   saveDraft,
   LAB_PRODUCTS,
   nextProtocolKey,
+  blankCoconut,
+  coconutSummary,
+  coconutFilled,
+  type CoconutRow,
   protocolProductName,
   resolveProduct,
   nextProtocolVersion,
@@ -265,6 +270,37 @@ function VersionView({ v, media }: { v: ProtocolVersion; media: MediaItem[] }) {
           </table>
         ) : <p className="italic text-muted">belum dicatat</p>}
       </div>
+      {v.coconuts?.length ? (
+        <div data-testid="rp-coco">
+          <span className="label-mono">Penghitungan bahan baku kelapa</span>
+          <div className="mt-1 overflow-x-auto">
+            <table className="w-full min-w-[640px] text-sm">
+              <thead>
+                <tr className="text-left font-mono text-[10px] uppercase text-muted">
+                  <th className="py-1 pr-2">Bahan</th>
+                  {COCO_NUM.map(([k, l]) => <th key={k} className="pr-2">{l}</th>)}
+                </tr>
+              </thead>
+              <tbody>
+                {v.coconuts.map((c, n) => (
+                  <tr key={n} className="border-t border-paper-grid align-top">
+                    <td className="py-1.5 pr-2">{c.name}<Thumbs ids={c.mediaIds} media={media} /></td>
+                    {COCO_NUM.map(([k]) => <td key={k} className="pr-2 font-mono">{(c[k] as string) || '–'}</td>)}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <dl className="mt-2 grid gap-2 sm:grid-cols-2">
+            {v.coconuts.map((c, n) => (
+              <div key={n} className="rounded-lg bg-paper p-2 text-sm">
+                <dt className="font-semibold">{c.name}</dt>
+                {COCO_TEXT.map(([k, l]) => <dd key={k}><span className="font-mono text-[10px] uppercase text-muted">{l}: </span>{(c[k] as string) || <span className="italic text-muted">belum dicatat</span>}</dd>)}
+              </div>
+            ))}
+          </dl>
+        </div>
+      ) : null}
       <div>
         <span className="label-mono">Urutan hari</span>
         {v.steps.length ? (
@@ -365,6 +401,80 @@ interface Pending {
   caption: string;
 }
 
+const COCO_NUM: [keyof CoconutRow, string][] = [
+  ['wholeStart', 'Berat utuh awal (g)'],
+  ['wholeEnd', 'Berat utuh akhir (g)'],
+  ['waterWeight', 'Berat air (g)'],
+  ['waterVolume', 'Volume air (mL)'],
+  ['meatStart', 'Tebal daging awal (mm)'],
+  ['meatEnd', 'Tebal daging akhir (mm)'],
+];
+const COCO_TEXT: [keyof CoconutRow, string][] = [
+  ['waterProcess', 'Proses air'],
+  ['waterResult', 'Hasil proses air'],
+  ['meatProcess', 'Proses daging'],
+  ['meatResult', 'Hasil proses daging'],
+];
+
+/** Penghitungan bahan baku kelapa (DEC-064): satu kartu per butir, foto/video per butir, ringkasan otomatis. */
+function CoconutFieldset({ rows, setRows, files, setFiles, media }: { rows: CoconutRow[]; setRows: (r: CoconutRow[]) => void; files: Pending[][]; setFiles: (f: Pending[][]) => void; media: MediaItem[] }) {
+  const set = (i: number, k: keyof CoconutRow, v: string) => setRows(rows.map((x, j) => (j === i ? { ...x, [k]: v } : x)));
+  const stats = coconutSummary(rows);
+  const f = (v?: number) => (v === undefined ? '–' : fmtMeasure(v));
+  return (
+    <fieldset className="flex flex-col gap-2" data-testid="proto-coco">
+      <legend className="label-mono mb-2">Penghitungan bahan baku kelapa — catat tiap butir (opsional)</legend>
+      {rows.map((r, i) => (
+        <div key={i} className="flex flex-col gap-2 rounded-xl border-3 border-ink p-2" data-testid={`proto-coco-${i}`}>
+          <div className="flex items-center gap-2">
+            <input className="field min-h-[44px] flex-1 font-sans text-sm font-normal" placeholder="Nama bahan" aria-label="Nama bahan" value={r.name} onChange={(e) => set(i, 'name', e.target.value)} data-testid={`proto-coco-name-${i}`} />
+            <button type="button" aria-label="Hapus baris kelapa" className="font-mono text-xs underline" onClick={() => { setRows(rows.filter((_, j) => j !== i)); setFiles(files.filter((_, j) => j !== i)); }}>×</button>
+          </div>
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
+            {COCO_NUM.map(([k, label]) => (
+              <label key={k} className="flex flex-col gap-1">
+                <span className="font-mono text-[10px] uppercase text-muted">{label}</span>
+                <input className="field min-h-[44px] text-sm" inputMode="decimal" value={r[k] as string} onChange={(e) => set(i, k, e.target.value)} data-testid={`proto-coco-${k}-${i}`} />
+              </label>
+            ))}
+          </div>
+          <div className="grid gap-2 sm:grid-cols-2">
+            {COCO_TEXT.map(([k, label]) => (
+              <label key={k} className="flex flex-col gap-1">
+                <span className="font-mono text-[10px] uppercase text-muted">{label}</span>
+                <input className="field min-h-[44px] font-sans text-sm font-normal" value={r[k] as string} onChange={(e) => set(i, k, e.target.value)} data-testid={`proto-coco-${k}-${i}`} />
+              </label>
+            ))}
+          </div>
+          <Thumbs ids={r.mediaIds} media={media} />
+          <FilePick list={files[i] ?? []} onChange={(l) => setFiles(files.map((x, j) => (j === i ? l : x)))} testId={`proto-coco-files-${i}`} />
+        </div>
+      ))}
+      <button type="button" className="btn-ghost self-start" onClick={() => { setRows([...rows, blankCoconut(rows.length + 1)]); setFiles([...files, []]); }} data-testid="proto-coco-add">+ Bahan kelapa</button>
+      {rows.length > 0 && (
+        <div className="overflow-x-auto rounded-xl bg-paper p-2" data-testid="proto-coco-sum">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="text-left font-mono text-[10px] uppercase text-muted"><th className="py-1 pr-3">Ringkasan ({rows.length} baris)</th><th className="pr-3">n</th><th className="pr-3">Jumlah</th><th>Rata-rata</th></tr>
+            </thead>
+            <tbody>
+              {stats.map((st) => (
+                <tr key={st.label} className="border-t border-paper-grid">
+                  <td className="py-1 pr-3">{st.label} ({st.unit})</td>
+                  <td className="pr-3 font-mono">{st.n}</td>
+                  <td className="pr-3 font-mono">{f(st.total)}</td>
+                  <td className="font-mono">{f(st.mean)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <p className="mt-1 text-[11px] text-muted">Utuh = berat utuh; selisih utuh = awal − akhir per butir. Dihitung dari isianmu saja (kosong/bukan angka tidak dihitung). Ketebalan tidak dijumlah.</p>
+        </div>
+      )}
+    </fieldset>
+  );
+}
+
 function FilePick({ list, onChange, testId }: { list: Pending[]; onChange: (l: Pending[]) => void; testId: string }) {
   return (
     <div className="flex flex-col gap-1.5">
@@ -415,6 +525,8 @@ function ProtocolForm({ protocols, media, base, draft, onDraftSaved, initialProd
   const [tools, setTools] = useState<ProtocolTool[]>(draft?.tools ?? (base && toolList(base).length ? toolList(base).map((t) => ({ ...t })) : [{ name: '' }]));
   const [toolFiles, setToolFiles] = useState<Pending[][]>(() => (draft ? fromDraft(draft.pending.tools) : base && toolList(base).length ? toolList(base).map(() => []) : [[]]));
   const [ingFiles, setIngFiles] = useState<Pending[][]>(() => (draft ? fromDraft(draft.pending.ingredients) : base ? base.ingredients.map(() => []) : [[]]));
+  const [coco, setCoco] = useState<CoconutRow[]>(draft?.coconuts ?? (base?.coconuts?.length ? base.coconuts.map(({ mediaIds: _m, ...c }) => ({ ...c })) : []));
+  const [cocoFiles, setCocoFiles] = useState<Pending[][]>(() => (draft?.pending.coconuts ? fromDraft(draft.pending.coconuts) : (draft?.coconuts ?? base?.coconuts ?? []).map(() => [])));
   const [stepFiles, setStepFiles] = useState<Pending[][]>(() => (draft ? fromDraft(draft.pending.steps) : base ? base.steps.map(() => []) : [[]]));
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState('');
@@ -432,8 +544,8 @@ function ProtocolForm({ protocols, media, base, draft, onDraftSaved, initialProd
       };
       await saveDraft({
         id: draftId, ...(base && { baseId: base.id }), ...(draft && { createdAt: draft.createdAt }),
-        product, ...(productName && { productName }), name, author, assistants, startDate, reason, ingredients: ings, tools, steps,
-        pending: { ingredients: await pend(ingFiles), tools: await pend(toolFiles), steps: await pend(stepFiles) },
+        product, ...(productName && { productName }), name, author, assistants, startDate, reason, ingredients: ings, tools, steps, coconuts: coco,
+        pending: { ingredients: await pend(ingFiles), tools: await pend(toolFiles), steps: await pend(stepFiles), coconuts: await pend(cocoFiles) },
       });
       await onDraftSaved();
       setMsg(`Tersimpan ${new Date().toLocaleTimeString('id-ID')}. Buka lagi kapan saja lewat "On going proses"; tekan Selesai bila resep sudah final.`);
@@ -457,6 +569,9 @@ function ProtocolForm({ protocols, media, base, draft, onDraftSaved, initialProd
       for (const k of keepI) iMedia.push(await toMedia(k.f));
       const sMedia: NewMedia[][] = [];
       for (const k of keepS) sMedia.push(await toMedia(k.f));
+      const keepK = coco.map((x, i) => ({ x, f: cocoFiles[i] ?? [] })).filter(({ x, f }) => coconutFilled(x) || f.length);
+      const kMedia: NewMedia[][] = [];
+      for (const k of keepK) kMedia.push(await toMedia(k.f));
       const keepT = tools.map((x, i) => ({ x, f: toolFiles[i] ?? [] })).filter(({ x }) => x.name.trim());
       const tMedia: NewMedia[][] = [];
       for (const k of keepT) tMedia.push(await toMedia(k.f));
@@ -467,8 +582,9 @@ function ProtocolForm({ protocols, media, base, draft, onDraftSaved, initialProd
           ingredients: keepI.map(({ x }) => x),
           steps: keepS.map(({ x }) => x),
           tools: keepT.map(({ x }) => ({ ...x, name: x.name.trim() })),
+          ...(keepK.length && { coconuts: keepK.map(({ x }) => x) }),
         },
-        { ingredients: iMedia, steps: sMedia, tools: tMedia, draftId },
+        { ingredients: iMedia, steps: sMedia, tools: tMedia, coconuts: kMedia, draftId },
       );
       await onSaved(key);
     } catch {
@@ -520,6 +636,8 @@ function ProtocolForm({ protocols, media, base, draft, onDraftSaved, initialProd
         ))}
         <button type="button" className="btn-ghost self-start" onClick={() => { setIngs([...ings, blankIng()]); setIngFiles([...ingFiles, []]); }}>+ Bahan</button>
       </fieldset>
+
+      <CoconutFieldset rows={coco} setRows={setCoco} files={cocoFiles} setFiles={setCocoFiles} media={media} />
 
       <fieldset className="flex flex-col gap-2" data-testid="proto-tools">
         <legend className="label-mono mb-2">Alat yang digunakan — sama seperti bahan: nama, jumlah, satuan, foto/video</legend>

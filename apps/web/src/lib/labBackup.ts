@@ -11,7 +11,7 @@ import { labDb, type DailyEntry, type Experiment, type MediaItem, type NewMedia,
 
 export type MediaJson = Omit<MediaItem, 'blob'> & { data: string };
 type NewMediaJson = Omit<NewMedia, 'blob'> & { data: string };
-export type DraftJson = Omit<ProtocolDraft, 'pending'> & { pending: { ingredients: NewMediaJson[][]; tools: NewMediaJson[][]; steps: NewMediaJson[][] } };
+export type DraftJson = Omit<ProtocolDraft, 'pending'> & { pending: { ingredients: NewMediaJson[][]; tools: NewMediaJson[][]; steps: NewMediaJson[][]; coconuts?: NewMediaJson[][] } };
 
 export interface LabBackup {
   format: 'gemas-lab';
@@ -106,7 +106,7 @@ export async function exportLabBackup(): Promise<{ json: string; counts: Record<
   };
   const draftJson: DraftJson[] = [];
   const belanja = await (await belanjaDb()).getAll('reports');
-  for (const dr of drafts) draftJson.push({ ...dr, pending: { ingredients: await conv(dr.pending.ingredients), tools: await conv(dr.pending.tools), steps: await conv(dr.pending.steps) } });
+  for (const dr of drafts) draftJson.push({ ...dr, pending: { ingredients: await conv(dr.pending.ingredients), tools: await conv(dr.pending.tools), steps: await conv(dr.pending.steps), ...(dr.pending.coconuts && { coconuts: await conv(dr.pending.coconuts) }) } });
   return {
     json: labBackupJson(experiments, new Date().toISOString(), { entries, protocols, media: mediaJson, drafts: draftJson, belanja }),
     counts: { eksperimen: experiments.length, 'catatan harian': entries.length, 'riset produk': protocols.length, draf: drafts.length, media: media.length, 'laporan belanja': belanja.length },
@@ -129,7 +129,7 @@ export async function applyRestore(plan: RestorePlan): Promise<void> {
   for (const p of plan.add.protocols) await tx.objectStore('protocols').add(p);
   for (const { data, ...m } of plan.add.media) await tx.objectStore('media').add({ ...m, blob: base64ToBlob(data, m.type) });
   const back = (rows: NewMediaJson[][]) => rows.map((row) => row.map(({ data, ...m }) => ({ ...m, blob: base64ToBlob(data, m.type) })));
-  for (const dr of plan.add.drafts) await tx.objectStore('drafts').add({ ...dr, pending: { ingredients: back(dr.pending.ingredients), tools: back(dr.pending.tools), steps: back(dr.pending.steps) } });
+  for (const dr of plan.add.drafts) await tx.objectStore('drafts').add({ ...dr, pending: { ingredients: back(dr.pending.ingredients), tools: back(dr.pending.tools), steps: back(dr.pending.steps), ...(dr.pending.coconuts && { coconuts: back(dr.pending.coconuts) }) } });
   await tx.done;
   if (plan.add.belanja.length) {
     const bt = (await belanjaDb()).transaction('reports', 'readwrite');
