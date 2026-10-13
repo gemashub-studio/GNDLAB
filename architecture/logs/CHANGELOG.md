@@ -3,6 +3,10 @@
 Format: [Keep a Changelog](https://keepachangelog.com/id/1.1.0/) · Versi dataset mengikuti SemVer (ADR-002).
 Waktu dalam WIB (UTC+7).
 
+## [aplikasi GEMA RnD jalur manual] — 2026-10-13
+### Diubah
+- Riset Produk: kolom "Jalur produk" bisa diketik bebas (tetap ada saran 5 jalur); jalur baru otomatis dapat kode 2 huruf untuk kode riset (mis. Minyak Kelapa → MK-P01).
+
 ## [aplikasi GEMA RnD laporan belanja] — 2026-10-11
 ### Ditambahkan
 - Tab "Laporan Belanja" di /lab — disederhanakan owner jadi UPLOAD BUKTI ALOKASI saja: tiap alokasi = judul ALOKASI, tabel (kiri foto bukti bayar/nota, kanan foto barang yang dibeli), baris total Rp + terbilang, keterangan di bawah tabel; total seluruh alokasi; unduh Word (.docx).

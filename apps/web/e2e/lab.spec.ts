@@ -56,7 +56,7 @@ test.describe('GEMA RnD Lab', () => {
 
     await page.goto('/lab?t=protokol');
     await page.getByTestId('proto-new').click();
-    await page.getByTestId('proto-product').selectOption('CK');
+    await page.getByTestId('proto-product').fill('Cuka Air Kelapa');
     const pid = (await page.getByTestId('proto-id').textContent())!;
     expect(pid).toMatch(/^CK-P\d{2}-v1$/);
     await page.getByTestId('proto-name').fill('Cuka E2E');
@@ -205,7 +205,7 @@ test.describe('GEMA RnD Lab', () => {
     await page.goto('/lab?t=protokol');
     await expect(page.getByTestId('lab-tab-protokol')).toHaveText('Riset Produk');
     await page.getByTestId('proto-new').click();
-    await page.getByTestId('proto-product').selectOption('KE');
+    await page.getByTestId('proto-product').fill('Kopra Edibel');
     const pid = (await page.getByTestId('proto-id').textContent())!;
     const key = pid.replace(/-v1$/, '');
     await page.getByTestId('proto-name').fill('Kopra oven E2E');
@@ -269,7 +269,7 @@ test.describe('GEMA RnD Lab', () => {
     const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==', 'base64');
     await page.goto('/lab?t=protokol');
     await page.getByTestId('proto-new').click();
-    await page.getByTestId('proto-product').selectOption('AR');
+    await page.getByTestId('proto-product').fill('Arang');
     await page.getByTestId('proto-name').fill('Arang draf E2E');
     await page.getByTestId('proto-ing-name-0').fill('Batok kelapa');
     await page.getByTestId('proto-ing-files-0').setInputFiles({ name: 'batok.png', mimeType: 'image/png', buffer: png });
@@ -326,7 +326,7 @@ test.describe('GEMA RnD Lab', () => {
     await page.goto('/lab?t=protokol');
     await expect(page.getByTestId('proto-filter')).toHaveCount(0);
     await page.getByTestId('proto-new').click();
-    await page.getByTestId('proto-product').selectOption('BR');
+    await page.getByTestId('proto-product').fill('Briket');
     const key = (await page.getByTestId('proto-id').textContent())!.replace(/-v1$/, '');
     await page.getByTestId('proto-name').fill('Briket versi E2E');
     await page.getByTestId('proto-finish').click();
@@ -352,6 +352,18 @@ test.describe('GEMA RnD Lab', () => {
 });
 
 test.describe('Hapus hasil riset', () => {
+  test('jalur produk bisa diisi manual → kode otomatis, nama tersimpan', async ({ page }) => {
+    await page.goto('/lab?t=protokol');
+    await page.getByTestId('proto-new').click();
+    await page.getByTestId('proto-product').fill('Minyak Kelapa Murni');
+    await expect(page.getByTestId('proto-product-code')).toContainText('Kode jalur: MK (isian manual)');
+    await expect(page.getByTestId('proto-id')).toHaveText(/^MK-P\d{2}-v1$/);
+    await page.getByTestId('proto-name').fill('VCO fermentasi E2E');
+    await page.getByTestId('proto-save').click();
+    await page.getByRole('button', { name: 'Tutup' }).click();
+    await page.getByTestId('proto-ongoing').click();
+    await expect(page.getByTestId('ongoing-list')).toContainText('Minyak Kelapa Murni');
+  });
   test('hapus butuh ketik kode; kode salah tidak menghapus', async ({ page }) => {
     await page.goto('/lab?t=protokol');
     await page.getByTestId('proto-new').click();

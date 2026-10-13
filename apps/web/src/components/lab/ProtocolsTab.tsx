@@ -10,6 +10,8 @@ import {
   saveDraft,
   LAB_PRODUCTS,
   nextProtocolKey,
+  protocolProductName,
+  resolveProduct,
   nextProtocolVersion,
   researchDates,
   researchStatus,
@@ -60,7 +62,7 @@ const STATUS_TEXT = { 'belum-mulai': 'belum ada laporan', berjalan: 'berjalan', 
  * Aplikasi TIDAK mengisi angka resep. Versi tersimpan tidak bisa diubah; perubahan = versi baru.
  */
 export function ProtocolsTab({ protocols, entries, media, refresh }: { protocols: ProtocolVersion[]; entries: DailyEntry[]; media: MediaItem[]; refresh: () => Promise<void> }) {
-  const [editing, setEditing] = useState<{ base?: ProtocolVersion; product: LabProductId; draft?: ProtocolDraft; nonce: number } | undefined>();
+  const [editing, setEditing] = useState<{ base?: ProtocolVersion; product: string; draft?: ProtocolDraft; nonce: number } | undefined>();
   const [openKey, setOpenKey] = useState<string>();
   const [drafts, setDrafts] = useState<ProtocolDraft[]>([]);
   const [ongoing, setOngoing] = useState(false);
@@ -101,7 +103,7 @@ export function ProtocolsTab({ protocols, entries, media, refresh }: { protocols
                 <span className="rounded-full bg-safety px-2.5 py-0.5 font-mono text-[11px] font-semibold">DRAF</span>
                 <span className="flex flex-1 flex-col">
                   <span className="font-semibold">{d.name || '(tanpa nama)'}</span>
-                  <span className="font-mono text-[11px] text-muted">{LAB_PRODUCTS.find((p) => p.id === d.product)?.name} · disimpan {d.updatedAt.slice(0, 16).replace('T', ' ')}</span>
+                  <span className="font-mono text-[11px] text-muted">{protocolProductName(d)} · disimpan {d.updatedAt.slice(0, 16).replace('T', ' ')}</span>
                 </span>
                 <button type="button" className="btn-primary" onClick={() => { setOngoing(false); setEditing({ product: d.product, draft: d, nonce: Date.now(), ...(d.baseId && { base: protocols.find((p) => p.id === d.baseId) }) }); }} data-testid={`draft-open-${d.id}`}>Lanjutkan</button>
                 <button
@@ -152,7 +154,7 @@ export function ProtocolsTab({ protocols, entries, media, refresh }: { protocols
                 <div className="flex flex-wrap items-center gap-3">
                   <ProductMark id={latest.product} />
                   <div className="flex flex-1 flex-col">
-                    <span className="font-mono text-xs text-muted">{k} · {versions.length} versi · {STATUS_TEXT[st]}</span>
+                    <span className="font-mono text-xs text-muted">{k} · {protocolProductName(latest)} · {versions.length} versi · {STATUS_TEXT[st]}</span>
                     <span className="font-display text-lg font-semibold">{latest.name}</span>
                   </div>
                   <button type="button" className="btn-primary" onClick={() => setOpenKey(k)} data-testid={`proto-open-${k}`}>Buka riset</button>
@@ -300,7 +302,7 @@ function ResearchDetail({ rkey, protocols, entries, media, refresh, onBack, onNe
   const dates = researchDates(start, days);
   // Laporan harian memakai komponen catatan harian (append-only); "eksperimen" semu = kunci riset.
   const pseudo: Experiment = {
-    id: rkey, product: latest.product, title: latest.name, startedAt: versions[versions.length - 1]!.createdAt.slice(0, 10), question: '', objective: '', methodVersion: latest.id,
+    id: rkey, product: latest.product as LabProductId, title: latest.name, startedAt: versions[versions.length - 1]!.createdAt.slice(0, 10), question: '', objective: '', methodVersion: latest.id,
     processConditions: '', resultSummary: '', conclusion: '', status: st === 'selesai' ? 'selesai' : 'berjalan', nextSteps: [], createdAt: versions[versions.length - 1]!.createdAt,
   };
 
@@ -393,13 +395,16 @@ function ProtocolForm({ protocols, media, base, draft, onDraftSaved, initialProd
   base?: ProtocolVersion;
   draft?: ProtocolDraft;
   onDraftSaved: () => Promise<void>;
-  initialProduct: LabProductId;
+  initialProduct: string;
   onCancel: () => void;
   onSaved: (key: string) => Promise<void>;
 }) {
   const fromDraft = (rows: NewMedia[][]): Pending[][] => rows.map((r) => r.map((m) => ({ file: new File([m.blob], m.name, { type: m.type }), caption: m.caption })));
   const [draftId] = useState(draft?.id ?? `D-${Date.now().toString(36)}`);
-  const [product, setProduct] = useState<LabProductId>(draft?.product ?? base?.product ?? initialProduct);
+  // Jalur produk diisi bebas (DEC-063): nama preset → kode preset; nama lain → kode 2 huruf otomatis.
+  const src = draft ?? base;
+  const [productText, setProductText] = useState(src ? protocolProductName(src) : protocolProductName({ product: initialProduct }));
+  const { product, productName } = base ? { product: base.product, ...(base.productName && { productName: base.productName }) } : resolveProduct(productText);
   const [name, setName] = useState(draft?.name ?? base?.name ?? '');
   const [author, setAuthor] = useState(draft?.author ?? base?.author ?? '');
   const [assistants, setAssistants] = useState(draft?.assistants ?? (base?.assistants ?? []).join(', '));
@@ -427,7 +432,7 @@ function ProtocolForm({ protocols, media, base, draft, onDraftSaved, initialProd
       };
       await saveDraft({
         id: draftId, ...(base && { baseId: base.id }), ...(draft && { createdAt: draft.createdAt }),
-        product, name, author, assistants, startDate, reason, ingredients: ings, tools, steps,
+        product, ...(productName && { productName }), name, author, assistants, startDate, reason, ingredients: ings, tools, steps,
         pending: { ingredients: await pend(ingFiles), tools: await pend(toolFiles), steps: await pend(stepFiles) },
       });
       await onDraftSaved();
@@ -457,7 +462,7 @@ function ProtocolForm({ protocols, media, base, draft, onDraftSaved, initialProd
       for (const k of keepT) tMedia.push(await toMedia(k.f));
       await addProtocolVersion(
         {
-          id, key, version, product, name: name.trim(), author: author.trim(), reason: reason.trim(), startDate,
+          id, key, version, product, ...(productName && { productName }), name: name.trim(), author: author.trim(), reason: reason.trim(), startDate,
           assistants: assistants.split(',').map((a) => a.trim()).filter(Boolean),
           ingredients: keepI.map(({ x }) => x),
           steps: keepS.map(({ x }) => x),
@@ -482,9 +487,11 @@ function ProtocolForm({ protocols, media, base, draft, onDraftSaved, initialProd
       <div className="grid gap-3 sm:grid-cols-2">
         <label className="flex flex-col gap-1.5">
           <span className="label-mono">Jalur produk</span>
-          <select className="field" value={product} disabled={!!base} onChange={(e) => setProduct(e.target.value as LabProductId)} data-testid="proto-product">
-            {LAB_PRODUCTS.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-          </select>
+          <input className="field" list="proto-product-list" value={productText} disabled={!!base} onChange={(e) => setProductText(e.target.value)} placeholder="pilih atau ketik, mis. Minyak Kelapa" data-testid="proto-product" />
+          <datalist id="proto-product-list">
+            {LAB_PRODUCTS.map((p) => <option key={p.id} value={p.name} />)}
+          </datalist>
+          <span className="text-xs text-muted" data-testid="proto-product-code">Kode jalur: {product}{productName ? ' (isian manual)' : ''}</span>
         </label>
         <TextInput label="Nama resep/proses" value={name} onChange={setName} placeholder="mis. Kopra oven bertahap" testId="proto-name" />
         <label className="flex flex-col gap-1.5">

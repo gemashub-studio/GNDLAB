@@ -162,7 +162,10 @@ export interface ProtocolDraft {
   id: string;
   /** Bila draf = versi baru dari resep yang ada. */
   baseId?: string;
-  product: LabProductId;
+  /** Kode jalur (preset LAB_PRODUCTS atau kode dari nama isian manual, DEC-063). */
+  product: string;
+  /** Nama jalur bila diisi manual (bukan preset). */
+  productName?: string;
   name: string;
   author: string;
   assistants: string;
@@ -184,7 +187,10 @@ export interface ProtocolVersion {
   /** Mis. KE-P01 — sama untuk semua versi satu resep. */
   key: string;
   version: number;
-  product: LabProductId;
+  /** Kode jalur: preset (KE, CK, …) atau dari nama isian manual (DEC-063). */
+  product: string;
+  /** Nama jalur bila diisi manual. */
+  productName?: string;
   name: string;
   ingredients: ProtocolIngredient[];
   steps: ProtocolStep[];
@@ -218,7 +224,25 @@ export function nextEntryId(experimentId: string, existing: readonly string[]): 
 }
 
 /** Kunci resep baru per produk: KE-P01, KE-P02, … */
-export function nextProtocolKey(product: LabProductId, existing: readonly ProtocolVersion[]): string {
+/** Kode 2 huruf dari nama jalur isian manual: "Minyak Kelapa" → MK, "Santan" → SA. */
+export function productCode(name: string): string {
+  const words = name.toUpperCase().normalize('NFD').replace(/[^A-Z\s]/g, ' ').split(/\s+/).filter(Boolean);
+  const code = words.length >= 2 ? words[0]![0]! + words[1]![0]! : (words[0] ?? '').slice(0, 2);
+  return code.length === 2 ? code : 'XX';
+}
+
+/** Isian jalur produk (bebas) → kode + nama manual (kosong bila cocok dengan preset). */
+export function resolveProduct(text: string): { product: string; productName?: string } {
+  const t = text.trim();
+  const preset = LAB_PRODUCTS.find((p) => p.name.toLowerCase() === t.toLowerCase() || p.id === t.toUpperCase());
+  if (preset) return { product: preset.id };
+  return t ? { product: productCode(t), productName: t } : { product: 'XX' };
+}
+
+/** Nama jalur untuk tampilan: isian manual, nama preset, atau kodenya. */
+export const protocolProductName = (p: { product: string; productName?: string }) => p.productName || LAB_PRODUCTS.find((x) => x.id === p.product)?.name || p.product;
+
+export function nextProtocolKey(product: string, existing: readonly ProtocolVersion[]): string {
   const prefix = `${product}-P`;
   const max = existing.filter((p) => p.key.startsWith(prefix)).reduce((n, p) => Math.max(n, Number(p.key.slice(prefix.length)) || 0), 0);
   return `${prefix}${String(max + 1).padStart(2, '0')}`;

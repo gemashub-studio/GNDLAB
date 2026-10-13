@@ -145,3 +145,17 @@ describe('library sumber GEMA RnD', () => {
     expect(c.diperiksa + c.dilaporkan + c['belum-diperiksa']).toBe(GEMA_SOURCES.length);
   });
 });
+
+describe('jalur produk isian manual (DEC-063)', () => {
+  it('preset dikenali dari nama/kode; nama lain → kode 2 huruf', async () => {
+    const { resolveProduct, productCode, protocolProductName } = await import('@/lib/labStore');
+    expect(resolveProduct('kopra edibel')).toEqual({ product: 'KE' });
+    expect(resolveProduct('br')).toEqual({ product: 'BR' });
+    expect(resolveProduct('Minyak Kelapa')).toEqual({ product: 'MK', productName: 'Minyak Kelapa' });
+    expect(productCode('Santan')).toBe('SA');
+    expect(productCode('Gula Semut Aren')).toBe('GS');
+    expect(productCode('123')).toBe('XX');
+    expect(protocolProductName({ product: 'MK', productName: 'Minyak Kelapa' })).toBe('Minyak Kelapa');
+    expect(protocolProductName({ product: 'CK' })).toBe('Cuka Air Kelapa');
+  });
+});

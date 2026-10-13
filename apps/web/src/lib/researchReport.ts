@@ -4,7 +4,7 @@
  * Hanya dari data tercatat; kosong = "belum dicatat".
  */
 import { fmtNum, researchCharts, type ChartSpec } from './reportCharts';
-import { dayNumber, LAB_PRODUCTS, NOT_RECORDED, researchDates, researchStatus, toolList, type DailyEntry, type MediaItem, type ProtocolVersion } from './labStore';
+import { dayNumber, protocolProductName, NOT_RECORDED, researchDates, researchStatus, toolList, type DailyEntry, type MediaItem, type ProtocolVersion } from './labStore';
 
 export interface ReportImage {
   name: string;
@@ -50,7 +50,6 @@ export interface ResearchReport {
   footer: string;
 }
 
-const productName = (id: string) => LAB_PRODUCTS.find((p) => p.id === id)?.name ?? id;
 const or = (v: string | undefined) => (v && v.trim() ? v.trim() : NOT_RECORDED);
 const img = (m: MediaItem): ReportImage => ({ name: m.name, caption: m.caption, dataUrl: m.thumb, video: m.type.startsWith('video/') });
 const STATUS: Record<ReturnType<typeof researchStatus>, string> = { 'belum-mulai': 'Belum ada laporan harian', berjalan: 'Berjalan', selesai: 'SELESAI' };
@@ -100,7 +99,7 @@ export function buildResearchReport(
       heading: 'Identitas riset',
       level: 1,
       lines: [
-        `Kode: ${key} · Produk: ${productName(latest.product)}`,
+        `Kode: ${key} · Produk: ${protocolProductName(latest)}`,
         `Status: ${STATUS[status]}`,
         `Pembuat: ${or(latest.author)} · Asisten: ${latest.assistants?.length ? latest.assistants.join(', ') : NOT_RECORDED}`,
         `Tanggal mulai: ${or(dates.start)} · Tanggal selesai: ${dates.end ? `${dates.end} (otomatis dari laporan penutup)` : 'belum selesai'}${dates.days ? ` · Durasi: ${dates.days} hari` : ''}`,
@@ -171,12 +170,12 @@ export function buildResearchReport(
   const coverImage = allImages.find((im) => im.dataUrl && !im.video) ?? allImages.find((im) => im.dataUrl);
   const cover: ReportCover = {
     code: key,
-    product: productName(latest.product),
+    product: protocolProductName(latest),
     status: STATUS[status],
     done: status === 'selesai',
     meta: [
       ['Kode', key],
-      ['Produk', productName(latest.product)],
+      ['Produk', protocolProductName(latest)],
       ['Versi resep', `${latest.version} (${latest.createdAt.slice(0, 10)})`],
       ['Tanggal mulai', or(dates.start)],
       ['Tanggal selesai', dates.end ?? 'belum selesai'],
@@ -193,5 +192,5 @@ export function buildResearchReport(
     { label: 'Grafik', value: String(res.charts.length) },
     { label: 'Foto & video', value: String(allImages.length) },
   ];
-  return { title: `Riset Produk — ${latest.name} (versi ${latest.version})`, subtitle: `${key} · ${productName(latest.product)} · ${STATUS[status]}`, generatedAt, cover, kpis, blocks, footer: `GEMA RnD Lab · dibuat ${generatedAt}` };
+  return { title: `Riset Produk — ${latest.name} (versi ${latest.version})`, subtitle: `${key} · ${protocolProductName(latest)} · ${STATUS[status]}`, generatedAt, cover, kpis, blocks, footer: `GEMA RnD Lab · dibuat ${generatedAt}` };
 }

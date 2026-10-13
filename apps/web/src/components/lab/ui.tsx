@@ -30,7 +30,7 @@ export function SourcePill({ status }: { status: SourceStatus }) {
 }
 
 /** Kode produk dalam lingkaran — penanda jalur yang konsisten di semua tab. */
-export function ProductMark({ id, active = false }: { id: LabProductId; active?: boolean }) {
+export function ProductMark({ id, active = false }: { id: LabProductId | string; active?: boolean }) {
   return (
     <span aria-hidden className={`inline-flex h-10 w-10 flex-none items-center justify-center rounded-full border-3 font-mono text-xs font-bold ${active ? 'border-ink bg-ink text-acid' : 'border-ink bg-surface text-ink'}`}>
       {id}
