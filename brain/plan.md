@@ -192,4 +192,4 @@ Status: SELESAI 2026-10-11 (DEC-059) lalu DISEDERHANAKAN owner (DEC-060) jadi up
 
 ## STATUS ONLINE (2026-10-13) — owner: "balik ke offline dulu" (DEC-066)
 - Mode kerja = OFFLINE. Sinkron Google Drive siap di kode (panel tersembunyi; aktif bila Client ID dipasang). Sinkron Wi-Fi: tidak dibuat (rancangan: API /api/lab-sync menyimpan file di laptop + tombol + alamat LAN; bisa dihidupkan lagi bila diminta).
-- Vercel gemasstudio.vercel.app masih hidup — tanyakan owner: biarkan atau matikan (hapus project via `vercel project rm gemasstudio`).
+- Vercel gemasstudio.vercel.app: owner putuskan DIBIARKAN (gratis, untuk nanti) — 2026-10-13. Isinya versi commit ae00721 (belum termasuk DEC-066); deploy ulang hanya bila owner minta.
