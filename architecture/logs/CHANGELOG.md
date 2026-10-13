@@ -3,6 +3,11 @@
 Format: [Keep a Changelog](https://keepachangelog.com/id/1.1.0/) · Versi dataset mengikuti SemVer (ADR-002).
 Waktu dalam WIB (UTC+7).
 
+## [aplikasi online + sinkron Google Drive] — 2026-10-13
+### Ditambahkan
+- Tombol "Sinkronkan dengan Google Drive" di /lab → Ringkasan: data lab laptop & HP digabung lewat satu file di Drive pemilik (penghapusan ikut; konflik ID dilaporkan). Panduan: architecture/07-rnd/online-gdrive.md.
+- Persiapan hosting Vercel gratis (.vercelignore menjaga .env tidak terunggah).
+
 ## [aplikasi GEMA RnD jalur manual] — 2026-10-13
 ### Ditambahkan
 - Resep baru: tabel "Penghitungan bahan baku kelapa" per butir (berat utuh awal/akhir, berat & volume air, tebal daging awal/akhir, proses & hasil proses air/daging, foto/video) + ringkasan jumlah/rata-rata; tampil di halaman riset & laporan PDF/Word/PowerPoint.

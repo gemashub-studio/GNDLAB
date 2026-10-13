@@ -1,5 +1,7 @@
 # Opsi sinkronisasi laptop ↔ HP — GEMA RnD Lab
 
+> **Diperbarui 2026-10-13:** owner memilih online gratis + Google Drive → ADR-014 / DEC-065, panduan `online-gdrive.md`. Tabel di bawah = arsip pertimbangan.
+
 **Status sekarang (2026-10-11):** data **belum tersinkron**. Catatan, foto, dan video tersimpan di browser masing-masing perangkat (IndexedDB). Laptop dan HP punya catatan sendiri-sendiri. Satu-satunya cara memindahkan data: **Unduh cadangan lengkap** di satu perangkat, lalu **Pulihkan** di perangkat lain (hanya menambah, tidak menimpa). Lihat ADR-012.
 
 Belum ada yang dipilih atau dipasang. Semua opsi di bawah butuh persetujuan owner. Tidak ada deploy, akun, atau kunci akses yang dibuat.

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { applyRestore, exportLabBackup, previewRestore, type RestorePlan } from '@/lib/labBackup';
 import { downloadBlob } from '@/lib/labMedia';
 import { Section } from './ui';
@@ -9,6 +9,89 @@ const today = () => new Date().toISOString().slice(0, 10);
 
 /** Cadangan lengkap (data + foto/video) & pemulihan tambah-saja. */
 export function BackupPanel({ onRestored }: { onRestored: () => Promise<void> }) {
+  return (
+    <>
+      <DriveSync onSynced={onRestored} />
+      <FileBackup onRestored={onRestored} />
+    </>
+  );
+}
+
+/** Sinkron Google Drive (DEC-065): satu tombol, dua arah, data di Drive pemilik. */
+function DriveSync({ onSynced }: { onSynced: () => Promise<void> }) {
+  const [enabled, setEnabled] = useState(false);
+  const [last, setLast] = useState('');
+  const [step, setStep] = useState('');
+  const [msg, setMsg] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [cid, setCid] = useState('');
+  useEffect(() => {
+    void import('@/lib/gdrive').then((g) => {
+      setEnabled(!!g.driveClientId());
+      setLast(g.lastSync());
+    });
+  }, []);
+  const sync = async () => {
+    setBusy(true);
+    setMsg('');
+    try {
+      const g = await import('@/lib/gdrive');
+      const r = await g.syncWithDrive(setStep);
+      setLast(r.at);
+      setMsg(`Sinkron selesai: ${r.pulled} perubahan diambil dari Drive; ${Object.entries(r.counts).map(([k, v]) => `${v} ${k}`).join(', ')} tersimpan di Drive (${(r.pushedBytes / 1024 / 1024).toFixed(1).replace('.', ',')} MB).${r.conflicts.length ? ` PERHATIAN: ${r.conflicts.length} catatan berkode sama tapi isinya beda di perangkat lain TIDAK digabung (${r.conflicts.join(', ')}) — catatan di perangkat ini tetap; unduh file cadangan di kedua perangkat untuk dicocokkan.` : ''}`);
+      await onSynced();
+    } catch (e) {
+      setMsg((e as Error).message);
+    } finally {
+      setStep('');
+      setBusy(false);
+    }
+  };
+  return (
+    <Section title="Sinkron Google Drive" testId="lab-drive-panel">
+      {enabled ? (
+        <>
+          <p className="text-sm">
+            Data lab (eksperimen, riset produk, laporan belanja, foto/video) disimpan sebagai satu file di <strong>Google Drive-mu</strong>. Tekan tombol di laptop &amp; HP —
+            data keduanya digabung. Aplikasi hanya bisa membuka file yang ia buat sendiri, bukan isi Drive lainnya.
+          </p>
+          <div className="flex flex-wrap items-center gap-3">
+            <button type="button" className="btn-primary" disabled={busy} onClick={() => void sync()} data-testid="lab-drive-sync">{busy ? 'Menyinkron…' : 'Sinkronkan dengan Google Drive'}</button>
+            <span className="font-mono text-xs text-muted" data-testid="lab-drive-last">{last ? `Terakhir: ${new Date(last).toLocaleString('id-ID')}` : 'Belum pernah sinkron di perangkat ini'}</span>
+          </div>
+          {step && <p className="font-mono text-xs" role="status">{step}</p>}
+        </>
+      ) : (
+        <div className="flex flex-col gap-2" data-testid="lab-drive-off">
+          <p className="text-sm text-muted">
+            Belum diaktifkan. Tempel <strong>Client ID Google</strong> milikmu (dibuat sekali di Google Cloud — lihat panduan &quot;online-gdrive&quot;). Client ID bukan kata sandi; disimpan di browser ini.
+          </p>
+          <div className="flex flex-wrap items-center gap-2">
+            <input className="field min-w-[260px] flex-1 text-sm" placeholder="123456789-xxxx.apps.googleusercontent.com" value={cid} onChange={(e) => setCid(e.target.value)} data-testid="lab-drive-cid" />
+            <button
+              type="button"
+              className="btn-ghost"
+              onClick={() =>
+                void import('@/lib/gdrive').then((g) => {
+                  if (!g.validClientId(cid)) return setMsg('Bentuk Client ID tidak dikenali (harus berakhiran .apps.googleusercontent.com).');
+                  g.setDriveClientId(cid);
+                  setEnabled(true);
+                  setMsg('');
+                })
+              }
+              data-testid="lab-drive-cid-save"
+            >
+              Aktifkan
+            </button>
+          </div>
+        </div>
+      )}
+      {msg && <p className="font-mono text-xs" role="status" data-testid="lab-drive-msg">{msg}</p>}
+    </Section>
+  );
+}
+
+function FileBackup({ onRestored }: { onRestored: () => Promise<void> }) {
   const [msg, setMsg] = useState('');
   const [plan, setPlan] = useState<RestorePlan>();
   const [busy, setBusy] = useState(false);
@@ -55,8 +138,7 @@ export function BackupPanel({ onRestored }: { onRestored: () => Promise<void> })
   return (
     <Section title="Cadangan & pulihkan" testId="lab-backup-panel">
       <p className="text-sm">
-        Data tersimpan <strong>hanya di browser perangkat ini</strong>. Laptop dan HP punya catatan terpisah — belum ada sinkronisasi.
-        Pindahkan data dengan file cadangan: unduh di satu perangkat, pulihkan di perangkat lain.
+        Data tersimpan di browser perangkat ini. Selain sinkron Google Drive di atas, kamu bisa memindahkan data dengan file cadangan: unduh di satu perangkat, pulihkan di perangkat lain.
       </p>
       <div className="flex flex-wrap items-center gap-3">
         <button type="button" className="btn-primary" disabled={busy} onClick={() => void backup()} data-testid="lab-backup">Unduh cadangan lengkap</button>

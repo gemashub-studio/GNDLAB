@@ -5,6 +5,7 @@
  * menjumlah, menulis terbilang, dan menghitung hari. Tersimpan di perangkat (IndexedDB gemas-belanja).
  */
 import { openDB, type DBSchema } from 'idb';
+import { deviceTag } from './device';
 
 export interface LpjPhoto {
   id: string;
@@ -215,11 +216,12 @@ export async function saveLpj(r: LpjReport): Promise<void> {
 
 export async function deleteLpj(id: string): Promise<void> {
   await (await belanjaDb()).delete('reports', id);
+  (await import('./labSync')).addTomb('belanja', id);
 }
 
 /** ID berikutnya: LPJ-YYYYMM-NN. */
-export function nextLpjId(existing: readonly string[], now = new Date()): string {
+export function nextLpjId(existing: readonly string[], now = new Date(), tag = deviceTag()): string {
   const p = `LPJ-${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}-`;
-  const n = existing.filter((x) => x.startsWith(p)).map((x) => Number(x.slice(p.length)) || 0);
-  return `${p}${String(Math.max(0, ...n) + 1).padStart(2, '0')}`;
+  const n = existing.filter((x) => x.startsWith(p)).map((x) => parseInt(x.slice(p.length), 10) || 0);
+  return `${p}${String(Math.max(0, ...n) + 1).padStart(2, '0')}${tag}`;
 }

@@ -1,0 +1,15 @@
+# Jangan pernah unggah rahasia & hasil build lokal ke Vercel (DEC-065)
+**/.env
+**/.env.*
+node_modules
+**/node_modules
+.next
+**/.next
+**/.next-*
+.turbo
+**/.turbo
+**/test-results
+**/playwright-report
+.pnpm-store
+**/__pycache__
+brain

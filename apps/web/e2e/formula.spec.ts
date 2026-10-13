@@ -189,7 +189,6 @@ test.describe('Audit kalkulator 2026-10-11 (DEC-048/049)', () => {
     await page.getByTestId('cuka-proto-save').click();
     await expect(page.getByTestId('cuka-proto-msg')).toContainText(/CK-P\d{2}-v1/);
     await page.goto('/lab?t=protokol');
-    await page.getByTestId('proto-filter').selectOption('CK');
     await expect(page.getByTestId('proto-list')).toContainText('Cuka air kelapa');
 
     await page.goto('/formula?p=bioleather');

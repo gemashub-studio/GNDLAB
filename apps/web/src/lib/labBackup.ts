@@ -7,6 +7,7 @@
  * file ini adalah cara memindahkan data secara manual sampai sinkronisasi diputuskan.
  */
 import { belanjaDb, type LpjReport } from './belanja';
+import { readTombs, writeTombs, type SyncPlan, type Tomb } from './labSync';
 import { labDb, type DailyEntry, type Experiment, type MediaItem, type NewMedia, type ProtocolDraft, type ProtocolVersion } from './labStore';
 
 export type MediaJson = Omit<MediaItem, 'blob'> & { data: string };
@@ -24,11 +25,13 @@ export interface LabBackup {
   drafts?: DraftJson[];
   /** Laporan belanja (DEC-061) — foto nota/barang sudah berupa data URL di dalamnya. */
   belanja?: LpjReport[];
+  /** Nisan penghapusan untuk sinkron (DEC-065). */
+  deleted?: Tomb[];
 }
 
 /** Bentuk cadangan tanpa media (dipakai juga oleh uji unit). */
-export function labBackupJson(experiments: readonly Experiment[], exportedAt = new Date().toISOString(), rest: Partial<Pick<LabBackup, 'entries' | 'protocols' | 'media' | 'drafts' | 'belanja'>> = {}): string {
-  return JSON.stringify({ format: 'gemas-lab', version: 2, exportedAt, experiments, entries: rest.entries ?? [], protocols: rest.protocols ?? [], media: rest.media ?? [], ...(rest.drafts?.length && { drafts: rest.drafts }), ...(rest.belanja?.length && { belanja: rest.belanja }) }, null, 2);
+export function labBackupJson(experiments: readonly Experiment[], exportedAt = new Date().toISOString(), rest: Partial<Pick<LabBackup, 'entries' | 'protocols' | 'media' | 'drafts' | 'belanja' | 'deleted'>> = {}): string {
+  return JSON.stringify({ format: 'gemas-lab', version: 2, exportedAt, experiments, entries: rest.entries ?? [], protocols: rest.protocols ?? [], media: rest.media ?? [], ...(rest.drafts?.length && { drafts: rest.drafts }), ...(rest.belanja?.length && { belanja: rest.belanja }), ...(rest.deleted?.length && { deleted: rest.deleted }) }, null, 2);
 }
 
 export function parseBackup(text: string): LabBackup {
@@ -108,7 +111,7 @@ export async function exportLabBackup(): Promise<{ json: string; counts: Record<
   const belanja = await (await belanjaDb()).getAll('reports');
   for (const dr of drafts) draftJson.push({ ...dr, pending: { ingredients: await conv(dr.pending.ingredients), tools: await conv(dr.pending.tools), steps: await conv(dr.pending.steps), ...(dr.pending.coconuts && { coconuts: await conv(dr.pending.coconuts) }) } });
   return {
-    json: labBackupJson(experiments, new Date().toISOString(), { entries, protocols, media: mediaJson, drafts: draftJson, belanja }),
+    json: labBackupJson(experiments, new Date().toISOString(), { entries, protocols, media: mediaJson, drafts: draftJson, belanja, deleted: readTombs() }),
     counts: { eksperimen: experiments.length, 'catatan harian': entries.length, 'riset produk': protocols.length, draf: drafts.length, media: media.length, 'laporan belanja': belanja.length },
   };
 }
@@ -136,4 +139,38 @@ export async function applyRestore(plan: RestorePlan): Promise<void> {
     for (const r of plan.add.belanja) await bt.store.add(r);
     await bt.done;
   }
+}
+
+/** Keadaan lokal untuk rencana sinkron. */
+export async function localSyncState() {
+  const d = await labDb();
+  const created = async (st: 'experiments' | 'entries' | 'protocols') => new Map((await d.getAll(st)).map((x) => [x.id, x.createdAt] as const));
+  const drafts = new Map((await d.getAll('drafts')).map((x) => [x.id, x.updatedAt] as const));
+  const belanja = new Map((await (await belanjaDb()).getAll('reports')).map((x) => [x.id, x.updatedAt] as const));
+  const researchKeys = new Set((await d.getAll('protocols')).map((p) => p.key));
+  return { experiments: await created('experiments'), entries: await created('entries'), protocols: await created('protocols'), media: new Set((await d.getAllKeys('media')).map(String)), drafts, belanja, researchKeys };
+}
+
+/** Terapkan rencana sinkron: tambah, ganti draf/laporan belanja yang lebih baru, hapus yang dihapus di perangkat lain. */
+export async function applySync(plan: SyncPlan): Promise<void> {
+  await applyRestore({ add: plan.add, skipped: [] });
+  const { deleteDraft, deleteResearch } = await import('./labStore');
+  const { deleteLpj } = await import('./belanja');
+  const d = await labDb();
+  const back = (rows: NewMediaJson[][]) => rows.map((row) => row.map(({ data, ...m }) => ({ ...m, blob: base64ToBlob(data, m.type) })));
+  for (const dr of plan.replaceDrafts) await d.put('drafts', { ...dr, pending: { ingredients: back(dr.pending.ingredients), tools: back(dr.pending.tools), steps: back(dr.pending.steps), ...(dr.pending.coconuts && { coconuts: back(dr.pending.coconuts) }) } });
+  if (plan.replaceBelanja.length) {
+    const b = await belanjaDb();
+    for (const r of plan.replaceBelanja) await b.put('reports', r);
+  }
+  for (const t of plan.deleteLocal) {
+    try {
+      if (t.kind === 'draf') await deleteDraft(t.id);
+      else if (t.kind === 'belanja') await deleteLpj(t.id);
+      else await deleteResearch(t.id);
+    } catch {
+      /* mis. riset masih dipakai eksperimen — dibiarkan */
+    }
+  }
+  writeTombs(plan.tombs);
 }

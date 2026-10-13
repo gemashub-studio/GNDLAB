@@ -8,6 +8,7 @@
  * - Protokol (resep & proses buatan pengguna) berversi: perubahan = versi baru; versi lama tak disentuh.
  * - Kolom kosong = "belum dicatat", tidak diisi tebakan.
  */
+import { deviceTag } from './device';
 import { openDB, type DBSchema, type IDBPDatabase } from 'idb';
 import { parseNum } from './format';
 import type { ExperimentDesign } from './labDesign';
@@ -266,19 +267,19 @@ export interface ProtocolVersion {
 export const NOT_RECORDED = 'belum dicatat';
 
 /** ID berikutnya untuk produk & bulan mulai; urut dari ID yang sudah ada (bukan jumlah) agar tak bentrok. */
-export function nextExperimentId(product: LabProductId, startedAt: string, existing: readonly string[]): string | undefined {
+export function nextExperimentId(product: LabProductId, startedAt: string, existing: readonly string[], tag = deviceTag()): string | undefined {
   const m = /^\d{2}(\d{2})-(\d{2})-\d{2}$/.exec(startedAt);
   if (!m) return undefined;
   const prefix = `${product}-${m[1]}${m[2]}-`;
-  const max = existing.filter((id) => id.startsWith(prefix)).reduce((n, id) => Math.max(n, Number(id.slice(prefix.length)) || 0), 0);
-  return max >= 999 ? undefined : `${prefix}${String(max + 1).padStart(3, '0')}`;
+  const max = existing.filter((id) => id.startsWith(prefix)).reduce((n, id) => Math.max(n, parseInt(id.slice(prefix.length), 10) || 0), 0);
+  return max >= 999 ? undefined : `${prefix}${String(max + 1).padStart(3, '0')}${tag}`;
 }
 
 /** ID entri harian berikutnya: `${eksperimen}-H01`, `-H02`, … */
-export function nextEntryId(experimentId: string, existing: readonly string[]): string {
+export function nextEntryId(experimentId: string, existing: readonly string[], tag = deviceTag()): string {
   const prefix = `${experimentId}-H`;
-  const max = existing.filter((id) => id.startsWith(prefix)).reduce((n, id) => Math.max(n, Number(id.slice(prefix.length)) || 0), 0);
-  return `${prefix}${String(max + 1).padStart(2, '0')}`;
+  const max = existing.filter((id) => id.startsWith(prefix)).reduce((n, id) => Math.max(n, parseInt(id.slice(prefix.length), 10) || 0), 0);
+  return `${prefix}${String(max + 1).padStart(2, '0')}${tag}`;
 }
 
 /** Kunci resep baru per produk: KE-P01, KE-P02, … */
@@ -300,16 +301,16 @@ export function resolveProduct(text: string): { product: string; productName?: s
 /** Nama jalur untuk tampilan: isian manual, nama preset, atau kodenya. */
 export const protocolProductName = (p: { product: string; productName?: string }) => p.productName || LAB_PRODUCTS.find((x) => x.id === p.product)?.name || p.product;
 
-export function nextProtocolKey(product: string, existing: readonly ProtocolVersion[]): string {
+export function nextProtocolKey(product: string, existing: readonly ProtocolVersion[], tag = deviceTag()): string {
   const prefix = `${product}-P`;
-  const max = existing.filter((p) => p.key.startsWith(prefix)).reduce((n, p) => Math.max(n, Number(p.key.slice(prefix.length)) || 0), 0);
-  return `${prefix}${String(max + 1).padStart(2, '0')}`;
+  const max = existing.filter((p) => p.key.startsWith(prefix)).reduce((n, p) => Math.max(n, parseInt(p.key.slice(prefix.length), 10) || 0), 0);
+  return `${prefix}${String(max + 1).padStart(2, '0')}${tag}`;
 }
 
 /** Versi berikutnya dari resep yang sama. */
-export function nextProtocolVersion(key: string, existing: readonly ProtocolVersion[]): { id: string; version: number } {
+export function nextProtocolVersion(key: string, existing: readonly ProtocolVersion[], tag = deviceTag()): { id: string; version: number } {
   const version = existing.filter((p) => p.key === key).reduce((n, p) => Math.max(n, p.version), 0) + 1;
-  return { id: `${key}-v${version}`, version };
+  return { id: `${key}-v${version}${tag}`, version };
 }
 
 /** Baca angka dengan aturan yang sama seperti kolom angka lain di aplikasi (parseNum); bukan angka → undefined. */
@@ -502,6 +503,7 @@ export async function addProtocolVersion(
   for (const m of items) await tx.objectStore('media').add(m);
   if (media.draftId) await tx.objectStore('drafts').delete(media.draftId);
   await tx.done;
+  if (media.draftId) (await import('./labSync')).addTomb('draf', media.draftId);
   return full;
 }
 
@@ -537,12 +539,14 @@ export async function deleteResearch(key: string): Promise<{ versions: number; e
   for (const e of own) await tx.objectStore('entries').delete(e.id);
   for (const m of media) await tx.objectStore('media').delete(m.id);
   await tx.done;
+  (await import('./labSync')).addTomb('riset', key);
   return { versions: versions.length, entries: own.length, media: media.length };
 }
 
 /** Hapus draf (hanya draf — versi resmi & catatan harian tidak bisa dihapus). */
 export async function deleteDraft(id: string): Promise<void> {
   await (await labDb()).delete('drafts', id);
+  (await import('./labSync')).addTomb('draf', id);
 }
 
 export async function listDrafts(): Promise<ProtocolDraft[]> {
