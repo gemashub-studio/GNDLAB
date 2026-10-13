@@ -149,7 +149,7 @@ function LpjForm({ initial, onClose }: { initial: LpjReport; onClose: () => void
 
   return (
     <div className="flex flex-col gap-4" data-testid="lpj-form">
-      <div className="sticky top-0 z-10 flex flex-wrap items-center justify-between gap-2 rounded-2xl border-3 border-ink bg-surface p-3">
+      <div className="sticky top-[72px] z-10 flex flex-wrap items-center justify-between gap-2 rounded-2xl border-3 border-ink bg-surface p-3">
         <p className="font-mono text-sm">{r.id}{msg && <span className="ml-2 text-muted">· {msg}</span>}</p>
         <div className="flex flex-wrap gap-2">
           <button type="button" className="btn-primary" onClick={() => void save()} data-testid="lpj-save">Simpan</button>

@@ -3,6 +3,10 @@
 Format: [Keep a Changelog](https://keepachangelog.com/id/1.1.0/) · Versi dataset mengikuti SemVer (ADR-002).
 Waktu dalam WIB (UTC+7).
 
+## [navigasi ☰] — 2026-10-13
+### Diubah
+- Menu utama jadi tombol ☰ di pojok kanan atas (HP & laptop) dengan laci menu berkelompok; sidebar kiri & menu bawah HP dihapus sehingga ruang konten lebih lega.
+
 ## [kembali offline] — 2026-10-13
 ### Diubah
 - Atas permintaan owner, aplikasi kembali ke mode offline: panel Sinkron Google Drive disembunyikan sampai dipasang; cadangan/pulihkan file tetap cara memindah data.

@@ -94,6 +94,16 @@ export const Icon = {
       <path d="M8 12h8M12 9l3 3-3 3" />
     </svg>
   ),
+  menu: () => (
+    <svg {...P}>
+      <path d="M4 6h16M4 12h16M4 18h16" strokeLinecap="round" />
+    </svg>
+  ),
+  close: () => (
+    <svg {...P}>
+      <path d="M6 6l12 12M18 6L6 18" strokeLinecap="round" />
+    </svg>
+  ),
 };
 
 export type IconName = keyof typeof Icon;

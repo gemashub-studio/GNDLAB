@@ -143,16 +143,42 @@ test('API: server menghitung ulang & menolak input buruk (ARD §9)', async ({ re
   expect((await request.get('/api/v1/commodities?version=9.9.9')).status()).toBe(404);
 });
 
-test('@mobile tampilan HP 360 px: menu bawah & target sentuh ≥ 44 px', async ({ page }) => {
+test('@mobile tampilan HP 360 px: menu ☰ pojok kanan atas, target sentuh ≥ 44 px', async ({ page }) => {
   await page.goto('/muat');
-  const nav = page.getByRole('navigation', { name: 'Menu bawah' });
+  const burger = page.getByTestId('menu-open');
+  await expect(burger).toBeVisible();
+  const vw = page.viewportSize()!.width;
+  const bb = (await burger.boundingBox())!;
+  expect(bb.x + bb.width).toBeGreaterThan(vw - 30); // menempel di kanan
+  expect(bb.y).toBeLessThan(40); // di atas
+  expect(bb.height).toBeGreaterThanOrEqual(44);
+  await burger.click();
+  const nav = page.getByRole('navigation', { name: 'Navigasi utama' });
   await expect(nav).toBeVisible();
   for (const link of await nav.getByRole('link').all()) {
     const box = await link.boundingBox();
     expect(box!.height).toBeGreaterThanOrEqual(44);
   }
+  await nav.getByRole('link', { name: 'Gudang' }).click();
+  await expect(page).toHaveURL(/\/gudang/);
+  await expect(page.getByTestId('menu-drawer')).not.toBeInViewport();
   // Tidak ada scroll horizontal
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
   expect(overflow).toBeLessThanOrEqual(0);
+  await page.goto('/muat');
   near(await primary(page), 22230);
+});
+
+test('desktop: menu ☰ juga di kanan atas; Esc menutup; pintasan tampil', async ({ page }) => {
+  await page.setViewportSize({ width: 1366, height: 800 });
+  await page.goto('/lab');
+  await expect(page.getByRole('navigation', { name: 'Pintasan' })).toBeVisible();
+  const bb = (await page.getByTestId('menu-open').boundingBox())!;
+  expect(bb.x + bb.width).toBeGreaterThan(1366 - 60);
+  await page.getByTestId('menu-open').click();
+  await expect(page.getByTestId('menu-drawer')).toBeInViewport();
+  await expect(page.getByRole('navigation', { name: 'Navigasi utama' }).getByRole('link', { name: 'R&D Lab' })).toHaveAttribute('aria-current', 'page');
+  await page.keyboard.press('Escape');
+  await expect(page.getByTestId('menu-drawer')).not.toBeInViewport();
+  await expect(page.getByTestId('menu-open')).toBeFocused();
 });
