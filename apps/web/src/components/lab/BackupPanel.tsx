@@ -47,6 +47,8 @@ function DriveSync({ onSynced }: { onSynced: () => Promise<void> }) {
       setBusy(false);
     }
   };
+  // Mode offline (owner 2026-10-13): panel hanya tampil bila sinkron sudah dipasang (Client ID ada).
+  if (!enabled) return null;
   return (
     <Section title="Sinkron Google Drive" testId="lab-drive-panel">
       {enabled ? (
@@ -138,7 +140,7 @@ function FileBackup({ onRestored }: { onRestored: () => Promise<void> }) {
   return (
     <Section title="Cadangan & pulihkan" testId="lab-backup-panel">
       <p className="text-sm">
-        Data tersimpan di browser perangkat ini. Selain sinkron Google Drive di atas, kamu bisa memindahkan data dengan file cadangan: unduh di satu perangkat, pulihkan di perangkat lain.
+        Data tersimpan <strong>hanya di browser perangkat ini</strong> (offline). Laptop dan HP punya catatan terpisah. Pindahkan data dengan file cadangan: unduh di satu perangkat, pulihkan di perangkat lain.
       </p>
       <div className="flex flex-wrap items-center gap-3">
         <button type="button" className="btn-primary" disabled={busy} onClick={() => void backup()} data-testid="lab-backup">Unduh cadangan lengkap</button>

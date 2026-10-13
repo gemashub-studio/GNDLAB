@@ -3,6 +3,10 @@
 Format: [Keep a Changelog](https://keepachangelog.com/id/1.1.0/) · Versi dataset mengikuti SemVer (ADR-002).
 Waktu dalam WIB (UTC+7).
 
+## [kembali offline] — 2026-10-13
+### Diubah
+- Atas permintaan owner, aplikasi kembali ke mode offline: panel Sinkron Google Drive disembunyikan sampai dipasang; cadangan/pulihkan file tetap cara memindah data.
+
 ## [aplikasi online + sinkron Google Drive] — 2026-10-13
 ### Ditambahkan
 - Tombol "Sinkronkan dengan Google Drive" di /lab → Ringkasan: data lab laptop & HP digabung lewat satu file di Drive pemilik (penghapusan ikut; konflik ID dilaporkan). Panduan: architecture/07-rnd/online-gdrive.md.

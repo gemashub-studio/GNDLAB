@@ -28,16 +28,10 @@ async function fakeGoogle(ctx: BrowserContext) {
 async function device(browser: import('@playwright/test').Browser): Promise<Page> {
   const ctx = await browser.newContext();
   await fakeGoogle(ctx);
+  // Sinkron dipasang = Client ID ada (panel tersembunyi saat offline).
+  await ctx.addInitScript(() => localStorage.setItem('gemas-google-client-id', '1234567890-abcdef.apps.googleusercontent.com'));
   const page = await ctx.newPage();
   await page.goto('/lab?t=ringkasan');
-  const off = page.getByTestId('lab-drive-off');
-  if (await off.isVisible()) {
-    await page.getByTestId('lab-drive-cid').fill('salah');
-    await page.getByTestId('lab-drive-cid-save').click();
-    await expect(page.getByTestId('lab-drive-msg')).toContainText('tidak dikenali');
-    await page.getByTestId('lab-drive-cid').fill('1234567890-abcdef.apps.googleusercontent.com');
-    await page.getByTestId('lab-drive-cid-save').click();
-  }
   return page;
 }
 
@@ -54,6 +48,12 @@ async function newLpj(page: Page, name: string) {
   await page.getByTestId('lpj-save').click();
   await page.getByRole('button', { name: 'Tutup' }).click();
 }
+
+test('offline: panel sinkron tidak tampil bila belum dipasang', async ({ page }) => {
+  await page.goto('/lab?t=ringkasan');
+  await expect(page.getByTestId('lab-backup-panel')).toBeVisible();
+  await expect(page.getByTestId('lab-drive-panel')).toHaveCount(0);
+});
 
 test('laptop & HP: data digabung lewat Google Drive; hapus ikut terhapus', async ({ browser }) => {
   test.setTimeout(180_000);

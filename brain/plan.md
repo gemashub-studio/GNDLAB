@@ -189,3 +189,7 @@ Contoh owner: Google Doc "LPJ_PR_Request_RnD_Kora_Revisi" (link di chat; dibaca 
 5. Lampiran 1 rincian alokasi: tabel per bagian (No, Alokasi, Bahan/perlengkapan, Jumlah beli, Satuan beli, Harga dasar, Faktor 1/0, Harga dipakai, Jumlah) + paragraf bagian + subtotal per alokasi + rekonsiliasi total. Aturan owner di dokumen: faktor 1 = harga dasar + batas atas 50%; faktor 0 = harga dasar; jumlah = jumlah beli × harga dipakai.
 6. Lampiran 2 timeline: No, Kegiatan, Mulai, Selesai, Hari (otomatis, inklusif) + catatan + output yang dituju.
 Status: SELESAI 2026-10-11 (DEC-059) lalu DISEDERHANAKAN owner (DEC-060) jadi upload bukti alokasi saja — tab /lab?t=belanja, ekspor Word divalidasi di Word. Belum: ekspor PDF LPJ, nama/penanda tangan tersimpan sebagai bawaan, ~~cadangan LPJ ikut file cadangan lab~~ SELESAI (DEC-061).
+
+## STATUS ONLINE (2026-10-13) — owner: "balik ke offline dulu" (DEC-066)
+- Mode kerja = OFFLINE. Sinkron Google Drive siap di kode (panel tersembunyi; aktif bila Client ID dipasang). Sinkron Wi-Fi: tidak dibuat (rancangan: API /api/lab-sync menyimpan file di laptop + tombol + alamat LAN; bisa dihidupkan lagi bila diminta).
+- Vercel gemasstudio.vercel.app masih hidup — tanyakan owner: biarkan atau matikan (hapus project via `vercel project rm gemasstudio`).
