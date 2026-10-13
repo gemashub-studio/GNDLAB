@@ -4,7 +4,7 @@
  * Hanya dari data tercatat; kosong = "belum dicatat".
  */
 import { fmtNum, researchCharts, type ChartSpec } from './reportCharts';
-import { coconutSummary, dayNumber, protocolProductName, type CoconutRow, NOT_RECORDED, researchDates, researchStatus, toolList, type DailyEntry, type MediaItem, type ProtocolVersion } from './labStore';
+import { coconutSummary, dayNumber, protocolProductName, TREATMENT_LABEL, type CoconutRow, type RawMaterial, NOT_RECORDED, researchDates, researchStatus, toolList, type DailyEntry, type MediaItem, type ProtocolVersion } from './labStore';
 
 export interface ReportImage {
   name: string;
@@ -53,6 +53,26 @@ export interface ResearchReport {
 const or = (v: string | undefined) => (v && v.trim() ? v.trim() : NOT_RECORDED);
 const img = (m: MediaItem): ReportImage => ({ name: m.name, caption: m.caption, dataUrl: m.thumb, video: m.type.startsWith('video/') });
 const STATUS: Record<ReturnType<typeof researchStatus>, string> = { 'belum-mulai': 'Belum ada laporan harian', berjalan: 'Berjalan', selesai: 'SELESAI' };
+
+/** Bahan baku dari menu Bahan Baku (DEC-068), + riset rujukan (knowledge) milik pengguna. */
+function rawBlock(r: RawMaterial, versions: readonly ProtocolVersion[]): ReportBlock {
+  const d = (v: string) => (v.trim() ? v.trim() : NOT_RECORDED);
+  const name = (k: string) => [...versions].filter((v) => v.key === k).sort((a, b) => b.version - a.version)[0]?.name;
+  return {
+    heading: 'Bahan baku',
+    level: 1,
+    lines: [
+      `Item: ${d(r.item)}`,
+      `Barang: ${d(r.name)}`,
+      `Perlakuan: ${TREATMENT_LABEL[r.treatment]}`,
+      `Berat utuh (g): ${d(r.wholeWeight)}`,
+      `Air (mL): ${d(r.water)}`,
+      ...(r.thickness === 'tebal-daging' ? [`Tebal daging (mm): ${d(r.meatThickness)}`] : []),
+      ...(r.refKeys.length ? [`Rujukan riset: ${r.refKeys.map((k) => `${k}${name(k) ? ` (${name(k)})` : ''}`).join('; ')}`] : []),
+    ],
+    images: [],
+  };
+}
 
 /** Penghitungan bahan baku kelapa (DEC-064): tabel ukur + ringkasan, lalu tabel proses & hasil + foto. */
 function coconutBlocks(rows: CoconutRow[], pics: (ids?: string[]) => ReportImage[]): ReportBlock[] {
@@ -140,6 +160,7 @@ export function buildResearchReport(
       ...(latest.ingredients.length && { table: { head: ['No', 'Bahan', 'Jumlah', 'Satuan'], rows: latest.ingredients.map((x, i) => [String(i + 1), x.name, x.amount || '–', x.unit || '–']) } }),
       images: latest.ingredients.flatMap((x, i) => pics(x.mediaIds).map((p) => ({ ...p, caption: `Bahan ${i + 1} · ${x.name}${p.caption ? ` — ${p.caption}` : ''}` }))),
     },
+    ...(latest.raw ? [rawBlock(latest.raw, versions)] : []),
     ...(latest.coconuts?.length ? coconutBlocks(latest.coconuts, pics) : []),
     {
       heading: 'Alat yang digunakan',

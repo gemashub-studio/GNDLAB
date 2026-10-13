@@ -352,39 +352,52 @@ test.describe('GEMA RnD Lab', () => {
 });
 
 test.describe('Hapus hasil riset', () => {
-  test('penghitungan bahan baku kelapa: isi per butir + foto, ringkasan otomatis, tampil di riset', async ({ page }) => {
-    const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==', 'base64');
+  test('menu Bahan Baku: modal form → knowledge Cuka/Bioleather/Kopra → Konfirmasi membuka Resep baru terisi', async ({ page }) => {
     await page.goto('/lab?t=protokol');
-    await page.getByTestId('proto-new').click();
+    // riset rujukan milik pengguna (knowledge)
+    for (const [prod, nama] of [['Cuka Air Kelapa', 'Cuka rujukan E2E'], ['Kopra Edibel', 'Kopra rujukan E2E']] as const) {
+      await page.getByTestId('proto-new').click();
+      await page.getByTestId('proto-product').fill(prod);
+      await page.getByTestId('proto-name').fill(nama);
+      await page.getByTestId('proto-finish').click();
+      await expect(page.getByTestId('proto-list')).toContainText(nama);
+    }
+    await expect(page.getByTestId('proto-coco-add')).toHaveCount(0);
+    await page.getByTestId('lab-tab-bahan').click();
+    await page.getByTestId('raw-new').click();
+    const modal = page.getByTestId('raw-modal');
+    await expect(modal.getByTestId('raw-item')).toContainText('Arang');
+    await modal.getByTestId('raw-confirm').click();
+    await expect(modal).toContainText('Isi nama barang');
+    await modal.getByTestId('raw-name').fill('Kelapa tua butir 1');
+    await modal.getByTestId('raw-whole').fill('1.200');
+    await modal.getByTestId('raw-water').fill('300');
+    await modal.getByTestId('raw-treatment').selectOption('air');
+    await expect(modal.getByTestId('raw-kn-CK')).toContainText('Cuka 1 — Cuka rujukan E2E');
+    await expect(modal.getByTestId('raw-kn-BL')).toContainText('Belum ada riset Bioleather');
+    await modal.getByTestId('raw-kn-CK').getByRole('checkbox').first().check();
+    await modal.getByTestId('raw-thickness').selectOption('tebal-daging');
+    await expect(modal.getByTestId('raw-kn-KE')).toContainText('Kopra 1 — Kopra rujukan E2E');
+    await modal.getByTestId('raw-meat').fill('10,5');
+    await modal.getByTestId('raw-confirm').click();
+
+    // otomatis ke Riset Produk, Resep baru sudah berisi bahan baku
+    await expect(page.getByTestId('lab-tab-protokol')).toHaveAttribute('aria-selected', 'true');
+    const raw = page.getByTestId('proto-raw');
+    await expect(raw).toContainText('Kelapa tua butir 1');
+    await expect(raw.getByTestId('proto-raw-whole')).toHaveValue('1.200');
+    await expect(raw.getByTestId('proto-raw-water')).toHaveValue('300');
+    await expect(raw.getByTestId('proto-raw-meat')).toHaveValue('10,5');
+    await expect(raw.getByTestId('raw-kn-KE')).toContainText('Kopra 1');
+    await expect(page.getByTestId('proto-product')).toHaveValue('Cuka Air Kelapa');
     const key = (await page.getByTestId('proto-id').textContent())!.replace(/-v1$/, '');
-    await page.getByTestId('proto-name').fill('Kelapa dihitung E2E');
-    await page.getByTestId('proto-coco-add').click();
-    await page.getByTestId('proto-coco-wholeStart-0').fill('1.200');
-    await page.getByTestId('proto-coco-wholeEnd-0').fill('1.150');
-    await page.getByTestId('proto-coco-waterWeight-0').fill('300');
-    await page.getByTestId('proto-coco-waterVolume-0').fill('290');
-    await page.getByTestId('proto-coco-meatStart-0').fill('10,5');
-    await page.getByTestId('proto-coco-meatEnd-0').fill('9');
-    await page.getByTestId('proto-coco-waterProcess-0').fill('disaring lalu didinginkan');
-    await page.getByTestId('proto-coco-meatResult-0').fill('kopra putih');
-    await page.getByTestId('proto-coco-files-0').setInputFiles({ name: 'butir1.png', mimeType: 'image/png', buffer: png });
-    await page.getByTestId('proto-coco-add').click();
-    await page.getByTestId('proto-coco-wholeStart-1').fill('1000');
-    await expect(page.getByTestId('proto-coco-sum')).toContainText('2.200');
-    await page.getByTestId('proto-save').click();
-    await page.getByRole('button', { name: 'Tutup' }).click();
-    await page.getByTestId('proto-ongoing').click();
-    await page.getByTestId('ongoing-list').locator('li', { hasText: 'Kelapa dihitung E2E' }).getByRole('button', { name: 'Lanjutkan' }).click();
-    await expect(page.getByTestId('proto-coco-wholeStart-0')).toHaveValue('1.200');
-    await expect(page.getByTestId('proto-coco-waterProcess-0')).toHaveValue('disaring lalu didinginkan');
-    await expect(page.getByTestId('proto-form')).toContainText('butir1.png');
+    await page.getByTestId('proto-name').fill('Cuka dari bahan baku E2E');
     await page.getByTestId('proto-finish').click();
     await page.getByTestId(`proto-open-${key}`).click();
-    const box = page.getByTestId('rp-coco');
-    await expect(box).toContainText('Kelapa 1');
-    await expect(box).toContainText('disaring lalu didinginkan');
-    await expect(box).toContainText('kopra putih');
-    await expect(box.locator('a')).toHaveCount(1);
+    const shown = page.getByTestId('rp-raw');
+    await expect(shown).toContainText('Perlakuan air');
+    await expect(shown).toContainText('10,5');
+    await expect(shown).toContainText('CK-P');
   });
   test('jalur produk bisa diisi manual → kode otomatis, nama tersimpan', async ({ page }) => {
     await page.goto('/lab?t=protokol');
@@ -441,13 +454,14 @@ test.describe('Laporan belanja (LPJ)', () => {
 });
 
 test.describe('GEMA RnD Lab — HP 360 px', () => {
-  for (const t of ['ringkasan', 'eksperimen', 'protokol', 'belanja', 'library', 'standar']) {
+  for (const t of ['ringkasan', 'eksperimen', 'bahan', 'protokol', 'belanja', 'library', 'standar']) {
     test(`@mobile /lab?t=${t} tanpa geser horizontal`, async ({ page }) => {
       await page.goto(`/lab?t=${t}`);
       await expect(page.getByTestId('lab-hero')).toBeVisible();
       if (t === 'eksperimen') await page.getByTestId('lab-new').click();
       if (t === 'protokol') await page.getByTestId('proto-new').click();
       if (t === 'belanja') await page.getByTestId('lpj-new').click();
+      if (t === 'bahan') await page.getByTestId('raw-new').click();
       const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
       expect(overflow).toBeLessThanOrEqual(1);
     });

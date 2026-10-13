@@ -3,6 +3,12 @@
 Format: [Keep a Changelog](https://keepachangelog.com/id/1.1.0/) · Versi dataset mengikuti SemVer (ADR-002).
 Waktu dalam WIB (UTC+7).
 
+## [menu Bahan Baku] — 2026-10-13
+### Ditambahkan
+- R&D Lab: tab Bahan Baku — form modal (item/barang Kelapa/Arang, barang, berat utuh, air, perlakuan air/daging, tebal daging) + knowledge dari riset sendiri (Cuka/Bioleather 1–5 untuk perlakuan air, Kopra 1–5 untuk tebal daging); Konfirmasi membuka Resep baru yang sudah terisi.
+### Dihapus
+- Tombol "+ Bahan kelapa" di Resep baru (diganti menu Bahan Baku).
+
 ## [navigasi ☰] — 2026-10-13
 ### Diubah
 - Menu utama jadi tombol ☰ di pojok kanan atas (HP & laptop) dengan laci menu berkelompok; sidebar kiri & menu bawah HP dihapus sehingga ruang konten lebih lega.

@@ -147,6 +147,47 @@ export interface ProtocolTool {
   mediaIds?: string[];
 }
 
+/** Item bahan baku (owner 2026-10-13): pilihan dropdown Item/barang. */
+export const RAW_ITEMS = ['Kelapa', 'Arang'] as const;
+
+/**
+ * Bahan baku (DEC-068) — diisi di menu Bahan Baku lalu dibawa ke Resep baru. Semua isian pengguna.
+ * perlakuan 'air' → rujukan riset Cuka & Bioleather; tebal 'tebal-daging' → kolom Tebal daging + rujukan riset Kopra.
+ */
+export interface RawMaterial {
+  item: string;
+  name: string;
+  /** Berat utuh (g). */
+  wholeWeight: string;
+  /** Air (mL). */
+  water: string;
+  treatment: '' | 'air' | 'daging';
+  thickness: '' | 'tebal-daging';
+  /** Tebal daging (mm). */
+  meatThickness: string;
+  /** Kunci riset produk yang dijadikan rujukan (knowledge). */
+  refKeys: string[];
+}
+
+export const blankRaw = (): RawMaterial => ({ item: 'Kelapa', name: '', wholeWeight: '', water: '', treatment: '', thickness: '', meatThickness: '', refKeys: [] });
+export const TREATMENT_LABEL: Record<RawMaterial['treatment'], string> = { '': '—', air: 'Perlakuan air', daging: 'Perlakuan daging' };
+
+/** Jalur riset rujukan per pilihan: perlakuan air → Cuka & Bioleather; tebal daging → Kopra. */
+export const knowledgeLines = (r: Pick<RawMaterial, 'treatment' | 'thickness'>): { product: string; label: string }[] => [
+  ...(r.treatment === 'air' ? [{ product: 'CK', label: 'Cuka' }, { product: 'BL', label: 'Bioleather' }] : []),
+  ...(r.thickness === 'tebal-daging' ? [{ product: 'KE', label: 'Kopra' }] : []),
+];
+
+/** Maks. 5 riset terbaru satu jalur (versi terakhir tiap kunci), untuk daftar "Cuka 1–5" dst. */
+export function knowledgeFor(product: string, protocols: readonly ProtocolVersion[]): ProtocolVersion[] {
+  const latest = new Map<string, ProtocolVersion>();
+  for (const p of protocols) if (p.product === product && (latest.get(p.key)?.version ?? 0) < p.version) latest.set(p.key, p);
+  return [...latest.values()].sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, 5);
+}
+
+/** Produk awal resep dari bahan baku. */
+export const productFromRaw = (r: RawMaterial): string => (r.item === 'Arang' ? 'AR' : r.treatment === 'air' ? 'CK' : 'KE');
+
 /**
  * Penghitungan bahan baku kelapa (DEC-064) — satu baris per butir/bahan, semua angka & teks = isian pengguna.
  * Berat dalam gram, volume dalam mL, ketebalan daging dalam mm.
@@ -231,6 +272,8 @@ export interface ProtocolDraft {
   steps: ProtocolStep[];
   /** Penghitungan bahan baku kelapa (DEC-064). */
   coconuts?: CoconutRow[];
+  /** Bahan baku dari menu Bahan Baku (DEC-068). */
+  raw?: RawMaterial;
   /** Foto/video yang sudah dipilih tapi belum jadi versi resmi (per baris). */
   pending: { ingredients: NewMedia[][]; tools: NewMedia[][]; steps: NewMedia[][]; coconuts?: NewMedia[][] };
   createdAt: string;
@@ -259,6 +302,8 @@ export interface ProtocolVersion {
   tools?: (ProtocolTool | string)[];
   /** Penghitungan bahan baku kelapa (DEC-064). */
   coconuts?: CoconutRow[];
+  /** Bahan baku dari menu Bahan Baku (DEC-068). */
+  raw?: RawMaterial;
   reason: string;
   author: string;
   createdAt: string;

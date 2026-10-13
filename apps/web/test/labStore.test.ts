@@ -188,3 +188,33 @@ describe('penghitungan bahan baku kelapa (DEC-064)', () => {
     expect(buildResearchReport('KE-P01', [{ ...v, coconuts: undefined }], [], [], 'x').blocks.some((b) => b.heading.startsWith('Bahan baku kelapa'))).toBe(false);
   });
 });
+
+describe('bahan baku & knowledge (DEC-068)', () => {
+  it('knowledge = maks. 5 riset terbaru per jalur (versi terakhir); jalur mengikuti perlakuan/tebal; produk awal resep', async () => {
+    const { knowledgeFor, knowledgeLines, productFromRaw, blankRaw } = await import('@/lib/labStore');
+    const v = (key: string, version: number, product: string, createdAt: string) => ({ id: `${key}-v${version}`, key, version, product, name: `${key} v${version}`, author: '', reason: '', createdAt, ingredients: [], steps: [] });
+    const ps = [v('CK-P01', 1, 'CK', '2026-10-01'), v('CK-P01', 2, 'CK', '2026-10-05'), ...[2, 3, 4, 5, 6].map((n) => v(`CK-P0${n}`, 1, 'CK', `2026-10-1${n}`)), v('KE-P01', 1, 'KE', '2026-10-02')];
+    const k = knowledgeFor('CK', ps);
+    expect(k).toHaveLength(5);
+    expect(k[0]!.key).toBe('CK-P06');
+    expect(k.map((x) => x.key)).not.toContain('CK-P01');
+    expect(knowledgeLines({ treatment: 'air', thickness: '' }).map((l) => l.label)).toEqual(['Cuka', 'Bioleather']);
+    expect(knowledgeLines({ treatment: 'daging', thickness: 'tebal-daging' }).map((l) => l.label)).toEqual(['Kopra']);
+    expect(knowledgeLines({ treatment: '', thickness: '' })).toEqual([]);
+    expect(productFromRaw({ ...blankRaw(), treatment: 'air' })).toBe('CK');
+    expect(productFromRaw({ ...blankRaw(), item: 'Arang' })).toBe('AR');
+    expect(productFromRaw(blankRaw())).toBe('KE');
+  });
+
+  it('laporan: bagian Bahan baku + rujukan bila ada; tanpa bahan baku tidak muncul', async () => {
+    const { blankRaw } = await import('@/lib/labStore');
+    const { buildResearchReport } = await import('@/lib/researchReport');
+    const ref = { id: 'CK-P01-v1', key: 'CK-P01', version: 1, product: 'CK', name: 'Cuka lama', author: '', reason: '', createdAt: 'a', ingredients: [], steps: [] };
+    const v = { ...ref, id: 'CK-P02-v1', key: 'CK-P02', name: 'baru', raw: { ...blankRaw(), name: 'Kelapa 1', wholeWeight: '1200', treatment: 'air' as const, thickness: 'tebal-daging' as const, refKeys: ['CK-P01'] } };
+    const b = buildResearchReport('CK-P02', [ref, v], [], [], 'x').blocks.find((x) => x.heading === 'Bahan baku')!;
+    expect(b.lines).toContain('Perlakuan: Perlakuan air');
+    expect(b.lines).toContain('Tebal daging (mm): belum dicatat');
+    expect(b.lines).toContain('Rujukan riset: CK-P01 (Cuka lama)');
+    expect(buildResearchReport('CK-P01', [ref], [], [], 'x').blocks.some((x) => x.heading === 'Bahan baku')).toBe(false);
+  });
+});

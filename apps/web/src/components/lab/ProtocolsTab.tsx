@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { fmtMeasure } from '@/lib/format';
 import { downloadBlob, fmtBytes, makeThumb } from '@/lib/labMedia';
 import {
   addProtocolVersion,
@@ -11,8 +10,10 @@ import {
   saveDraft,
   LAB_PRODUCTS,
   nextProtocolKey,
-  blankCoconut,
-  coconutSummary,
+  productFromRaw,
+  knowledgeLines,
+  TREATMENT_LABEL,
+  type RawMaterial,
   coconutFilled,
   type CoconutRow,
   protocolProductName,
@@ -33,6 +34,7 @@ import {
   type ProtocolVersion,
 } from '@/lib/labStore';
 import { DailyLog } from './DailyLog';
+import { KnowledgeList } from './BahanBakuTab';
 import { MediaPicker } from './MediaPicker';
 import { ProductMark, Section, TextInput } from './ui';
 
@@ -66,8 +68,21 @@ const STATUS_TEXT = { 'belum-mulai': 'belum ada laporan', berjalan: 'berjalan', 
  * per bahan & per langkah, daftar alat, laporan harian sampai selesai, dan laporan gabungan PDF/DOCX/PPTX.
  * Aplikasi TIDAK mengisi angka resep. Versi tersimpan tidak bisa diubah; perubahan = versi baru.
  */
-export function ProtocolsTab({ protocols, entries, media, refresh }: { protocols: ProtocolVersion[]; entries: DailyEntry[]; media: MediaItem[]; refresh: () => Promise<void> }) {
-  const [editing, setEditing] = useState<{ base?: ProtocolVersion; product: string; draft?: ProtocolDraft; nonce: number } | undefined>();
+export function ProtocolsTab({ protocols, entries, media, refresh, incomingRaw, onRawUsed }: {
+  protocols: ProtocolVersion[];
+  entries: DailyEntry[];
+  media: MediaItem[];
+  refresh: () => Promise<void>;
+  /** Bahan baku yang baru dikonfirmasi di menu Bahan Baku → buka Resep baru terisi (DEC-068). */
+  incomingRaw?: RawMaterial;
+  onRawUsed?: () => void;
+}) {
+  const [editing, setEditing] = useState<{ base?: ProtocolVersion; product: string; draft?: ProtocolDraft; raw?: RawMaterial; nonce: number } | undefined>();
+  useEffect(() => {
+    if (!incomingRaw) return;
+    setEditing({ product: productFromRaw(incomingRaw), raw: incomingRaw, nonce: Date.now() });
+    onRawUsed?.();
+  }, [incomingRaw, onRawUsed]);
   const [openKey, setOpenKey] = useState<string>();
   const [drafts, setDrafts] = useState<ProtocolDraft[]>([]);
   const [ongoing, setOngoing] = useState(false);
@@ -137,6 +152,8 @@ export function ProtocolsTab({ protocols, entries, media, refresh }: { protocols
           draft={editing.draft}
           onDraftSaved={loadDrafts}
           initialProduct={editing.product}
+          {...(editing.raw && { initialRaw: editing.raw })}
+          entries={entries}
           onCancel={() => setEditing(undefined)}
           onSaved={async (key) => {
             setEditing(undefined);
@@ -270,6 +287,27 @@ function VersionView({ v, media }: { v: ProtocolVersion; media: MediaItem[] }) {
           </table>
         ) : <p className="italic text-muted">belum dicatat</p>}
       </div>
+      {v.raw && (
+        <div data-testid="rp-raw">
+          <span className="label-mono">Bahan baku</span>
+          <dl className="mt-1 grid grid-cols-2 gap-x-4 gap-y-1 text-sm sm:grid-cols-3">
+            {([
+              ['Item', v.raw.item],
+              ['Barang', v.raw.name],
+              ['Perlakuan', TREATMENT_LABEL[v.raw.treatment]],
+              ['Berat utuh (g)', v.raw.wholeWeight],
+              ['Air (mL)', v.raw.water],
+              ...(v.raw.thickness === 'tebal-daging' ? [['Tebal daging (mm)', v.raw.meatThickness]] : []),
+            ] as [string, string][]).map(([k, val]) => (
+              <div key={k}>
+                <dt className="font-mono text-[10px] uppercase text-muted">{k}</dt>
+                <dd>{val.trim() || <span className="italic text-muted">belum dicatat</span>}</dd>
+              </div>
+            ))}
+          </dl>
+          {v.raw.refKeys.length > 0 && <p className="mt-1 text-sm"><span className="font-mono text-[10px] uppercase text-muted">Rujukan (knowledge): </span>{v.raw.refKeys.join(', ')}</p>}
+        </div>
+      )}
       {v.coconuts?.length ? (
         <div data-testid="rp-coco">
           <span className="label-mono">Penghitungan bahan baku kelapa</span>
@@ -416,61 +454,35 @@ const COCO_TEXT: [keyof CoconutRow, string][] = [
   ['meatResult', 'Hasil proses daging'],
 ];
 
-/** Penghitungan bahan baku kelapa (DEC-064): satu kartu per butir, foto/video per butir, ringkasan otomatis. */
-function CoconutFieldset({ rows, setRows, files, setFiles, media }: { rows: CoconutRow[]; setRows: (r: CoconutRow[]) => void; files: Pending[][]; setFiles: (f: Pending[][]) => void; media: MediaItem[] }) {
-  const set = (i: number, k: keyof CoconutRow, v: string) => setRows(rows.map((x, j) => (j === i ? { ...x, [k]: v } : x)));
-  const stats = coconutSummary(rows);
-  const f = (v?: number) => (v === undefined ? '–' : fmtMeasure(v));
+/**
+ * Kolom bahan baku di atas Resep baru (DEC-068): Berat utuh & Air, lalu Tebal daging (+ knowledge Kopra 1–5)
+ * bila tebal daging dipilih; perlakuan air → knowledge Cuka 1–5 & Bioleather 1–5.
+ */
+function RawFieldset({ raw, setRaw, protocols, entries }: { raw: RawMaterial; setRaw: (r: RawMaterial | undefined) => void; protocols: ProtocolVersion[]; entries: DailyEntry[] }) {
+  const set = <K extends keyof RawMaterial>(k: K, v: RawMaterial[K]) => setRaw({ ...raw, [k]: v });
   return (
-    <fieldset className="flex flex-col gap-2" data-testid="proto-coco">
-      <legend className="label-mono mb-2">Penghitungan bahan baku kelapa — catat tiap butir (opsional)</legend>
-      {rows.map((r, i) => (
-        <div key={i} className="flex flex-col gap-2 rounded-xl border-3 border-ink p-2" data-testid={`proto-coco-${i}`}>
-          <div className="flex items-center gap-2">
-            <input className="field min-h-[44px] flex-1 font-sans text-sm font-normal" placeholder="Nama bahan" aria-label="Nama bahan" value={r.name} onChange={(e) => set(i, 'name', e.target.value)} data-testid={`proto-coco-name-${i}`} />
-            <button type="button" aria-label="Hapus baris kelapa" className="font-mono text-xs underline" onClick={() => { setRows(rows.filter((_, j) => j !== i)); setFiles(files.filter((_, j) => j !== i)); }}>×</button>
-          </div>
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
-            {COCO_NUM.map(([k, label]) => (
-              <label key={k} className="flex flex-col gap-1">
-                <span className="font-mono text-[10px] uppercase text-muted">{label}</span>
-                <input className="field min-h-[44px] text-sm" inputMode="decimal" value={r[k] as string} onChange={(e) => set(i, k, e.target.value)} data-testid={`proto-coco-${k}-${i}`} />
-              </label>
-            ))}
-          </div>
-          <div className="grid gap-2 sm:grid-cols-2">
-            {COCO_TEXT.map(([k, label]) => (
-              <label key={k} className="flex flex-col gap-1">
-                <span className="font-mono text-[10px] uppercase text-muted">{label}</span>
-                <input className="field min-h-[44px] font-sans text-sm font-normal" value={r[k] as string} onChange={(e) => set(i, k, e.target.value)} data-testid={`proto-coco-${k}-${i}`} />
-              </label>
-            ))}
-          </div>
-          <Thumbs ids={r.mediaIds} media={media} />
-          <FilePick list={files[i] ?? []} onChange={(l) => setFiles(files.map((x, j) => (j === i ? l : x)))} testId={`proto-coco-files-${i}`} />
-        </div>
-      ))}
-      <button type="button" className="btn-ghost self-start" onClick={() => { setRows([...rows, blankCoconut(rows.length + 1)]); setFiles([...files, []]); }} data-testid="proto-coco-add">+ Bahan kelapa</button>
-      {rows.length > 0 && (
-        <div className="overflow-x-auto rounded-xl bg-paper p-2" data-testid="proto-coco-sum">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="text-left font-mono text-[10px] uppercase text-muted"><th className="py-1 pr-3">Ringkasan ({rows.length} baris)</th><th className="pr-3">n</th><th className="pr-3">Jumlah</th><th>Rata-rata</th></tr>
-            </thead>
-            <tbody>
-              {stats.map((st) => (
-                <tr key={st.label} className="border-t border-paper-grid">
-                  <td className="py-1 pr-3">{st.label} ({st.unit})</td>
-                  <td className="pr-3 font-mono">{st.n}</td>
-                  <td className="pr-3 font-mono">{f(st.total)}</td>
-                  <td className="font-mono">{f(st.mean)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          <p className="mt-1 text-[11px] text-muted">Utuh = berat utuh; selisih utuh = awal − akhir per butir. Dihitung dari isianmu saja (kosong/bukan angka tidak dihitung). Ketebalan tidak dijumlah.</p>
-        </div>
+    <fieldset className="flex flex-col gap-3 rounded-xl border-3 border-acid bg-paper p-3" data-testid="proto-raw">
+      <legend className="label-mono px-1">Bahan baku — {raw.item}: {raw.name} · {TREATMENT_LABEL[raw.treatment]}</legend>
+      <div className="grid grid-cols-2 gap-3">
+        <label className="flex flex-col gap-1.5">
+          <span className="label-mono">Berat utuh (g)</span>
+          <input className="field min-h-[44px] text-sm" inputMode="decimal" value={raw.wholeWeight} onChange={(e) => set('wholeWeight', e.target.value)} data-testid="proto-raw-whole" />
+        </label>
+        <label className="flex flex-col gap-1.5">
+          <span className="label-mono">Air (mL)</span>
+          <input className="field min-h-[44px] text-sm" inputMode="decimal" value={raw.water} onChange={(e) => set('water', e.target.value)} data-testid="proto-raw-water" />
+        </label>
+      </div>
+      {raw.thickness === 'tebal-daging' && (
+        <label className="flex flex-col gap-1.5">
+          <span className="label-mono">Tebal daging (mm)</span>
+          <input className="field min-h-[44px] text-sm" inputMode="decimal" value={raw.meatThickness} onChange={(e) => set('meatThickness', e.target.value)} data-testid="proto-raw-meat" />
+        </label>
       )}
+      {knowledgeLines(raw).map((l) => (
+        <KnowledgeList key={l.product} label={l.label} product={l.product} protocols={protocols} entries={entries} picked={raw.refKeys} onToggle={(k) => set('refKeys', raw.refKeys.includes(k) ? raw.refKeys.filter((x) => x !== k) : [...raw.refKeys, k])} />
+      ))}
+      <button type="button" className="self-start font-mono text-xs underline" onClick={() => setRaw(undefined)} data-testid="proto-raw-remove">Lepas bahan baku dari resep ini</button>
     </fieldset>
   );
 }
@@ -499,8 +511,10 @@ const toMedia = async (list: Pending[]): Promise<NewMedia[]> => {
   return out;
 };
 
-function ProtocolForm({ protocols, media, base, draft, onDraftSaved, initialProduct, onCancel, onSaved }: {
+function ProtocolForm({ protocols, entries, media, base, draft, onDraftSaved, initialProduct, initialRaw, onCancel, onSaved }: {
   protocols: ProtocolVersion[];
+  entries: DailyEntry[];
+  initialRaw?: RawMaterial;
   media: MediaItem[];
   base?: ProtocolVersion;
   draft?: ProtocolDraft;
@@ -525,9 +539,10 @@ function ProtocolForm({ protocols, media, base, draft, onDraftSaved, initialProd
   const [tools, setTools] = useState<ProtocolTool[]>(draft?.tools ?? (base && toolList(base).length ? toolList(base).map((t) => ({ ...t })) : [{ name: '' }]));
   const [toolFiles, setToolFiles] = useState<Pending[][]>(() => (draft ? fromDraft(draft.pending.tools) : base && toolList(base).length ? toolList(base).map(() => []) : [[]]));
   const [ingFiles, setIngFiles] = useState<Pending[][]>(() => (draft ? fromDraft(draft.pending.ingredients) : base ? base.ingredients.map(() => []) : [[]]));
-  const [coco, setCoco] = useState<CoconutRow[]>(draft?.coconuts ?? (base?.coconuts?.length ? base.coconuts.map(({ mediaIds: _m, ...c }) => ({ ...c })) : []));
-  const [cocoFiles, setCocoFiles] = useState<Pending[][]>(() => (draft?.pending.coconuts ? fromDraft(draft.pending.coconuts) : (draft?.coconuts ?? base?.coconuts ?? []).map(() => [])));
+  const [coco] = useState<CoconutRow[]>(draft?.coconuts ?? (base?.coconuts?.length ? base.coconuts.map(({ mediaIds: _m, ...c }) => ({ ...c })) : []));
+  const [cocoFiles] = useState<Pending[][]>(() => (draft?.pending.coconuts ? fromDraft(draft.pending.coconuts) : (draft?.coconuts ?? base?.coconuts ?? []).map(() => [])));
   const [stepFiles, setStepFiles] = useState<Pending[][]>(() => (draft ? fromDraft(draft.pending.steps) : base ? base.steps.map(() => []) : [[]]));
+  const [raw, setRaw] = useState<RawMaterial | undefined>(draft?.raw ?? (base?.raw ? { ...base.raw } : initialRaw));
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState('');
   const key = base?.key ?? nextProtocolKey(product, protocols);
@@ -544,7 +559,7 @@ function ProtocolForm({ protocols, media, base, draft, onDraftSaved, initialProd
       };
       await saveDraft({
         id: draftId, ...(base && { baseId: base.id }), ...(draft && { createdAt: draft.createdAt }),
-        product, ...(productName && { productName }), name, author, assistants, startDate, reason, ingredients: ings, tools, steps, coconuts: coco,
+        product, ...(productName && { productName }), name, author, assistants, startDate, reason, ingredients: ings, tools, steps, coconuts: coco, ...(raw && { raw }),
         pending: { ingredients: await pend(ingFiles), tools: await pend(toolFiles), steps: await pend(stepFiles), coconuts: await pend(cocoFiles) },
       });
       await onDraftSaved();
@@ -583,6 +598,7 @@ function ProtocolForm({ protocols, media, base, draft, onDraftSaved, initialProd
           steps: keepS.map(({ x }) => x),
           tools: keepT.map(({ x }) => ({ ...x, name: x.name.trim() })),
           ...(keepK.length && { coconuts: keepK.map(({ x }) => x) }),
+          ...(raw && { raw }),
         },
         { ingredients: iMedia, steps: sMedia, tools: tMedia, coconuts: kMedia, draftId },
       );
@@ -600,6 +616,7 @@ function ProtocolForm({ protocols, media, base, draft, onDraftSaved, initialProd
       aside={<span className="tag-mono" title="Kode ini dipakai saat kamu menekan Selesai" data-testid="proto-id">{id}</span>}
       testId="proto-form"
     >
+      {raw && <RawFieldset raw={raw} setRaw={setRaw} protocols={protocols} entries={entries} />}
       <div className="grid gap-3 sm:grid-cols-2">
         <label className="flex flex-col gap-1.5">
           <span className="label-mono">Jalur produk</span>
@@ -637,7 +654,7 @@ function ProtocolForm({ protocols, media, base, draft, onDraftSaved, initialProd
         <button type="button" className="btn-ghost self-start" onClick={() => { setIngs([...ings, blankIng()]); setIngFiles([...ingFiles, []]); }}>+ Bahan</button>
       </fieldset>
 
-      <CoconutFieldset rows={coco} setRows={setCoco} files={cocoFiles} setFiles={setCocoFiles} media={media} />
+      {/* Penghitungan per butir (DEC-064) diganti menu Bahan Baku (DEC-068); data lama tetap ikut tersimpan. */}
 
       <fieldset className="flex flex-col gap-2" data-testid="proto-tools">
         <legend className="label-mono mb-2">Alat yang digunakan — sama seperti bahan: nama, jumlah, satuan, foto/video</legend>

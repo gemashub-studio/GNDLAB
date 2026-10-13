@@ -4,17 +4,19 @@ import { BelanjaTab } from './BelanjaTab';
 import Link from 'next/link';
 import { useCallback, useEffect, useState } from 'react';
 import { GEMA_SOURCES, sourceCounts } from '@/lib/gemaSources';
-import { listEntries, listExperiments, listMedia, listProtocols, type DailyEntry, type Experiment, type LabProductId, type MediaItem, type ProtocolVersion } from '@/lib/labStore';
+import { listEntries, listExperiments, listMedia, listProtocols, type DailyEntry, type Experiment, type LabProductId, type MediaItem, type ProtocolVersion, type RawMaterial } from '@/lib/labStore';
 import { BackupPanel } from './BackupPanel';
 import { ExperimentsTab } from './ExperimentsTab';
 import { LabOverview } from './LabOverview';
 import { LibraryTab } from './LibraryTab';
 import { ProtocolsTab } from './ProtocolsTab';
+import { BahanBakuTab } from './BahanBakuTab';
 import { StandardsTab } from './StandardsTab';
 
 const TABS = [
   { id: 'ringkasan', label: 'Ringkasan' },
   { id: 'eksperimen', label: 'Eksperimen' },
+  { id: 'bahan', label: 'Bahan Baku' },
   { id: 'protokol', label: 'Riset Produk' },
   { id: 'belanja', label: 'Laporan Belanja' },
   { id: 'library', label: 'Library' },
@@ -29,6 +31,8 @@ export function LabPage() {
   const [media, setMedia] = useState<MediaItem[]>([]);
   const [protocols, setProtocols] = useState<ProtocolVersion[]>([]);
   const [tab, setTab] = useState<TabId>('ringkasan');
+  const [rawIn, setRawIn] = useState<RawMaterial>();
+  const clearRaw = useCallback(() => setRawIn(undefined), []);
   const [product, setProduct] = useState<LabProductId | 'all'>('all');
   const [stdProduct, setStdProduct] = useState<LabProductId>('KE');
   const [openId, setOpenId] = useState<string>();
@@ -132,7 +136,8 @@ export function LabPage() {
       {tab === 'eksperimen' && (
         <ExperimentsTab items={items} entries={entries} media={media} protocols={protocols} product={product} setProduct={setProduct} openId={openId} setOpenId={setOpenId} refresh={refresh} />
       )}
-      {tab === 'protokol' && <ProtocolsTab protocols={protocols} entries={entries} media={media} refresh={refresh} />}
+      {tab === 'bahan' && <BahanBakuTab protocols={protocols} entries={entries} onConfirm={(r) => { setRawIn(r); setTab('protokol'); }} />}
+      {tab === 'protokol' && <ProtocolsTab protocols={protocols} entries={entries} media={media} refresh={refresh} {...(rawIn && { incomingRaw: rawIn })} onRawUsed={clearRaw} />}
       {tab === 'belanja' && <BelanjaTab />}
       {tab === 'library' && <LibraryTab />}
       {tab === 'standar' && <StandardsTab product={stdProduct} setProduct={setStdProduct} />}
