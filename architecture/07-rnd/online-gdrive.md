@@ -2,6 +2,8 @@
 
 Keputusan: DEC-065 (2026-10-13). Owner minta "semuanya online, gratis, simpan data pakai Google Drive".
 
+**Alamat online:** https://gemasstudio.vercel.app (Vercel project `gemasstudio`, akun owner; root `apps/web`, build `pnpm run vercel-build`; deploy ulang: `npx vercel deploy --prod` dari folder repo).
+
 ## Bentuknya
 
 | Bagian | Layanan | Biaya |
@@ -31,7 +33,7 @@ Keamanan:
 
 ## Langkah owner (sekali saja)
 
-### 1. Masuk Vercel CLI (agar Claude bisa mengunggah aplikasi)
+### 1. Masuk Vercel CLI — SELESAI 2026-10-13
 Di terminal folder proyek, jalankan `npx vercel login`, lalu pilih cara masuk yang sama dengan akun Vercel-mu. Claude tidak pernah melihat kata sandimu.
 
 ### 2. Buat Client ID Google (untuk tombol sinkron)
@@ -44,7 +46,7 @@ Di terminal folder proyek, jalankan `npx vercel login`, lalu pilih cara masuk ya
    - Di **Test users**, tambahkan email Google kamu (dan asisten). Status "Testing" sudah cukup, tidak perlu verifikasi Google.
 5. Buat Client ID: **APIs & Services → Credentials → Create credentials → OAuth client ID**.
    - Tipe: **Web application**.
-   - Authorized JavaScript origins: alamat Vercel aplikasi (mis. `https://gemasstudio.vercel.app`) dan `http://localhost:3000`.
+   - Authorized JavaScript origins: alamat aplikasi **https://gemasstudio.vercel.app** dan `http://localhost:3000`.
    - Tidak perlu redirect URI.
 6. Salin **Client ID**, yang berakhiran `.apps.googleusercontent.com`. Tempel di `/lab` → Ringkasan → Sinkron Google Drive → **Aktifkan** (lakukan sekali di tiap perangkat), atau kirim ke Claude untuk dipasang permanen sebagai `NEXT_PUBLIC_GOOGLE_CLIENT_ID`.
 
