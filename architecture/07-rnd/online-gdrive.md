@@ -2,7 +2,7 @@
 
 Keputusan: DEC-065 (2026-10-13). Owner minta "semuanya online, gratis, simpan data pakai Google Drive".
 
-**Alamat online:** https://gemasstudio.vercel.app (Vercel project `gemasstudio`, akun owner; root `apps/web`, build `pnpm run vercel-build`; deploy ulang: `npx vercel deploy --prod` dari folder repo).
+**Alamat online:** https://gemasstudio.vercel.app · **R&D Lab untuk HP:** https://gemas-rnd.vercel.app (langsung ke /lab) (Vercel project `gemasstudio`, akun owner; root `apps/web`, build `pnpm run vercel-build`; deploy ulang: `npx vercel deploy --prod` dari folder repo).
 
 ## Bentuknya
 
