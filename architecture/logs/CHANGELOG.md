@@ -3,6 +3,12 @@
 Format: [Keep a Changelog](https://keepachangelog.com/id/1.1.0/) · Versi dataset mengikuti SemVer (ADR-002).
 Waktu dalam WIB (UTC+7).
 
+## [laporan harian per hari] — 2026-10-14
+### Ditambahkan
+- Riset Produk: tiap laporan harian bisa diunduh PDF / Word / PowerPoint; tombol "Lanjut ke Hari ke-N" untuk melanjutkan ke hari berikutnya.
+### Diperbaiki
+- Waktu ukur bawaan ikut tanggal catatan (sebelumnya selalu tanggal hari ini).
+
 ## [Bahan Baku: dropdown kustom, item baru, statistik nyata] — 2026-10-14
 ### Diubah
 - Dropdown Bahan Baku kustom berwarna putih; modal tampil penuh tanpa terpotong & halaman tetap bisa digulir; item baru (kelapa tua/muda, arang mix residu, granul halus/kasar, sekam) dengan aturan kolom wajib; tooltip keterangan perlakuan; alert "Sebentar ya, lagi disiapin." sebelum pindah ke Riset Produk; daftar bahan baku tersimpan; kartu statistik R&D pakai data nyata (Bahan baku, Berjalan).

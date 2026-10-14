@@ -40,6 +40,23 @@ import { MediaPicker } from './MediaPicker';
 import { ProductMark, Section, TextInput } from './ui';
 
 type ExportKind = 'pdf' | 'docx' | 'pptx';
+
+/** Unduh laporan SATU hari riset (DEC-072) dalam PDF / Word / PowerPoint — isi & grafik sama seperti laporan gabungan. */
+async function downloadDaily(kind: ExportKind, key: string, entryId: string, protocols: ProtocolVersion[], entries: DailyEntry[], media: MediaItem[]) {
+  const { buildDailyResearchReport } = await import('@/lib/researchReport');
+  const report = buildDailyResearchReport(key, protocols, entries, media, entryId);
+  const name = `${entryId}-laporan-harian.${kind}`;
+  if (kind === 'pdf') {
+    const { researchPdfBlob } = await import('@/lib/labPdf');
+    downloadBlob(await researchPdfBlob(report), name);
+  } else {
+    const o = await import('@/lib/officeExport');
+    const { chartPngs } = await import('@/lib/chartPng');
+    const charts = await chartPngs(report.blocks.flatMap((b) => b.charts ?? []));
+    const bytes = kind === 'docx' ? o.buildDocx(report, charts) : o.buildPptx(report, charts);
+    downloadBlob(new Blob([bytes as Uint8Array<ArrayBuffer>], { type: kind === 'docx' ? o.DOCX_MIME : o.PPTX_MIME }), name);
+  }
+}
 const KIND_LABEL: Record<ExportKind, string> = { pdf: 'PDF', docx: 'Word', pptx: 'PowerPoint' };
 
 /** Unduh laporan riset untuk versi tertentu (default terbaru) dalam PDF / Word / PowerPoint. */
@@ -425,7 +442,7 @@ function ResearchDetail({ rkey, protocols, entries, media, refresh, onBack, onNe
         <VersionView v={latest} media={media} />
       </Section>
 
-      <DailyLog e={pseudo} entries={days} media={media.filter((m) => m.experimentId === rkey && m.entryId.startsWith(`${rkey}-H`))} protocols={protocols} onSaved={refresh} finishable title="Laporan harian" {...(start && { startDate: start })} dayPlan={(n) => (latest.steps[n - 1] ? `Hari ke-${n}: ${latest.steps[n - 1]!.text}` : '')} />
+      <DailyLog e={pseudo} entries={days} media={media.filter((m) => m.experimentId === rkey && m.entryId.startsWith(`${rkey}-H`))} protocols={protocols} onSaved={refresh} finishable title="Laporan harian" downloads={(x, k) => downloadDaily(k, rkey, x.id, protocols, entries, media)} {...(start && { startDate: start })} dayPlan={(n) => (latest.steps[n - 1] ? `Hari ke-${n}: ${latest.steps[n - 1]!.text}` : '')} />
 
       {versions.length > 1 && (
         <Section title="Riwayat versi" testId="rp-history">

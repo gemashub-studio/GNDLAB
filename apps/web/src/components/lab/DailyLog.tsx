@@ -56,6 +56,7 @@ export function DailyLog({
   title = 'Catatan harian',
   startDate,
   dayPlan,
+  downloads,
 }: {
   e: Experiment;
   entries: DailyEntry[];
@@ -69,6 +70,8 @@ export function DailyLog({
   startDate?: string;
   /** Rencana hari ke-N dari resep (diisikan otomatis, tetap bisa diubah). */
   dayPlan?: (day: number) => string;
+  /** Riset produk: unduh laporan satu hari dalam PDF / Word / PowerPoint (DEC-072). */
+  downloads?: (entry: DailyEntry, kind: 'pdf' | 'docx' | 'pptx') => Promise<void>;
 }) {
   const [finish, setFinish] = useState(false);
   const lastAuto = useRef('');
@@ -87,6 +90,13 @@ export function DailyLog({
     setForm((f) => ((f.plan === '' || f.plan === lastAuto.current) && f.plan !== auto ? { ...f, plan: auto } : f));
     lastAuto.current = auto;
   }, [open, form.entryDate, startDate, dayPlan]);
+  /** Ganti tanggal catatan; waktu ukur yang masih bertanggal lama ikut pindah ke tanggal baru (jam tetap). */
+  const setDate = (d: string) =>
+    setForm((f) => ({
+      ...f,
+      entryDate: d,
+      measurements: /^\d{4}-\d{2}-\d{2}$/.test(d) ? f.measurements.map((m) => (m.at.slice(0, 10) === f.entryDate ? { ...m, at: `${d}${m.at.slice(10)}` } : m)) : f.measurements,
+    }));
   const set = (k: 'entryDate' | 'protocolId' | 'plan' | 'actual' | 'tools' | 'conditions' | 'deviations' | 'interpretation' | 'nextStep' | 'correctsEntryId') => (v: string) =>
     setForm((f) => ({ ...f, [k]: v }));
 
@@ -132,6 +142,25 @@ export function DailyLog({
     }
   };
 
+  /** Lanjut ke hari berikutnya (DEC-072): tanggal +1 hari; rencana = kegiatan resep hari itu, atau "langkah berikutnya" hari sebelumnya. */
+  const continueFrom = (prev: DailyEntry) => {
+    const d = new Date(`${prev.entryDate}T00:00:00Z`);
+    d.setUTCDate(d.getUTCDate() + 1);
+    const next = d.toISOString().slice(0, 10);
+    const n = dayNumber(startDate, next);
+    const auto = n && dayPlan ? dayPlan(n) : '';
+    lastAuto.current = auto;
+    const f0 = blankForm();
+    setForm({ ...f0, entryDate: next, protocolId: prev.protocolId, plan: auto || prev.nextStep, measurements: f0.measurements.map((m) => ({ ...m, at: `${next}${m.at.slice(10)}` })) });
+    setFiles([]);
+    setFinish(false);
+    setOpen(true);
+    setMsg('');
+    window.setTimeout(() => document.querySelector('[data-testid=day-form]')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
+  };
+  const lastEntry = [...entries].sort((a, b) => a.entryDate.localeCompare(b.entryDate) || a.createdAt.localeCompare(b.createdAt)).pop();
+  const closed = entries.some((x) => x.finished);
+
   const pdfDaily = async (entry: DailyEntry) => {
     const { dailyPdfBlob } = await import('@/lib/labPdf');
     downloadBlob(await dailyPdfBlob(e, entry, protocols, media), `${entry.id}-harian.pdf`);
@@ -158,7 +187,7 @@ export function DailyLog({
           <div className="grid gap-3 sm:grid-cols-2">
             <label className="flex flex-col gap-1.5">
               <span className="label-mono">Tanggal catatan</span>
-              <input type="date" className="field" value={form.entryDate} onChange={(ev) => set('entryDate')(ev.target.value)} data-testid="day-date" />
+              <input type="date" className="field" value={form.entryDate} onChange={(ev) => setDate(ev.target.value)} data-testid="day-date" />
             </label>
             <label className="flex flex-col gap-1.5">
               <span className="label-mono">Riset produk (resep) yang dipakai</span>
@@ -247,7 +276,16 @@ export function DailyLog({
       {entries.length ? (
         <ol className="flex flex-col gap-3" data-testid="day-list">
           {[...entries].reverse().map((x) => (
-            <EntryCard key={x.id} x={x} day={dayNumber(startDate, x.entryDate)} media={media.filter((m) => m.entryId === x.id)} protocols={protocols} onPdf={() => void pdfDaily(x)} />
+            <EntryCard
+              key={x.id}
+              x={x}
+              day={dayNumber(startDate, x.entryDate)}
+              media={media.filter((m) => m.entryId === x.id)}
+              protocols={protocols}
+              onPdf={() => void pdfDaily(x)}
+              {...(downloads && { downloads: (k: 'pdf' | 'docx' | 'pptx') => downloads(x, k) })}
+              {...(finishable && !closed && lastEntry?.id === x.id && { onContinue: () => continueFrom(x), nextDay: (dayNumber(startDate, x.entryDate) ?? 0) + 1 })}
+            />
           ))}
         </ol>
       ) : (
@@ -300,7 +338,17 @@ function Rows<T extends object>({
   );
 }
 
-function EntryCard({ x, day, media, protocols, onPdf }: { x: DailyEntry; day?: number; media: MediaItem[]; protocols: ProtocolVersion[]; onPdf: () => void }) {
+function EntryCard({ x, day, media, protocols, onPdf, downloads, onContinue, nextDay }: {
+  x: DailyEntry;
+  day?: number;
+  media: MediaItem[];
+  protocols: ProtocolVersion[];
+  onPdf: () => void;
+  downloads?: (kind: 'pdf' | 'docx' | 'pptx') => Promise<void>;
+  onContinue?: () => void;
+  nextDay?: number;
+}) {
+  const [busy, setBusy] = useState('');
   const urls = useMemo(() => media.map((m) => URL.createObjectURL(m.blob)), [media]);
   useEffect(() => () => urls.forEach((u) => URL.revokeObjectURL(u)), [urls]);
   const p = protocols.find((q) => q.id === x.protocolId);
@@ -320,7 +368,27 @@ function EntryCard({ x, day, media, protocols, onPdf }: { x: DailyEntry; day?: n
         {p && <span className="rounded-full bg-paper px-2.5 py-0.5 font-mono text-[11px]">{p.id} · {p.name}</span>}
         {x.correctsEntryId && <span className="rounded-full bg-safety px-2.5 py-0.5 font-mono text-[11px]">koreksi {x.correctsEntryId}</span>}
         {x.finished && <span className="rounded-full bg-ink px-2.5 py-0.5 font-mono text-[11px] text-acid">SELESAI</span>}
-        <button type="button" className="btn-ghost ml-auto min-h-[40px] px-3" onClick={onPdf} data-testid={`day-pdf-${x.id}`}>PDF harian</button>
+        {downloads ? (
+          <span className="ml-auto flex flex-wrap gap-1.5" data-testid={`day-dl-${x.id}`}>
+            {(['pdf', 'docx', 'pptx'] as const).map((k) => (
+              <button
+                key={k}
+                type="button"
+                disabled={!!busy}
+                className="btn-ghost min-h-[40px] px-3"
+                onClick={() => {
+                  setBusy(k);
+                  void downloads(k).finally(() => setBusy(''));
+                }}
+                data-testid={`day-${k}-${x.id}`}
+              >
+                {busy === k ? '…' : k === 'pdf' ? 'PDF' : k === 'docx' ? 'Word' : 'PowerPoint'}
+              </button>
+            ))}
+          </span>
+        ) : (
+          <button type="button" className="btn-ghost ml-auto min-h-[40px] px-3" onClick={onPdf} data-testid={`day-pdf-${x.id}`}>PDF harian</button>
+        )}
       </div>
       <div className="grid gap-3 sm:grid-cols-2">
         {part('Rencana', x.plan)}
@@ -384,6 +452,11 @@ function EntryCard({ x, day, media, protocols, onPdf }: { x: DailyEntry; day?: n
             </li>
           ))}
         </ul>
+      )}
+      {onContinue && (
+        <button type="button" className="btn-primary self-start" onClick={onContinue} data-testid={`day-continue-${x.id}`}>
+          Lanjut ke {nextDay && nextDay > 1 ? `Hari ke-${nextDay}` : 'hari berikutnya'} →
+        </button>
       )}
     </li>
   );

@@ -150,3 +150,25 @@ describe('grafik laporan (DEC-058)', () => {
     expect(zipNames(buildPptx(r, charts)).some((n) => /^ppt\/media\/image\d+\.png$/.test(n))).toBe(true);
   });
 });
+
+describe('laporan harian per hari (DEC-072)', () => {
+  it('satu hari: identitas, kegiatan resep hari itu, isi laporan hari itu saja, lanjut hari berikutnya; ekspor 3 format', async () => {
+    const { buildDailyResearchReport } = await import('@/lib/researchReport');
+    const v = { ...v1, startDate: '2026-10-11', steps: [{ text: 'Belah', duration: '', conditions: '' }, { text: 'Oven 60 °C', duration: '8 jam', conditions: '' }, { text: 'Kemas', duration: '', conditions: '' }] };
+    const d1 = { ...day('KE-P01-H01'), entryDate: '2026-10-12', nextStep: 'Cek kadar air' };
+    const d2 = { ...day('KE-P01-H02'), entryDate: '2026-10-13', actual: 'hari lain' };
+    const r = buildDailyResearchReport('KE-P01', [v], [d1, d2], [], 'KE-P01-H01', 'x');
+    expect(r.title).toBe('Laporan harian Hari ke-2 — ' + v.name);
+    const heads = r.blocks.map((b) => b.heading);
+    expect(heads).toContain('Kegiatan resep Hari ke-2');
+    expect(heads.find((h) => h.startsWith('Laporan Hari ke-2'))).toBeDefined();
+    expect(r.blocks.find((b) => b.heading === 'Kegiatan resep Hari ke-2')!.lines[0]).toBe('Hari ke-2: Oven 60 °C · 8 jam');
+    const next = r.blocks.find((b) => b.heading === 'Lanjut ke hari berikutnya')!;
+    expect(next.lines).toEqual(['Langkah berikutnya (isian): Cek kadar air', 'Kegiatan resep Hari ke-3: Kemas']);
+    expect(JSON.stringify(r)).not.toContain('hari lain');
+    expect(r.cover.meta[0]).toEqual(['Laporan', 'Hari ke-2 · 2026-10-12']);
+    expect(buildDocx(r).length).toBeGreaterThan(100);
+    expect(buildPptx(r).length).toBeGreaterThan(100);
+    expect(() => buildDailyResearchReport('KE-P01', [v], [d1], [], 'KE-P01-H09')).toThrow(/tidak ditemukan/);
+  });
+});

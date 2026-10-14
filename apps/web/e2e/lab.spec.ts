@@ -243,16 +243,38 @@ test.describe('GEMA RnD Lab', () => {
     await page.getByTestId('day-meas-name-0').fill('Kadar air');
     await page.getByTestId('day-meas-value-0').fill('9,5');
     await page.getByTestId('day-meas-unit-0').fill('%');
+    await page.getByTestId('day-next').fill('Timbang & kemas');
     await page.getByTestId('day-save').click();
     await expect(page.getByTestId('rp-status')).toHaveText('berjalan');
-    await page.getByTestId('day-new').click();
-    await page.getByTestId('day-date').fill('2026-10-13');
+
+    // laporan harian per hari: unduh PDF / Word / PowerPoint (DEC-072)
+    const h1 = `${key}-H01`;
+    {
+      const { readFileSync } = await import('node:fs');
+      for (const [k, magic] of [['pdf', '%PDF-'], ['docx', 'PK'], ['pptx', 'PK']] as const) {
+        const dl = page.waitForEvent('download');
+        await page.getByTestId(`day-${k}-${h1}`).click();
+        const d = await dl;
+        expect(d.suggestedFilename()).toBe(`${h1}-laporan-harian.${k}`);
+        const out = `test-results/laporan-harian.${k}`;
+        await d.saveAs(out);
+        expect(readFileSync(out).subarray(0, magic.length).toString()).toBe(magic);
+      }
+    }
+    // lanjut ke hari berikutnya: tanggal +1, rencana dari "langkah berikutnya" (resep tak punya Hari ke-3)
+    await expect(page.getByTestId(`day-continue-${h1}`)).toContainText('Hari ke-3');
+    await page.getByTestId(`day-continue-${h1}`).click();
+    await expect(page.getByTestId('day-date')).toHaveValue('2026-10-13');
+    await expect(page.getByTestId('day-plan')).toHaveValue('Timbang & kemas');
+    await expect(page.getByTestId('day-meas-at-0')).toHaveValue(/^2026-10-13T/);
     await page.getByTestId('day-actual').fill('Kering, dikemas');
     await page.getByTestId('day-finish').check();
     await page.getByTestId('day-save').click();
     await expect(page.getByTestId('rp-status')).toHaveText('SELESAI');
     await expect(page.getByTestId('rp-end')).toHaveText('2026-10-13 · 3 hari');
     await expect(page.getByTestId('lab-daily')).toContainText('Hari ke-2');
+    // riset selesai → tidak ada tombol lanjut lagi
+    await expect(page.locator('[data-testid^="day-continue-"]')).toHaveCount(0);
 
     const { readFileSync } = await import('node:fs');
     for (const [k, magic] of [['pdf', '%PDF-'], ['docx', 'PK'], ['pptx', 'PK']] as const) {

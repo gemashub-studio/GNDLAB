@@ -169,3 +169,4 @@
 
 ## 2026-10-14 · Claude — Bahan Baku UI
 - DEC-071: dropdown kustom (Dropdown.tsx), modal tanpa kunci gulir (portal absolute di posisi scroll), item baru + kolom wajib, tooltip perlakuan, alert spinner, catatan bahan baku (gemas-bahan), statistik hero nyata. Catatan teknis: heredoc Git Bash panjang sering gagal → tulis skrip .py ke scratchpad.
+- DEC-072: laporan harian per hari PDF/Word/PPT + tombol Lanjut ke Hari ke-N; waktu ukur ikut tanggal catatan. E2E lab 20/20.

@@ -243,3 +243,59 @@ export function buildResearchReport(
   ];
   return { title: `Riset Produk — ${latest.name} (versi ${latest.version})`, subtitle: `${key} · ${protocolProductName(latest)} · ${STATUS[status]}`, generatedAt, cover, kpis, blocks, footer: `GEMA RnD Lab · dibuat ${generatedAt}` };
 }
+
+/**
+ * Laporan HARIAN riset produk (DEC-072): satu laporan harian (Hari ke-N) dalam format yang sama dengan laporan
+ * gabungan (PDF/Word/PowerPoint) — identitas, bahan baku, kegiatan resep hari itu, isi laporan harian, hasil
+ * ukur & grafik hari itu, rencana hari berikutnya.
+ */
+export function buildDailyResearchReport(
+  key: string,
+  versions: readonly ProtocolVersion[],
+  entries: readonly DailyEntry[],
+  media: readonly MediaItem[],
+  entryId: string,
+  generatedAt = new Date().toLocaleString('id-ID'),
+): ResearchReport {
+  const entry = entries.find((e) => e.id === entryId && e.experimentId === key);
+  if (!entry) throw new RangeError(`Laporan harian ${entryId} tidak ditemukan`);
+  const all = [...versions].filter((v) => v.key === key).sort((a, b) => a.version - b.version);
+  const ver = (entry.protocolId && all.find((v) => v.id === entry.protocolId)) || all[all.length - 1];
+  if (!ver) throw new RangeError(`Riset ${key} tidak ditemukan`);
+  const full = buildResearchReport(key, versions, [entry], media, generatedAt, ver.id);
+  const start = ver.startDate ?? all[0]!.startDate;
+  const n = dayNumber(start, entry.entryDate);
+  const dayLabel = n ? `Hari ke-${n}` : entry.entryDate;
+  const step = n ? ver.steps[n - 1] : undefined;
+  const keep = new Set(['Identitas riset', 'Bahan baku', 'Ringkasan hasil & grafik']);
+  const dayBlock = full.blocks.find((b) => b.level === 2);
+  const blocks: ReportBlock[] = [
+    ...full.blocks.filter((b) => keep.has(b.heading)),
+    {
+      heading: `Kegiatan resep ${dayLabel}`,
+      level: 1,
+      lines: step ? [`${dayLabel}: ${step.text}${step.duration ? ` · ${step.duration}` : ''}${step.conditions ? ` · ${step.conditions}` : ''}`] : [`Resep versi ${ver.version} tidak punya kegiatan untuk ${dayLabel}.`],
+      images: [],
+    },
+    ...(dayBlock ? [{ ...dayBlock, level: 1 as const, heading: `Laporan ${dayLabel} · ${entry.entryDate}${entry.finished ? ' · LAPORAN PENUTUP' : ''}` }] : []),
+    {
+      heading: 'Lanjut ke hari berikutnya',
+      level: 1,
+      lines: entry.finished
+        ? ['Laporan ini adalah laporan penutup — riset ditandai SELESAI.']
+        : [
+            `Langkah berikutnya (isian): ${entry.nextStep.trim() || NOT_RECORDED}`,
+            ...(n && ver.steps[n] ? [`Kegiatan resep Hari ke-${n + 1}: ${ver.steps[n]!.text}`] : []),
+          ],
+      images: [],
+    },
+  ];
+  return {
+    ...full,
+    title: `Laporan harian ${dayLabel} — ${ver.name}`,
+    subtitle: `${key} · ${entry.id} · ${entry.entryDate}`,
+    cover: { ...full.cover, meta: [['Laporan', `${dayLabel} · ${entry.entryDate}`], ['Kode entri', entry.id], ...full.cover.meta] },
+    blocks,
+    footer: `GEMA RnD Lab · laporan harian ${entry.id} · dibuat ${generatedAt}`,
+  };
+}
