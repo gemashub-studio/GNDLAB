@@ -39,13 +39,14 @@ import { DailyLog } from './DailyLog';
 import { MediaPicker } from './MediaPicker';
 import { ProductMark, Section, TextInput } from './ui';
 
-type ExportKind = 'pdf' | 'docx' | 'pptx';
+type ExportKind = 'pdf' | 'docx' | 'pptx' | 'html';
 
 /** Unduh laporan SATU hari riset (DEC-072) dalam PDF / Word / PowerPoint — isi & grafik sama seperti laporan gabungan. */
 async function downloadDaily(kind: ExportKind, key: string, entryId: string, protocols: ProtocolVersion[], entries: DailyEntry[], media: MediaItem[]) {
   const { buildDailyResearchReport } = await import('@/lib/researchReport');
   const report = buildDailyResearchReport(key, protocols, entries, media, entryId);
   const name = `${entryId}-laporan-harian.${kind}`;
+  if (kind === 'html') return downloadHtml(report, media, name);
   if (kind === 'pdf') {
     const { researchPdfBlob } = await import('@/lib/labPdf');
     downloadBlob(await researchPdfBlob(report), name);
@@ -53,11 +54,32 @@ async function downloadDaily(kind: ExportKind, key: string, entryId: string, pro
     const o = await import('@/lib/officeExport');
     const { chartPngs } = await import('@/lib/chartPng');
     const charts = await chartPngs(report.blocks.flatMap((b) => b.charts ?? []));
-    const bytes = kind === 'docx' ? o.buildDocx(report, charts) : o.buildPptx(report, charts);
+    const bytes = kind === 'docx' ? o.buildDocx(report, charts) : o.buildPptx(report, charts, await reportVideos(report, media));
     downloadBlob(new Blob([bytes as Uint8Array<ArrayBuffer>], { type: kind === 'docx' ? o.DOCX_MIME : o.PPTX_MIME }), name);
   }
 }
-const KIND_LABEL: Record<ExportKind, string> = { pdf: 'PDF', docx: 'Word', pptx: 'PowerPoint' };
+const KIND_LABEL: Record<ExportKind, string> = { pdf: 'PDF', docx: 'Word', pptx: 'PowerPoint', html: 'HTML + video' };
+const KINDS: ExportKind[] = ['pdf', 'docx', 'pptx', 'html'];
+
+/** Video asli dari media laporan → ditanam di PowerPoint (DEC-073). */
+async function reportVideos(report: import('@/lib/researchReport').ResearchReport, media: MediaItem[]) {
+  const ids = new Set(report.blocks.flatMap((b) => b.images.filter((i) => i.video && i.mediaId).map((i) => i.mediaId!)));
+  const out = new Map<string, import('@/lib/officeExport').VideoFile>();
+  for (const m of media) {
+    if (!ids.has(m.id)) continue;
+    const mime = m.type.split(';')[0]!;
+    const ext = mime === 'video/webm' ? 'webm' : mime === 'video/quicktime' ? 'mov' : 'mp4';
+    out.set(m.id, { bytes: new Uint8Array(await m.blob.arrayBuffer()), ext, mime: ext === 'mp4' ? 'video/mp4' : mime });
+  }
+  return out;
+}
+
+/** Laporan HTML (DEC-073): video bisa diputar langsung; satu file mandiri. */
+async function downloadHtml(report: import('@/lib/researchReport').ResearchReport, media: MediaItem[], name: string) {
+  const { buildReportHtml } = await import('@/lib/reportHtml');
+  const { html } = await buildReportHtml(report, media);
+  downloadBlob(new Blob([html], { type: 'text/html;charset=utf-8' }), name);
+}
 
 /** Unduh laporan riset untuk versi tertentu (default terbaru) dalam PDF / Word / PowerPoint. */
 async function downloadResearch(kind: ExportKind, key: string, versionId: string | undefined, protocols: ProtocolVersion[], entries: DailyEntry[], media: MediaItem[]) {
@@ -65,6 +87,7 @@ async function downloadResearch(kind: ExportKind, key: string, versionId: string
   const report = buildResearchReport(key, protocols, entries, media, undefined, versionId);
   const v = versionId ? `-${versionId.slice(key.length + 1)}` : '';
   const name = `${key}${v}-riset-produk.${kind}`;
+  if (kind === 'html') return downloadHtml(report, media, name);
   if (kind === 'pdf') {
     const { researchPdfBlob } = await import('@/lib/labPdf');
     downloadBlob(await researchPdfBlob(report), name);
@@ -72,7 +95,7 @@ async function downloadResearch(kind: ExportKind, key: string, versionId: string
     const o = await import('@/lib/officeExport');
     const { chartPngs } = await import('@/lib/chartPng');
     const charts = await chartPngs(report.blocks.flatMap((b) => b.charts ?? []));
-    const bytes = kind === 'docx' ? o.buildDocx(report, charts) : o.buildPptx(report, charts);
+    const bytes = kind === 'docx' ? o.buildDocx(report, charts) : o.buildPptx(report, charts, await reportVideos(report, media));
     downloadBlob(new Blob([bytes as Uint8Array<ArrayBuffer>], { type: kind === 'docx' ? o.DOCX_MIME : o.PPTX_MIME }), name);
   }
 }
@@ -232,7 +255,7 @@ Ketik kode ${k} untuk menghapus:`);
                       {versions.map((v) => <option key={v.id} value={v.id}>Versi {v.version} · {v.createdAt.slice(0, 10)}</option>)}
                     </select>
                   </label>
-                  {(['pdf', 'docx', 'pptx'] as const).map((kind) => (
+                  {KINDS.map((kind) => (
                     <button
                       key={kind}
                       type="button"
@@ -430,7 +453,7 @@ function ResearchDetail({ rkey, protocols, entries, media, refresh, onBack, onNe
           <div><dt className="uppercase tracking-[0.12em]">Pembuat & asisten</dt><dd className="text-paper">{[latest.author || 'belum dicatat', ...(latest.assistants ?? [])].join(', ')}</dd></div>
         </dl>
         <div className="flex flex-wrap gap-2">
-          {(['pdf', 'docx', 'pptx'] as const).map((k) => (
+          {KINDS.map((k) => (
             <button key={k} type="button" disabled={!!busy} className="btn border-acid/40 bg-transparent text-acid hover:bg-acid hover:text-ink" onClick={() => void exportAs(k)} data-testid={`rp-${k}`}>
               {busy === k ? 'Menyiapkan…' : `Laporan ${k === 'pdf' ? 'PDF' : k === 'docx' ? 'Word (.docx)' : 'PowerPoint (.pptx)'}`}
             </button>

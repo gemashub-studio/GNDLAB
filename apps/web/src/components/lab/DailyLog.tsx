@@ -71,7 +71,7 @@ export function DailyLog({
   /** Rencana hari ke-N dari resep (diisikan otomatis, tetap bisa diubah). */
   dayPlan?: (day: number) => string;
   /** Riset produk: unduh laporan satu hari dalam PDF / Word / PowerPoint (DEC-072). */
-  downloads?: (entry: DailyEntry, kind: 'pdf' | 'docx' | 'pptx') => Promise<void>;
+  downloads?: (entry: DailyEntry, kind: 'pdf' | 'docx' | 'pptx' | 'html') => Promise<void>;
 }) {
   const [finish, setFinish] = useState(false);
   const lastAuto = useRef('');
@@ -283,7 +283,7 @@ export function DailyLog({
               media={media.filter((m) => m.entryId === x.id)}
               protocols={protocols}
               onPdf={() => void pdfDaily(x)}
-              {...(downloads && { downloads: (k: 'pdf' | 'docx' | 'pptx') => downloads(x, k) })}
+              {...(downloads && { downloads: (k: 'pdf' | 'docx' | 'pptx' | 'html') => downloads(x, k) })}
               {...(finishable && !closed && lastEntry?.id === x.id && { onContinue: () => continueFrom(x), nextDay: (dayNumber(startDate, x.entryDate) ?? 0) + 1 })}
             />
           ))}
@@ -344,7 +344,7 @@ function EntryCard({ x, day, media, protocols, onPdf, downloads, onContinue, nex
   media: MediaItem[];
   protocols: ProtocolVersion[];
   onPdf: () => void;
-  downloads?: (kind: 'pdf' | 'docx' | 'pptx') => Promise<void>;
+  downloads?: (kind: 'pdf' | 'docx' | 'pptx' | 'html') => Promise<void>;
   onContinue?: () => void;
   nextDay?: number;
 }) {
@@ -370,7 +370,7 @@ function EntryCard({ x, day, media, protocols, onPdf, downloads, onContinue, nex
         {x.finished && <span className="rounded-full bg-ink px-2.5 py-0.5 font-mono text-[11px] text-acid">SELESAI</span>}
         {downloads ? (
           <span className="ml-auto flex flex-wrap gap-1.5" data-testid={`day-dl-${x.id}`}>
-            {(['pdf', 'docx', 'pptx'] as const).map((k) => (
+            {(['pdf', 'docx', 'pptx', 'html'] as const).map((k) => (
               <button
                 key={k}
                 type="button"
@@ -382,7 +382,7 @@ function EntryCard({ x, day, media, protocols, onPdf, downloads, onContinue, nex
                 }}
                 data-testid={`day-${k}-${x.id}`}
               >
-                {busy === k ? '…' : k === 'pdf' ? 'PDF' : k === 'docx' ? 'Word' : 'PowerPoint'}
+                {busy === k ? '…' : k === 'pdf' ? 'PDF' : k === 'docx' ? 'Word' : k === 'pptx' ? 'PowerPoint' : 'HTML + video'}
               </button>
             ))}
           </span>

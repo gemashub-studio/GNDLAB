@@ -8,10 +8,13 @@ const stamp = () => {
   return `${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}${p(d.getSeconds())}`;
 };
 
-/** Format rekaman yang didukung browser (Chrome/Edge: webm; Safari: mp4). */
+/**
+ * Format rekaman: MP4 (H.264) didahulukan bila browser bisa (Chrome/Edge baru, Safari) — diputar di mana saja,
+ * termasuk PowerPoint & WhatsApp (DEC-073); WebM sebagai cadangan.
+ */
 function recorderType(): string {
   if (typeof MediaRecorder === 'undefined') return '';
-  for (const t of ['video/webm;codecs=vp9,opus', 'video/webm;codecs=vp8,opus', 'video/webm', 'video/mp4']) if (MediaRecorder.isTypeSupported(t)) return t;
+  for (const t of ['video/mp4;codecs=avc1.42E01E,mp4a.40.2', 'video/mp4;codecs=avc1', 'video/mp4', 'video/webm;codecs=vp9,opus', 'video/webm;codecs=vp8,opus', 'video/webm']) if (MediaRecorder.isTypeSupported(t)) return t;
   return '';
 }
 

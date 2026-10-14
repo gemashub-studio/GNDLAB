@@ -172,3 +172,35 @@ describe('laporan harian per hari (DEC-072)', () => {
     expect(() => buildDailyResearchReport('KE-P01', [v], [d1], [], 'KE-P01-H09')).toThrow(/tidak ditemukan/);
   });
 });
+
+describe('laporan dengan video (DEC-073)', () => {
+  const vidMedia = { id: 'KE-P01-v1-I1-M01', experimentId: 'KE-P01', entryId: 'KE-P01-v1', name: 'rekam.mp4', type: 'video/mp4', size: 4, caption: 'aduk', createdAt: 'x', thumb: 'data:image/jpeg;base64,/9j/', blob: new Blob([new Uint8Array([0, 0, 0, 24])]) };
+  const fotoMedia = { ...vidMedia, id: 'KE-P01-v1-I1-M02', name: 'foto.jpg', type: 'image/jpeg', caption: 'daging' };
+  const v = { ...v1, ingredients: [{ name: 'Daging kelapa', amount: '2', unit: 'kg', mediaIds: [vidMedia.id, fotoMedia.id] }] };
+
+  it('HTML: video diputar (<video controls> + data URL asli), foto asli, grafik SVG, teks di-escape', async () => {
+    const { buildReportHtml } = await import('@/lib/reportHtml');
+    const r = buildResearchReport('KE-P01', [v], [day('KE-P01-H01'), { ...day('KE-P01-H02'), entryDate: '2026-10-13' }], [vidMedia, fotoMedia], 'x');
+    const fake = async (m: { type: string }) => `data:${m.type};base64,QUJD`;
+    const { html, videos } = await buildReportHtml(r, [vidMedia, fotoMedia], fake);
+    expect(videos).toBe(1);
+    expect(html.startsWith('<!doctype html>')).toBe(true);
+    expect(html).toContain('<video controls playsinline preload="metadata" poster="data:image/jpeg;base64,/9j/" src="data:video/mp4;base64,QUJD">');
+    expect(html).toContain('<img src="data:image/jpeg;base64,QUJD"');
+    expect(html).toContain('Kopra oven &lt;bertahap&gt; &amp; &quot;putih&quot;');
+    expect(html).toContain('<meta name="viewport"');
+  });
+
+  it('PowerPoint: video asli tertanam (videoFile + p14:media + urutan klik), tanpa video tetap gambar', async () => {
+    const r = buildResearchReport('KE-P01', [v], [], [vidMedia, fotoMedia], 'x');
+    const vids = new Map([[vidMedia.id, { bytes: new Uint8Array([1, 2, 3]), ext: 'mp4', mime: 'video/mp4' }]]);
+    const zip = buildPptx(r, new Map(), vids);
+    expect(zipNames(zip)).toContain('ppt/media/media1.mp4');
+    const text = new TextDecoder().decode(zip);
+    expect(text).toContain('<a:videoFile r:link="rIdV1"/>');
+    expect(text).toContain('{DAA4B4D4-6D71-4841-9C94-3DE7FCFB9230}');
+    expect(text).toContain('cmd="togglePause"');
+    expect(text).toContain('<Default Extension="mp4" ContentType="video/mp4"/>');
+    expect(zipNames(buildPptx(r)).some((n) => n.includes('media1.mp4'))).toBe(false);
+  });
+});

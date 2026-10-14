@@ -3,6 +3,13 @@
 Format: [Keep a Changelog](https://keepachangelog.com/id/1.1.0/) · Versi dataset mengikuti SemVer (ADR-002).
 Waktu dalam WIB (UTC+7).
 
+## [laporan dengan video] — 2026-10-15
+### Ditambahkan
+- Unduhan "HTML + video" (laporan gabungan & per hari): video bisa diputar, foto resolusi asli, satu file offline.
+- PowerPoint kini berisi video asli yang bisa diputar.
+### Diubah
+- Rekam video di halaman memakai MP4 bila didukung browser.
+
 ## [laporan harian per hari] — 2026-10-14
 ### Ditambahkan
 - Riset Produk: tiap laporan harian bisa diunduh PDF / Word / PowerPoint; tombol "Lanjut ke Hari ke-N" untuk melanjutkan ke hari berikutnya.

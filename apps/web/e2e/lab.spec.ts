@@ -251,7 +251,7 @@ test.describe('GEMA RnD Lab', () => {
     const h1 = `${key}-H01`;
     {
       const { readFileSync } = await import('node:fs');
-      for (const [k, magic] of [['pdf', '%PDF-'], ['docx', 'PK'], ['pptx', 'PK']] as const) {
+      for (const [k, magic] of [['pdf', '%PDF-'], ['docx', 'PK'], ['pptx', 'PK'], ['html', '<!doctype html>']] as const) {
         const dl = page.waitForEvent('download');
         await page.getByTestId(`day-${k}-${h1}`).click();
         const d = await dl;
@@ -277,7 +277,7 @@ test.describe('GEMA RnD Lab', () => {
     await expect(page.locator('[data-testid^="day-continue-"]')).toHaveCount(0);
 
     const { readFileSync } = await import('node:fs');
-    for (const [k, magic] of [['pdf', '%PDF-'], ['docx', 'PK'], ['pptx', 'PK']] as const) {
+    for (const [k, magic] of [['pdf', '%PDF-'], ['docx', 'PK'], ['pptx', 'PK'], ['html', '<!doctype html>']] as const) {
       const dl = page.waitForEvent('download');
       await page.getByTestId(`rp-${k}`).click();
       const d = await dl;

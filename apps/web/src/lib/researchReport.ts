@@ -12,6 +12,8 @@ export interface ReportImage {
   /** JPEG data URL (thumbnail); kosong bila tak ada pratinjau. */
   dataUrl: string;
   video: boolean;
+  /** ID media asli (untuk laporan HTML yang memutar video & foto resolusi penuh, DEC-073). */
+  mediaId?: string;
 }
 
 export interface ReportBlock {
@@ -51,7 +53,7 @@ export interface ResearchReport {
 }
 
 const or = (v: string | undefined) => (v && v.trim() ? v.trim() : NOT_RECORDED);
-const img = (m: MediaItem): ReportImage => ({ name: m.name, caption: m.caption, dataUrl: m.thumb, video: m.type.startsWith('video/') });
+const img = (m: MediaItem): ReportImage => ({ name: m.name, caption: m.caption, dataUrl: m.thumb, video: m.type.startsWith('video/'), mediaId: m.id });
 const STATUS: Record<ReturnType<typeof researchStatus>, string> = { 'belum-mulai': 'Belum ada laporan harian', berjalan: 'Berjalan', selesai: 'SELESAI' };
 
 /** Bahan baku dari menu Bahan Baku (DEC-068), + riset rujukan (knowledge) milik pengguna. */

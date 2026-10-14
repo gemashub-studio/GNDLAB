@@ -304,6 +304,22 @@ function pTextBox(id: number, x: number, y: number, w: number, h: number, paras:
 const pRect = (id: number, x: number, y: number, w: number, h: number, fill: string, geom = 'rect') =>
   `<p:sp><p:nvSpPr><p:cNvPr id="${id}" name="Bentuk ${id}"/><p:cNvSpPr/><p:nvPr/></p:nvSpPr><p:spPr><a:xfrm><a:off x="${Math.round(x)}" y="${Math.round(y)}"/><a:ext cx="${Math.round(w)}" cy="${Math.round(h)}"/></a:xfrm><a:prstGeom prst="${geom}"><a:avLst/></a:prstGeom><a:solidFill><a:srgbClr val="${fill}"/></a:solidFill><a:ln><a:noFill/></a:ln></p:spPr></p:sp>`;
 
+/** Video tertanam (PowerPoint 2010+): poster = gambar pratinjau; a:videoFile + p14:media menunjuk berkas video. */
+function pVideo(id: number, posterRid: string, rid: string, mrid: string, x: number, y: number, w: number, h: number, name: string): string {
+  return `<p:pic><p:nvPicPr><p:cNvPr id="${id}" name="${xml(name)}"><a:hlinkClick r:id="" action="ppaction://media"/></p:cNvPr><p:cNvPicPr><a:picLocks noChangeAspect="1"/></p:cNvPicPr><p:nvPr><a:videoFile r:link="${rid}"/><p:extLst><p:ext uri="{DAA4B4D4-6D71-4841-9C94-3DE7FCFB9230}"><p14:media xmlns:p14="http://schemas.microsoft.com/office/powerpoint/2010/main" r:embed="${mrid}"/></p:ext></p:extLst></p:nvPr></p:nvPicPr><p:blipFill><a:blip r:embed="${posterRid}"/><a:stretch><a:fillRect/></a:stretch></p:blipFill><p:spPr><a:xfrm><a:off x="${Math.round(x)}" y="${Math.round(y)}"/><a:ext cx="${Math.round(w)}" cy="${Math.round(h)}"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></p:spPr></p:pic>`;
+}
+
+/** Urutan klik (p:timing) sama seperti buatan PowerPoint: klik video → putar/jeda. */
+function videoTiming(spids: number[]): string {
+  let id = 1;
+  const nodes = spids.map((sp) => {
+    const t = [++id, ++id, ++id, ++id, ++id];
+    return `<p:seq concurrent="1" nextAc="seek"><p:cTn id="${t[0]}" restart="whenNotActive" fill="hold" evtFilter="cancelBubble" nodeType="interactiveSeq"><p:stCondLst><p:cond evt="onClick" delay="0"><p:tgtEl><p:spTgt spid="${sp}"/></p:tgtEl></p:cond></p:stCondLst><p:endSync evt="end" delay="0"><p:rtn val="all"/></p:endSync><p:childTnLst><p:par><p:cTn id="${t[1]}" fill="hold"><p:stCondLst><p:cond delay="0"/></p:stCondLst><p:childTnLst><p:par><p:cTn id="${t[2]}" fill="hold"><p:stCondLst><p:cond delay="0"/></p:stCondLst><p:childTnLst><p:par><p:cTn id="${t[3]}" presetID="2" presetClass="mediacall" presetSubtype="0" fill="hold" nodeType="clickEffect"><p:stCondLst><p:cond delay="0"/></p:stCondLst><p:childTnLst><p:cmd type="call" cmd="togglePause"><p:cBhvr><p:cTn id="${t[4]}" dur="1" fill="hold"/><p:tgtEl><p:spTgt spid="${sp}"/></p:tgtEl></p:cBhvr></p:cmd></p:childTnLst></p:cTn></p:par></p:childTnLst></p:cTn></p:par></p:childTnLst></p:cTn></p:par></p:childTnLst></p:cTn><p:nextCondLst><p:cond evt="onClick" delay="0"><p:tgtEl><p:spTgt spid="${sp}"/></p:tgtEl></p:cond></p:nextCondLst></p:seq>`;
+  });
+  const media = spids.map((sp) => `<p:video><p:cMediaNode vol="80000"><p:cTn id="${++id}" fill="hold" display="0"><p:stCondLst><p:cond delay="indefinite"/></p:stCondLst></p:cTn><p:tgtEl><p:spTgt spid="${sp}"/></p:tgtEl></p:cMediaNode></p:video>`);
+  return `<p:timing><p:tnLst><p:par><p:cTn id="1" dur="indefinite" restart="never" nodeType="tmRoot"><p:childTnLst>${nodes.join('')}${media.join('')}</p:childTnLst></p:cTn></p:par></p:tnLst></p:timing>`;
+}
+
 function pPic(id: number, rid: string, x: number, y: number, w: number, h: number, name: string): string {
   return `<p:pic><p:nvPicPr><p:cNvPr id="${id}" name="${xml(name)}"/><p:cNvPicPr><a:picLocks noChangeAspect="1"/></p:cNvPicPr><p:nvPr/></p:nvPicPr><p:blipFill><a:blip r:embed="${rid}"/><a:stretch><a:fillRect/></a:stretch></p:blipFill><p:spPr><a:xfrm><a:off x="${Math.round(x)}" y="${Math.round(y)}"/><a:ext cx="${Math.round(w)}" cy="${Math.round(h)}"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></p:spPr></p:pic>`;
 }
@@ -318,16 +334,29 @@ function pTable(id: number, x: number, y: number, w: number, head: string[], row
     .join('')}</a:tbl></a:graphicData></a:graphic></p:graphicFrame>`;
 }
 
+/** Video asli untuk ditanam di PowerPoint (DEC-073), per `ReportImage.mediaId`. */
+export interface VideoFile {
+  bytes: Uint8Array;
+  /** mp4 | webm | mov | m4v */
+  ext: string;
+  mime: string;
+}
+export type VideoFiles = ReadonlyMap<string, VideoFile>;
+
 interface Slide {
   shapes: string;
   pics: (Pic & { ext: 'jpeg' | 'png' })[];
+  /** Video tertanam: rid (video) & mrid (media) menunjuk berkas yang sama. */
+  vids?: { rid: string; mrid: string; file: string; bytes: Uint8Array; spid: number }[];
   dark?: boolean;
 }
 
 const LINES_PER_SLIDE = 9;
 const ROWS_PER_SLIDE = 9;
 
-export function buildPptx(r: ResearchReport, charts: ChartPngs = new Map()): Uint8Array {
+export function buildPptx(r: ResearchReport, charts: ChartPngs = new Map(), videos: VideoFiles = new Map()): Uint8Array {
+  let vidN = 0;
+  const vidExts = new Map<string, string>();
   const slides: Slide[] = [];
   const M = 500000;
   const CW = SW - 2 * M;
@@ -431,6 +460,7 @@ export function buildPptx(r: ResearchReport, charts: ChartPngs = new Map()): Uin
     // foto: 3 per slide
     for (let i = 0; i < b.images.length; i += 3) {
       const pics: Slide['pics'] = [];
+      const vids: NonNullable<Slide['vids']> = [];
       let shapes = title(`${head} — foto/video`);
       const gap = 250000;
       const boxW = (CW - 2 * gap) / 3;
@@ -441,11 +471,21 @@ export function buildPptx(r: ResearchReport, charts: ChartPngs = new Map()): Uin
           const sz = jpegSize(bytes);
           const p = pic(bytes, 'jpeg', sz.w, sz.h, imgCaption(im), pics);
           const f = fitBox(sz.w, sz.h, boxW, 3400000);
-          shapes += pPic(50 + k, p.rid, x + (boxW - f.w) / 2, 1200000, f.w, f.h, p.file);
+          const v = im.video && im.mediaId ? videos.get(im.mediaId) : undefined;
+          if (v) {
+            // video asli tertanam (bisa diputar di PowerPoint); gambar pratinjau = poster
+            vidN++;
+            const file = `media${vidN}.${v.ext}`;
+            vidExts.set(v.ext, v.mime);
+            const rid = `rIdV${vids.length + 1}`;
+            const mrid = `rIdM${vids.length + 1}`;
+            vids.push({ rid, mrid, file, bytes: v.bytes, spid: 50 + k });
+            shapes += pVideo(50 + k, p.rid, rid, mrid, x + (boxW - f.w) / 2, 1200000, f.w, f.h, im.name);
+          } else shapes += pPic(50 + k, p.rid, x + (boxW - f.w) / 2, 1200000, f.w, f.h, p.file);
         } else shapes += pRect(50 + k, x, 1200000, boxW, 1200000, PAPER, 'roundRect');
         shapes += pTextBox(60 + k, x, 4700000, boxW, 900000, [{ t: imgCaption(im), sz: 1100 }, { t: im.name, sz: 900, color: MUTED, mono: true }]);
       });
-      slides.push({ shapes, pics });
+      slides.push({ shapes, pics, ...(vids.length && { vids }) });
     }
   }
 
@@ -457,14 +497,15 @@ export function buildPptx(r: ResearchReport, charts: ChartPngs = new Map()): Uin
   });
 
   const files: ZipFile[] = [];
-  const slideXml = (s: Slide) => `${CT_HEAD}<p:sld ${P_NS}><p:cSld><p:spTree>${emptyTree}${s.shapes}</p:spTree></p:cSld><p:clrMapOvr><a:masterClrMapping/></p:clrMapOvr></p:sld>`;
+  const slideXml = (s: Slide) => `${CT_HEAD}<p:sld ${P_NS}><p:cSld><p:spTree>${emptyTree}${s.shapes}</p:spTree></p:cSld><p:clrMapOvr><a:masterClrMapping/></p:clrMapOvr>${s.vids?.length ? videoTiming(s.vids.map((v) => v.spid)) : ''}</p:sld>`;
   slides.forEach((s, i) => {
     files.push({ name: `ppt/slides/slide${i + 1}.xml`, data: txt(slideXml(s)) });
     files.push({
       name: `ppt/slides/_rels/slide${i + 1}.xml.rels`,
-      data: txt(`${CT_HEAD}<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="${REL_NS}/slideLayout" Target="../slideLayouts/slideLayout1.xml"/>${s.pics.map((p) => `<Relationship Id="${p.rid}" Type="${REL_NS}/image" Target="../media/${p.file}"/>`).join('')}</Relationships>`),
+      data: txt(`${CT_HEAD}<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="${REL_NS}/slideLayout" Target="../slideLayouts/slideLayout1.xml"/>${s.pics.map((p) => `<Relationship Id="${p.rid}" Type="${REL_NS}/image" Target="../media/${p.file}"/>`).join('')}${(s.vids ?? []).map((v) => `<Relationship Id="${v.rid}" Type="${REL_NS}/video" Target="../media/${v.file}"/><Relationship Id="${v.mrid}" Type="http://schemas.microsoft.com/office/2007/relationships/media" Target="../media/${v.file}"/>`).join('')}</Relationships>`),
     });
     for (const p of s.pics) files.push({ name: `ppt/media/${p.file}`, data: p.bytes });
+    for (const v of s.vids ?? []) files.push({ name: `ppt/media/${v.file}`, data: v.bytes });
   });
 
   const theme = `${CT_HEAD}<a:theme xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" name="GEMA"><a:themeElements><a:clrScheme name="GEMA"><a:dk1><a:srgbClr val="0E1A1F"/></a:dk1><a:lt1><a:srgbClr val="FFFFFF"/></a:lt1><a:dk2><a:srgbClr val="2A3A41"/></a:dk2><a:lt2><a:srgbClr val="F3F6F7"/></a:lt2><a:accent1><a:srgbClr val="63E6CF"/></a:accent1><a:accent2><a:srgbClr val="F5A524"/></a:accent2><a:accent3><a:srgbClr val="1FA88F"/></a:accent3><a:accent4><a:srgbClr val="5B6B72"/></a:accent4><a:accent5><a:srgbClr val="A9B8BE"/></a:accent5><a:accent6><a:srgbClr val="E2E8EA"/></a:accent6><a:hlink><a:srgbClr val="1FA88F"/></a:hlink><a:folHlink><a:srgbClr val="5B6B72"/></a:folHlink></a:clrScheme><a:fontScheme name="GEMA"><a:majorFont><a:latin typeface="Calibri"/><a:ea typeface=""/><a:cs typeface=""/></a:majorFont><a:minorFont><a:latin typeface="Calibri"/><a:ea typeface=""/><a:cs typeface=""/></a:minorFont></a:fontScheme><a:fmtScheme name="GEMA"><a:fillStyleLst><a:solidFill><a:schemeClr val="phClr"/></a:solidFill><a:solidFill><a:schemeClr val="phClr"/></a:solidFill><a:solidFill><a:schemeClr val="phClr"/></a:solidFill></a:fillStyleLst><a:lnStyleLst><a:ln w="6350"><a:solidFill><a:schemeClr val="phClr"/></a:solidFill></a:ln><a:ln w="12700"><a:solidFill><a:schemeClr val="phClr"/></a:solidFill></a:ln><a:ln w="19050"><a:solidFill><a:schemeClr val="phClr"/></a:solidFill></a:ln></a:lnStyleLst><a:effectStyleLst><a:effectStyle><a:effectLst/></a:effectStyle><a:effectStyle><a:effectLst/></a:effectStyle><a:effectStyle><a:effectLst/></a:effectStyle></a:effectStyleLst><a:bgFillStyleLst><a:solidFill><a:schemeClr val="phClr"/></a:solidFill><a:solidFill><a:schemeClr val="phClr"/></a:solidFill><a:solidFill><a:schemeClr val="phClr"/></a:solidFill></a:bgFillStyleLst></a:fmtScheme></a:themeElements></a:theme>`;
@@ -472,7 +513,7 @@ export function buildPptx(r: ResearchReport, charts: ChartPngs = new Map()): Uin
   const layout = `${CT_HEAD}<p:sldLayout ${P_NS} type="blank" preserve="1"><p:cSld name="Kosong"><p:spTree>${emptyTree}</p:spTree></p:cSld><p:clrMapOvr><a:masterClrMapping/></p:clrMapOvr></p:sldLayout>`;
   const pres = `${CT_HEAD}<p:presentation ${P_NS} saveSubsetFonts="1"><p:sldMasterIdLst><p:sldMasterId id="2147483648" r:id="rId1"/></p:sldMasterIdLst><p:sldIdLst>${slides.map((_, i) => `<p:sldId id="${256 + i}" r:id="rId${i + 3}"/>`).join('')}</p:sldIdLst><p:sldSz cx="${SW}" cy="${SH}"/><p:notesSz cx="6858000" cy="9144000"/></p:presentation>`;
   const presRels = `${CT_HEAD}<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="${REL_NS}/slideMaster" Target="slideMasters/slideMaster1.xml"/><Relationship Id="rId2" Type="${REL_NS}/theme" Target="theme/theme1.xml"/>${slides.map((_, i) => `<Relationship Id="rId${i + 3}" Type="${REL_NS}/slide" Target="slides/slide${i + 1}.xml"/>`).join('')}</Relationships>`;
-  const types = `${CT_HEAD}<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Default Extension="jpeg" ContentType="image/jpeg"/><Default Extension="png" ContentType="image/png"/><Override PartName="/ppt/presentation.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.presentation.main+xml"/><Override PartName="/ppt/slideMasters/slideMaster1.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slideMaster+xml"/><Override PartName="/ppt/slideLayouts/slideLayout1.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slideLayout+xml"/><Override PartName="/ppt/theme/theme1.xml" ContentType="application/vnd.openxmlformats-officedocument.theme+xml"/>${slides.map((_, i) => `<Override PartName="/ppt/slides/slide${i + 1}.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slide+xml"/>`).join('')}</Types>`;
+  const types = `${CT_HEAD}<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Default Extension="jpeg" ContentType="image/jpeg"/><Default Extension="png" ContentType="image/png"/>${[...vidExts].map(([e, m]) => `<Default Extension="${e}" ContentType="${m}"/>`).join('')}<Override PartName="/ppt/presentation.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.presentation.main+xml"/><Override PartName="/ppt/slideMasters/slideMaster1.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slideMaster+xml"/><Override PartName="/ppt/slideLayouts/slideLayout1.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slideLayout+xml"/><Override PartName="/ppt/theme/theme1.xml" ContentType="application/vnd.openxmlformats-officedocument.theme+xml"/>${slides.map((_, i) => `<Override PartName="/ppt/slides/slide${i + 1}.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slide+xml"/>`).join('')}</Types>`;
   return zipStore([
     { name: '[Content_Types].xml', data: txt(types) },
     { name: '_rels/.rels', data: txt(`${CT_HEAD}<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="${REL_NS}/officeDocument" Target="ppt/presentation.xml"/></Relationships>`) },
