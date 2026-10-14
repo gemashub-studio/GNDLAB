@@ -232,3 +232,26 @@ describe('bahan baku & varian (DEC-068/069)', () => {
     expect(buildResearchReport('CK-P01', [ref], [], [], 'x').blocks.some((x) => x.heading === 'Bahan baku')).toBe(false);
   });
 });
+
+describe('bahan baku: kolom wajib per item & catatan (DEC-071)', () => {
+  it('kelapa wajib air/perlakuan daging/tebal; sekam, granul, arang cukup barang + berat utuh', async () => {
+    const { missingRawFields, blankRaw, isCoconutItem, jalurFromRaw, productFromRaw } = await import('@/lib/labStore');
+    expect(missingRawFields({ ...blankRaw(), item: 'Kelapa muda' })).toEqual(['Barang', 'Berat utuh', 'Air', 'Perlakuan daging', 'Tebal daging']);
+    for (const it of ['Sekam', 'Granul halus', 'Granul kasar', 'Arang mix residu', 'Arang']) {
+      expect(isCoconutItem(it)).toBe(false);
+      expect(missingRawFields({ ...blankRaw(), item: it, name: 'x' })).toEqual(['Berat utuh']);
+      expect(missingRawFields({ ...blankRaw(), item: it, name: 'x', wholeWeight: '500' })).toEqual([]);
+    }
+    expect(missingRawFields({ ...blankRaw(), name: 'k', wholeWeight: '1', water: '2', meatVariant: 'KE-1', meatThickness: '9' })).toEqual([]);
+    expect(jalurFromRaw({ ...blankRaw(), item: 'Sekam' })).toBe('Sekam');
+    expect(productFromRaw({ ...blankRaw(), item: 'Arang' })).toBe('AR');
+    expect(jalurFromRaw({ ...blankRaw(), variant: 'KE-4' })).toBe('Kopra4');
+  });
+
+  it('kode bahan baku BB-YYMMDD-NN berurutan per hari', async () => {
+    const { nextRawId } = await import('@/lib/bahanBaku');
+    const d = new Date(2026, 9, 14);
+    expect(nextRawId([], d, '')).toBe('BB-261014-01');
+    expect(nextRawId(['BB-261014-01', 'BB-261014-03K7', 'BB-261013-09'], d, '')).toBe('BB-261014-04');
+  });
+});

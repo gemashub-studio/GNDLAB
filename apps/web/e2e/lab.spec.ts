@@ -364,30 +364,57 @@ test.describe('Hapus hasil riset', () => {
     await expect(page.getByTestId('proto-coco-add')).toHaveCount(0);
 
     await page.getByTestId('lab-tab-bahan').click();
+    const hero = page.getByTestId('lab-hero');
+    await expect(hero).toContainText('Bahan baku');
     await page.getByTestId('raw-new').click();
     const modal = page.getByTestId('raw-modal');
-    await expect(modal.getByTestId('raw-item')).toContainText('Arang');
+    // dropdown kustom (bukan <select>): klik → daftar putih → pilih
+    const pick = async (id: string, value: string) => {
+      await modal.getByTestId(id).click();
+      await modal.getByTestId(`${id}-opt-${value}`).click();
+    };
+    await expect(modal.locator('select')).toHaveCount(0);
+    await modal.getByTestId('raw-item').click();
+    for (const it of ['Kelapa tua', 'Kelapa muda', 'Arang mix residu', 'Granul halus', 'Granul kasar', 'Sekam']) await expect(modal.getByTestId('raw-item-list')).toContainText(it);
+    await modal.getByTestId('raw-item-opt-Sekam').click();
+    // sekam: cukup barang + berat utuh (air/daging/tebal opsional)
+    await modal.getByTestId('raw-confirm').click();
+    await expect(modal).toContainText('Wajib diisi: Barang, Berat utuh.');
+    await pick('raw-item', 'Kelapa tua');
     await modal.getByTestId('raw-name').fill('Kelapa tua butir 1');
     await modal.getByTestId('raw-whole').fill('1.200');
+    await modal.getByTestId('raw-confirm').click();
+    await expect(modal).toContainText('Wajib diisi: Air, Perlakuan daging, Tebal daging.');
     await modal.getByTestId('raw-water').fill('300');
-    // perlakuan air & perlakuan daging = dua dropdown terpisah, keduanya bisa diisi
-    await expect(modal.getByTestId('raw-meat-variant').locator('option')).toHaveCount(11);
-    await expect(modal.getByTestId('raw-meat-variant')).toContainText('Kopra10');
-    await expect(modal.getByTestId('raw-water-variant').locator('option')).toHaveCount(21);
-    await expect(modal.getByTestId('raw-water-variant')).toContainText('Cuka2 — Cuka varian dua E2E');
-    await expect(modal.getByTestId('raw-water-variant')).toContainText('Bioleather10');
-    await modal.getByTestId('raw-water-variant').selectOption('CK-2');
+    // tooltip keterangan perlakuan saat kolom diklik
+    await modal.getByTestId('raw-water-variant').click();
+    await expect(modal.getByTestId('raw-water-variant-tip')).toContainText('jumlah uji coba yang akan dilakukan');
+    const list = modal.getByTestId('raw-water-variant-list');
+    await expect(list.getByRole('option')).toHaveCount(21);
+    await expect(list).toContainText('Cuka varian dua E2E');
+    await expect(list).toContainText('Bioleather10');
+    await list.getByTestId('raw-water-variant-opt-CK-2').click();
+    await expect(modal.getByTestId('raw-water-variant')).toContainText('Cuka2');
     await expect(modal.getByTestId('raw-water-variant-info')).toContainText('Cuka2 sudah dipakai');
-    await modal.getByTestId('raw-meat-variant').selectOption('KE-3');
+    await modal.getByTestId('raw-meat-variant').click();
+    await expect(modal.getByTestId('raw-meat-variant-list').getByRole('option')).toHaveCount(11);
+    await modal.getByTestId('raw-meat-variant-opt-KE-3').click();
     await modal.getByTestId('raw-meat').fill('10,5');
+    // halaman tetap bisa digulir saat modal terbuka
+    const y0 = await page.evaluate(() => window.scrollY);
+    await page.mouse.move(10, 300);
+    await page.mouse.wheel(0, 400);
+    await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(y0);
     await modal.getByTestId('raw-confirm').click();
     await expect(modal).toContainText('Pilih varian mana yang jadi jalur produk');
     await modal.getByTestId('raw-jalur-CK-2').check();
     await expect(modal.getByTestId('raw-jalur-info')).toContainText('Cuka2');
     await modal.getByTestId('raw-confirm').click();
+    await expect(page.getByTestId('raw-preparing')).toContainText('Sebentar ya, lagi disiapin.');
 
     // otomatis ke Riset Produk: jalur produk = Cuka2, data bahan baku sudah masuk
     await expect(page.getByTestId('lab-tab-protokol')).toHaveAttribute('aria-selected', 'true');
+    await expect(page.getByTestId('raw-preparing')).toHaveCount(0);
     await expect(page.getByTestId('proto-product')).toHaveValue('Cuka2');
     await expect(page.getByTestId('proto-product-code')).toContainText('CK');
     const raw = page.getByTestId('proto-raw');

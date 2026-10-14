@@ -7,6 +7,7 @@
  * file ini adalah cara memindahkan data secara manual sampai sinkronisasi diputuskan.
  */
 import { belanjaDb, type LpjReport } from './belanja';
+import { bahanDb, type RawRecord } from './bahanBaku';
 import { readTombs, writeTombs, type SyncPlan, type Tomb } from './labSync';
 import { labDb, type DailyEntry, type Experiment, type MediaItem, type NewMedia, type ProtocolDraft, type ProtocolVersion } from './labStore';
 
@@ -25,13 +26,15 @@ export interface LabBackup {
   drafts?: DraftJson[];
   /** Laporan belanja (DEC-061) — foto nota/barang sudah berupa data URL di dalamnya. */
   belanja?: LpjReport[];
+  /** Catatan bahan baku (DEC-071). */
+  bahan?: RawRecord[];
   /** Nisan penghapusan untuk sinkron (DEC-065). */
   deleted?: Tomb[];
 }
 
 /** Bentuk cadangan tanpa media (dipakai juga oleh uji unit). */
-export function labBackupJson(experiments: readonly Experiment[], exportedAt = new Date().toISOString(), rest: Partial<Pick<LabBackup, 'entries' | 'protocols' | 'media' | 'drafts' | 'belanja' | 'deleted'>> = {}): string {
-  return JSON.stringify({ format: 'gemas-lab', version: 2, exportedAt, experiments, entries: rest.entries ?? [], protocols: rest.protocols ?? [], media: rest.media ?? [], ...(rest.drafts?.length && { drafts: rest.drafts }), ...(rest.belanja?.length && { belanja: rest.belanja }), ...(rest.deleted?.length && { deleted: rest.deleted }) }, null, 2);
+export function labBackupJson(experiments: readonly Experiment[], exportedAt = new Date().toISOString(), rest: Partial<Pick<LabBackup, 'entries' | 'protocols' | 'media' | 'drafts' | 'belanja' | 'bahan' | 'deleted'>> = {}): string {
+  return JSON.stringify({ format: 'gemas-lab', version: 2, exportedAt, experiments, entries: rest.entries ?? [], protocols: rest.protocols ?? [], media: rest.media ?? [], ...(rest.drafts?.length && { drafts: rest.drafts }), ...(rest.belanja?.length && { belanja: rest.belanja }), ...(rest.bahan?.length && { bahan: rest.bahan }), ...(rest.deleted?.length && { deleted: rest.deleted }) }, null, 2);
 }
 
 export function parseBackup(text: string): LabBackup {
@@ -49,12 +52,12 @@ export function parseBackup(text: string): LabBackup {
 }
 
 export interface RestorePlan {
-  add: { experiments: Experiment[]; entries: DailyEntry[]; protocols: ProtocolVersion[]; media: MediaJson[]; drafts: DraftJson[]; belanja: LpjReport[] };
+  add: { experiments: Experiment[]; entries: DailyEntry[]; protocols: ProtocolVersion[]; media: MediaJson[]; drafts: DraftJson[]; belanja: LpjReport[]; bahan?: RawRecord[] };
   skipped: { kind: string; id: string }[];
 }
 
 /** Rencana pemulihan: yang ID-nya belum ada ditambah; yang sudah ada dilewati (tidak menimpa). */
-export function planRestore(b: LabBackup, existing: { experiments: Set<string>; entries: Set<string>; protocols: Set<string>; media: Set<string>; drafts?: Set<string>; belanja?: Set<string> }): RestorePlan {
+export function planRestore(b: LabBackup, existing: { experiments: Set<string>; entries: Set<string>; protocols: Set<string>; media: Set<string>; drafts?: Set<string>; belanja?: Set<string>; bahan?: Set<string> }): RestorePlan {
   const skipped: RestorePlan['skipped'] = [];
   const pick = <T extends { id: string }>(kind: string, list: T[] | undefined, have: Set<string>) =>
     (list ?? []).filter((x) => {
@@ -72,6 +75,7 @@ export function planRestore(b: LabBackup, existing: { experiments: Set<string>; 
       media: pick('media', b.media, existing.media),
       drafts: pick('draf', b.drafts, existing.drafts ?? new Set()),
       belanja: pick('laporan belanja', b.belanja, existing.belanja ?? new Set()),
+      bahan: pick('bahan baku', b.bahan, existing.bahan ?? new Set()),
     },
     skipped,
   };
@@ -109,10 +113,11 @@ export async function exportLabBackup(): Promise<{ json: string; counts: Record<
   };
   const draftJson: DraftJson[] = [];
   const belanja = await (await belanjaDb()).getAll('reports');
+  const bahan = await (await bahanDb()).getAll('items');
   for (const dr of drafts) draftJson.push({ ...dr, pending: { ingredients: await conv(dr.pending.ingredients), tools: await conv(dr.pending.tools), steps: await conv(dr.pending.steps), ...(dr.pending.coconuts && { coconuts: await conv(dr.pending.coconuts) }) } });
   return {
-    json: labBackupJson(experiments, new Date().toISOString(), { entries, protocols, media: mediaJson, drafts: draftJson, belanja, deleted: readTombs() }),
-    counts: { eksperimen: experiments.length, 'catatan harian': entries.length, 'riset produk': protocols.length, draf: drafts.length, media: media.length, 'laporan belanja': belanja.length },
+    json: labBackupJson(experiments, new Date().toISOString(), { entries, protocols, media: mediaJson, drafts: draftJson, belanja, bahan, deleted: readTombs() }),
+    counts: { eksperimen: experiments.length, 'catatan harian': entries.length, 'riset produk': protocols.length, draf: drafts.length, media: media.length, 'laporan belanja': belanja.length, 'bahan baku': bahan.length },
   };
 }
 
@@ -120,7 +125,7 @@ export async function previewRestore(text: string): Promise<RestorePlan> {
   const b = parseBackup(text);
   const d = await labDb();
   const keys = async (s: 'experiments' | 'entries' | 'protocols' | 'media') => new Set((await d.getAllKeys(s)).map(String));
-  return planRestore(b, { experiments: await keys('experiments'), entries: await keys('entries'), protocols: await keys('protocols'), media: await keys('media'), drafts: new Set((await d.getAllKeys('drafts')).map(String)), belanja: new Set((await (await belanjaDb()).getAllKeys('reports')).map(String)) });
+  return planRestore(b, { experiments: await keys('experiments'), entries: await keys('entries'), protocols: await keys('protocols'), media: await keys('media'), drafts: new Set((await d.getAllKeys('drafts')).map(String)), belanja: new Set((await (await belanjaDb()).getAllKeys('reports')).map(String)), bahan: new Set((await (await bahanDb()).getAllKeys('items')).map(String)) });
 }
 
 /** Terapkan rencana: hanya `add` (gagal bila ada bentrok ID baru — tidak menimpa). */
@@ -134,6 +139,11 @@ export async function applyRestore(plan: RestorePlan): Promise<void> {
   const back = (rows: NewMediaJson[][]) => rows.map((row) => row.map(({ data, ...m }) => ({ ...m, blob: base64ToBlob(data, m.type) })));
   for (const dr of plan.add.drafts) await tx.objectStore('drafts').add({ ...dr, pending: { ingredients: back(dr.pending.ingredients), tools: back(dr.pending.tools), steps: back(dr.pending.steps), ...(dr.pending.coconuts && { coconuts: back(dr.pending.coconuts) }) } });
   await tx.done;
+  if (plan.add.bahan?.length) {
+    const bt = (await bahanDb()).transaction('items', 'readwrite');
+    for (const r of plan.add.bahan) await bt.store.add(r);
+    await bt.done;
+  }
   if (plan.add.belanja.length) {
     const bt = (await belanjaDb()).transaction('reports', 'readwrite');
     for (const r of plan.add.belanja) await bt.store.add(r);

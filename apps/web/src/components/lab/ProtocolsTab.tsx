@@ -11,6 +11,7 @@ import {
   LAB_PRODUCTS,
   nextProtocolKey,
   productFromRaw,
+  jalurFromRaw,
   findSlot,
   VARIANT_MAX,
   variantLabel,
@@ -83,7 +84,7 @@ export function ProtocolsTab({ protocols, entries, media, refresh, incomingRaw, 
     const slot = findSlot(incomingRaw.variant, protocols);
     const raw = { ...incomingRaw, refKeys: slot?.research ? [slot.research.key] : [] };
     // Varian terpilih = jalur produk Resep baru (mis. "Cuka3"); data bahan baku ikut masuk.
-    setEditing({ product: productFromRaw(raw), raw, nonce: Date.now(), ...(raw.variant && { productText: variantLabel(raw.variant) }) });
+    setEditing({ product: productFromRaw(raw), raw, nonce: Date.now(), productText: jalurFromRaw(raw) });
     onRawUsed?.();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [incomingRaw, onRawUsed]);

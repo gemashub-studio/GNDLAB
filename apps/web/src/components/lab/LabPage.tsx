@@ -4,13 +4,14 @@ import { BelanjaTab } from './BelanjaTab';
 import Link from 'next/link';
 import { useCallback, useEffect, useState } from 'react';
 import { GEMA_SOURCES, sourceCounts } from '@/lib/gemaSources';
-import { listEntries, listExperiments, listMedia, listProtocols, type DailyEntry, type Experiment, type LabProductId, type MediaItem, type ProtocolVersion, type RawMaterial } from '@/lib/labStore';
+import { listEntries, listExperiments, listMedia, listProtocols, type DailyEntry, type Experiment, type LabProductId, type MediaItem, type ProtocolVersion, type RawMaterial, listDrafts, researchStatus } from '@/lib/labStore';
 import { BackupPanel } from './BackupPanel';
 import { ExperimentsTab } from './ExperimentsTab';
 import { LabOverview } from './LabOverview';
 import { LibraryTab } from './LibraryTab';
 import { ProtocolsTab } from './ProtocolsTab';
 import { BahanBakuTab } from './BahanBakuTab';
+import { listRaw, type RawRecord } from '@/lib/bahanBaku';
 import { StandardsTab } from './StandardsTab';
 
 const TABS = [
@@ -30,6 +31,8 @@ export function LabPage() {
   const [entries, setEntries] = useState<DailyEntry[]>([]);
   const [media, setMedia] = useState<MediaItem[]>([]);
   const [protocols, setProtocols] = useState<ProtocolVersion[]>([]);
+  const [rawRecs, setRawRecs] = useState<RawRecord[]>([]);
+  const [draftCount, setDraftCount] = useState(0);
   const [tab, setTab] = useState<TabId>('ringkasan');
   const [rawIn, setRawIn] = useState<RawMaterial>();
   const clearRaw = useCallback(() => setRawIn(undefined), []);
@@ -40,6 +43,8 @@ export function LabPage() {
   const refresh = useCallback(async () => {
     try {
       const [x, e, m, p] = await Promise.all([listExperiments(), listEntries(), listMedia(), listProtocols()]);
+      setRawRecs(await listRaw().catch(() => []));
+      setDraftCount((await listDrafts().catch(() => [])).length);
       setItems(x);
       setEntries(e);
       setMedia(m);
@@ -71,7 +76,9 @@ export function LabPage() {
     setOpenId(id);
     setTab('eksperimen');
   };
-  const running = items.filter((e) => e.status === 'berjalan').length;
+  // Statistik nyata (DEC-071): Bahan baku = catatan menu Bahan Baku; Berjalan = riset produk belum selesai + draf on going.
+  const researchKeys = [...new Set(protocols.map((p) => p.key))];
+  const running = researchKeys.filter((k) => researchStatus(entries.filter((e) => e.experimentId === k)) !== 'selesai').length + draftCount;
   const counts = sourceCounts();
 
   return (
@@ -89,7 +96,7 @@ export function LabPage() {
         </div>
         <dl className="relative grid grid-cols-2 gap-px overflow-hidden rounded-xl bg-acid/15 sm:grid-cols-4">
           {[
-            ['Eksperimen', items.length],
+            ['Bahan baku', rawRecs.length],
             ['Berjalan', running],
             ['Catatan harian', entries.length],
             ['Sumber diperiksa', `${counts.diperiksa}/${GEMA_SOURCES.length}`],
@@ -136,7 +143,7 @@ export function LabPage() {
       {tab === 'eksperimen' && (
         <ExperimentsTab items={items} entries={entries} media={media} protocols={protocols} product={product} setProduct={setProduct} openId={openId} setOpenId={setOpenId} refresh={refresh} />
       )}
-      {tab === 'bahan' && <BahanBakuTab protocols={protocols} entries={entries} onConfirm={(r) => { setRawIn(r); setTab('protokol'); }} />}
+      {tab === 'bahan' && <BahanBakuTab protocols={protocols} entries={entries} records={rawRecs} onSaved={refresh} onConfirm={(r) => { setRawIn(r); setTab('protokol'); }} />}
       {tab === 'protokol' && <ProtocolsTab protocols={protocols} entries={entries} media={media} refresh={refresh} {...(rawIn && { incomingRaw: rawIn })} onRawUsed={clearRaw} />}
       {tab === 'belanja' && <BelanjaTab />}
       {tab === 'library' && <LibraryTab />}

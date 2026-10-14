@@ -147,8 +147,31 @@ export interface ProtocolTool {
   mediaIds?: string[];
 }
 
-/** Item bahan baku (owner 2026-10-13): pilihan dropdown Item/barang. */
-export const RAW_ITEMS = ['Kelapa', 'Arang'] as const;
+/** Item bahan baku (owner 2026-10-13/14): pilihan dropdown Item/barang. */
+export const RAW_ITEMS = ['Kelapa tua', 'Kelapa muda', 'Arang', 'Arang mix residu', 'Granul halus', 'Granul kasar', 'Sekam'] as const;
+
+/** Item kelapa (punya air & daging) → air, perlakuan daging & tebal daging WAJIB. */
+export const isCoconutItem = (item: string) => /^kelapa/i.test(item.trim());
+
+/**
+ * Kolom wajib per item (owner 2026-10-14): semua item wajib barang & berat utuh; item kelapa juga wajib air,
+ * perlakuan daging & tebal daging. Sekam, granul, arang (termasuk mix residu) tidak wajib air/daging/tebal.
+ * Mengembalikan nama kolom yang masih kosong.
+ */
+export function missingRawFields(r: Pick<RawMaterial, 'item' | 'name' | 'wholeWeight' | 'water' | 'meatVariant' | 'meatThickness'>): string[] {
+  const miss: string[] = [];
+  if (!r.name.trim()) miss.push('Barang');
+  if (!r.wholeWeight.trim()) miss.push('Berat utuh');
+  if (isCoconutItem(r.item)) {
+    if (!r.water.trim()) miss.push('Air');
+    if (!r.meatVariant) miss.push('Perlakuan daging');
+    if (!r.meatThickness.trim()) miss.push('Tebal daging');
+  }
+  return miss;
+}
+
+/** Jalur produk Resep baru bila tidak ada varian: item non-kelapa memakai nama itemnya (Arang → preset AR). */
+export const jalurFromRaw = (r: RawMaterial): string => (r.variant ? variantLabel(r.variant) : isCoconutItem(r.item) ? 'Kopra Edibel' : r.item);
 
 /**
  * Bahan baku (DEC-068/069) — diisi di menu Bahan Baku lalu ikut ke Resep baru. Semua isian pengguna.
@@ -174,7 +197,7 @@ export interface RawMaterial {
   refKeys: string[];
 }
 
-export const blankRaw = (): RawMaterial => ({ item: 'Kelapa', name: '', wholeWeight: '', water: '', waterVariant: '', meatVariant: '', meatThickness: '', variant: '', refKeys: [] });
+export const blankRaw = (): RawMaterial => ({ item: 'Kelapa tua', name: '', wholeWeight: '', water: '', waterVariant: '', meatVariant: '', meatThickness: '', variant: '', refKeys: [] });
 
 export type TreatmentKind = 'air' | 'daging';
 
@@ -218,7 +241,7 @@ export const findSlot = (variant: string, protocols: readonly ProtocolVersion[])
   variant ? variantSlots(variant.startsWith('KE-') ? 'daging' : 'air', protocols).find((s) => s.id === variant) : undefined;
 
 /** Produk awal resep dari bahan baku. */
-export const productFromRaw = (r: RawMaterial): string => (r.variant ? r.variant.split('-')[0]! : r.item === 'Arang' ? 'AR' : 'KE');
+export const productFromRaw = (r: RawMaterial): string => (r.variant ? r.variant.split('-')[0]! : resolveProduct(jalurFromRaw(r)).product);
 
 /**
  * Penghitungan bahan baku kelapa (DEC-064) — satu baris per butir/bahan, semua angka & teks = isian pengguna.

@@ -166,3 +166,6 @@
 - DEC-067 navigasi ☰; DEC-068 menu Bahan Baku (knowledge = riset pengguna sendiri, maks 5/jalur — tafsiran "Cuka 1-5" dsb.; konfirmasi ke owner bila maksudnya lain). Tombol + Bahan kelapa dihapus.
 - DEC-069: Bahan Baku direvisi owner — perlakuan air (Cuka/Bioleather 1–10) & daging (Kopra 1–10) terpisah, tebal mm, varian = jalur produk Resep baru. E2E lab 20/20.
 - DEC-070: link HP R&D Lab https://gemas-rnd.vercel.app (domain proyek, bukan alias — alias kena Vercel Authentication). Manifest /lab-manifest.webmanifest.
+
+## 2026-10-14 · Claude — Bahan Baku UI
+- DEC-071: dropdown kustom (Dropdown.tsx), modal tanpa kunci gulir (portal absolute di posisi scroll), item baru + kolom wajib, tooltip perlakuan, alert spinner, catatan bahan baku (gemas-bahan), statistik hero nyata. Catatan teknis: heredoc Git Bash panjang sering gagal → tulis skrip .py ke scratchpad.
