@@ -64,8 +64,10 @@ export function buildLpjDocx(r: LpjReport): Uint8Array {
 
   r.proofs.forEach((pr, i) => {
     const cell = (label: string, photos: LpjPhoto[]) =>
-      tc(p(label, { b: true, sz: 18, jc: 'center', after: 60 }) + (photos.length ? photos.map((ph) => drawing(ph, photos.length > 1 ? 1.9 : 2.9)).join('') : p('(belum dilampirkan)', { i: true, sz: 18, color: '7F7F7F', jc: 'center' })), { w: 2500 });
+      tc(p(label, { b: true, sz: 18, jc: 'center', after: 60 }) + (photos.length ? photos.map((ph) => drawing(ph, photos.length > 1 ? 1.9 : 2.9) + (ph.label?.trim() ? p(ph.label.trim(), { b: true, sz: 18, jc: 'center', after: 80 }) : '')).join('') : p('(belum dilampirkan)', { i: true, sz: 18, color: '7F7F7F', jc: 'center' })), { w: 2500 });
     body.push(p(`ALOKASI${r.proofs.length > 1 ? ` ${i + 1}` : ''}${pr.title.trim() ? ` — ${pr.title.trim()}` : ''}`, { b: true, sz: 24, before: i ? 360 : 0, after: 100, keep: true }));
+    const names = pr.goods.map((g) => g.label?.trim()).filter(Boolean);
+    if (names.length) body.push(p(`Barang: ${names.join(', ')}`, { sz: 20, after: 80 }));
     body.push(
       tbl([
         tr(cell('Foto Bukti Bayar / Nota', pr.receipts) + cell('Foto Barang yang Dibeli', pr.goods)),

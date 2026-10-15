@@ -295,10 +295,10 @@ const emptyTree = '<p:nvGrpSpPr><p:cNvPr id="1" name=""/><p:cNvGrpSpPr/><p:nvPr/
 type PRun = { t: string; sz: number; b?: boolean; color?: string; mono?: boolean };
 type PPara = PRun | PRun[];
 const aRun = (p: PRun) => `<a:r><a:rPr lang="id-ID" sz="${p.sz}"${p.b ? ' b="1"' : ''} dirty="0"><a:solidFill><a:srgbClr val="${p.color ?? INK}"/></a:solidFill>${p.mono ? '<a:latin typeface="Consolas"/>' : ''}</a:rPr><a:t>${xml(p.t)}</a:t></a:r>`;
-const aParas = (paras: PPara[], spcAft = 300) => paras.map((p) => `<a:p><a:pPr><a:spcAft><a:spcPts val="${spcAft}"/></a:spcAft></a:pPr>${(Array.isArray(p) ? p : [p]).map(aRun).join('')}</a:p>`).join('') || '<a:p><a:endParaRPr lang="id-ID"/></a:p>';
+const aParas = (paras: PPara[], spcAft = 300, align?: 'ctr') => paras.map((p) => `<a:p><a:pPr${align ? ` algn="${align}"` : ''}><a:spcAft><a:spcPts val="${spcAft}"/></a:spcAft></a:pPr>${(Array.isArray(p) ? p : [p]).map(aRun).join('')}</a:p>`).join('') || '<a:p><a:endParaRPr lang="id-ID"/></a:p>';
 
-function pTextBox(id: number, x: number, y: number, w: number, h: number, paras: PPara[], o: { fill?: string; geom?: string; anchor?: 't' | 'ctr' | 'b'; autofit?: boolean } = {}): string {
-  return `<p:sp><p:nvSpPr><p:cNvPr id="${id}" name="Teks ${id}"/><p:cNvSpPr txBox="1"/><p:nvPr/></p:nvSpPr><p:spPr><a:xfrm><a:off x="${Math.round(x)}" y="${Math.round(y)}"/><a:ext cx="${Math.round(w)}" cy="${Math.round(h)}"/></a:xfrm><a:prstGeom prst="${o.geom ?? 'rect'}"><a:avLst/></a:prstGeom>${o.fill ? `<a:solidFill><a:srgbClr val="${o.fill}"/></a:solidFill>` : '<a:noFill/>'}<a:ln><a:noFill/></a:ln></p:spPr><p:txBody><a:bodyPr wrap="square" lIns="91440" tIns="45720" rIns="91440" bIns="45720" anchor="${o.anchor ?? 't'}">${o.autofit === false ? '' : '<a:normAutofit/>'}</a:bodyPr><a:lstStyle/>${aParas(paras)}</p:txBody></p:sp>`;
+function pTextBox(id: number, x: number, y: number, w: number, h: number, paras: PPara[], o: { fill?: string; geom?: string; anchor?: 't' | 'ctr' | 'b'; autofit?: boolean; align?: 'ctr' } = {}): string {
+  return `<p:sp><p:nvSpPr><p:cNvPr id="${id}" name="Teks ${id}"/><p:cNvSpPr txBox="1"/><p:nvPr/></p:nvSpPr><p:spPr><a:xfrm><a:off x="${Math.round(x)}" y="${Math.round(y)}"/><a:ext cx="${Math.round(w)}" cy="${Math.round(h)}"/></a:xfrm><a:prstGeom prst="${o.geom ?? 'rect'}"><a:avLst/></a:prstGeom>${o.fill ? `<a:solidFill><a:srgbClr val="${o.fill}"/></a:solidFill>` : '<a:noFill/>'}<a:ln><a:noFill/></a:ln></p:spPr><p:txBody><a:bodyPr wrap="square" lIns="91440" tIns="45720" rIns="91440" bIns="45720" anchor="${o.anchor ?? 't'}">${o.autofit === false ? '' : '<a:normAutofit/>'}</a:bodyPr><a:lstStyle/>${aParas(paras, 300, o.align)}</p:txBody></p:sp>`;
 }
 
 const pRect = (id: number, x: number, y: number, w: number, h: number, fill: string, geom = 'rect') =>
@@ -549,6 +549,11 @@ export function buildPptx(r: ResearchReport, charts: ChartPngs = new Map(), vide
     s.shapes += pTextBox(91, SW - M - 1200000, SH - 480000, 1200000, 320000, [{ t: `${i + 1} / ${slides.length}`, sz: 900, color: MUTED, mono: true }]);
   });
 
+  return packPptx(slides, vidExts);
+}
+
+/** Bungkus slide jadi berkas .pptx (tema, master, layout, relasi, media). */
+function packPptx(slides: Slide[], vidExts: ReadonlyMap<string, string> = new Map()): Uint8Array {
   const files: ZipFile[] = [];
   const slideXml = (s: Slide) => `${CT_HEAD}<p:sld ${P_NS}><p:cSld><p:spTree>${emptyTree}${s.shapes}</p:spTree></p:cSld><p:clrMapOvr><a:masterClrMapping/></p:clrMapOvr>${s.vids?.length ? videoTiming(s.vids.map((v) => v.spid)) : ''}</p:sld>`;
   slides.forEach((s, i) => {
@@ -579,6 +584,114 @@ export function buildPptx(r: ResearchReport, charts: ChartPngs = new Map(), vide
     { name: 'ppt/theme/theme1.xml', data: txt(theme) },
     ...files,
   ]);
+}
+
+/** Garis lurus (konektor) untuk diagram. */
+const pLine = (id: number, x1: number, y1: number, x2: number, y2: number, color = MINT, w = 22225) =>
+  `<p:cxnSp><p:nvCxnSpPr><p:cNvPr id="${id}" name="Garis ${id}"/><p:cNvCxnSpPr/><p:nvPr/></p:nvCxnSpPr><p:spPr><a:xfrm><a:off x="${Math.round(Math.min(x1, x2))}" y="${Math.round(Math.min(y1, y2))}"/><a:ext cx="${Math.round(Math.abs(x2 - x1))}" cy="${Math.round(Math.abs(y2 - y1))}"/></a:xfrm><a:prstGeom prst="line"><a:avLst/></a:prstGeom><a:ln w="${w}"><a:solidFill><a:srgbClr val="${color}"/></a:solidFill><a:round/></a:ln></p:spPr></p:cxnSp>`;
+
+export interface TreeNode {
+  /** JPEG data URL; kosong = kotak "tanpa foto". */
+  image?: string;
+  label: string;
+}
+
+export interface TreeSlide {
+  title: string;
+  subtitle: string;
+  /** Akar diagram (mis. foto nota) — maks. 3 berdampingan. */
+  roots: TreeNode[];
+  rootLabel: string;
+  /** Cabang (mis. foto barang + nama). */
+  leaves: TreeNode[];
+  footer: string;
+}
+
+/**
+ * PowerPoint diagram cabang (DEC-078, laporan belanja): judul, akar (foto nota) di atas, garis bercabang ke bawah
+ * menuju tiap daun (foto barang + nama). Maks. 8 daun per slide; lebih → slide lanjutan dengan akar yang sama.
+ */
+export function buildTreePptx(items: TreeSlide[]): Uint8Array {
+  const M = 500000;
+  const CW = SW - 2 * M;
+  const MAX_LEAVES = 8;
+  const slides: Slide[] = [];
+  let picN = 0;
+  const pics0 = (bytes: Uint8Array, list: Slide['pics']) => {
+    picN++;
+    const sz = jpegSize(bytes);
+    const p = { rid: `rIdP${list.length + 2}`, file: `image${picN}.jpeg`, bytes, w: sz.w, h: sz.h, caption: '', ext: 'jpeg' as const };
+    list.push(p);
+    return p;
+  };
+  const fit = (w: number, h: number, bw: number, bh: number) => {
+    const k = Math.min(bw / w, bh / h);
+    return { w: w * k, h: h * k };
+  };
+  for (const it of items) {
+    const chunks: TreeNode[][] = [];
+    for (let i = 0; i < Math.max(it.leaves.length, 1); i += MAX_LEAVES) chunks.push(it.leaves.slice(i, i + MAX_LEAVES));
+    chunks.forEach((leaves, ci) => {
+      const pics: Slide['pics'] = [];
+      let id = 10;
+      let shapes = pRect(id++, 0, 0, SW, 120000, INK) + pTextBox(id++, M, 230000, CW, 560000, [{ t: it.title + (ci ? ' (lanjutan)' : ''), sz: 2800, b: true }], { anchor: 'ctr', autofit: false });
+      shapes += pTextBox(id++, M, 760000, CW, 330000, [{ t: it.subtitle, sz: 1300, color: MUTED }], { autofit: false });
+      // label akar di atas, lalu foto nota (bingkai rapat mengikuti foto)
+      shapes += pTextBox(id++, M, 1100000, CW, 300000, [{ t: it.rootLabel, sz: 1100, b: true, color: MINT_D }], { autofit: false, align: 'ctr' });
+      const roots = it.roots.length ? it.roots.slice(0, 3) : [{ label: 'tanpa foto nota' }];
+      const rootBoxW = 2300000;
+      const rootBoxH = 1650000;
+      const rootY = 1430000;
+      const totalRootW = roots.length * rootBoxW + (roots.length - 1) * 150000;
+      const rootX0 = M + (CW - totalRootW) / 2;
+      roots.forEach((n, k) => {
+        const x = rootX0 + k * (rootBoxW + 150000);
+        const bytes = n.image ? dataUrlBytes(n.image) : undefined;
+        if (bytes) {
+          const p = pics0(bytes, pics);
+          const f = fit(p.w, p.h, rootBoxW, rootBoxH);
+          const fx = x + (rootBoxW - f.w) / 2;
+          const fy = rootY + (rootBoxH - f.h) / 2;
+          shapes += pRect(id++, fx - 45000, fy - 45000, f.w + 90000, f.h + 90000, MINT);
+          shapes += pPic(id++, p.rid, fx, fy, f.w, f.h, p.file);
+        } else shapes += pTextBox(id++, x, rootY, rootBoxW, rootBoxH, [{ t: n.label, sz: 1100, color: MUTED }], { fill: PAPER, geom: 'roundRect', anchor: 'ctr', autofit: false, align: 'ctr' });
+      });
+      // cabang: batang dari bawah nota → garis datar → turun ke tiap barang
+      const n = leaves.length;
+      const stemTop = rootY + rootBoxH + 60000;
+      const branchY = stemTop + 320000;
+      const leafY = branchY + 280000;
+      const cellW = CW / Math.max(n, 1);
+      const leafW = Math.min(cellW - 180000, 1900000);
+      const leafH = Math.min(SH - leafY - 1000000, 1600000);
+      const cx = (k: number) => M + cellW * k + cellW / 2;
+      const rootCx = M + CW / 2;
+      if (n) {
+        shapes += pLine(id++, rootCx, stemTop, rootCx, branchY);
+        if (n > 1) shapes += pLine(id++, cx(0), branchY, cx(n - 1), branchY);
+        leaves.forEach((leaf, k) => {
+          shapes += pLine(id++, cx(k), branchY, cx(k), leafY - 30000);
+          const x = cx(k) - leafW / 2;
+          const bytes = leaf.image ? dataUrlBytes(leaf.image) : undefined;
+          let bottom = leafY + leafH;
+          if (bytes) {
+            const p = pics0(bytes, pics);
+            const f = fit(p.w, p.h, leafW, leafH);
+            const fx = x + (leafW - f.w) / 2;
+            shapes += pRect(id++, fx - 15000, leafY - 15000, f.w + 30000, f.h + 30000, GRID);
+            shapes += pPic(id++, p.rid, fx, leafY, f.w, f.h, p.file);
+            bottom = leafY + f.h;
+          } else shapes += pTextBox(id++, x, leafY, leafW, leafH, [{ t: 'tanpa foto', sz: 900, color: MUTED }], { fill: PAPER, geom: 'roundRect', anchor: 'ctr', autofit: false, align: 'ctr' });
+          shapes += pTextBox(id++, x - 80000, bottom + 50000, leafW + 160000, 520000, [{ t: leaf.label || '(tanpa nama)', sz: 1100, b: true }], { autofit: false, align: 'ctr' });
+        });
+      } else {
+        shapes += pTextBox(id++, M, leafY, CW, 400000, [{ t: 'Belum ada foto barang.', sz: 1200, color: MUTED }], { autofit: false, align: 'ctr' });
+      }
+      shapes += pTextBox(90, M, SH - 420000, CW, 300000, [{ t: it.footer, sz: 800, color: MUTED, mono: true }], { autofit: false });
+      slides.push({ shapes, pics });
+    });
+  }
+  return packPptx(slides);
 }
 
 export const DOCX_MIME = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';

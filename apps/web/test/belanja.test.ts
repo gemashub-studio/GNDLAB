@@ -64,3 +64,43 @@ describe('laporan belanja ikut cadangan lab (DEC-061)', () => {
     expect(planRestore(parseBackup(labBackupJson([], 'x')), { experiments: new Set(), entries: new Set(), protocols: new Set(), media: new Set() }).add.belanja).toEqual([]);
   });
 });
+
+describe('laporan belanja: nama barang, PPTX diagram cabang, PDF (DEC-078)', () => {
+  const jpg = 'data:image/jpeg;base64,/9j/AA';
+  const ph = (id: string, label?: string) => ({ id, name: `${id}.jpg`, dataUrl: jpg, ...(label && { label }) });
+  const r = () => ({ ...newLpj('LPJ-202610-03'), purpose: 'Belanja R&D', proofs: [
+    { title: 'Toko Kimia Jaya', total: '427.000', description: 'bahan', receipts: [ph('n1')], goods: [ph('b1', 'Natrium bisulfit'), ph('b2', 'Kertas pH'), ph('b3')] },
+    { title: '', total: '', description: '', receipts: [], goods: [] },
+  ] });
+
+  it('slide per toko: judul Laporan belanja, akar = nota, cabang = barang + nama', async () => {
+    const { lpjTreeSlides } = await import('@/lib/belanjaExport');
+    const t = lpjTreeSlides(r(), 'x');
+    expect(t).toHaveLength(2);
+    expect(t[0]!.title).toBe('Laporan belanja');
+    expect(t[0]!.subtitle).toBe('Toko Kimia Jaya · total Rp427.000 · Belanja R&D');
+    expect(t[0]!.roots).toHaveLength(1);
+    expect(t[0]!.leaves.map((l) => l.label)).toEqual(['Natrium bisulfit', 'Kertas pH', '']);
+    expect(t[1]!.subtitle).toBe('Toko 2 · Belanja R&D');
+  });
+
+  it('PPTX pohon: garis konektor, nama barang di tengah, tanpa foto nota → kotak', async () => {
+    const { lpjTreeSlides } = await import('@/lib/belanjaExport');
+    const { buildTreePptx } = await import('@/lib/officeExport');
+    const x = new TextDecoder().decode(buildTreePptx(lpjTreeSlides(r(), 'x')));
+    expect((x.match(/<p:cxnSp>/g) ?? []).length).toBe(5); // batang + datar + 3 turun
+    expect(x).toContain('Natrium bisulfit');
+    expect(x).toContain('(tanpa nama)');
+    expect(x).toContain('tanpa foto nota');
+    expect(x).toContain('algn="ctr"');
+  });
+
+  it('PDF model & Word: nama barang ikut', async () => {
+    const { lpjReport } = await import('@/lib/belanjaExport');
+    const rep = lpjReport(r(), 'x');
+    expect(rep.blocks[0]!.heading).toBe('Toko Kimia Jaya');
+    expect(rep.blocks[0]!.lines).toContain('Barang: Natrium bisulfit, Kertas pH');
+    expect(rep.blocks[0]!.images.map((i) => i.caption)).toEqual(['Nota · Toko Kimia Jaya', 'Natrium bisulfit', 'Kertas pH', '(tanpa nama barang)']);
+    expect(new TextDecoder().decode(buildLpjDocx(r()))).toContain('Barang: Natrium bisulfit, Kertas pH');
+  });
+});

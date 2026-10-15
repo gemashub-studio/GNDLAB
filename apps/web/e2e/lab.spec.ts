@@ -542,28 +542,51 @@ test.describe('Hapus hasil riset', () => {
 });
 
 test.describe('Laporan belanja (LPJ)', () => {
-  test('upload bukti alokasi: nota & foto barang, total + terbilang, keterangan → simpan & unduh Word', async ({ page }) => {
+  test('bukti alokasi: nama toko, foto nota, foto barang + nama → Simpan ▾ (Simpan saja / PPTX / Word / PDF)', async ({ page }) => {
+    test.setTimeout(150_000);
     const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==', 'base64');
     await page.goto('/lab?t=belanja');
     await page.getByTestId('lpj-new').click();
     await page.getByTestId('lpj-purpose').fill('Belanja E2E');
-    await page.getByTestId('lpj-proof-title-0').fill('Belanja bahan');
-    await page.getByTestId('lpj-proof-total-0').fill('427.000');
-    await expect(page.getByTestId('lpj-proof-0')).toContainText('Empat Ratus Dua Puluh Tujuh Ribu Rupiah');
+    const p0 = page.getByTestId('lpj-proof-0');
+    await expect(p0).toContainText('Nama toko 1 (judul)');
+    await page.getByTestId('lpj-proof-title-0').fill('Toko Kimia Jaya');
     await page.getByTestId('lpj-nota-0').setInputFiles({ name: 'nota.png', mimeType: 'image/png', buffer: png });
-    await page.getByTestId('lpj-barang-0').setInputFiles({ name: 'barang.png', mimeType: 'image/png', buffer: png });
-    await expect(page.getByTestId('lpj-proof-0').locator('img')).toHaveCount(2);
-    await page.getByTestId('lpj-proof-desc-0').fill('Kelapa dan gula');
+    await page.getByTestId('lpj-barang-0').setInputFiles([{ name: 'a.png', mimeType: 'image/png', buffer: png }, { name: 'b.png', mimeType: 'image/png', buffer: png }]);
+    await expect(p0.locator('img')).toHaveCount(3);
+    await page.getByTestId('lpj-barang-0-name-0').fill('Natrium bisulfit');
+    await page.getByTestId('lpj-barang-0-name-1').fill('Kertas pH');
+    // total & keterangan opsional (terlipat)
+    await p0.getByText('Total & keterangan (opsional)').click();
+    await page.getByTestId('lpj-proof-total-0').fill('427.000');
+    await expect(p0).toContainText('Empat Ratus Dua Puluh Tujuh Ribu Rupiah');
     await page.getByTestId('lpj-proof-add').click();
+    await page.getByTestId('lpj-proof-title-1').fill('Toko Plastik');
+    await page.getByTestId('lpj-proof-1').getByText('Total & keterangan (opsional)').click();
     await page.getByTestId('lpj-proof-total-1').fill('73.000');
     await expect(page.getByTestId('lpj-form')).toContainText('Rp500.000');
+
+    // Simpan ▾ → Simpan saja, lalu PPTX / Word / PDF
     await page.getByTestId('lpj-save').click();
-    const dl = page.waitForEvent('download');
-    await page.getByTestId('lpj-docx').click();
-    expect((await dl).suggestedFilename()).toMatch(/^LPJ-\d{6}-\d{2}-laporan-belanja\.docx$/);
+    await expect(page.getByTestId('lpj-save-menu')).toContainText('PPTX');
+    await page.getByTestId('lpj-save-only').click();
+    await expect(page.getByTestId('lpj-form')).toContainText('Tersimpan');
+    for (const k of ['pptx', 'docx', 'pdf'] as const) {
+      await page.getByTestId('lpj-save').click();
+      const dl = page.waitForEvent('download');
+      await page.getByTestId(`lpj-save-${k}`).click();
+      expect((await dl).suggestedFilename()).toMatch(new RegExp(`^LPJ-\\d{6}-\\d{2}-laporan-belanja\\.${k}$`));
+    }
     await page.getByRole('button', { name: 'Tutup' }).click();
-    await expect(page.getByTestId('lpj-list')).toContainText('Belanja E2E');
-    await expect(page.getByTestId('lpj-list')).toContainText('2 alokasi · total Rp500.000');
+    const list = page.getByTestId('lpj-list');
+    await expect(list).toContainText('Belanja E2E');
+    await expect(list).toContainText('2 alokasi · total Rp500.000');
+    // daftar: Unduh ▾
+    const dlBtn = list.locator('[data-testid^="lpj-dl-"][aria-haspopup="menu"]').first();
+    await dlBtn.click();
+    const dl = page.waitForEvent('download');
+    await list.locator('[data-testid$="-pptx"]').first().click();
+    expect((await dl).suggestedFilename()).toMatch(/\.pptx$/);
   });
 });
 

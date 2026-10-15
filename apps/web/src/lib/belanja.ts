@@ -12,6 +12,8 @@ export interface LpjPhoto {
   name: string;
   /** JPEG data URL (diperkecil, sisi terpanjang ≤ 1400 px). */
   dataUrl: string;
+  /** Nama barang (untuk foto barang, DEC-078). */
+  label?: string;
 }
 
 export interface LpjProof {

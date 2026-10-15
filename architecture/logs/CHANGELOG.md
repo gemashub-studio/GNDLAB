@@ -3,6 +3,10 @@
 Format: [Keep a Changelog](https://keepachangelog.com/id/1.1.0/) · Versi dataset mengikuti SemVer (ADR-002).
 Waktu dalam WIB (UTC+7).
 
+## [Laporan belanja: simpan & unduh 3 format] — 2026-10-15
+### Diubah
+- Laporan belanja: tombol Simpan ▾ (PPTX/Word/PDF), isian nama toko + foto nota + foto barang bernama; PPTX diagram cabang nota → barang.
+
 ## [PPTX grid foto pencatatan] — 2026-10-15
 ### Diubah
 - PPTX Pencatatan Data: satu slide maks. 20 foto — 10 foto data awal (dengan data di bawahnya) di atas, pembatas, 10 foto data akhir (berat & tebal) di bawah.

@@ -46,6 +46,7 @@ async function newLpj(page: Page, name: string) {
   await page.getByTestId('lpj-new').click();
   await page.getByTestId('lpj-purpose').fill(name);
   await page.getByTestId('lpj-save').click();
+  await page.getByTestId('lpj-save-only').click();
   await page.getByRole('button', { name: 'Tutup' }).click();
 }
 
