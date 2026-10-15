@@ -106,7 +106,7 @@ export async function buildReportHtml(r: ResearchReport, media: readonly MediaIt
 <dl class="meta">${c.meta.map(([k, v]) => `<div><dt>${esc(k)}</dt><dd>${esc(v)}</dd></div>`).join('')}</dl>${coverMedia}</header>`);
   let n = 0;
   out.push(`<section><h2><span class="n">${String(++n).padStart(2, '0')}</span>Ringkasan</h2><div class="kpis">${r.kpis.map((k) => `<div class="kpi"><b>${esc(k.value)}</b><span>${esc(k.label)}</span></div>`).join('')}</div></section>`);
-  for (const b of r.blocks) {
+  for (const b of r.blocks.filter((x) => !x.pptxOnly)) {
     const parts: string[] = [];
     parts.push(b.level === 1 ? `<h2><span class="n">${String(++n).padStart(2, '0')}</span>${esc(b.heading)}</h2>` : `<h2>${esc(b.heading)}</h2>`);
     parts.push(...b.lines.map(line));

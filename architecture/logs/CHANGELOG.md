@@ -3,6 +3,10 @@
 Format: [Keep a Changelog](https://keepachangelog.com/id/1.1.0/) · Versi dataset mengikuti SemVer (ADR-002).
 Waktu dalam WIB (UTC+7).
 
+## [PPTX grid foto pencatatan] — 2026-10-15
+### Diubah
+- PPTX Pencatatan Data: satu slide maks. 20 foto — 10 foto data awal (dengan data di bawahnya) di atas, pembatas, 10 foto data akhir (berat & tebal) di bawah.
+
 ## [Pencatatan Data] — 2026-10-15
 ### Ditambahkan
 - Menu Pencatatan Data (menggantikan Bahan Baku): catatan awal N nomor + foto, catatan akhir berdampingan + foto, kartu hasil (unduh PDF/Word/PPTX + pratinjau), halaman Hasil pencatatan data awal dan akhir (3 tabel + kesimpulan), tombol Pilih → Hapus.

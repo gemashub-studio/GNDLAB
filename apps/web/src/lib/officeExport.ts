@@ -241,7 +241,7 @@ export function buildDocx(r: ResearchReport, charts: ChartPngs = new Map()): Uin
   }
   body.push(`<w:tbl><w:tblPr><w:tblW w:w="5000" w:type="pct"/>${noBorders}</w:tblPr>${rows.join('')}</w:tbl>`, wPara('', { after: 80 }));
 
-  for (const b of r.blocks) {
+  for (const b of r.blocks.filter((x) => !x.pptxOnly)) {
     if (b.level === 1) section(b.heading);
     else body.push(wP(wRun(b.heading, { b: true, sz: 23, color: MINT_D }), { before: 240, after: 100, keepNext: true, border: `<w:pBdr><w:left w:val="single" w:sz="24" w:space="6" w:color="${MINT}"/></w:pBdr>` }));
     for (const l of b.lines) body.push(wLine(l));
@@ -417,6 +417,54 @@ export function buildPptx(r: ResearchReport, charts: ChartPngs = new Map(), vide
     slides.push({ shapes, pics: [] });
   }
 
+  /** Slide grid foto: 10 kolom; ada data akhir → baris awal + pembatas + baris akhir (10 nomor/slide), tanpa akhir → 2 baris awal (20 nomor/slide). */
+  function photoGridSlides(pairs: NonNullable<ResearchReport['blocks'][number]['photoPairs']>, head: string, num?: number): Slide[] {
+    const hasAkhir = pairs.some((p) => p.akhir);
+    const per = hasAkhir ? 10 : 20;
+    const COLS = 10;
+    const cellW = CW / COLS;
+    const gap = 70000;
+    const imgW = cellW - gap;
+    const imgH = 1050000;
+    const out: Slide[] = [];
+    for (let i = 0; i < pairs.length; i += per) {
+      const chunk = pairs.slice(i, i + per);
+      const pics: Slide['pics'] = [];
+      let id = 100;
+      let shapes = title(`${head} · No ${chunk[0]!.no}–${chunk[chunk.length - 1]!.no}`, i === 0 ? num : undefined);
+      const cell = (c: { image?: string; lines: string[] }, no: number, x: number, y: number, capH: number, tag: string) => {
+        const bytes = c.image ? dataUrlBytes(c.image) : undefined;
+        if (bytes) {
+          const sz = jpegSize(bytes);
+          const p = pic(bytes, 'jpeg', sz.w, sz.h, `No ${no} ${tag}`, pics);
+          const f = fitBox(sz.w, sz.h, imgW, imgH);
+          shapes += pPic(id++, p.rid, x + (imgW - f.w) / 2, y + (imgH - f.h) / 2, f.w, f.h, p.file);
+        } else {
+          shapes += pTextBox(id++, x, y, imgW, imgH, [{ t: 'tanpa foto', sz: 800, color: MUTED }], { fill: PAPER, geom: 'roundRect', anchor: 'ctr', autofit: false });
+        }
+        shapes += pTextBox(id++, x - 30000, y + imgH + 20000, imgW + 60000, capH, [{ t: `No ${no}`, sz: 900, b: true }, ...c.lines.map((t) => ({ t, sz: 750, color: '2A3A41' }))], { autofit: false });
+      };
+      const label = (t: string, y: number, color: string) => {
+        shapes += pTextBox(id++, M, y, 3000000, 230000, [{ t, sz: 1000, b: true, color, mono: true }], { autofit: false });
+      };
+      if (hasAkhir) {
+        const yA = 1300000;
+        const yB = 3720000;
+        label('DATA AWAL', yA - 260000, MINT_D);
+        chunk.forEach((p, k) => cell(p.awal, p.no, M + k * cellW, yA, 950000, 'awal'));
+        shapes += pRect(id++, M, 3320000, CW, 28000, MINT);
+        label('DATA AKHIR', yB - 260000, AMBER);
+        chunk.forEach((p, k) => p.akhir && cell(p.akhir, p.no, M + k * cellW, yB, 620000, 'akhir'));
+      } else {
+        label('DATA AWAL', 1040000, MINT_D);
+        chunk.forEach((p, k) => cell(p.awal, p.no, M + (k % COLS) * cellW, k < COLS ? 1300000 : 3720000, 950000, 'awal'));
+        if (chunk.length > COLS) shapes += pRect(id++, M, 3320000, CW, 28000, MINT);
+      }
+      out.push({ shapes, pics });
+    }
+    return out;
+  }
+
   for (const b of r.blocks) {
     const num = b.level === 1 ? ++sec : undefined;
     const head = b.heading;
@@ -432,8 +480,13 @@ export function buildPptx(r: ResearchReport, charts: ChartPngs = new Map(), vide
       first = false;
       return s;
     };
+    // grid foto per nomor (DEC-077): maks. 20 foto/slide — 10 awal di atas, garis pembatas, 10 akhir di bawah
+    if (b.photoPairs?.length) {
+      for (const s of photoGridSlides(b.photoPairs, head, first ? num : undefined)) slides.push(s);
+      first = false;
+    }
     // teks (+ tabel pertama bila muat)
-    if (lineChunks.length || !rowChunks.length) {
+    if (!b.photoPairs && (lineChunks.length || !rowChunks.length)) {
       for (const [i, c] of (lineChunks.length ? lineChunks : [[]]).entries()) {
         const isLast = i === Math.max(lineChunks.length, 1) - 1;
         const fitsTable = isLast && rowChunks.length > 0 && c.length <= 3 && rowChunks[0]!.length <= 5;
@@ -458,7 +511,7 @@ export function buildPptx(r: ResearchReport, charts: ChartPngs = new Map(), vide
       slides.push({ shapes, pics });
     }
     // foto: 3 per slide
-    for (let i = 0; i < b.images.length; i += 3) {
+    for (let i = 0; !b.pptxOmitImages && i < b.images.length; i += 3) {
       const pics: Slide['pics'] = [];
       const vids: NonNullable<Slide['vids']> = [];
       let shapes = title(`${head} — foto/video`);

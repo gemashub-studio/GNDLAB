@@ -64,8 +64,15 @@ describe('pencatatan data awal & akhir (DEC-074)', () => {
     const pptx = new TextDecoder().decode(buildPptx(r));
     expect(pptx).toContain('ppt/media/image1.jpeg');
     expect(pptx).toContain('ppt/media/image2.jpeg');
-    expect(pptx).toContain('Data awal — foto/video');
-    expect(pptx).toContain('No 3 · data akhir');
+    // grid: judul blok, label DATA AWAL / DATA AKHIR, data di bawah foto; akhir tanpa volume/berat air
+    expect(pptx).toContain('Foto data awal &amp; akhir · No 1–3');
+    expect(pptx).toContain('DATA AWAL');
+    expect(pptx).toContain('DATA AKHIR');
+    expect(pptx).toContain('Vol. air 300 mL');
+    expect(pptx).toContain('tanpa foto');
+    expect(pptx).not.toContain('— foto/video');
+    expect(r.blocks.find((b) => b.photoPairs)!.photoPairs![2]!.akhir!.lines).toEqual(['Berat 600 g', 'Tebal 9 mm']);
+    expect(r.blocks.find((b) => b.photoPairs)!.pptxOnly).toBe(true);
   });
 
   it('kode PD-YYMMDD-NN', () => {

@@ -518,7 +518,7 @@ function ResearchDoc({ r: rep }: { r: ResearchReport }) {
             </View>
           ))}
         </View>
-        {rep.blocks.map((b, i) =>
+        {rep.blocks.filter((b) => !b.pptxOnly).map((b, i) =>
           b.level === 1 ? (
             <View key={i}>
               <View style={r.secHead} minPresenceAhead={80}>

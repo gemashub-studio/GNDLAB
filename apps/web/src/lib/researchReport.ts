@@ -25,6 +25,24 @@ export interface ReportBlock {
   images: ReportImage[];
   /** Grafik (DEC-058) — digambar dari spesifikasi yang sama di PDF/DOCX/PPTX. */
   charts?: ChartSpec[];
+  /** PowerPoint (DEC-077): grid foto per nomor — awal di atas, akhir di bawah, maks. 20 foto per slide. */
+  photoPairs?: PhotoPair[];
+  /** Blok hanya untuk PowerPoint (PDF/Word/HTML melewatinya). */
+  pptxOnly?: boolean;
+  /** PowerPoint tidak membuat slide galeri dari `images` blok ini (fotonya sudah di grid). */
+  pptxOmitImages?: boolean;
+}
+
+export interface PhotoCell {
+  /** JPEG data URL; kosong = "tanpa foto". */
+  image?: string;
+  lines: string[];
+}
+
+export interface PhotoPair {
+  no: number;
+  awal: PhotoCell;
+  akhir?: PhotoCell;
 }
 
 export interface ReportCover {

@@ -234,6 +234,7 @@ export function buildCatatReport(rec: CatatRecord, generatedAt = new Date().toLo
       lines: [`Item: ${rec.item}`, `Jumlah: ${rec.count}`, `Dicatat: ${rec.createdAt.slice(0, 16).replace('T', ' ')}`],
       table: { head: ['No', ...cols.map(([, l]) => l)], rows: rec.rows.map((r) => [String(r.no), ...cols.map(([k]) => v(r[k]))]) },
       images: photos(rec, 'awal'),
+      pptxOmitImages: true,
     },
   ];
   if (rec.finishedAt) {
@@ -243,6 +244,7 @@ export function buildCatatReport(rec: CatatRecord, generatedAt = new Date().toLo
       lines: [`Dicatat: ${rec.finishedAt.slice(0, 16).replace('T', ' ')}`],
       table: { head: ['No', 'Berat akhir (g)', ...(coco ? ['Tebal daging akhir (mm)'] : [])], rows: rec.rows.map((r) => [String(r.no), v(r.beratAkhir), ...(coco ? [v(r.tebalAkhir)] : [])]) },
       images: photos(rec, 'akhir'),
+      pptxOmitImages: true,
     });
     for (const s of cmp) {
       const chart: ChartSpec = {
@@ -267,6 +269,25 @@ export function buildCatatReport(rec: CatatRecord, generatedAt = new Date().toLo
         ...(s.n >= 2 && { charts: [chart] }),
       });
     }
+  }
+  // PowerPoint: grid foto + data per nomor (awal atas, akhir bawah; akhir tanpa volume/berat air)
+  if (rec.rows.some((r) => r.fotoAwal || r.fotoAkhir)) {
+    const u = (s: string | undefined, unit: string) => (s && s.trim() ? `${s.trim()} ${unit}` : '–');
+    blocks.splice(rec.finishedAt ? 2 : 1, 0, {
+      heading: rec.finishedAt ? 'Foto data awal & akhir' : 'Foto data awal',
+      level: 1,
+      lines: [],
+      images: [],
+      pptxOnly: true,
+      photoPairs: rec.rows.map((r) => ({
+        no: r.no,
+        awal: {
+          ...(r.fotoAwal && { image: r.fotoAwal }),
+          lines: coco ? [`Berat ${u(r.beratAwal, 'g')}`, `Vol. air ${u(r.volAir, 'mL')}`, `Berat air ${u(r.beratAir, 'g')}`, `Tebal ${u(r.tebalAwal, 'mm')}`] : [`Berat ${u(r.beratAwal, 'g')}`],
+        },
+        ...(rec.finishedAt && { akhir: { ...(r.fotoAkhir && { image: r.fotoAkhir }), lines: coco ? [`Berat ${u(r.beratAkhir, 'g')}`, `Tebal ${u(r.tebalAkhir, 'mm')}`] : [`Berat ${u(r.beratAkhir, 'g')}`] } }),
+      })),
+    });
   }
   blocks.push({ heading: 'Kesimpulan', level: 1, lines: [...conclusions(rec), 'Kesimpulan deskriptif dari angka isian; bukan uji statistik dan bukan klaim mutu produk.'], images: [] });
   const title = `Pencatatan data — ${rec.item} (${rec.count})`;
