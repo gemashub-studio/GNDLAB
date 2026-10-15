@@ -51,7 +51,7 @@ const n = (v?: number, d = 2) => (v === undefined ? '–' : fmtNum(Number(v.toFi
 const pct = (v?: number) => (v === undefined ? '–' : `${v > 0 ? '+' : ''}${fmtNum(Number(v.toFixed(1)))}%`);
 const cell = 'px-3 py-2 text-right font-mono';
 
-function Table({ head, rows, testId }: { head: string[]; rows: (string | number)[][]; testId: string }) {
+function Table({ head, rows, testId }: { head: string[]; rows: (string | number | React.ReactNode)[][]; testId: string }) {
   return (
     <div className="overflow-x-auto rounded-xl border border-paper-grid">
       <table className="w-full min-w-[360px] text-sm" data-testid={testId}>
@@ -63,12 +63,23 @@ function Table({ head, rows, testId }: { head: string[]; rows: (string | number)
         <tbody>
           {rows.map((r, i) => (
             <tr key={i} className={i % 2 ? 'bg-paper' : 'bg-white'}>
-              {r.map((c, j) => <td key={j} className={j ? cell : 'px-3 py-2 font-mono'}>{c === '' ? '–' : c}</td>)}
+              {r.map((c, j) => <td key={j} className={j ? cell : 'px-3 py-2 font-mono'}>{c === '' || c === undefined ? '–' : c}</td>)}
             </tr>
           ))}
         </tbody>
       </table>
     </div>
+  );
+}
+
+/** Foto kecil di tabel; klik → buka ukuran penuh di tab baru. */
+function Thumb({ src, alt }: { src?: string; alt: string }) {
+  if (!src) return <span className="text-muted">–</span>;
+  return (
+    <a href={src} target="_blank" rel="noopener noreferrer" className="inline-block" title="Buka foto">
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={src} alt={alt} className="ml-auto h-12 w-12 rounded-lg object-cover" />
+    </a>
   );
 }
 
@@ -81,12 +92,12 @@ export function CatatResult({ rec }: { rec: CatatRecord }) {
     <div className="flex flex-col gap-6" data-testid="catat-result">
       <section className="flex flex-col gap-2">
         <h2 className="text-lg"><span className="mr-2 rounded bg-ink px-1.5 py-0.5 font-mono text-xs text-acid">1</span>Data awal</h2>
-        <Table testId="catat-tbl-awal" head={['No', ...cols.map(([, l]) => l)]} rows={rec.rows.map((r) => [r.no, ...cols.map(([k]) => r[k] || '')])} />
+        <Table testId="catat-tbl-awal" head={['No', 'Foto', ...cols.map(([, l]) => l)]} rows={rec.rows.map((r) => [r.no, <Thumb key="f" src={r.fotoAwal} alt={`Foto awal nomor ${r.no}`} />, ...cols.map(([k]) => r[k] || '')])} />
       </section>
       <section className="flex flex-col gap-2">
         <h2 className="text-lg"><span className="mr-2 rounded bg-ink px-1.5 py-0.5 font-mono text-xs text-acid">2</span>Data akhir</h2>
         {rec.finishedAt ? (
-          <Table testId="catat-tbl-akhir" head={['No', 'Berat akhir (g)', ...(coco ? ['Tebal daging akhir (mm)'] : [])]} rows={rec.rows.map((r) => [r.no, r.beratAkhir || '', ...(coco ? [r.tebalAkhir || ''] : [])])} />
+          <Table testId="catat-tbl-akhir" head={['No', 'Foto', 'Berat akhir (g)', ...(coco ? ['Tebal daging akhir (mm)'] : [])]} rows={rec.rows.map((r) => [r.no, <Thumb key="f" src={r.fotoAkhir} alt={`Foto akhir nomor ${r.no}`} />, r.beratAkhir || '', ...(coco ? [r.tebalAkhir || ''] : [])])} />
         ) : (
           <p className="text-sm italic text-muted">Belum dicatat — buat pencatatan data akhir dulu.</p>
         )}

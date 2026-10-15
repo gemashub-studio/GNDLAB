@@ -17,9 +17,9 @@ import { StandardsTab } from './StandardsTab';
 
 const TABS = [
   { id: 'ringkasan', label: 'Ringkasan' },
-  { id: 'eksperimen', label: 'Eksperimen' },
   { id: 'bahan', label: 'Pencatatan Data' },
   { id: 'protokol', label: 'Riset Produk' },
+  { id: 'eksperimen', label: 'Eksperimen' },
   { id: 'belanja', label: 'Laporan Belanja' },
   { id: 'library', label: 'Library' },
   { id: 'standar', label: 'Standar' },

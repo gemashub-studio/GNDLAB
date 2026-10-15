@@ -26,6 +26,10 @@ export interface CatatRow {
   beratAkhir?: string;
   /** Tebal daging akhir (mm). */
   tebalAkhir?: string;
+  /** Foto nomor ini saat data awal (JPEG data URL, DEC-075). */
+  fotoAwal?: string;
+  /** Foto nomor ini saat data akhir. */
+  fotoAkhir?: string;
 }
 
 export interface CatatRecord {
@@ -170,14 +174,24 @@ export async function addCatatAwal(item: string, rows: CatatRow[]): Promise<Cata
   return rec;
 }
 
-export async function saveCatatAkhir(id: string, akhir: { no: number; beratAkhir: string; tebalAkhir: string }[]): Promise<CatatRecord> {
+export interface AkhirInput {
+  no: number;
+  beratAkhir: string;
+  tebalAkhir: string;
+  fotoAkhir?: string;
+}
+
+export async function saveCatatAkhir(id: string, akhir: AkhirInput[]): Promise<CatatRecord> {
   const d = await catatDb();
   const rec = await d.get('records', id);
   if (!rec) throw new Error(`Catatan ${id} tidak ditemukan`);
   const by = new Map(akhir.map((a) => [a.no, a]));
   const next: CatatRecord = {
     ...rec,
-    rows: rec.rows.map((r) => ({ ...r, beratAkhir: by.get(r.no)?.beratAkhir.trim() ?? '', tebalAkhir: by.get(r.no)?.tebalAkhir.trim() ?? '' })),
+    rows: rec.rows.map((r) => {
+      const a = by.get(r.no);
+      return { ...r, beratAkhir: a?.beratAkhir.trim() ?? '', tebalAkhir: a?.tebalAkhir.trim() ?? '', ...(a?.fotoAkhir && { fotoAkhir: a.fotoAkhir }) };
+    }),
     finishedAt: new Date().toISOString(),
   };
   await d.put('records', next);
@@ -185,6 +199,12 @@ export async function saveCatatAkhir(id: string, akhir: { no: number; beratAkhir
 }
 
 // ------------------------------------------------------------------ laporan (PDF/Word/PowerPoint)
+
+/** Foto per nomor untuk galeri laporan. */
+const photos = (rec: CatatRecord, k: 'awal' | 'akhir') =>
+  rec.rows
+    .filter((r) => (k === 'awal' ? r.fotoAwal : r.fotoAkhir))
+    .map((r) => ({ name: `${rec.id}-${String(r.no).padStart(3, '0')}-${k}.jpg`, caption: `No ${r.no} · data ${k}`, dataUrl: (k === 'awal' ? r.fotoAwal : r.fotoAkhir)!, video: false }));
 
 export function buildCatatReport(rec: CatatRecord, generatedAt = new Date().toLocaleString('id-ID')): ResearchReport {
   const coco = hasThickness(rec.item);
@@ -197,7 +217,7 @@ export function buildCatatReport(rec: CatatRecord, generatedAt = new Date().toLo
       level: 1,
       lines: [`Item: ${rec.item}`, `Jumlah: ${rec.count}`, `Dicatat: ${rec.createdAt.slice(0, 16).replace('T', ' ')}`],
       table: { head: ['No', ...cols.map(([, l]) => l)], rows: rec.rows.map((r) => [String(r.no), ...cols.map(([k]) => v(r[k]))]) },
-      images: [],
+      images: photos(rec, 'awal'),
     },
   ];
   if (rec.finishedAt) {
@@ -206,7 +226,7 @@ export function buildCatatReport(rec: CatatRecord, generatedAt = new Date().toLo
       level: 1,
       lines: [`Dicatat: ${rec.finishedAt.slice(0, 16).replace('T', ' ')}`],
       table: { head: ['No', 'Berat akhir (g)', ...(coco ? ['Tebal daging akhir (mm)'] : [])], rows: rec.rows.map((r) => [String(r.no), v(r.beratAkhir), ...(coco ? [v(r.tebalAkhir)] : [])]) },
-      images: [],
+      images: photos(rec, 'akhir'),
     });
     for (const s of cmp) {
       const chart: ChartSpec = {

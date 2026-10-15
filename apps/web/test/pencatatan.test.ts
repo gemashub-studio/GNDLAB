@@ -52,6 +52,16 @@ describe('pencatatan data awal & akhir (DEC-074)', () => {
     expect(buildPptx(r).length).toBeGreaterThan(100);
   });
 
+  it('foto per nomor ikut di galeri laporan data awal & akhir (DEC-075)', () => {
+    const r0 = rec();
+    r0.rows[0]!.fotoAwal = 'data:image/jpeg;base64,/9j/AA';
+    r0.rows[2]!.fotoAkhir = 'data:image/jpeg;base64,/9j/BB';
+    const r = buildCatatReport(r0, 'x');
+    expect(r.blocks[0]!.images.map((i) => i.caption)).toEqual(['No 1 · data awal']);
+    expect(r.blocks[1]!.images.map((i) => [i.caption, i.name])).toEqual([['No 3 · data akhir', 'PD-261015-01-003-akhir.jpg']]);
+    expect(buildDocx(r).length).toBeGreaterThan(100);
+  });
+
   it('kode PD-YYMMDD-NN', () => {
     expect(nextCatatId(['PD-261015-01', 'PD-261015-04'], new Date(2026, 9, 15), '')).toBe('PD-261015-05');
   });

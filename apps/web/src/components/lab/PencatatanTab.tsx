@@ -13,9 +13,11 @@ import {
   missingAkhir,
   missingAwal,
   saveCatatAkhir,
+  type AkhirInput,
   type CatatRecord,
   type CatatRow,
 } from '@/lib/pencatatan';
+import { photoDataUrl } from '@/lib/photo';
 import { CatatResult, DownloadButtons } from './CatatResult';
 import { Dropdown } from './Dropdown';
 
@@ -42,7 +44,7 @@ export function PencatatanTab({ records, oldRaw, onChanged }: { records: CatatRe
     await onChanged();
     window.setTimeout(() => setToast(''), Math.max(0, SAVE_MS - (Date.now() - started)));
   };
-  const saveAkhir = async (id: string, akhir: { no: number; beratAkhir: string; tebalAkhir: string }[]) => {
+  const saveAkhir = async (id: string, akhir: AkhirInput[]) => {
     setMode('');
     setToast('finishing');
     const started = Date.now();
@@ -133,8 +135,8 @@ export function PencatatanTab({ records, oldRaw, onChanged }: { records: CatatRe
         </PageModal>
       )}
       {toast && (
-        <Floating testId="catat-toast">
-          <span aria-hidden className="h-6 w-6 flex-none animate-spin rounded-full border-[3px] border-acid border-t-transparent" />
+        <Floating testId="catat-toast" column>
+          <FileLoader />
           <span className="text-sm font-semibold">{toast === 'saving' ? 'Tunggu ya, data sedang di save.' : 'Menyimpan data akhir…'}</span>
         </Floating>
       )}
@@ -154,10 +156,19 @@ export function PencatatanTab({ records, oldRaw, onChanged }: { records: CatatRe
   );
 }
 
-function Floating({ children, testId, interactive = false }: { children: ReactNode; testId: string; interactive?: boolean }) {
+/** Animasi loading "file terbang" (DEC-075, CSS di globals.css). */
+export function FileLoader() {
+  return (
+    <div className="loader-con" aria-hidden data-testid="file-loader">
+      {[0, 1, 2, 3, 4, 5].map((i) => <div key={i} className="pfile" style={{ ['--i' as string]: i }} />)}
+    </div>
+  );
+}
+
+function Floating({ children, testId, interactive = false, column = false }: { children: ReactNode; testId: string; interactive?: boolean; column?: boolean }) {
   return createPortal(
     <div className={`fixed inset-x-0 top-20 z-[60] flex justify-center px-4 ${interactive ? '' : 'pointer-events-none'}`} role="status" aria-live="polite" data-testid={testId}>
-      <div className="flex w-full max-w-md items-center gap-3 rounded-2xl border border-acid/40 bg-white px-4 py-3 text-ink shadow-2xl">{children}</div>
+      <div className={`flex w-full max-w-md items-center gap-3 rounded-2xl border border-acid/40 bg-white px-4 py-3 text-ink shadow-2xl ${column ? 'flex-col text-center' : ''}`}>{children}</div>
     </div>,
     document.body,
   );
@@ -207,7 +218,7 @@ function AwalModal({ onClose, onConfirm }: { onClose: () => void; onConfirm: (it
     // nilai yang sudah diketik dipertahankan saat jumlah diubah
     setRows((cur) => blankRows(n).map((r, i) => cur[i] ?? r));
   };
-  const setCell = (i: number, k: keyof CatatRow, v: string) => {
+  const setCell = (i: number, k: keyof CatatRow, v: string | undefined) => {
     setRows((cur) => cur.map((r, j) => (j === i ? { ...r, [k]: v } : r)));
     setErr('');
   };
@@ -216,7 +227,7 @@ function AwalModal({ onClose, onConfirm }: { onClose: () => void; onConfirm: (it
     const miss = missingAwal(item, rows);
     if (miss.length) return setErr(`Masih kosong (${hasThickness(item) ? 'berat awal / tebal daging' : 'berat awal'}) di nomor: ${miss.slice(0, 12).join(', ')}${miss.length > 12 ? `, … (${miss.length} nomor)` : ''}.`);
     const keep = new Set(cols.map(([k]) => k as string));
-    onConfirm(item, rows.map((r) => ({ no: r.no, beratAwal: r.beratAwal.trim(), volAir: keep.has('volAir') ? r.volAir.trim() : '', beratAir: keep.has('beratAir') ? r.beratAir.trim() : '', tebalAwal: keep.has('tebalAwal') ? r.tebalAwal.trim() : '' })));
+    onConfirm(item, rows.map((r) => ({ no: r.no, beratAwal: r.beratAwal.trim(), volAir: keep.has('volAir') ? r.volAir.trim() : '', beratAir: keep.has('beratAir') ? r.beratAir.trim() : '', tebalAwal: keep.has('tebalAwal') ? r.tebalAwal.trim() : '', ...(r.fotoAwal && { fotoAwal: r.fotoAwal }) })));
   };
 
   return (
@@ -240,10 +251,62 @@ function AwalModal({ onClose, onConfirm }: { onClose: () => void; onConfirm: (it
             <span className="text-xs text-muted">Maks. {MAX_ROWS}. Kolom isian muncul sebanyak jumlah ini.</span>
           </label>
         </div>
-        {rows.length > 0 && <RowsGrid head={cols.map(([, l]) => l)} rows={rows} render={(r, i) => cols.map(([k, l]) => <input key={k} aria-label={`${l} nomor ${r.no}`} className={field} inputMode="decimal" value={r[k]} onChange={(e) => setCell(i, k, e.target.value)} data-testid={`catat-awal-${k}-${r.no}`} />)} />}
+        {rows.length > 0 && (
+          <RowsGrid
+            head={['Foto', ...cols.map(([, l]) => l)]}
+            rows={rows}
+            render={(r, i) => [
+              <RowPhoto key="foto" value={r.fotoAwal} label={`Foto awal nomor ${r.no}`} onChange={(v) => setCell(i, 'fotoAwal', v)} testId={`catat-awal-foto-${r.no}`} />,
+              ...cols.map(([k, l]) => <input key={k} aria-label={`${l} nomor ${r.no}`} className={field} inputMode="decimal" value={r[k]} onChange={(e) => setCell(i, k, e.target.value)} data-testid={`catat-awal-${k}-${r.no}`} />),
+            ]}
+          />
+        )}
         {err && <p className="text-sm" role="alert"><span className="bg-safety px-1">{err}</span></p>}
       </div>
     </PageModal>
+  );
+}
+
+/**
+ * Foto per nomor (DEC-075): tombol pilih/ambil foto (di HP membuka kamera atau galeri), pratinjau kecil, hapus.
+ * `readOnly` = hanya menampilkan (foto data awal di form data akhir).
+ */
+function RowPhoto({ value, onChange, label, testId, readOnly = false }: { value?: string; onChange?: (v: string | undefined) => void; label: string; testId: string; readOnly?: boolean }) {
+  const [busy, setBusy] = useState(false);
+  if (readOnly)
+    return value ? (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img src={value} alt={label} className="h-12 w-12 rounded-lg object-cover" data-testid={testId} />
+    ) : (
+      <span className="font-mono text-xs text-muted" data-testid={testId}>tanpa foto</span>
+    );
+  return (
+    <span className="flex items-center gap-1.5">
+      {value && (
+        <span className="relative">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={value} alt={label} className="h-12 w-12 rounded-lg object-cover" data-testid={`${testId}-img`} />
+          <button type="button" aria-label={`Hapus ${label}`} className="absolute -right-1.5 -top-1.5 h-5 w-5 rounded-full bg-ink text-[11px] leading-none text-paper" onClick={() => onChange?.(undefined)}>×</button>
+        </span>
+      )}
+      <label className="inline-flex min-h-[40px] cursor-pointer items-center rounded-xl border border-ink/20 bg-white px-2.5 text-xs font-semibold hover:border-acid" aria-label={label}>
+        {busy ? '…' : value ? 'Ganti' : '+ Foto'}
+        <input
+          type="file"
+          accept="image/*"
+          className="sr-only"
+          onChange={async (e) => {
+            const f = e.target.files?.[0];
+            e.target.value = '';
+            if (!f) return;
+            setBusy(true);
+            onChange?.(await photoDataUrl(f));
+            setBusy(false);
+          }}
+          data-testid={testId}
+        />
+      </label>
+    </span>
   );
 }
 
@@ -271,22 +334,23 @@ function RowsGrid({ head, rows, render }: { head: string[]; rows: CatatRow[]; re
 }
 
 /** Form data akhir: pilih catatan awal (bila >1), lalu isi akhir di samping nilai awal. */
-function AkhirModal({ pending, onClose, onConfirm }: { pending: CatatRecord[]; onClose: () => void; onConfirm: (id: string, akhir: { no: number; beratAkhir: string; tebalAkhir: string }[]) => void }) {
+function AkhirModal({ pending, onClose, onConfirm }: { pending: CatatRecord[]; onClose: () => void; onConfirm: (id: string, akhir: AkhirInput[]) => void }) {
   const [id, setId] = useState(pending.length === 1 ? pending[0]!.id : '');
   const rec = pending.find((p) => p.id === id);
-  const [vals, setVals] = useState<Record<number, { beratAkhir: string; tebalAkhir: string }>>({});
+  const [vals, setVals] = useState<Record<number, { beratAkhir: string; tebalAkhir: string; fotoAkhir?: string }>>({});
   const [err, setErr] = useState('');
   const coco = rec ? hasThickness(rec.item) : false;
-  const merged = rec ? rec.rows.map((r) => ({ ...r, beratAkhir: vals[r.no]?.beratAkhir ?? '', tebalAkhir: vals[r.no]?.tebalAkhir ?? '' })) : [];
-  const set = (no: number, k: 'beratAkhir' | 'tebalAkhir', v: string) => {
-    setVals((x) => ({ ...x, [no]: { beratAkhir: x[no]?.beratAkhir ?? '', tebalAkhir: x[no]?.tebalAkhir ?? '', [k]: v } }));
+  const merged = rec ? rec.rows.map((r) => ({ ...r, beratAkhir: vals[r.no]?.beratAkhir ?? '', tebalAkhir: vals[r.no]?.tebalAkhir ?? '', ...(vals[r.no]?.fotoAkhir && { fotoAkhir: vals[r.no]!.fotoAkhir }) })) : [];
+  const set = (no: number, k: 'beratAkhir' | 'tebalAkhir' | 'fotoAkhir', v: string | undefined) => {
+    // pertahankan isian lain di nomor yang sama (termasuk foto) saat satu kolom diubah
+    setVals((x) => ({ ...x, [no]: { beratAkhir: '', tebalAkhir: '', ...x[no], [k]: v } }));
     setErr('');
   };
   const confirm = () => {
     if (!rec) return setErr('Pilih catatan awal dulu.');
     const miss = missingAkhir(rec.item, merged);
     if (miss.length) return setErr(`Data akhir masih kosong di nomor: ${miss.slice(0, 12).join(', ')}${miss.length > 12 ? `, … (${miss.length} nomor)` : ''}.`);
-    onConfirm(rec.id, merged.map((r) => ({ no: r.no, beratAkhir: r.beratAkhir, tebalAkhir: r.tebalAkhir })));
+    onConfirm(rec.id, merged.map((r) => ({ no: r.no, beratAkhir: r.beratAkhir, tebalAkhir: r.tebalAkhir, ...(r.fotoAkhir && { fotoAkhir: r.fotoAkhir }) })));
   };
   const ro = 'field min-h-[40px] w-full bg-paper-grid/60 px-2 text-sm text-muted';
 
@@ -323,9 +387,10 @@ function AkhirModal({ pending, onClose, onConfirm }: { pending: CatatRecord[]; o
               {rec.id} · {rec.item} · {rec.count} item. Kolom kiri = data awal (tidak bisa diubah), kolom kanan = data akhir (isi semua).
             </p>
             <RowsGrid
-              head={['Berat awal (g)', 'Berat akhir (g)', ...(coco ? ['Tebal awal (mm)', 'Tebal akhir (mm)'] : [])]}
+              head={['Foto awal', 'Berat awal (g)', 'Berat akhir (g)', ...(coco ? ['Tebal awal (mm)', 'Tebal akhir (mm)'] : []), 'Foto akhir']}
               rows={merged}
               render={(r) => [
+                <RowPhoto key="fa" value={r.fotoAwal} label={`Foto awal nomor ${r.no}`} readOnly testId={`catat-akhir-fotoawal-${r.no}`} />,
                 <input key="ba" className={ro} value={r.beratAwal} readOnly tabIndex={-1} aria-label={`Berat awal nomor ${r.no}`} />,
                 <input key="bk" className={field} inputMode="decimal" value={r.beratAkhir} onChange={(e) => set(r.no, 'beratAkhir', e.target.value)} aria-label={`Berat akhir nomor ${r.no}`} data-testid={`catat-akhir-berat-${r.no}`} />,
                 ...(coco
@@ -334,6 +399,7 @@ function AkhirModal({ pending, onClose, onConfirm }: { pending: CatatRecord[]; o
                       <input key="tk" className={field} inputMode="decimal" value={r.tebalAkhir} onChange={(e) => set(r.no, 'tebalAkhir', e.target.value)} aria-label={`Tebal akhir nomor ${r.no}`} data-testid={`catat-akhir-tebal-${r.no}`} />,
                     ]
                   : []),
+                <RowPhoto key="fk" value={r.fotoAkhir} label={`Foto akhir nomor ${r.no}`} onChange={(v) => set(r.no, 'fotoAkhir', v)} testId={`catat-akhir-foto-${r.no}`} />,
               ]}
             />
           </>

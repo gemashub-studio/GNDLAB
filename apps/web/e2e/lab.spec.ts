@@ -376,7 +376,10 @@ test.describe('GEMA RnD Lab', () => {
 test.describe('Hapus hasil riset', () => {
   test('Pencatatan Data: catatan awal N baris → simpan → data akhir berdampingan → Lihat hasil (awal, akhir, perbandingan + kesimpulan) & unduh', async ({ page }) => {
     test.setTimeout(240_000);
+    const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==', 'base64');
     await page.goto('/lab?t=bahan');
+    // urutan menu: Ringkasan → Pencatatan Data → Riset Produk → …
+    await expect(page.getByRole('tab')).toHaveText(['Ringkasan', 'Pencatatan Data', 'Riset Produk', 'Eksperimen', 'Laporan Belanja', 'Library', 'Standar']);
     await expect(page.getByTestId('lab-tab-bahan')).toHaveText('Pencatatan Data');
     await expect(page.getByTestId('lab-hero')).toContainText('Pencatatan data');
     await expect(page.getByTestId('catat-stat-awal')).toContainText('0');
@@ -399,8 +402,12 @@ test.describe('Hapus hasil riset', () => {
       if (ba) await awal.getByTestId(`catat-awal-beratAir-${i + 1}`).fill(ba);
       await awal.getByTestId(`catat-awal-tebalAwal-${i + 1}`).fill(t);
     }
+    // foto per nomor (data awal)
+    await awal.getByTestId('catat-awal-foto-1').setInputFiles({ name: 'awal1.png', mimeType: 'image/png', buffer: png });
+    await expect(awal.getByTestId('catat-awal-foto-1-img')).toBeVisible();
     await awal.getByTestId('catat-awal-confirm').click();
     await expect(page.getByTestId('catat-toast')).toContainText('Tunggu ya, data sedang di save.');
+    await expect(page.getByTestId('catat-toast').getByTestId('file-loader').locator('.pfile')).toHaveCount(6);
     await expect(page.getByTestId('catat-toast')).toHaveCount(0);
     const card = page.locator('[data-testid^="catat-card-PD-"]');
     await expect(card).toHaveCount(1);
@@ -438,6 +445,11 @@ test.describe('Hapus hasil riset', () => {
     // data awal di samping kolom akhir yang masih kosong
     await expect(akhir.getByLabel('Berat awal nomor 2')).toHaveValue('1.200');
     await expect(akhir.getByTestId('catat-akhir-berat-2')).toHaveValue('');
+    // foto data awal tampil di form data akhir; foto data akhir bisa ditambah
+    await expect(akhir.getByTestId('catat-akhir-fotoawal-1')).toHaveAttribute('src', /^data:image\/jpeg/);
+    await expect(akhir.getByTestId('catat-akhir-fotoawal-2')).toHaveText('tanpa foto');
+    await akhir.getByTestId('catat-akhir-foto-1').setInputFiles({ name: 'akhir1.png', mimeType: 'image/png', buffer: png });
+    await expect(akhir.getByTestId('catat-akhir-foto-1-img')).toBeVisible();
     await akhir.getByTestId('catat-akhir-confirm').click();
     await expect(akhir).toContainText('Data akhir masih kosong di nomor: 1, 2, 3');
     for (const [no, b, t] of [[1, '900', '8'], [2, '1.140', '11,4'], [3, '600', '9']] as const) {
@@ -456,6 +468,8 @@ test.describe('Hapus hasil riset', () => {
     const hasil = page.getByTestId('hasil-page');
     await expect(hasil).toContainText('Hasil pencatatan data awal dan akhir');
     await expect(hasil.getByTestId('catat-tbl-awal')).toContainText('1.000');
+    await expect(hasil.getByTestId('catat-tbl-awal').getByRole('img', { name: 'Foto awal nomor 1' })).toBeVisible();
+    await expect(hasil.getByTestId('catat-tbl-akhir').getByRole('img', { name: 'Foto akhir nomor 1' })).toBeVisible();
     await expect(hasil.getByTestId('catat-tbl-akhir')).toContainText('1.140');
     await expect(hasil.getByTestId('catat-tbl-cmp-berat')).toContainText('-10%');
     await expect(hasil.getByTestId('catat-tbl-cmp-tebal')).toContainText('Rata-rata');
