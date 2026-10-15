@@ -3,6 +3,12 @@
 Format: [Keep a Changelog](https://keepachangelog.com/id/1.1.0/) · Versi dataset mengikuti SemVer (ADR-002).
 Waktu dalam WIB (UTC+7).
 
+## [Pencatatan Data] — 2026-10-15
+### Ditambahkan
+- Menu Pencatatan Data (menggantikan Bahan Baku): catatan awal N nomor + foto, catatan akhir berdampingan + foto, kartu hasil (unduh PDF/Word/PPTX + pratinjau), halaman Hasil pencatatan data awal dan akhir (3 tabel + kesimpulan), tombol Pilih → Hapus.
+### Diubah
+- Animasi loading file terbang di tengah layar, alert sukses gaya baru, pratinjau foto layar penuh, urutan tab lab.
+
 ## [laporan dengan video] — 2026-10-15
 ### Ditambahkan
 - Unduhan "HTML + video" (laporan gabungan & per hari): video bisa diputar, foto resolusi asli, satu file offline.

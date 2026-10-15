@@ -173,3 +173,4 @@
 
 ## 2026-10-15 · Claude — laporan dengan video
 - DEC-073: HTML+video, video tertanam di PPTX (GUID p14:media yang benar: {DAA4B4D4-6D71-4841-9C94-3DE7FCFB9230}; dicek PowerPoint COM MediaFormat.Length), rekam MP4. Fragmented MP4 dari MediaRecorder tetap terbaca PowerPoint.
+- DEC-074..076: Pencatatan Data (awal/akhir/hasil), foto per nomor, loader & alert gaya owner, pilih & hapus. E2E lab 20/20, unit 106. Catatan: tombol Lihat pakai window.location.assign (router.push bentrok dengan replaceState LabPage).

@@ -198,6 +198,22 @@ export async function saveCatatAkhir(id: string, akhir: AkhirInput[]): Promise<C
   return next;
 }
 
+/** Hapus PERMANEN catatan terpilih (DEC-076; hanya yang lengkap awal & akhir — dijaga di UI & di sini). */
+export async function deleteCatat(ids: readonly string[]): Promise<number> {
+  const d = await catatDb();
+  const tx = d.transaction('records', 'readwrite');
+  let n = 0;
+  for (const id of ids) {
+    const r = await tx.store.get(id);
+    if (r?.finishedAt) {
+      await tx.store.delete(id);
+      n++;
+    }
+  }
+  await tx.done;
+  return n;
+}
+
 // ------------------------------------------------------------------ laporan (PDF/Word/PowerPoint)
 
 /** Foto per nomor untuk galeri laporan. */

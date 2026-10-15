@@ -60,6 +60,12 @@ describe('pencatatan data awal & akhir (DEC-074)', () => {
     expect(r.blocks[0]!.images.map((i) => i.caption)).toEqual(['No 1 · data awal']);
     expect(r.blocks[1]!.images.map((i) => [i.caption, i.name])).toEqual([['No 3 · data akhir', 'PD-261015-01-003-akhir.jpg']]);
     expect(buildDocx(r).length).toBeGreaterThan(100);
+    // PPTX ikut memuat foto data awal & akhir (slide foto)
+    const pptx = new TextDecoder().decode(buildPptx(r));
+    expect(pptx).toContain('ppt/media/image1.jpeg');
+    expect(pptx).toContain('ppt/media/image2.jpeg');
+    expect(pptx).toContain('Data awal — foto/video');
+    expect(pptx).toContain('No 3 · data akhir');
   });
 
   it('kode PD-YYMMDD-NN', () => {

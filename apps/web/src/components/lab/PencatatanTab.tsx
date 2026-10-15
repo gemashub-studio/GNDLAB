@@ -6,6 +6,7 @@ import type { RawRecord } from '@/lib/bahanBaku';
 import { RAW_ITEMS } from '@/lib/labStore';
 import {
   addCatatAwal,
+  deleteCatat,
   awalColumns,
   blankRows,
   hasThickness,
@@ -20,6 +21,7 @@ import {
 import { photoDataUrl } from '@/lib/photo';
 import { CatatResult, DownloadButtons } from './CatatResult';
 import { Dropdown } from './Dropdown';
+import { ImagePreview, LoadingOverlay, SuccessAlert } from './Overlays';
 
 const SAVE_MS = 1600;
 const field = 'field min-h-[40px] w-full bg-white px-2 text-sm';
@@ -33,6 +35,25 @@ export function PencatatanTab({ records, oldRaw, onChanged }: { records: CatatRe
   const [preview, setPreview] = useState<CatatRecord>();
   const [toast, setToast] = useState<'' | 'saving' | 'finishing'>('');
   const [done, setDone] = useState<CatatRecord>();
+  // mode pilih (DEC-076): hanya catatan lengkap (awal & akhir) yang bisa dipilih
+  const [selecting, setSelecting] = useState(false);
+  const [picked, setPicked] = useState<Set<string>>(new Set());
+  const [deleted, setDeleted] = useState(0);
+  const complete = records.filter((r) => r.finishedAt);
+  const toggle = (id: string) => setPicked((p) => {
+    const n = new Set(p);
+    if (n.has(id)) n.delete(id);
+    else n.add(id);
+    return n;
+  });
+  const removePicked = async () => {
+    if (!window.confirm(`Hapus ${picked.size} catatan terpilih? Data yang sudah dihapus TIDAK dapat dipulihkan.`)) return;
+    const n = await deleteCatat([...picked]);
+    setPicked(new Set());
+    setSelecting(false);
+    await onChanged();
+    setDeleted(n);
+  };
   const pending = records.filter((r) => !r.finishedAt);
   const finished = records.length - pending.length;
 
@@ -83,32 +104,65 @@ export function PencatatanTab({ records, oldRaw, onChanged }: { records: CatatRe
         >
           Buat pencatatan data akhir
         </button>
+        <SelectMenu
+          selecting={selecting}
+          count={picked.size}
+          disabled={!complete.length}
+          onOne={() => setSelecting(true)}
+          onAll={() => {
+            setSelecting(true);
+            setPicked(new Set(complete.map((r) => r.id)));
+          }}
+          onDelete={() => void removePicked()}
+          onCancel={() => {
+            setSelecting(false);
+            setPicked(new Set());
+          }}
+        />
         {!pending.length && <span className="text-xs text-muted" data-testid="catat-akhir-hint">{records.length ? 'Semua catatan awal sudah punya data akhir.' : 'Pencatatan data akhir bisa dibuka setelah ada catatan awal tersimpan.'}</span>}
       </div>
 
       {records.length ? (
         <ul className="flex flex-col gap-3" data-testid="catat-list">
-          {records.map((r) => (
+          {records.map((r) => {
+            const can = selecting && !!r.finishedAt;
+            const on = picked.has(r.id);
+            const open = () => (can ? toggle(r.id) : selecting ? undefined : setPreview(r));
+            return (
             <li key={r.id}>
               <div
                 role="button"
                 tabIndex={0}
-                onClick={() => setPreview(r)}
-                onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), setPreview(r))}
-                className="card flex cursor-pointer flex-col gap-3 transition hover:border-acid sm:flex-row sm:items-center sm:justify-between"
+                aria-pressed={selecting ? on : undefined}
+                onClick={open}
+                onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), open())}
+                className={`card flex cursor-pointer flex-col gap-3 transition sm:flex-row sm:items-center sm:justify-between ${on ? 'border-acid ring-2 ring-acid/50' : 'hover:border-acid'} ${selecting && !r.finishedAt ? 'cursor-not-allowed opacity-50' : ''}`}
                 data-testid={`catat-card-${r.id}`}
               >
-                <div className="flex min-w-0 flex-col gap-1">
+                {selecting && (
+                  <input
+                    type="checkbox"
+                    className="h-5 w-5 flex-none accent-[#1FA88F]"
+                    checked={on}
+                    disabled={!r.finishedAt}
+                    onChange={() => toggle(r.id)}
+                    onClick={(e) => e.stopPropagation()}
+                    aria-label={r.finishedAt ? `Pilih ${r.id}` : `${r.id} belum lengkap — tidak bisa dipilih`}
+                    data-testid={`catat-check-${r.id}`}
+                  />
+                )}
+                <div className="flex min-w-0 flex-1 flex-col gap-1">
                   <span className="font-mono text-xs text-muted">{r.id} · {r.createdAt.slice(0, 10)}</span>
                   <span className="font-display text-lg font-semibold">{r.item} · {r.count} {r.count === 1 ? 'item' : 'item'}</span>
                   <span className={`self-start rounded-full px-2.5 py-0.5 font-mono text-[11px] font-semibold ${r.finishedAt ? 'bg-acid text-ink' : 'bg-safety text-ink'}`}>
                     {r.finishedAt ? 'Awal & akhir lengkap' : 'Menunggu data akhir'}
                   </span>
                 </div>
-                <DownloadButtons rec={r} testId={`catat-dl-${r.id}`} />
+                {!selecting && <DownloadButtons rec={r} testId={`catat-dl-${r.id}`} />}
               </div>
             </li>
-          ))}
+            );
+          })}
         </ul>
       ) : (
         <p className="text-sm italic text-muted">Belum ada pencatatan. Mulai dengan “+ Buat catatan baru”.</p>
@@ -134,43 +188,15 @@ export function PencatatanTab({ records, oldRaw, onChanged }: { records: CatatRe
           </div>
         </PageModal>
       )}
-      {toast && (
-        <Floating testId="catat-toast" column>
-          <FileLoader />
-          <span className="text-sm font-semibold">{toast === 'saving' ? 'Tunggu ya, data sedang di save.' : 'Menyimpan data akhir…'}</span>
-        </Floating>
-      )}
+      {toast && <LoadingOverlay testId="catat-toast" text={toast === 'saving' ? 'Tunggu ya, data sedang di save.' : 'Menyimpan data akhir…'} />}
       {done && (
-        <Floating testId="catat-done" interactive>
-          <span aria-hidden className="flex h-8 w-8 flex-none items-center justify-center rounded-full bg-acid text-lg">✓</span>
-          <span className="flex flex-1 flex-col gap-2">
-            <span className="text-sm font-semibold">Yes!! akhirnya selesai.., yuk download/simpan hasil data nya.</span>
-            <span className="flex gap-2">
-              <button type="button" className="btn-primary min-h-[40px] px-4" onClick={() => window.location.assign(`/lab/hasil?id=${encodeURIComponent(done.id)}`)} data-testid="catat-done-view">Lihat</button>
-              <button type="button" className="btn-ghost min-h-[40px] px-4" onClick={() => setDone(undefined)} data-testid="catat-done-later">Nanti</button>
-            </span>
-          </span>
-        </Floating>
+        <SuccessAlert testId="catat-done" message="Yes!! akhirnya selesai.., yuk download/simpan hasil data nya." onClose={() => setDone(undefined)}>
+          <button type="button" className="rounded-lg bg-[#66cdaa] px-4 py-1.5 text-sm font-semibold text-white hover:brightness-95" onClick={() => window.location.assign(`/lab/hasil?id=${encodeURIComponent(done.id)}`)} data-testid="catat-done-view">Lihat</button>
+          <button type="button" className="rounded-lg border border-[#66cdaa] px-4 py-1.5 text-sm font-semibold text-[#3a9e7c]" onClick={() => setDone(undefined)} data-testid="catat-done-later">Nanti</button>
+        </SuccessAlert>
       )}
+      {deleted > 0 && <SuccessAlert testId="catat-deleted" message={`${deleted} catatan dihapus permanen.`} onClose={() => setDeleted(0)} />}
     </div>
-  );
-}
-
-/** Animasi loading "file terbang" (DEC-075, CSS di globals.css). */
-export function FileLoader() {
-  return (
-    <div className="loader-con" aria-hidden data-testid="file-loader">
-      {[0, 1, 2, 3, 4, 5].map((i) => <div key={i} className="pfile" style={{ ['--i' as string]: i }} />)}
-    </div>
-  );
-}
-
-function Floating({ children, testId, interactive = false, column = false }: { children: ReactNode; testId: string; interactive?: boolean; column?: boolean }) {
-  return createPortal(
-    <div className={`fixed inset-x-0 top-20 z-[60] flex justify-center px-4 ${interactive ? '' : 'pointer-events-none'}`} role="status" aria-live="polite" data-testid={testId}>
-      <div className={`flex w-full max-w-md items-center gap-3 rounded-2xl border border-acid/40 bg-white px-4 py-3 text-ink shadow-2xl ${column ? 'flex-col text-center' : ''}`}>{children}</div>
-    </div>,
-    document.body,
   );
 }
 
@@ -273,10 +299,17 @@ function AwalModal({ onClose, onConfirm }: { onClose: () => void; onConfirm: (it
  */
 function RowPhoto({ value, onChange, label, testId, readOnly = false }: { value?: string; onChange?: (v: string | undefined) => void; label: string; testId: string; readOnly?: boolean }) {
   const [busy, setBusy] = useState(false);
+  const [zoom, setZoom] = useState(false);
+  const pv = zoom && value ? <ImagePreview src={value} alt={label} onClose={() => setZoom(false)} /> : null;
   if (readOnly)
     return value ? (
-      // eslint-disable-next-line @next/next/no-img-element
-      <img src={value} alt={label} className="h-12 w-12 rounded-lg object-cover" data-testid={testId} />
+      <>
+        <button type="button" onClick={() => setZoom(true)} aria-label={`Lihat ${label}`} className="rounded-lg">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={value} alt={label} className="h-12 w-12 rounded-lg object-cover" data-testid={testId} />
+        </button>
+        {pv}
+      </>
     ) : (
       <span className="font-mono text-xs text-muted" data-testid={testId}>tanpa foto</span>
     );
@@ -284,8 +317,10 @@ function RowPhoto({ value, onChange, label, testId, readOnly = false }: { value?
     <span className="flex items-center gap-1.5">
       {value && (
         <span className="relative">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={value} alt={label} className="h-12 w-12 rounded-lg object-cover" data-testid={`${testId}-img`} />
+          <button type="button" onClick={() => setZoom(true)} aria-label={`Lihat ${label}`} className="rounded-lg">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={value} alt={label} className="h-12 w-12 rounded-lg object-cover" data-testid={`${testId}-img`} />
+          </button>
           <button type="button" aria-label={`Hapus ${label}`} className="absolute -right-1.5 -top-1.5 h-5 w-5 rounded-full bg-ink text-[11px] leading-none text-paper" onClick={() => onChange?.(undefined)}>×</button>
         </span>
       )}
@@ -306,7 +341,60 @@ function RowPhoto({ value, onChange, label, testId, readOnly = false }: { value?
           data-testid={testId}
         />
       </label>
+      {pv}
     </span>
+  );
+}
+
+/** Tombol "Pilih" (DEC-076): Pilih salah satu / Pilih semua; setelah ada pilihan → Hapus (permanen) & Batal. */
+function SelectMenu({ selecting, count, disabled, onOne, onAll, onDelete, onCancel }: { selecting: boolean; count: number; disabled: boolean; onOne: () => void; onAll: () => void; onDelete: () => void; onCancel: () => void }) {
+  const [open, setOpen] = useState(false);
+  const root = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!open) return;
+    const close = (e: PointerEvent) => !root.current?.contains(e.target as Node) && setOpen(false);
+    const esc = (e: KeyboardEvent) => e.key === 'Escape' && setOpen(false);
+    document.addEventListener('pointerdown', close);
+    window.addEventListener('keydown', esc);
+    return () => {
+      document.removeEventListener('pointerdown', close);
+      window.removeEventListener('keydown', esc);
+    };
+  }, [open]);
+  const item = 'flex w-full flex-col items-start gap-0.5 px-3 py-2.5 text-left text-sm hover:bg-acid/15';
+  const run = (f: () => void) => () => {
+    setOpen(false);
+    f();
+  };
+  return (
+    <div ref={root} className="relative">
+      <button
+        type="button"
+        className="btn-ghost"
+        disabled={disabled}
+        title={disabled ? 'Belum ada catatan lengkap (awal & akhir)' : ''}
+        aria-haspopup="menu"
+        aria-expanded={open}
+        onClick={() => setOpen((o) => !o)}
+        data-testid="catat-select"
+      >
+        Pilih{selecting ? ` (${count})` : ''} ▾
+      </button>
+      {open && (
+        <div role="menu" className="absolute left-0 top-full z-40 mt-1 w-64 overflow-hidden rounded-xl border border-ink/15 bg-white py-1 shadow-xl" data-testid="catat-select-menu">
+          <button type="button" role="menuitem" className={item} onClick={run(onOne)} data-testid="catat-select-one">Pilih salah satu</button>
+          <button type="button" role="menuitem" className={item} onClick={run(onAll)} data-testid="catat-select-all">Pilih semua</button>
+          {count > 0 && (
+            <button type="button" role="menuitem" className={`${item} text-[#c0392b]`} onClick={run(onDelete)} data-testid="catat-select-delete">
+              <span className="font-semibold">Hapus ({count})</span>
+              <span className="text-xs text-muted">Jika sudah dihapus, data tidak dapat dipulihkan.</span>
+            </button>
+          )}
+          {selecting && <button type="button" role="menuitem" className={item} onClick={run(onCancel)} data-testid="catat-select-cancel">Batal</button>}
+          <p className="border-t border-paper-grid px-3 py-2 text-[11px] text-muted">Hanya catatan berstatus lengkap (awal &amp; akhir) yang bisa dipilih.</p>
+        </div>
+      )}
+    </div>
   );
 }
 

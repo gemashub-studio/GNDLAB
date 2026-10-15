@@ -436,6 +436,7 @@ test.describe('Hapus hasil riset', () => {
     await page.getByTestId('catat-awal-confirm').click();
     await expect(page.locator('[data-testid^="catat-card-PD-"]')).toHaveCount(2);
 
+    await expect(page.getByTestId('catat-select')).toBeDisabled();
     await page.getByTestId('catat-akhir').click();
     const akhir = page.getByTestId('catat-akhir-modal');
     await expect(akhir).toContainText('Pencatatan data akhir');
@@ -448,6 +449,10 @@ test.describe('Hapus hasil riset', () => {
     // foto data awal tampil di form data akhir; foto data akhir bisa ditambah
     await expect(akhir.getByTestId('catat-akhir-fotoawal-1')).toHaveAttribute('src', /^data:image\/jpeg/);
     await expect(akhir.getByTestId('catat-akhir-fotoawal-2')).toHaveText('tanpa foto');
+    await akhir.getByTestId('catat-akhir-fotoawal-1').click();
+    await expect(page.getByTestId('img-preview')).toBeVisible();
+    await page.getByTestId('img-preview-close').click();
+    await expect(page.getByTestId('img-preview')).toHaveCount(0);
     await akhir.getByTestId('catat-akhir-foto-1').setInputFiles({ name: 'akhir1.png', mimeType: 'image/png', buffer: png });
     await expect(akhir.getByTestId('catat-akhir-foto-1-img')).toBeVisible();
     await akhir.getByTestId('catat-akhir-confirm').click();
@@ -460,6 +465,8 @@ test.describe('Hapus hasil riset', () => {
     await expect(page.getByTestId('catat-toast')).toBeVisible();
     const done = page.getByTestId('catat-done');
     await expect(done).toContainText('Yes!! akhirnya selesai.., yuk download/simpan hasil data nya.');
+    await expect(done).toContainText('Success !');
+    await expect(done.getByTestId('catat-done-close')).toBeVisible();
     await expect(page.getByTestId('catat-stat-akhir')).toContainText('1');
     await done.getByTestId('catat-done-view').click();
 
@@ -479,6 +486,31 @@ test.describe('Hapus hasil riset', () => {
       await hasil.getByTestId(`hasil-dl-${k}`).click();
       expect((await d).suggestedFilename()).toBe(`${id}-pencatatan-data.${k}`);
     }
+    // foto di tabel hasil → pratinjau
+    await hasil.getByRole('button', { name: 'Lihat Foto awal nomor 1' }).click();
+    await expect(page.getByTestId('img-preview')).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(page.getByTestId('img-preview')).toHaveCount(0);
+
+    // Pilih → pilih salah satu → hanya catatan lengkap → Hapus (permanen)
+    await page.goto('/lab?t=bahan');
+    await expect(page.locator('[data-testid^="catat-card-PD-"]')).toHaveCount(2);
+    await page.getByTestId('catat-select').click();
+    await expect(page.getByTestId('catat-select-menu')).not.toContainText('Hapus');
+    await page.getByTestId('catat-select-one').click();
+    const pendingId = (await page.locator('[data-testid^="catat-card-PD-"]').filter({ hasText: 'Menunggu data akhir' }).getAttribute('data-testid'))!.replace('catat-card-', '');
+    await expect(page.getByTestId(`catat-check-${pendingId}`)).toBeDisabled();
+    await page.getByTestId(`catat-card-${id}`).click();
+    await expect(page.getByTestId(`catat-check-${id}`)).toBeChecked();
+    await page.getByTestId('catat-select').click();
+    await expect(page.getByTestId('catat-select-delete')).toContainText('Hapus (1)');
+    await expect(page.getByTestId('catat-select-delete')).toContainText('tidak dapat dipulihkan');
+    page.once('dialog', (dlg) => void dlg.accept());
+    await page.getByTestId('catat-select-delete').click();
+    await expect(page.getByTestId('catat-deleted')).toContainText('1 catatan dihapus permanen.');
+    await expect(page.getByTestId(`catat-card-${id}`)).toHaveCount(0);
+    await expect(page.getByTestId(`catat-card-${pendingId}`)).toBeVisible();
+    await expect(page.getByTestId('catat-stat-awal')).toContainText('1');
   });
   test('jalur produk bisa diisi manual → kode otomatis, nama tersimpan', async ({ page }) => {
     await page.goto('/lab?t=protokol');

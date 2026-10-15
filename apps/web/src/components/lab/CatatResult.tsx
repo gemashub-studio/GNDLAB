@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { downloadBlob } from '@/lib/labMedia';
 import { awalColumns, buildCatatReport, compareRecord, conclusions, hasThickness, type CatatRecord } from '@/lib/pencatatan';
 import { fmtNum } from '@/lib/reportCharts';
+import { ImagePreview } from './Overlays';
 
 type Kind = 'pdf' | 'docx' | 'pptx';
 const LABEL: Record<Kind, string> = { pdf: 'PDF', docx: 'Word', pptx: 'PPTX' };
@@ -72,14 +73,18 @@ function Table({ head, rows, testId }: { head: string[]; rows: (string | number 
   );
 }
 
-/** Foto kecil di tabel; klik → buka ukuran penuh di tab baru. */
+/** Foto kecil di tabel; klik → pratinjau besar dengan tombol ✕ (DEC-076). */
 function Thumb({ src, alt }: { src?: string; alt: string }) {
+  const [zoom, setZoom] = useState(false);
   if (!src) return <span className="text-muted">–</span>;
   return (
-    <a href={src} target="_blank" rel="noopener noreferrer" className="inline-block" title="Buka foto">
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={src} alt={alt} className="ml-auto h-12 w-12 rounded-lg object-cover" />
-    </a>
+    <>
+      <button type="button" className="inline-block rounded-lg" onClick={() => setZoom(true)} aria-label={`Lihat ${alt}`}>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={src} alt={alt} className="ml-auto h-12 w-12 rounded-lg object-cover" />
+      </button>
+      {zoom && <ImagePreview src={src} alt={alt} onClose={() => setZoom(false)} />}
+    </>
   );
 }
 
