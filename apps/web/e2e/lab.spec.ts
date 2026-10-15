@@ -4,7 +4,8 @@ import { expect, test } from '@playwright/test';
 test.describe('GEMA RnD Lab', () => {
   test('kartu jalur → eksperimen baru dengan ID otomatis → lengkapi hasil & langkah → riwayat versi', async ({ page }) => {
     await page.goto('/lab');
-    await expect(page.getByTestId('lab-hero')).toContainText('GEMA');
+    await expect(page.getByTestId('lab-heading').getByRole('img', { name: 'GnD Lab' })).toBeVisible();
+    await expect(page).toHaveTitle(/GnD Lab/);
     await page.getByTestId('lab-product-BR').click();
     await expect(page.getByTestId('lab-filter-product')).toHaveValue('BR');
     await page.getByTestId('lab-new').click();
@@ -389,7 +390,16 @@ test.describe('Hapus hasil riset', () => {
 
     await page.getByTestId('catat-new').click();
     const awal = page.getByTestId('catat-awal-modal');
-    await expect(awal).not.toContainText('Perlakuan');
+    await expect(awal).not.toContainText('Perlakuan air');
+    await expect(awal.getByTestId('catat-treatments')).toContainText('Jumlah perlakuan bibit bio leather');
+    await awal.getByTestId('catat-tr-count-kopra').fill('3');
+    await awal.getByTestId('catat-tr-method-kopra').click();
+    await expect(awal.getByTestId('catat-tr-method-kopra-list')).toContainText('Oven Briket');
+    await awal.getByTestId('catat-tr-method-kopra-opt-Oven Gas').click();
+    await awal.getByTestId('catat-tr-method-cuka').click();
+    await expect(awal.getByTestId('catat-tr-method-cuka-list').getByRole('option')).toHaveText(['— pilih —', 'CUKA 1 - GULA 25g', 'CUKA 2 - GULA 75g', 'CUKA 3 - GULA 50']);
+    await awal.getByTestId('catat-tr-method-cuka-opt-CUKA 2 - GULA 75g').click();
+    await awal.getByTestId('catat-tr-count-cuka').fill('2');
     await awal.getByTestId('catat-count').fill('3');
     await expect(awal.locator('[data-testid^="catat-awal-beratAwal-"]')).toHaveCount(3);
     await expect(awal.locator('[data-testid^="catat-awal-tebalAwal-"]')).toHaveCount(3);
@@ -469,6 +479,10 @@ test.describe('Hapus hasil riset', () => {
     await expect(done).toContainText('Success !');
     await expect(done.getByTestId('catat-done-close')).toBeVisible();
     await expect(page.getByTestId('catat-stat-akhir')).toContainText('1');
+    await expect(done.getByTestId('catat-done-card')).toHaveClass(/alert-slide-in/);
+    const order = await page.locator('[data-testid^="catat-card-PD-"]').evaluateAll((els) => els.map((e) => e.textContent ?? ''));
+    expect(order[0]).toContain('Menunggu data akhir');
+    expect(order[1]).toContain('Awal & akhir lengkap');
     await done.getByTestId('catat-done-view').click();
 
     // halaman hasil: 3 bagian + kesimpulan + unduh
@@ -482,6 +496,8 @@ test.describe('Hapus hasil riset', () => {
     await expect(hasil.getByTestId('catat-tbl-cmp-berat')).toContainText('-10%');
     await expect(hasil.getByTestId('catat-tbl-cmp-tebal')).toContainText('Rata-rata');
     await expect(hasil.getByTestId('catat-conclusion')).toContainText('Berat rata-rata turun 13,3%');
+    await expect(hasil.getByTestId('catat-tbl-treat')).toContainText('Oven Gas');
+    await expect(hasil.getByTestId('catat-tbl-treat')).toContainText('CUKA 2 - GULA 75g');
     for (const k of ['docx', 'pptx'] as const) {
       const d = page.waitForEvent('download');
       await hasil.getByTestId(`hasil-dl-${k}`).click();

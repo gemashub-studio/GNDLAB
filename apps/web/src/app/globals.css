@@ -46,7 +46,7 @@
   *, *::before, *::after { transition: none !important; animation: none !important; }
 }
 
-/* Animasi loading "file terbang" (DEC-075, permintaan owner — dipakai di alert penyimpanan Pencatatan Data). */
+/* Animasi loading "file terbang" (DEC-075/079: siklus 4 detik, permintaan owner — dipakai di alert penyimpanan Pencatatan Data). */
 .loader-con {
   position: relative;
   width: 50%;
@@ -61,8 +61,8 @@
   background: linear-gradient(90deg, #b324db, #ac8dcb);
   border-radius: 4px;
   transform-origin: center;
-  animation: flyRight 3s ease-in-out infinite;
-  animation-delay: calc(var(--i) * 0.6s);
+  animation: flyRight 4s ease-in-out infinite;
+  animation-delay: calc(var(--i) * 0.667s);
   opacity: 0;
 }
 .pfile::before {
@@ -93,3 +93,16 @@
 @media (prefers-reduced-motion: reduce) {
   .pfile { animation-duration: 6s; }
 }
+
+/* Alert sukses muncul dari sisi kanan (DEC-079). */
+@keyframes slideInRight {
+  from { transform: translateX(calc(100% + 2rem)); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+.alert-slide-in { animation: slideInRight 0.45s cubic-bezier(0.22, 1, 0.36, 1) both; }
+
+/* StrokeText (GSAP, komponen owner — DEC-079). */
+.stroke-text { display: block; width: 100%; line-height: 0; }
+.stroke-text--hover { cursor: pointer; }
+.stroke-text__svg { display: block; width: 100%; height: var(--stroke-text-height, 160px); }
+.stroke-text__stroke, .stroke-text__fill { user-select: none; }

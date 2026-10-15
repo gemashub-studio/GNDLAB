@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { downloadBlob } from '@/lib/labMedia';
-import { awalColumns, buildCatatReport, compareRecord, conclusions, hasThickness, type CatatRecord } from '@/lib/pencatatan';
+import { awalColumns, buildCatatReport, compareRecord, conclusions, hasThickness, treatmentRows, type CatatRecord } from '@/lib/pencatatan';
 import { fmtNum } from '@/lib/reportCharts';
 import { ImagePreview } from './Overlays';
 
@@ -120,6 +120,12 @@ export function CatatResult({ rec }: { rec: CatatRecord }) {
               />
             </div>
           ))}
+        {treatmentRows(rec.treatments).length > 0 && (
+          <div className="flex flex-col gap-2">
+            <h3 className="text-sm font-semibold">Perlakuan</h3>
+            <Table testId="catat-tbl-treat" head={['Perlakuan', 'Jumlah', 'Perlakuan/metode']} rows={treatmentRows(rec.treatments)} />
+          </div>
+        )}
         <div className="rounded-xl border-l-4 border-acid bg-paper p-4" data-testid="catat-conclusion">
           <p className="label-mono mb-1">Kesimpulan</p>
           <ul className="flex list-disc flex-col gap-1 pl-5 text-sm">

@@ -177,7 +177,7 @@ test('desktop: menu ☰ juga di kanan atas; Esc menutup; pintasan tampil', async
   expect(bb.x + bb.width).toBeGreaterThan(1366 - 60);
   await page.getByTestId('menu-open').click();
   await expect(page.getByTestId('menu-drawer')).toBeInViewport();
-  await expect(page.getByRole('navigation', { name: 'Navigasi utama' }).getByRole('link', { name: 'R&D Lab' })).toHaveAttribute('aria-current', 'page');
+  await expect(page.getByRole('navigation', { name: 'Navigasi utama' }).getByRole('link', { name: 'GnD Lab' })).toHaveAttribute('aria-current', 'page');
   await page.keyboard.press('Escape');
   await expect(page.getByTestId('menu-drawer')).not.toBeInViewport();
   await expect(page.getByTestId('menu-open')).toBeFocused();

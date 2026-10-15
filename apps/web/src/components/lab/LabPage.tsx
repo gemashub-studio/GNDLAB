@@ -4,6 +4,7 @@ import { BelanjaTab } from './BelanjaTab';
 import Link from 'next/link';
 import { useCallback, useEffect, useState } from 'react';
 import { GEMA_SOURCES, sourceCounts } from '@/lib/gemaSources';
+import { StrokeText } from '@/components/ui/StrokeText';
 import { listEntries, listExperiments, listMedia, listProtocols, type DailyEntry, type Experiment, type LabProductId, type MediaItem, type ProtocolVersion, listDrafts, researchStatus } from '@/lib/labStore';
 import { BackupPanel } from './BackupPanel';
 import { ExperimentsTab } from './ExperimentsTab';
@@ -89,7 +90,9 @@ export function LabPage() {
         <div className="relative flex flex-wrap items-end justify-between gap-4">
           <div className="flex flex-col gap-2">
             <Link href="/" className="font-mono text-[11px] font-semibold tracking-[0.14em] text-muted-ink no-underline hover:text-acid">gemasSTUDIO / R&amp;D</Link>
-            <h1 className="text-[40px] text-paper sm:text-[56px]">GEMA <span className="text-acid">RnD</span> Lab</h1>
+            <h1 className="max-w-[560px]" data-testid="lab-heading">
+              <StrokeText text="GnD Lab" strokeColor="#63E6CF" fillColor="#F3F6F7" strokeWidth={1.4} drawDuration={1.6} fillDelay={0.2} stagger={0.05} ease="power2.out" trigger="mount" fillMode="wipe" fontSize={128} fontWeight={800} letterSpacing={-4} align="left" height="clamp(56px, 14vw, 104px)" />
+            </h1>
             <p className="max-w-xl text-[15px] text-muted-ink">
               Buku catatan eksperimen lima jalur produk kelapa. Tiap percobaan tersimpan terpisah, hasil gagal ikut dicatat, dan yang kosong tertulis “belum dicatat”.
             </p>
@@ -151,7 +154,7 @@ export function LabPage() {
       {tab === 'standar' && <StandardsTab product={stdProduct} setProduct={setStdProduct} />}
 
       <p className="text-xs text-muted">
-        Data eksperimen tersimpan di perangkat ini (offline). Rutin unduh cadangan. GEMA RnD tidak menyatakan produk aman dikonsumsi atau memenuhi standar.
+        Data eksperimen tersimpan di perangkat ini (offline). Rutin unduh cadangan. GnD Lab tidak menyatakan produk aman dikonsumsi atau memenuhi standar.
       </p>
     </div>
   );

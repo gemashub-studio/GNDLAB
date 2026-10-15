@@ -31,6 +31,10 @@ export interface ReportBlock {
   pptxOnly?: boolean;
   /** PowerPoint tidak membuat slide galeri dari `images` blok ini (fotonya sudah di grid). */
   pptxOmitImages?: boolean;
+  /** Blok dilewati di PowerPoint (isinya digabung ke blok lain, mis. perlakuan → Kesimpulan). */
+  pptxSkip?: boolean;
+  /** Tabel khusus PowerPoint (ditaruh di slide blok ini, menggantikan `table`). */
+  pptxTable?: { head: string[]; rows: string[][] };
 }
 
 export interface PhotoCell {

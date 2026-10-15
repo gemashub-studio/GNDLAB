@@ -3,6 +3,12 @@
 Format: [Keep a Changelog](https://keepachangelog.com/id/1.1.0/) · Versi dataset mengikuti SemVer (ADR-002).
 Waktu dalam WIB (UTC+7).
 
+## [GnD Lab & perlakuan pencatatan] — 2026-10-15
+### Ditambahkan
+- Pencatatan awal: 4 jumlah perlakuan + metode (kopra, bibit bio leather, cuka, bio leather), ikut PDF/Word/PPTX (PPTX di slide Kesimpulan).
+### Diubah
+- Nama lab menjadi GnD Lab (animasi StrokeText/gsap); loading 4 detik; alert sukses muncul dari kanan; kartu menunggu di atas; hapus langsung hilang dari layar.
+
 ## [Laporan belanja: simpan & unduh 3 format] — 2026-10-15
 ### Diubah
 - Laporan belanja: tombol Simpan ▾ (PPTX/Word/PDF), isian nama toko + foto nota + foto barang bernama; PPTX diagram cabang nota → barang.

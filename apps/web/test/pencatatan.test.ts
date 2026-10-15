@@ -75,6 +75,26 @@ describe('pencatatan data awal & akhir (DEC-074)', () => {
     expect(r.blocks.find((b) => b.photoPairs)!.pptxOnly).toBe(true);
   });
 
+  it('perlakuan: bagian sendiri di PDF/Word, digabung ke slide Kesimpulan di PPTX (DEC-079)', async () => {
+    const { treatmentRows, TREATMENT_GROUPS } = await import('@/lib/pencatatan');
+    expect(TREATMENT_GROUPS.map((g) => g.title)).toEqual(['Jumlah perlakuan kopra', 'Jumlah perlakuan bibit bio leather', 'Jumlah perlakuan cuka', 'Jumlah perlakuan bio leather']);
+    expect(TREATMENT_GROUPS[0].methods).toEqual(['GreenHouse', 'Oven Gas', 'Oven Briket']);
+    const r0 = { ...rec(), treatments: { kopra: { count: '3', method: 'Oven Gas' }, bio: { count: '', method: 'Bio Leather B - Gula 50g' }, cuka: { count: '', method: '' } } };
+    expect(treatmentRows(r0.treatments)).toEqual([['Jumlah perlakuan kopra', '3', 'Oven Gas'], ['Jumlah perlakuan bio leather', '–', 'Bio Leather B - Gula 50g']]);
+    const r = buildCatatReport(r0, 'x');
+    const heads = r.blocks.map((b) => b.heading);
+    expect(heads.slice(-2)).toEqual(['Perlakuan', 'Kesimpulan']);
+    expect(r.blocks.find((b) => b.heading === 'Perlakuan')!.pptxSkip).toBe(true);
+    const docx = new TextDecoder().decode(buildDocx(r));
+    expect(docx).toContain('Perlakuan/metode');
+    const pptx = new TextDecoder().decode(buildPptx(r));
+    // PPTX: tidak ada slide "Perlakuan" sendiri; tabel perlakuan ada di slide Kesimpulan
+    const slides = pptx.split('<p:sld ').slice(1);
+    const kes = slides.filter((x) => x.includes('Kesimpulan'));
+    expect(kes.some((x) => x.includes('Oven Gas') && x.includes('Perlakuan/metode'))).toBe(true);
+    expect(slides.some((x) => x.includes('>Perlakuan<') && !x.includes('Kesimpulan'))).toBe(false);
+  });
+
   it('kode PD-YYMMDD-NN', () => {
     expect(nextCatatId(['PD-261015-01', 'PD-261015-04'], new Date(2026, 9, 15), '')).toBe('PD-261015-05');
   });

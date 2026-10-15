@@ -38,8 +38,8 @@ export function SuccessAlert({ title = 'Success !', message, onClose, children, 
     return () => window.removeEventListener('keydown', onKey);
   }, [onClose]);
   return createPortal(
-    <div className="fixed inset-x-0 top-24 z-[70] flex justify-center px-4" role="alertdialog" aria-labelledby={`${testId}-t`} aria-describedby={`${testId}-m`} data-testid={testId}>
-      <div className="flex w-full max-w-96 overflow-hidden rounded-xl bg-white shadow-lg sm:w-3/4">
+    <div className="pointer-events-none fixed inset-x-0 top-24 z-[70] flex justify-end px-4 sm:px-6" role="alertdialog" aria-labelledby={`${testId}-t`} aria-describedby={`${testId}-m`} data-testid={testId}>
+      <div className="alert-slide-in pointer-events-auto flex w-full max-w-96 overflow-hidden rounded-xl bg-white shadow-lg sm:w-3/4" data-testid={`${testId}-card`}>
         <svg width="16" className="flex-none self-stretch" viewBox="0 0 16 96" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
           <path
             d="M 8 0 Q 4 4.8, 8 9.6 T 8 19.2 Q 4 24, 8 28.8 T 8 38.4 Q 4 43.2, 8 48 T 8 57.6 Q 4 62.4, 8 67.2 T 8 76.8 Q 4 81.6, 8 86.4 T 8 96 L 0 96 L 0 0 Z"

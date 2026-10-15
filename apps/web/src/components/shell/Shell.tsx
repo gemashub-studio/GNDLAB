@@ -40,7 +40,7 @@ export const NAV_GROUPS: { title: string; items: NavItem[] }[] = [
   {
     title: 'Riset & data',
     items: [
-      { href: '/lab', label: 'R&D Lab', icon: 'lab', quick: true },
+      { href: '/lab', label: 'GnD Lab', icon: 'lab', quick: true },
       { href: '/sampling', label: 'Sampling', icon: 'scale' },
       { href: '/data', label: 'Data & Sumber', icon: 'data' },
       { href: '/panduan', label: 'Panduan', icon: 'help' },

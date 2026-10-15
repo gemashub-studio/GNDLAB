@@ -32,6 +32,26 @@ export interface CatatRow {
   fotoAkhir?: string;
 }
 
+/** Perlakuan per jalur (DEC-079): jumlah perlakuan + metode (pilihan tetap dari owner). */
+export const TREATMENT_GROUPS = [
+  { key: 'kopra', title: 'Jumlah perlakuan kopra', methods: ['GreenHouse', 'Oven Gas', 'Oven Briket'] },
+  { key: 'bibit', title: 'Jumlah perlakuan bibit bio leather', methods: ['A - PH 40', 'B - PH 40'] },
+  { key: 'cuka', title: 'Jumlah perlakuan cuka', methods: ['CUKA 1 - GULA 25g', 'CUKA 2 - GULA 75g', 'CUKA 3 - GULA 50'] },
+  { key: 'bio', title: 'Jumlah perlakuan bio leather', methods: ['Bio Leather A - Gula 25g', 'Bio Leather B - Gula 50g'] },
+] as const;
+export type TreatmentKey = (typeof TREATMENT_GROUPS)[number]['key'];
+export interface TreatmentEntry {
+  /** Jumlah perlakuan (isian). */
+  count: string;
+  /** Perlakuan/metode terpilih. */
+  method: string;
+}
+export type Treatments = Partial<Record<TreatmentKey, TreatmentEntry>>;
+
+/** Baris tabel perlakuan yang terisi (jumlah atau metode). */
+export const treatmentRows = (t?: Treatments) =>
+  TREATMENT_GROUPS.filter((g) => t?.[g.key]?.count.trim() || t?.[g.key]?.method).map((g): [string, string, string] => [g.title, t![g.key]!.count.trim() || '–', t![g.key]!.method || '–']);
+
 export interface CatatRecord {
   /** PD-YYMMDD-NN (+ kode perangkat bila sinkron aktif). */
   id: string;
@@ -41,6 +61,8 @@ export interface CatatRecord {
   createdAt: string;
   /** Terisi saat pencatatan data akhir dikonfirmasi. */
   finishedAt?: string;
+  /** Jumlah perlakuan & metode per jalur (DEC-079). */
+  treatments?: Treatments;
 }
 
 export const blankRows = (n: number): CatatRow[] => Array.from({ length: n }, (_, i) => ({ no: i + 1, beratAwal: '', volAir: '', beratAir: '', tebalAwal: '' }));
@@ -167,9 +189,9 @@ export function nextCatatId(existing: readonly string[], now = new Date(), tag =
   return `${p}${String(Math.max(0, ...n) + 1).padStart(2, '0')}${tag}`;
 }
 
-export async function addCatatAwal(item: string, rows: CatatRow[]): Promise<CatatRecord> {
+export async function addCatatAwal(item: string, rows: CatatRow[], treatments?: Treatments): Promise<CatatRecord> {
   const d = await catatDb();
-  const rec: CatatRecord = { id: nextCatatId((await d.getAllKeys('records')).map(String)), item, count: rows.length, rows, createdAt: new Date().toISOString() };
+  const rec: CatatRecord = { id: nextCatatId((await d.getAllKeys('records')).map(String)), item, count: rows.length, rows, createdAt: new Date().toISOString(), ...(treatments && treatmentRows(treatments).length && { treatments }) };
   await d.add('records', rec);
   return rec;
 }
@@ -289,7 +311,17 @@ export function buildCatatReport(rec: CatatRecord, generatedAt = new Date().toLo
       })),
     });
   }
-  blocks.push({ heading: 'Kesimpulan', level: 1, lines: [...conclusions(rec), 'Kesimpulan deskriptif dari angka isian; bukan uji statistik dan bukan klaim mutu produk.'], images: [] });
+  // perlakuan: PDF/Word = bagian sendiri; PPTX = disatukan ke slide Kesimpulan (DEC-079)
+  const tRows = treatmentRows(rec.treatments);
+  const tHead = ['Perlakuan', 'Jumlah', 'Perlakuan/metode'];
+  if (tRows.length) blocks.push({ heading: 'Perlakuan', level: 1, lines: [], table: { head: tHead, rows: tRows }, images: [], pptxSkip: true });
+  blocks.push({
+    heading: 'Kesimpulan',
+    level: 1,
+    lines: [...conclusions(rec), 'Kesimpulan deskriptif dari angka isian; bukan uji statistik dan bukan klaim mutu produk.'],
+    images: [],
+    ...(tRows.length && { pptxTable: { head: tHead, rows: tRows } }),
+  });
   const title = `Pencatatan data — ${rec.item} (${rec.count})`;
   const status = rec.finishedAt ? 'Awal & akhir lengkap' : 'Menunggu data akhir';
   return {

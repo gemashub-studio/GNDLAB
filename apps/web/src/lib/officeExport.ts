@@ -465,7 +465,8 @@ export function buildPptx(r: ResearchReport, charts: ChartPngs = new Map(), vide
     return out;
   }
 
-  for (const b of r.blocks) {
+  for (const b0 of r.blocks.filter((x) => !x.pptxSkip)) {
+    const b = b0.pptxTable ? { ...b0, table: b0.pptxTable } : b0;
     const num = b.level === 1 ? ++sec : undefined;
     const head = b.heading;
     const lines = b.lines.map(linePara);

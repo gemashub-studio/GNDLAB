@@ -15,6 +15,9 @@ import {
   missingAwal,
   saveCatatAkhir,
   type AkhirInput,
+  TREATMENT_GROUPS,
+  treatmentRows,
+  type Treatments,
   type CatatRecord,
   type CatatRow,
 } from '@/lib/pencatatan';
@@ -23,7 +26,8 @@ import { CatatResult, DownloadButtons } from './CatatResult';
 import { Dropdown } from './Dropdown';
 import { ImagePreview, LoadingOverlay, SuccessAlert } from './Overlays';
 
-const SAVE_MS = 1600;
+/** Loading tampil minimal 4 detik (satu siklus animasi, DEC-079). */
+const SAVE_MS = 4000;
 const field = 'field min-h-[40px] w-full bg-white px-2 text-sm';
 
 /**
@@ -39,7 +43,6 @@ export function PencatatanTab({ records, oldRaw, onChanged }: { records: CatatRe
   const [selecting, setSelecting] = useState(false);
   const [picked, setPicked] = useState<Set<string>>(new Set());
   const [deleted, setDeleted] = useState(0);
-  const complete = records.filter((r) => r.finishedAt);
   const toggle = (id: string) => setPicked((p) => {
     const n = new Set(p);
     if (n.has(id)) n.delete(id);
@@ -48,20 +51,29 @@ export function PencatatanTab({ records, oldRaw, onChanged }: { records: CatatRe
   });
   const removePicked = async () => {
     if (!window.confirm(`Hapus ${picked.size} catatan terpilih? Data yang sudah dihapus TIDAK dapat dipulihkan.`)) return;
-    const n = await deleteCatat([...picked]);
+    const ids = [...picked];
+    const n = await deleteCatat(ids);
+    // langsung hilang dari layar (tidak menunggu muat ulang), lalu muat ulang dari penyimpanan
+    setRemoved((cur) => new Set([...cur, ...ids]));
+    setPreview((p) => (p && ids.includes(p.id) ? undefined : p));
     setPicked(new Set());
     setSelecting(false);
     await onChanged();
     setDeleted(n);
   };
-  const pending = records.filter((r) => !r.finishedAt);
-  const finished = records.length - pending.length;
+  const [removed, setRemoved] = useState<Set<string>>(new Set());
+  const live = records.filter((r) => !removed.has(r.id));
+  const pending = live.filter((r) => !r.finishedAt);
+  const finished = live.length - pending.length;
+  // kartu: yang menunggu data akhir di atas, yang lengkap di bawah (DEC-079)
+  const ordered = [...pending, ...live.filter((r) => r.finishedAt)];
+  const complete = live.filter((r) => r.finishedAt);
 
-  const saveAwal = async (item: string, rows: CatatRow[]) => {
+  const saveAwal = async (item: string, rows: CatatRow[], treatments: Treatments) => {
     setMode('');
     setToast('saving');
     const started = Date.now();
-    await addCatatAwal(item, rows);
+    await addCatatAwal(item, rows, treatments);
     await onChanged();
     window.setTimeout(() => setToast(''), Math.max(0, SAVE_MS - (Date.now() - started)));
   };
@@ -81,7 +93,7 @@ export function PencatatanTab({ records, oldRaw, onChanged }: { records: CatatRe
     <div className="flex flex-col gap-5" data-testid="catat-tab">
       <dl className="grid grid-cols-1 gap-3 min-[420px]:grid-cols-3" data-testid="catat-stats">
         {[
-          ['Catatan data awal', records.length, 'catat-stat-awal'],
+          ['Catatan data awal', live.length, 'catat-stat-awal'],
           ['Catatan data akhir', finished, 'catat-stat-akhir'],
           ['Menunggu data akhir', pending.length, 'catat-stat-pending'],
         ].map(([k, v, id]) => (
@@ -119,12 +131,12 @@ export function PencatatanTab({ records, oldRaw, onChanged }: { records: CatatRe
             setPicked(new Set());
           }}
         />
-        {!pending.length && <span className="text-xs text-muted" data-testid="catat-akhir-hint">{records.length ? 'Semua catatan awal sudah punya data akhir.' : 'Pencatatan data akhir bisa dibuka setelah ada catatan awal tersimpan.'}</span>}
+        {!pending.length && <span className="text-xs text-muted" data-testid="catat-akhir-hint">{live.length ? 'Semua catatan awal sudah punya data akhir.' : 'Pencatatan data akhir bisa dibuka setelah ada catatan awal tersimpan.'}</span>}
       </div>
 
-      {records.length ? (
+      {ordered.length ? (
         <ul className="flex flex-col gap-3" data-testid="catat-list">
-          {records.map((r) => {
+          {ordered.map((r) => {
             const can = selecting && !!r.finishedAt;
             const on = picked.has(r.id);
             const open = () => (can ? toggle(r.id) : selecting ? undefined : setPreview(r));
@@ -154,6 +166,7 @@ export function PencatatanTab({ records, oldRaw, onChanged }: { records: CatatRe
                 <div className="flex min-w-0 flex-1 flex-col gap-1">
                   <span className="font-mono text-xs text-muted">{r.id} · {r.createdAt.slice(0, 10)}</span>
                   <span className="font-display text-lg font-semibold">{r.item} · {r.count} {r.count === 1 ? 'item' : 'item'}</span>
+                  {treatmentRows(r.treatments).length > 0 && <span className="text-xs text-muted">{treatmentRows(r.treatments).map(([t, c, m]) => `${t.replace('Jumlah perlakuan ', '')}: ${c} × ${m}`).join(' · ')}</span>}
                   <span className={`self-start rounded-full px-2.5 py-0.5 font-mono text-[11px] font-semibold ${r.finishedAt ? 'bg-acid text-ink' : 'bg-safety text-ink'}`}>
                     {r.finishedAt ? 'Awal & akhir lengkap' : 'Menunggu data akhir'}
                   </span>
@@ -177,7 +190,7 @@ export function PencatatanTab({ records, oldRaw, onChanged }: { records: CatatRe
         </details>
       )}
 
-      {mode === 'awal' && <AwalModal onClose={() => setMode('')} onConfirm={(item, rows) => void saveAwal(item, rows)} />}
+      {mode === 'awal' && <AwalModal onClose={() => setMode('')} onConfirm={(item, rows, t) => void saveAwal(item, rows, t)} />}
       {mode === 'akhir' && <AkhirModal pending={pending} onClose={() => setMode('')} onConfirm={(id, a) => void saveAkhir(id, a)} />}
       {preview && (
         <PageModal title={`Pratinjau ${preview.id}`} onClose={() => setPreview(undefined)} testId="catat-preview" wide>
@@ -230,7 +243,8 @@ function PageModal({ title, onClose, children, footer, testId, wide = false }: {
 }
 
 /** Form catatan awal: item + jumlah → baris bernomor sebanyak jumlah. */
-function AwalModal({ onClose, onConfirm }: { onClose: () => void; onConfirm: (item: string, rows: CatatRow[]) => void }) {
+function AwalModal({ onClose, onConfirm }: { onClose: () => void; onConfirm: (item: string, rows: CatatRow[], treatments: Treatments) => void }) {
+  const [tr, setTr] = useState<Treatments>({});
   const [item, setItem] = useState<string>(RAW_ITEMS[0]);
   const [countText, setCountText] = useState('');
   const [rows, setRows] = useState<CatatRow[]>([]);
@@ -253,7 +267,7 @@ function AwalModal({ onClose, onConfirm }: { onClose: () => void; onConfirm: (it
     const miss = missingAwal(item, rows);
     if (miss.length) return setErr(`Masih kosong (${hasThickness(item) ? 'berat awal / tebal daging' : 'berat awal'}) di nomor: ${miss.slice(0, 12).join(', ')}${miss.length > 12 ? `, … (${miss.length} nomor)` : ''}.`);
     const keep = new Set(cols.map(([k]) => k as string));
-    onConfirm(item, rows.map((r) => ({ no: r.no, beratAwal: r.beratAwal.trim(), volAir: keep.has('volAir') ? r.volAir.trim() : '', beratAir: keep.has('beratAir') ? r.beratAir.trim() : '', tebalAwal: keep.has('tebalAwal') ? r.tebalAwal.trim() : '', ...(r.fotoAwal && { fotoAwal: r.fotoAwal }) })));
+    onConfirm(item, rows.map((r) => ({ no: r.no, beratAwal: r.beratAwal.trim(), volAir: keep.has('volAir') ? r.volAir.trim() : '', beratAir: keep.has('beratAir') ? r.beratAir.trim() : '', tebalAwal: keep.has('tebalAwal') ? r.tebalAwal.trim() : '', ...(r.fotoAwal && { fotoAwal: r.fotoAwal }) })), tr);
   };
 
   return (
@@ -277,6 +291,31 @@ function AwalModal({ onClose, onConfirm }: { onClose: () => void; onConfirm: (it
             <span className="text-xs text-muted">Maks. {MAX_ROWS}. Kolom isian muncul sebanyak jumlah ini.</span>
           </label>
         </div>
+        <fieldset className="grid grid-cols-1 gap-3 rounded-xl bg-paper p-3 sm:grid-cols-2" data-testid="catat-treatments">
+          <legend className="label-mono px-1">Perlakuan (opsional)</legend>
+          {TREATMENT_GROUPS.map((g) => (
+            <div key={g.key} className="flex flex-col gap-2 rounded-xl bg-white p-3">
+              <label className="flex flex-col gap-1.5">
+                <span className="label-mono">{g.title}</span>
+                <input
+                  className="field min-h-[44px] bg-white text-sm"
+                  inputMode="numeric"
+                  value={tr[g.key]?.count ?? ''}
+                  onChange={(e) => setTr((x) => ({ ...x, [g.key]: { method: x[g.key]?.method ?? '', count: e.target.value.replace(/[^\d]/g, '') } }))}
+                  placeholder="mis. 3"
+                  data-testid={`catat-tr-count-${g.key}`}
+                />
+              </label>
+              <Dropdown
+                label="Perlakuan/metode"
+                testId={`catat-tr-method-${g.key}`}
+                value={tr[g.key]?.method ?? ''}
+                onChange={(v) => setTr((x) => ({ ...x, [g.key]: { count: x[g.key]?.count ?? '', method: v } }))}
+                options={[{ value: '', label: '— pilih —' }, ...g.methods.map((m) => ({ value: m, label: m }))]}
+              />
+            </div>
+          ))}
+        </fieldset>
         {rows.length > 0 && (
           <RowsGrid
             head={['Foto', ...cols.map(([, l]) => l)]}

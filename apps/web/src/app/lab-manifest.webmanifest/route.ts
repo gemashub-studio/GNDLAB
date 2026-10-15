@@ -1,14 +1,14 @@
 /**
  * Manifest aplikasi khusus R&D Lab (DEC-070): "Tambahkan ke layar utama" dari halaman /lab memasang
- * aplikasi "GEMA RnD Lab" yang langsung terbuka di /lab.
+ * aplikasi "GnD Lab" yang langsung terbuka di /lab.
  */
 export const dynamic = 'force-static';
 
 export function GET() {
   return new Response(
     JSON.stringify({
-      name: 'GEMA RnD Lab — gemasSTUDIO',
-      short_name: 'GEMA RnD',
+      name: 'GnD Lab — gemasSTUDIO',
+      short_name: 'GnD Lab',
       description: 'Buku catatan riset produk kelapa: bahan baku, resep, laporan harian, laporan belanja. Jalan offline.',
       lang: 'id',
       id: '/lab',
