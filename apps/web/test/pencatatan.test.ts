@@ -79,8 +79,8 @@ describe('pencatatan data awal & akhir (DEC-074)', () => {
     const { treatmentRows, TREATMENT_GROUPS } = await import('@/lib/pencatatan');
     expect(TREATMENT_GROUPS.map((g) => g.title)).toEqual(['Jumlah perlakuan kopra', 'Jumlah perlakuan bibit bio leather', 'Jumlah perlakuan cuka', 'Jumlah perlakuan bio leather']);
     expect(TREATMENT_GROUPS[0].methods).toEqual(['GreenHouse', 'Oven Gas', 'Oven Briket']);
-    const r0 = { ...rec(), treatments: { kopra: { count: '3', method: 'Oven Gas' }, bio: { count: '', method: 'Bio Leather B - Gula 50g' }, cuka: { count: '', method: '' } } };
-    expect(treatmentRows(r0.treatments)).toEqual([['Jumlah perlakuan kopra', '3', 'Oven Gas'], ['Jumlah perlakuan bio leather', '–', 'Bio Leather B - Gula 50g']]);
+    const r0 = { ...rec(), treatments: { kopra: [{ count: '3', method: 'Oven Gas' }, { count: '1', method: 'Oven Briket' }], bio: { count: '', method: 'Bio Leather B - Gula 50g' }, cuka: { count: '', method: '' } } };
+    expect(treatmentRows(r0.treatments)).toEqual([['Jumlah perlakuan kopra', '3', 'Oven Gas'], ['Jumlah perlakuan kopra', '1', 'Oven Briket'], ['Jumlah perlakuan bio leather', '–', 'Bio Leather B - Gula 50g']]);
     const r = buildCatatReport(r0, 'x');
     const heads = r.blocks.map((b) => b.heading);
     expect(heads.slice(-2)).toEqual(['Perlakuan', 'Kesimpulan']);

@@ -176,3 +176,4 @@
 - DEC-074..076: Pencatatan Data (awal/akhir/hasil), foto per nomor, loader & alert gaya owner, pilih & hapus. E2E lab 20/20, unit 106. Catatan: tombol Lihat pakai window.location.assign (router.push bentrok dengan replaceState LabPage).
 - DEC-079: perlakuan pencatatan, GnD Lab (gsap StrokeText — dependensi baru gsap 3.15.0), loading 4s, alert dari kanan, urutan kartu, hapus. Catatan: testid lab-title sudah dipakai wizard → judul pakai lab-heading; cache .next korup (EUNKNOWN) → hapus .next & restart preview.
 - DEC-080: judul GnD Lab StrokeText trigger=loop.
+- DEC-081: perlakuan pindah ke form data akhir, multi-kolom (+/x), Treatments = entry[] (kompatibel format lama).

@@ -18,6 +18,8 @@ import {
   TREATMENT_GROUPS,
   treatmentRows,
   type Treatments,
+  type TreatmentEntry,
+  type TreatmentKey,
   type CatatRecord,
   type CatatRow,
 } from '@/lib/pencatatan';
@@ -69,19 +71,19 @@ export function PencatatanTab({ records, oldRaw, onChanged }: { records: CatatRe
   const ordered = [...pending, ...live.filter((r) => r.finishedAt)];
   const complete = live.filter((r) => r.finishedAt);
 
-  const saveAwal = async (item: string, rows: CatatRow[], treatments: Treatments) => {
+  const saveAwal = async (item: string, rows: CatatRow[]) => {
     setMode('');
     setToast('saving');
     const started = Date.now();
-    await addCatatAwal(item, rows, treatments);
+    await addCatatAwal(item, rows);
     await onChanged();
     window.setTimeout(() => setToast(''), Math.max(0, SAVE_MS - (Date.now() - started)));
   };
-  const saveAkhir = async (id: string, akhir: AkhirInput[]) => {
+  const saveAkhir = async (id: string, akhir: AkhirInput[], treatments: Treatments) => {
     setMode('');
     setToast('finishing');
     const started = Date.now();
-    const rec = await saveCatatAkhir(id, akhir);
+    const rec = await saveCatatAkhir(id, akhir, treatments);
     await onChanged();
     window.setTimeout(() => {
       setToast('');
@@ -190,8 +192,8 @@ export function PencatatanTab({ records, oldRaw, onChanged }: { records: CatatRe
         </details>
       )}
 
-      {mode === 'awal' && <AwalModal onClose={() => setMode('')} onConfirm={(item, rows, t) => void saveAwal(item, rows, t)} />}
-      {mode === 'akhir' && <AkhirModal pending={pending} onClose={() => setMode('')} onConfirm={(id, a) => void saveAkhir(id, a)} />}
+      {mode === 'awal' && <AwalModal onClose={() => setMode('')} onConfirm={(item, rows) => void saveAwal(item, rows)} />}
+      {mode === 'akhir' && <AkhirModal pending={pending} onClose={() => setMode('')} onConfirm={(id, a, t) => void saveAkhir(id, a, t)} />}
       {preview && (
         <PageModal title={`Pratinjau ${preview.id}`} onClose={() => setPreview(undefined)} testId="catat-preview" wide>
           <CatatResult rec={preview} />
@@ -243,8 +245,7 @@ function PageModal({ title, onClose, children, footer, testId, wide = false }: {
 }
 
 /** Form catatan awal: item + jumlah → baris bernomor sebanyak jumlah. */
-function AwalModal({ onClose, onConfirm }: { onClose: () => void; onConfirm: (item: string, rows: CatatRow[], treatments: Treatments) => void }) {
-  const [tr, setTr] = useState<Treatments>({});
+function AwalModal({ onClose, onConfirm }: { onClose: () => void; onConfirm: (item: string, rows: CatatRow[]) => void }) {
   const [item, setItem] = useState<string>(RAW_ITEMS[0]);
   const [countText, setCountText] = useState('');
   const [rows, setRows] = useState<CatatRow[]>([]);
@@ -267,7 +268,7 @@ function AwalModal({ onClose, onConfirm }: { onClose: () => void; onConfirm: (it
     const miss = missingAwal(item, rows);
     if (miss.length) return setErr(`Masih kosong (${hasThickness(item) ? 'berat awal / tebal daging' : 'berat awal'}) di nomor: ${miss.slice(0, 12).join(', ')}${miss.length > 12 ? `, … (${miss.length} nomor)` : ''}.`);
     const keep = new Set(cols.map(([k]) => k as string));
-    onConfirm(item, rows.map((r) => ({ no: r.no, beratAwal: r.beratAwal.trim(), volAir: keep.has('volAir') ? r.volAir.trim() : '', beratAir: keep.has('beratAir') ? r.beratAir.trim() : '', tebalAwal: keep.has('tebalAwal') ? r.tebalAwal.trim() : '', ...(r.fotoAwal && { fotoAwal: r.fotoAwal }) })), tr);
+    onConfirm(item, rows.map((r) => ({ no: r.no, beratAwal: r.beratAwal.trim(), volAir: keep.has('volAir') ? r.volAir.trim() : '', beratAir: keep.has('beratAir') ? r.beratAir.trim() : '', tebalAwal: keep.has('tebalAwal') ? r.tebalAwal.trim() : '', ...(r.fotoAwal && { fotoAwal: r.fotoAwal }) })));
   };
 
   return (
@@ -291,31 +292,6 @@ function AwalModal({ onClose, onConfirm }: { onClose: () => void; onConfirm: (it
             <span className="text-xs text-muted">Maks. {MAX_ROWS}. Kolom isian muncul sebanyak jumlah ini.</span>
           </label>
         </div>
-        <fieldset className="grid grid-cols-1 gap-3 rounded-xl bg-paper p-3 sm:grid-cols-2" data-testid="catat-treatments">
-          <legend className="label-mono px-1">Perlakuan (opsional)</legend>
-          {TREATMENT_GROUPS.map((g) => (
-            <div key={g.key} className="flex flex-col gap-2 rounded-xl bg-white p-3">
-              <label className="flex flex-col gap-1.5">
-                <span className="label-mono">{g.title}</span>
-                <input
-                  className="field min-h-[44px] bg-white text-sm"
-                  inputMode="numeric"
-                  value={tr[g.key]?.count ?? ''}
-                  onChange={(e) => setTr((x) => ({ ...x, [g.key]: { method: x[g.key]?.method ?? '', count: e.target.value.replace(/[^\d]/g, '') } }))}
-                  placeholder="mis. 3"
-                  data-testid={`catat-tr-count-${g.key}`}
-                />
-              </label>
-              <Dropdown
-                label="Perlakuan/metode"
-                testId={`catat-tr-method-${g.key}`}
-                value={tr[g.key]?.method ?? ''}
-                onChange={(v) => setTr((x) => ({ ...x, [g.key]: { count: x[g.key]?.count ?? '', method: v } }))}
-                options={[{ value: '', label: '— pilih —' }, ...g.methods.map((m) => ({ value: m, label: m }))]}
-              />
-            </div>
-          ))}
-        </fieldset>
         {rows.length > 0 && (
           <RowsGrid
             head={['Foto', ...cols.map(([, l]) => l)]}
@@ -461,7 +437,8 @@ function RowsGrid({ head, rows, render }: { head: string[]; rows: CatatRow[]; re
 }
 
 /** Form data akhir: pilih catatan awal (bila >1), lalu isi akhir di samping nilai awal. */
-function AkhirModal({ pending, onClose, onConfirm }: { pending: CatatRecord[]; onClose: () => void; onConfirm: (id: string, akhir: AkhirInput[]) => void }) {
+function AkhirModal({ pending, onClose, onConfirm }: { pending: CatatRecord[]; onClose: () => void; onConfirm: (id: string, akhir: AkhirInput[], treatments: Treatments) => void }) {
+  const [tr, setTr] = useState<TreatmentState>(() => Object.fromEntries(TREATMENT_GROUPS.map((g) => [g.key, [{ count: '', method: '' }]])) as TreatmentState);
   const [id, setId] = useState(pending.length === 1 ? pending[0]!.id : '');
   const rec = pending.find((p) => p.id === id);
   const [vals, setVals] = useState<Record<number, { beratAkhir: string; tebalAkhir: string; fotoAkhir?: string }>>({});
@@ -477,7 +454,7 @@ function AkhirModal({ pending, onClose, onConfirm }: { pending: CatatRecord[]; o
     if (!rec) return setErr('Pilih catatan awal dulu.');
     const miss = missingAkhir(rec.item, merged);
     if (miss.length) return setErr(`Data akhir masih kosong di nomor: ${miss.slice(0, 12).join(', ')}${miss.length > 12 ? `, … (${miss.length} nomor)` : ''}.`);
-    onConfirm(rec.id, merged.map((r) => ({ no: r.no, beratAkhir: r.beratAkhir, tebalAkhir: r.tebalAkhir, ...(r.fotoAkhir && { fotoAkhir: r.fotoAkhir }) })));
+    onConfirm(rec.id, merged.map((r) => ({ no: r.no, beratAkhir: r.beratAkhir, tebalAkhir: r.tebalAkhir, ...(r.fotoAkhir && { fotoAkhir: r.fotoAkhir }) })), tr);
   };
   const ro = 'field min-h-[40px] w-full bg-paper-grid/60 px-2 text-sm text-muted';
 
@@ -529,10 +506,77 @@ function AkhirModal({ pending, onClose, onConfirm }: { pending: CatatRecord[]; o
                 <RowPhoto key="fk" value={r.fotoAkhir} label={`Foto akhir nomor ${r.no}`} onChange={(v) => set(r.no, 'fotoAkhir', v)} testId={`catat-akhir-foto-${r.no}`} />,
               ]}
             />
+            <TreatmentFields value={tr} onChange={setTr} />
           </>
         )}
         {err && <p className="text-sm" role="alert"><span className="bg-safety px-1">{err}</span></p>}
       </div>
     </PageModal>
+  );
+}
+
+type TreatmentState = Record<TreatmentKey, TreatmentEntry[]>;
+
+/**
+ * Perlakuan (opsional) di form data akhir (DEC-081): tiap jenis berisi kolom "jumlah perlakuan" + dropdown
+ * "Perlakuan/metode"; tombol + menambah pasangan kolom baru di bawahnya, ✕ menghapus kolom tambahan.
+ */
+function TreatmentFields({ value, onChange }: { value: TreatmentState; onChange: (fn: (x: TreatmentState) => TreatmentState) => void }) {
+  const edit = (key: TreatmentKey, i: number, patch: Partial<TreatmentEntry>) => onChange((x) => ({ ...x, [key]: x[key].map((e, j) => (j === i ? { ...e, ...patch } : e)) }));
+  return (
+    <fieldset className="grid grid-cols-1 gap-3 rounded-xl bg-paper p-3 sm:grid-cols-2" data-testid="catat-treatments">
+      <legend className="label-mono px-1">Perlakuan (opsional)</legend>
+      {TREATMENT_GROUPS.map((g) => (
+        <div key={g.key} className="flex flex-col gap-2 rounded-xl bg-white p-3" data-testid={`catat-tr-${g.key}`}>
+          <span className="label-mono">{g.title}</span>
+          {value[g.key].map((e, i) => (
+            <div key={i} className={`flex items-end gap-2 ${i > 0 ? 'border-t border-ink/10 pt-2' : ''}`}>
+              <label className="flex w-24 flex-none flex-col gap-1.5">
+                <span className="text-xs text-muted">Jumlah</span>
+                <input
+                  className="field min-h-[44px] bg-white text-sm"
+                  inputMode="numeric"
+                  value={e.count}
+                  onChange={(ev) => edit(g.key, i, { count: ev.target.value.replace(/[^\d]/g, '') })}
+                  placeholder="mis. 3"
+                  aria-label={`${g.title} ${i + 1}`}
+                  data-testid={`catat-tr-count-${g.key}-${i}`}
+                />
+              </label>
+              <div className="min-w-0 flex-1">
+                <Dropdown
+                  label="Perlakuan/metode"
+                  testId={`catat-tr-method-${g.key}-${i}`}
+                  value={e.method}
+                  onChange={(v) => edit(g.key, i, { method: v })}
+                  options={[{ value: '', label: '— pilih —' }, ...g.methods.map((m) => ({ value: m, label: m }))]}
+                />
+              </div>
+              {i > 0 && (
+                <button
+                  type="button"
+                  className="mb-2 inline-flex h-8 w-8 flex-none items-center justify-center rounded-full text-muted hover:bg-safety hover:text-ink"
+                  onClick={() => onChange((x) => ({ ...x, [g.key]: x[g.key].filter((_, j) => j !== i) }))}
+                  aria-label={`Hapus kolom ${g.title} ${i + 1}`}
+                  data-testid={`catat-tr-del-${g.key}-${i}`}
+                >
+                  ✕
+                </button>
+              )}
+            </div>
+          ))}
+          <button
+            type="button"
+            className="inline-flex h-9 w-9 items-center justify-center self-start rounded-full text-2xl font-bold leading-none text-ink hover:bg-acid"
+            onClick={() => onChange((x) => ({ ...x, [g.key]: [...x[g.key], { count: '', method: '' }] }))}
+            aria-label={`Tambah kolom ${g.title}`}
+            title="Tambah kolom"
+            data-testid={`catat-tr-add-${g.key}`}
+          >
+            +
+          </button>
+        </div>
+      ))}
+    </fieldset>
   );
 }

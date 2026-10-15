@@ -391,15 +391,7 @@ test.describe('Hapus hasil riset', () => {
     await page.getByTestId('catat-new').click();
     const awal = page.getByTestId('catat-awal-modal');
     await expect(awal).not.toContainText('Perlakuan air');
-    await expect(awal.getByTestId('catat-treatments')).toContainText('Jumlah perlakuan bibit bio leather');
-    await awal.getByTestId('catat-tr-count-kopra').fill('3');
-    await awal.getByTestId('catat-tr-method-kopra').click();
-    await expect(awal.getByTestId('catat-tr-method-kopra-list')).toContainText('Oven Briket');
-    await awal.getByTestId('catat-tr-method-kopra-opt-Oven Gas').click();
-    await awal.getByTestId('catat-tr-method-cuka').click();
-    await expect(awal.getByTestId('catat-tr-method-cuka-list').getByRole('option')).toHaveText(['— pilih —', 'CUKA 1 - GULA 25g', 'CUKA 2 - GULA 75g', 'CUKA 3 - GULA 50']);
-    await awal.getByTestId('catat-tr-method-cuka-opt-CUKA 2 - GULA 75g').click();
-    await awal.getByTestId('catat-tr-count-cuka').fill('2');
+    await expect(awal.getByTestId('catat-treatments')).toHaveCount(0);
     await awal.getByTestId('catat-count').fill('3');
     await expect(awal.locator('[data-testid^="catat-awal-beratAwal-"]')).toHaveCount(3);
     await expect(awal.locator('[data-testid^="catat-awal-tebalAwal-"]')).toHaveCount(3);
@@ -468,6 +460,24 @@ test.describe('Hapus hasil riset', () => {
     await expect(akhir.getByTestId('catat-akhir-foto-1-img')).toBeVisible();
     await akhir.getByTestId('catat-akhir-confirm').click();
     await expect(akhir).toContainText('Data akhir masih kosong di nomor: 1, 2, 3');
+    // perlakuan (opsional) di bawah data akhir; tombol + menambah kolom jumlah + dropdown metode
+    await expect(akhir.getByTestId('catat-treatments')).toContainText('Jumlah perlakuan bibit bio leather');
+    await akhir.getByTestId('catat-tr-count-kopra-0').fill('3');
+    await akhir.getByTestId('catat-tr-method-kopra-0').click();
+    await expect(akhir.getByTestId('catat-tr-method-kopra-0-list')).toContainText('Oven Briket');
+    await akhir.getByTestId('catat-tr-method-kopra-0-opt-Oven Gas').click();
+    await akhir.getByTestId('catat-tr-add-kopra').click();
+    await akhir.getByTestId('catat-tr-add-kopra').click();
+    await expect(akhir.locator('[data-testid^="catat-tr-count-kopra-"]')).toHaveCount(3);
+    await akhir.getByTestId('catat-tr-del-kopra-2').click();
+    await expect(akhir.locator('[data-testid^="catat-tr-count-kopra-"]')).toHaveCount(2);
+    await akhir.getByTestId('catat-tr-count-kopra-1').fill('1');
+    await akhir.getByTestId('catat-tr-method-kopra-1').click();
+    await akhir.getByTestId('catat-tr-method-kopra-1-opt-Oven Briket').click();
+    await akhir.getByTestId('catat-tr-method-cuka-0').click();
+    await expect(akhir.getByTestId('catat-tr-method-cuka-0-list').getByRole('option')).toHaveText(['— pilih —', 'CUKA 1 - GULA 25g', 'CUKA 2 - GULA 75g', 'CUKA 3 - GULA 50']);
+    await akhir.getByTestId('catat-tr-method-cuka-0-opt-CUKA 2 - GULA 75g').click();
+    await akhir.getByTestId('catat-tr-count-cuka-0').fill('2');
     for (const [no, b, t] of [[1, '900', '8'], [2, '1.140', '11,4'], [3, '600', '9']] as const) {
       await akhir.getByTestId(`catat-akhir-berat-${no}`).fill(b);
       await akhir.getByTestId(`catat-akhir-tebal-${no}`).fill(t);
@@ -498,6 +508,7 @@ test.describe('Hapus hasil riset', () => {
     await expect(hasil.getByTestId('catat-conclusion')).toContainText('Berat rata-rata turun 13,3%');
     await expect(hasil.getByTestId('catat-tbl-treat')).toContainText('Oven Gas');
     await expect(hasil.getByTestId('catat-tbl-treat')).toContainText('CUKA 2 - GULA 75g');
+    await expect(hasil.getByTestId('catat-tbl-treat')).toContainText('Oven Briket');
     for (const k of ['docx', 'pptx'] as const) {
       const d = page.waitForEvent('download');
       await hasil.getByTestId(`hasil-dl-${k}`).click();

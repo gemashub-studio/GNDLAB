@@ -46,11 +46,22 @@ export interface TreatmentEntry {
   /** Perlakuan/metode terpilih. */
   method: string;
 }
-export type Treatments = Partial<Record<TreatmentKey, TreatmentEntry>>;
+/** Tiap jenis perlakuan bisa punya beberapa kolom (tombol +, DEC-081). Catatan lama menyimpan satu objek. */
+export type Treatments = Partial<Record<TreatmentKey, TreatmentEntry[] | TreatmentEntry>>;
 
-/** Baris tabel perlakuan yang terisi (jumlah atau metode). */
-export const treatmentRows = (t?: Treatments) =>
-  TREATMENT_GROUPS.filter((g) => t?.[g.key]?.count.trim() || t?.[g.key]?.method).map((g): [string, string, string] => [g.title, t![g.key]!.count.trim() || '–', t![g.key]!.method || '–']);
+/** Daftar kolom perlakuan satu jenis (menerima format lama satu objek). */
+export const treatmentEntries = (t: Treatments | undefined, key: TreatmentKey): TreatmentEntry[] => {
+  const v = t?.[key];
+  return v ? (Array.isArray(v) ? v : [v]) : [];
+};
+
+/** Baris tabel perlakuan yang terisi (jumlah atau metode), satu baris per kolom. */
+export const treatmentRows = (t?: Treatments): [string, string, string][] =>
+  TREATMENT_GROUPS.flatMap((g) =>
+    treatmentEntries(t, g.key)
+      .filter((e) => e.count.trim() || e.method)
+      .map((e): [string, string, string] => [g.title, e.count.trim() || '–', e.method || '–']),
+  );
 
 export interface CatatRecord {
   /** PD-YYMMDD-NN (+ kode perangkat bila sinkron aktif). */
@@ -203,7 +214,7 @@ export interface AkhirInput {
   fotoAkhir?: string;
 }
 
-export async function saveCatatAkhir(id: string, akhir: AkhirInput[]): Promise<CatatRecord> {
+export async function saveCatatAkhir(id: string, akhir: AkhirInput[], treatments?: Treatments): Promise<CatatRecord> {
   const d = await catatDb();
   const rec = await d.get('records', id);
   if (!rec) throw new Error(`Catatan ${id} tidak ditemukan`);
@@ -215,6 +226,7 @@ export async function saveCatatAkhir(id: string, akhir: AkhirInput[]): Promise<C
       return { ...r, beratAkhir: a?.beratAkhir.trim() ?? '', tebalAkhir: a?.tebalAkhir.trim() ?? '', ...(a?.fotoAkhir && { fotoAkhir: a.fotoAkhir }) };
     }),
     finishedAt: new Date().toISOString(),
+    ...(treatments && treatmentRows(treatments).length && { treatments }),
   };
   await d.put('records', next);
   return next;
