@@ -201,6 +201,7 @@ test.describe('GEMA RnD Lab', () => {
     await expect(page.getByTestId('lab-detail')).toContainText('1 versi lama tersimpan');
   });
   test('riset produk: foto bahan & langkah + alat → laporan harian sampai SELESAI → laporan PDF, Word, PowerPoint', async ({ page }) => {
+    test.setTimeout(180_000); // 8 unduhan (laporan gabungan + harian, 4 format)
     const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==', 'base64');
     await page.goto('/lab?t=protokol');
     await expect(page.getByTestId('lab-tab-protokol')).toHaveText('Riset Produk');
