@@ -175,3 +175,4 @@
 - DEC-073: HTML+video, video tertanam di PPTX (GUID p14:media yang benar: {DAA4B4D4-6D71-4841-9C94-3DE7FCFB9230}; dicek PowerPoint COM MediaFormat.Length), rekam MP4. Fragmented MP4 dari MediaRecorder tetap terbaca PowerPoint.
 - DEC-074..076: Pencatatan Data (awal/akhir/hasil), foto per nomor, loader & alert gaya owner, pilih & hapus. E2E lab 20/20, unit 106. Catatan: tombol Lihat pakai window.location.assign (router.push bentrok dengan replaceState LabPage).
 - DEC-079: perlakuan pencatatan, GnD Lab (gsap StrokeText — dependensi baru gsap 3.15.0), loading 4s, alert dari kanan, urutan kartu, hapus. Catatan: testid lab-title sudah dipakai wizard → judul pakai lab-heading; cache .next korup (EUNKNOWN) → hapus .next & restart preview.
+- DEC-080: judul GnD Lab StrokeText trigger=loop.
