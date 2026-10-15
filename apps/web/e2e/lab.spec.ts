@@ -369,8 +369,8 @@ test.describe('GEMA RnD Lab', () => {
     await page.getByTestId('proto-ongoing').click();
     const list = page.getByTestId('ongoing-list');
     await expect(list).toContainText('Draf dibuang E2E');
-    page.once('dialog', (d) => void d.accept());
     await list.locator('li', { hasText: 'Draf dibuang E2E' }).getByRole('button', { name: 'Hapus' }).click();
+    await page.getByTestId('confirm-ok').click();
     await expect(list).not.toContainText('Draf dibuang E2E');
   });
 });
@@ -478,6 +478,30 @@ test.describe('Hapus hasil riset', () => {
     await expect(akhir.getByTestId('catat-tr-method-cuka-0-list').getByRole('option')).toHaveText(['— pilih —', 'CUKA 1 - GULA 25g', 'CUKA 2 - GULA 75g', 'CUKA 3 - GULA 50']);
     await akhir.getByTestId('catat-tr-method-cuka-0-opt-CUKA 2 - GULA 75g').click();
     await akhir.getByTestId('catat-tr-count-cuka-0').fill('2');
+    // "Simpan dulu": baru nomor 1 yang terisi → tersimpan sementara, catatan tetap menunggu (DEC-082)
+    await akhir.getByTestId('catat-akhir-berat-1').fill('900');
+    await akhir.getByTestId('catat-akhir-tebal-1').fill('8');
+    await akhir.getByTestId('catat-akhir-draft').click();
+    await expect(page.getByTestId('catat-toast')).toBeVisible();
+    const drafted = page.getByTestId('catat-drafted');
+    await expect(drafted).toContainText('1 dari 3 nomor');
+    await drafted.getByTestId('catat-drafted-close').click();
+    await expect(page.getByTestId(`catat-card-${id}`)).toContainText('tersimpan sementara (1/3)');
+    await expect(page.getByTestId('catat-stat-akhir')).toContainText('0');
+    // pratinjau/unduhan memuat data sementara
+    await page.getByTestId(`catat-card-${id}`).click();
+    const pv2 = page.getByTestId('catat-preview');
+    await expect(pv2.getByTestId('catat-akhir-draft-note')).toContainText('1 dari 3 nomor terisi');
+    await expect(pv2.getByTestId('catat-tbl-akhir')).toContainText('900');
+    await pv2.getByTestId('catat-preview-close').click();
+    // buka lagi: isian sementara & perlakuan terisi kembali
+    await page.getByTestId('catat-akhir').click();
+    await akhir.getByTestId('catat-pick').click();
+    await akhir.getByTestId(`catat-pick-opt-${id}`).click();
+    await expect(akhir.getByTestId('catat-akhir-berat-1')).toHaveValue('900');
+    await expect(akhir.getByTestId('catat-tr-count-kopra-0')).toHaveValue('3');
+    await expect(akhir.locator('[data-testid^="catat-tr-count-kopra-"]')).toHaveCount(2);
+    await expect(akhir.getByTestId('catat-akhir-foto-1-img')).toBeVisible();
     for (const [no, b, t] of [[1, '900', '8'], [2, '1.140', '11,4'], [3, '600', '9']] as const) {
       await akhir.getByTestId(`catat-akhir-berat-${no}`).fill(b);
       await akhir.getByTestId(`catat-akhir-tebal-${no}`).fill(t);
@@ -503,9 +527,11 @@ test.describe('Hapus hasil riset', () => {
     await expect(hasil.getByTestId('catat-tbl-awal').getByRole('img', { name: 'Foto awal nomor 1' })).toBeVisible();
     await expect(hasil.getByTestId('catat-tbl-akhir').getByRole('img', { name: 'Foto akhir nomor 1' })).toBeVisible();
     await expect(hasil.getByTestId('catat-tbl-akhir')).toContainText('1.140');
-    await expect(hasil.getByTestId('catat-tbl-cmp-berat')).toContainText('-10%');
+    await expect(hasil.getByTestId('catat-formula-berat')).toContainText('berat awal − berat air − berat akhir');
+    await expect(hasil.getByTestId('catat-tbl-cmp-berat')).toContainText('-30,4%');
     await expect(hasil.getByTestId('catat-tbl-cmp-tebal')).toContainText('Rata-rata');
-    await expect(hasil.getByTestId('catat-conclusion')).toContainText('Berat rata-rata turun 13,3%');
+    await expect(hasil.getByTestId('catat-conclusion')).toContainText('selisih rata-rata -210 g');
+    await expect(hasil.getByTestId('catat-conclusion')).toContainText('Nomor 2, 3 belum dihitung karena berat air kosong');
     await expect(hasil.getByTestId('catat-tbl-treat')).toContainText('Oven Gas');
     await expect(hasil.getByTestId('catat-tbl-treat')).toContainText('CUKA 2 - GULA 75g');
     await expect(hasil.getByTestId('catat-tbl-treat')).toContainText('Oven Briket');
@@ -520,6 +546,23 @@ test.describe('Hapus hasil riset', () => {
     await page.keyboard.press('Escape');
     await expect(page.getByTestId('img-preview')).toHaveCount(0);
 
+    // revisi data akhir dari kartu yang sudah lengkap: form terisi data sebelumnya (DEC-083)
+    await page.goto('/lab?t=bahan');
+    await page.getByTestId(`catat-card-${id}`).click();
+    await page.getByTestId('catat-revise').click();
+    const rev = page.getByTestId('catat-akhir-modal');
+    await expect(rev).toContainText(`Revisi data akhir · ${id}`);
+    await expect(rev.getByTestId('catat-akhir-berat-3')).toHaveValue('600');
+    await expect(rev.getByTestId('catat-tr-count-kopra-0')).toHaveValue('3');
+    await expect(rev.getByTestId('catat-akhir-draft')).toHaveCount(0);
+    await rev.getByTestId('catat-akhir-berat-3').fill('650');
+    await rev.getByTestId('catat-akhir-confirm').click();
+    await expect(page.getByTestId('catat-revised')).toContainText('Revisi data akhir');
+    await page.getByTestId('catat-revised-close').click();
+    await page.getByTestId(`catat-card-${id}`).click();
+    await expect(page.getByTestId('catat-preview').getByTestId('catat-tbl-akhir')).toContainText('650');
+    await page.getByTestId('catat-preview-close').click();
+
     // Pilih → pilih salah satu → hanya catatan lengkap → Hapus (permanen)
     await page.goto('/lab?t=bahan');
     await expect(page.locator('[data-testid^="catat-card-PD-"]')).toHaveCount(2);
@@ -533,8 +576,9 @@ test.describe('Hapus hasil riset', () => {
     await page.getByTestId('catat-select').click();
     await expect(page.getByTestId('catat-select-delete')).toContainText('Hapus (1)');
     await expect(page.getByTestId('catat-select-delete')).toContainText('tidak dapat dipulihkan');
-    page.once('dialog', (dlg) => void dlg.accept());
     await page.getByTestId('catat-select-delete').click();
+    await expect(page.getByTestId('confirm-dialog')).toContainText('TIDAK dapat dipulihkan');
+    await page.getByTestId('confirm-ok').click();
     await expect(page.getByTestId('catat-deleted')).toContainText('1 catatan dihapus permanen.');
     await expect(page.getByTestId(`catat-card-${id}`)).toHaveCount(0);
     await expect(page.getByTestId(`catat-card-${pendingId}`)).toBeVisible();
@@ -559,11 +603,16 @@ test.describe('Hapus hasil riset', () => {
     await page.getByTestId('proto-name').fill('Riset dihapus E2E');
     await page.getByTestId('proto-finish').click();
     await expect(page.getByTestId('proto-list')).toContainText('Riset dihapus E2E');
-    const answers = ['SALAH', key];
-    page.on('dialog', (d) => void (d.type() === 'prompt' ? d.accept(answers.shift()) : d.accept()));
     await page.getByTestId(`proto-del-${key}`).click();
+    await page.getByTestId('confirm-input').fill('SALAH');
+    await expect(page.getByTestId('confirm-ok')).toBeDisabled();
+    await page.getByTestId('confirm-cancel').click();
     await expect(page.getByTestId('proto-list')).toContainText('Riset dihapus E2E');
     await page.getByTestId(`proto-del-${key}`).click();
+    await page.getByTestId('confirm-input').fill(key.toLowerCase());
+    await page.getByTestId('confirm-ok').click();
+    await expect(page.getByTestId('confirm-dialog')).toContainText('Terhapus:');
+    await page.getByTestId('confirm-ok').click();
     await expect(page.getByText('Riset dihapus E2E')).toHaveCount(0);
   });
 });

@@ -18,6 +18,7 @@ import {
 import { downloadBlob } from '@/lib/labMedia';
 import { MediaPicker } from './MediaPicker';
 import { Section, TextArea, TextInput } from './ui';
+import { askConfirm as ask } from './Overlays';
 
 /** Foto nota/barang diperkecil (≤ 1400 px, JPEG) supaya tulisan nota tetap terbaca tapi file tidak besar. */
 function photoJpeg(file: File): Promise<LpjPhoto | undefined> {
@@ -137,8 +138,8 @@ export function BelanjaTab() {
                 <button
                   type="button"
                   className="btn-ghost"
-                  onClick={() => {
-                    if (!window.confirm(`Hapus laporan belanja ${r.id} beserta foto nota/barangnya? Tidak bisa dibatalkan.`)) return;
+                  onClick={async () => {
+                    if (!(await ask({ title: 'Hapus laporan belanja', message: `Hapus laporan belanja ${r.id} beserta foto nota/barangnya? Tidak bisa dibatalkan.` }))) return;
                     void deleteLpj(r.id).then(load);
                   }}
                   data-testid={`lpj-del-${r.id}`}

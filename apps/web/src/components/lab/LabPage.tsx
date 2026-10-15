@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useCallback, useEffect, useState } from 'react';
 import { GEMA_SOURCES, sourceCounts } from '@/lib/gemaSources';
 import { StrokeText } from '@/components/ui/StrokeText';
+import { LightTunnel } from '@/components/ui/LightTunnel';
 import { listEntries, listExperiments, listMedia, listProtocols, type DailyEntry, type Experiment, type LabProductId, type MediaItem, type ProtocolVersion, listDrafts, researchStatus } from '@/lib/labStore';
 import { BackupPanel } from './BackupPanel';
 import { ExperimentsTab } from './ExperimentsTab';
@@ -86,7 +87,40 @@ export function LabPage() {
   return (
     <div className="flex flex-col gap-6">
       <header className="card-ink relative flex flex-col gap-6 overflow-hidden" data-testid="lab-hero">
-        <div aria-hidden className="pointer-events-none absolute inset-0 opacity-60 [background-image:radial-gradient(600px_260px_at_90%_0%,rgba(99,230,207,0.22),transparent_70%),linear-gradient(rgba(99,230,207,0.07)_1px,transparent_1px),linear-gradient(90deg,rgba(99,230,207,0.07)_1px,transparent_1px)] [background-size:auto,28px_28px,28px_28px]" />
+        <LightTunnel
+          className="pointer-events-none !absolute inset-0"
+          data-testid="lab-hero-tunnel"
+          cableColor="#ffffff"
+          pulseColor="#ffffff"
+          cableCount={56}
+          pulseDensity={0.5}
+          flowDirection="inward"
+          mouseInteraction
+          clickSurge
+          tunnelColor="#ffffff"
+          tunnelOpacity={0}
+          speed={0.1}
+          pulseSpeed={2}
+          pulseLength={0.28}
+          pulseBlend={0.6}
+          pulseWidth={1}
+          thickness={0.35}
+          rimWidth={0.15}
+          waviness={0.3}
+          sway={0.5}
+          bend={0.4}
+          glow={1}
+          size={1}
+          fadeNear={0.5}
+          fadeFar={2}
+          brightness={1}
+          colorVariance
+          grain={false}
+          mouseStrength={0.1}
+          intro
+          lightMode={false}
+        />
+        <div aria-hidden className="pointer-events-none absolute inset-0 opacity-30 [background-image:radial-gradient(600px_260px_at_90%_0%,rgba(99,230,207,0.22),transparent_70%),linear-gradient(rgba(99,230,207,0.07)_1px,transparent_1px),linear-gradient(90deg,rgba(99,230,207,0.07)_1px,transparent_1px)] [background-size:auto,28px_28px,28px_28px]" />
         <div className="relative flex flex-wrap items-end justify-between gap-4">
           <div className="flex flex-col gap-2">
             <Link href="/" className="font-mono text-[11px] font-semibold tracking-[0.14em] text-muted-ink no-underline hover:text-acid">gemasSTUDIO / R&amp;D</Link>
@@ -105,7 +139,7 @@ export function LabPage() {
             ['Catatan harian', entries.length],
             ['Sumber diperiksa', `${counts.diperiksa}/${GEMA_SOURCES.length}`],
           ].map(([k, v]) => (
-            <div key={k} className="flex flex-col gap-1 bg-ink/90 px-4 py-3">
+            <div key={k} className="flex flex-col gap-1 bg-ink/45 px-4 py-3 backdrop-blur-[1px]">
               <dt className="font-mono text-[10px] uppercase tracking-[0.14em] text-muted-ink">{k}</dt>
               <dd className="font-mono text-2xl font-semibold text-paper">{v}</dd>
             </div>

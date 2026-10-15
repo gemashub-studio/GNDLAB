@@ -72,6 +72,8 @@ export interface CatatRecord {
   createdAt: string;
   /** Terisi saat pencatatan data akhir dikonfirmasi. */
   finishedAt?: string;
+  /** Data akhir disimpan sementara ("Simpan dulu", belum lengkap) — DEC-082. */
+  akhirSavedAt?: string;
   /** Jumlah perlakuan & metode per jalur (DEC-079). */
   treatments?: Treatments;
 }
@@ -102,59 +104,105 @@ export function missingAkhir(item: string, rows: readonly CatatRow[]): number[] 
 export interface CompareRow {
   no: number;
   awal?: number;
+  /** Berat air (hanya rumus berat kelapa). */
+  air?: number;
+  /** Berat awal − berat air (hanya rumus berat kelapa). */
+  basis?: number;
   akhir?: number;
+  /** Rumus "awal-air-akhir": awal − air − akhir. Rumus biasa: akhir − awal. */
   selisih?: number;
-  /** % perubahan terhadap awal. */
+  /** Persen selisih terhadap (awal − air) atau terhadap awal. */
   pct?: number;
 }
 
 export interface CompareStat {
   label: string;
   unit: string;
+  /** 'awal-air-akhir' = selisih berat = berat awal − berat air − berat akhir (DEC-083, rumus owner). */
+  formula: 'awal-air-akhir' | 'akhir-awal';
   rows: CompareRow[];
   n: number;
   meanAwal?: number;
+  meanAir?: number;
+  meanBasis?: number;
   meanAkhir?: number;
+  meanSelisih?: number;
   meanPct?: number;
-  minPct?: CompareRow;
-  maxPct?: CompareRow;
+  /** Nomor yang punya berat awal & akhir tetapi berat air kosong (tidak dihitung). */
+  noAir: number[];
 }
 
-function compareOne(label: string, unit: string, rows: readonly CatatRow[], a: (r: CatatRow) => string, b: (r: CatatRow) => string): CompareStat {
+const mean = (v: number[]) => (v.length ? v.reduce((s, x) => s + x, 0) / v.length : undefined);
+
+function compareOne(label: string, unit: string, rows: readonly CatatRow[], a: (r: CatatRow) => string, b: (r: CatatRow) => string, sub?: (r: CatatRow) => string): CompareStat {
+  const noAir: number[] = [];
   const out = rows.map<CompareRow>((r) => {
     const x = parseMeasure(a(r));
     const y = parseMeasure(b(r));
     const row: CompareRow = { no: r.no };
     if (x !== undefined) row.awal = x;
     if (y !== undefined) row.akhir = y;
-    if (x !== undefined && y !== undefined) {
+    if (sub) {
+      const w = parseMeasure(sub(r));
+      if (w !== undefined) row.air = w;
+      if (x !== undefined && w !== undefined) row.basis = x - w;
+      if (row.basis !== undefined && y !== undefined) {
+        row.selisih = row.basis - y;
+        if (row.basis !== 0) row.pct = (row.selisih / row.basis) * 100;
+      } else if (x !== undefined && y !== undefined && w === undefined) noAir.push(r.no);
+    } else if (x !== undefined && y !== undefined) {
       row.selisih = y - x;
       if (x !== 0) row.pct = ((y - x) / x) * 100;
     }
     return row;
   });
   const both = out.filter((r) => r.selisih !== undefined);
-  const mean = (v: number[]) => (v.length ? v.reduce((s, x) => s + x, 0) / v.length : undefined);
-  const withPct = out.filter((r) => r.pct !== undefined).sort((p, q) => p.pct! - q.pct!);
-  const st: CompareStat = { label, unit, rows: out, n: both.length };
-  const ma = mean(both.map((r) => r.awal!));
-  const mb = mean(both.map((r) => r.akhir!));
-  const mp = mean(withPct.map((r) => r.pct!));
-  if (ma !== undefined) st.meanAwal = ma;
-  if (mb !== undefined) st.meanAkhir = mb;
-  if (mp !== undefined) st.meanPct = mp;
-  if (withPct.length) {
-    st.minPct = withPct[0]!;
-    st.maxPct = withPct[withPct.length - 1]!;
+  const st: CompareStat = { label, unit, formula: sub ? 'awal-air-akhir' : 'akhir-awal', rows: out, n: both.length, noAir };
+  const set = (k: 'meanAwal' | 'meanAir' | 'meanBasis' | 'meanAkhir' | 'meanSelisih' | 'meanPct', v?: number) => {
+    if (v !== undefined) st[k] = v;
+  };
+  set('meanAwal', mean(both.map((r) => r.awal!)));
+  set('meanAkhir', mean(both.map((r) => r.akhir!)));
+  set('meanSelisih', mean(both.map((r) => r.selisih!)));
+  set('meanPct', mean(out.filter((r) => r.pct !== undefined).map((r) => r.pct!)));
+  if (sub) {
+    set('meanAir', mean(both.map((r) => r.air!)));
+    set('meanBasis', mean(both.map((r) => r.basis!)));
   }
   return st;
 }
 
+/** Berat kelapa memakai rumus owner: berat awal − berat air − berat akhir (bila item punya kolom berat air). */
 export function compareRecord(rec: CatatRecord): CompareStat[] {
+  const air = awalColumns(rec.item).some(([k]) => k === 'beratAir');
   return [
-    compareOne('Berat', 'g', rec.rows, (r) => r.beratAwal, (r) => r.beratAkhir ?? ''),
+    compareOne('Berat', 'g', rec.rows, (r) => r.beratAwal, (r) => r.beratAkhir ?? '', air ? (r) => r.beratAir : undefined),
     ...(hasThickness(rec.item) ? [compareOne('Tebal daging', 'mm', rec.rows, (r) => r.tebalAwal, (r) => r.tebalAkhir ?? '')] : []),
   ];
+}
+
+/** Keterangan rumus untuk laporan & halaman hasil. */
+export const formulaNote = (s: CompareStat) =>
+  s.formula === 'awal-air-akhir'
+    ? 'Rumus: selisih = berat awal − berat air − berat akhir; persen = selisih ÷ (berat awal − berat air) × 100. Nomor dengan berat air kosong tidak dihitung.'
+    : `Rumus: selisih = ${s.label.toLowerCase()} akhir − ${s.label.toLowerCase()} awal; persen terhadap nilai awal.`;
+
+/** Tabel perbandingan (satu sumber untuk halaman hasil, PDF, Word & PPTX) + baris rata-rata. */
+export function compareTable(s: CompareStat): { head: string[]; rows: string[][] } {
+  const u = s.unit;
+  const g = (v?: number) => f(v, 2);
+  if (s.formula === 'awal-air-akhir')
+    return {
+      head: ['No', `Berat awal (${u})`, `Berat air (${u})`, `Awal − air (${u})`, `Berat akhir (${u})`, `Selisih (${u})`, 'Selisih (%)'],
+      rows: [
+        ...s.rows.map((r) => [String(r.no), g(r.awal), g(r.air), g(r.basis), g(r.akhir), g(r.selisih), fp(r.pct)]),
+        ['Rata-rata', g(s.meanAwal), g(s.meanAir), g(s.meanBasis), g(s.meanAkhir), g(s.meanSelisih), fp(s.meanPct)],
+      ],
+    };
+  return {
+    head: ['No', `Awal (${u})`, `Akhir (${u})`, `Selisih (${u})`, 'Perubahan'],
+    rows: [...s.rows.map((r) => [String(r.no), g(r.awal), g(r.akhir), g(r.selisih), fp(r.pct)]), ['Rata-rata', g(s.meanAwal), g(s.meanAkhir), g(s.meanSelisih), fp(s.meanPct)]],
+  };
 }
 
 const f = (v?: number, d = 1) => (v === undefined ? '–' : fmtNum(Number(v.toFixed(d))));
@@ -162,16 +210,20 @@ const fp = (v?: number) => (v === undefined ? '–' : `${v > 0 ? '+' : ''}${fmtN
 
 /** Kesimpulan deskriptif dari angka isian (tanpa uji statistik, tanpa klaim kualitas). */
 export function conclusions(rec: CatatRecord): string[] {
-  if (!rec.finishedAt) return ['Data akhir belum dicatat — kesimpulan muncul setelah pencatatan data akhir.'];
-  return compareRecord(rec).map((s) => {
-    if (!s.n || s.meanPct === undefined) return `${s.label}: belum ada pasangan data awal & akhir yang lengkap.`;
-    const arah = s.meanPct < 0 ? 'turun' : s.meanPct > 0 ? 'naik' : 'tetap';
+  if (!hasAkhir(rec)) return ['Data akhir belum dicatat — kesimpulan muncul setelah pencatatan data akhir.'];
+  const draft = rec.finishedAt ? [] : [`Data akhir sementara (belum lengkap): ${akhirFilled(rec)} dari ${rec.count} nomor terisi — angka di bawah bisa berubah.`];
+  return [...draft, ...compareRecord(rec).map((s) => {
+    if (!s.n || s.meanPct === undefined) return `${s.label}: belum ada pasangan data awal & akhir yang lengkap.${s.noAir.length ? ` Berat air kosong di nomor ${s.noAir.join(', ')}.` : ''}`;
     const byAbs = s.rows.filter((r) => r.pct !== undefined).sort((p, q) => Math.abs(p.pct!) - Math.abs(q.pct!));
     const lo = byAbs[0];
     const hi = byAbs[byAbs.length - 1];
-    const ext = lo && hi && lo.no !== hi.no ? ` Perubahan terkecil di nomor ${lo.no} (${fp(lo.pct)}), terbesar di nomor ${hi.no} (${fp(hi.pct)}).` : '';
+    const ext = lo && hi && lo.no !== hi.no ? ` Selisih terkecil di nomor ${lo.no} (${fp(lo.pct)}), terbesar di nomor ${hi.no} (${fp(hi.pct)}).` : '';
+    const skip = s.noAir.length ? ` Nomor ${s.noAir.join(', ')} belum dihitung karena berat air kosong.` : '';
+    if (s.formula === 'awal-air-akhir')
+      return `Berat (berat awal − berat air − berat akhir): selisih rata-rata ${f(s.meanSelisih)} g atau ${fp(s.meanPct)} dari berat awal − air (rata-rata ${f(s.meanBasis)} g → berat akhir ${f(s.meanAkhir)} g) pada ${s.n} dari ${rec.count} ${rec.item.toLowerCase()}.${ext}${skip}`;
+    const arah = s.meanPct < 0 ? 'turun' : s.meanPct > 0 ? 'naik' : 'tetap';
     return `${s.label} rata-rata ${arah} ${f(Math.abs(s.meanPct))}% (dari ${f(s.meanAwal)} ${s.unit} ke ${f(s.meanAkhir)} ${s.unit}) pada ${s.n} dari ${rec.count} ${rec.item.toLowerCase()}.${ext}`;
-  });
+  })];
 }
 
 // ------------------------------------------------------------------ penyimpanan
@@ -214,7 +266,16 @@ export interface AkhirInput {
   fotoAkhir?: string;
 }
 
-export async function saveCatatAkhir(id: string, akhir: AkhirInput[], treatments?: Treatments): Promise<CatatRecord> {
+/** Ada data akhir (lengkap atau sementara)? */
+export const hasAkhir = (rec: CatatRecord) => !!(rec.finishedAt || rec.akhirSavedAt);
+/** Jumlah nomor yang sudah punya berat akhir. */
+export const akhirFilled = (rec: CatatRecord) => rec.rows.filter((r) => (r.beratAkhir ?? '').trim()).length;
+
+/**
+ * Simpan data akhir. `final` = konfirmasi lengkap (finishedAt); tanpa itu = "Simpan dulu" (akhirSavedAt):
+ * catatan tetap menunggu data akhir, isian & perlakuan terbaru tersimpan dan ikut unduhan (DEC-082).
+ */
+export async function saveCatatAkhir(id: string, akhir: AkhirInput[], treatments?: Treatments, final = true): Promise<CatatRecord> {
   const d = await catatDb();
   const rec = await d.get('records', id);
   if (!rec) throw new Error(`Catatan ${id} tidak ditemukan`);
@@ -223,11 +284,19 @@ export async function saveCatatAkhir(id: string, akhir: AkhirInput[], treatments
     ...rec,
     rows: rec.rows.map((r) => {
       const a = by.get(r.no);
-      return { ...r, beratAkhir: a?.beratAkhir.trim() ?? '', tebalAkhir: a?.tebalAkhir.trim() ?? '', ...(a?.fotoAkhir && { fotoAkhir: a.fotoAkhir }) };
+      const { fotoAkhir: _old, ...rest } = r;
+      return { ...rest, beratAkhir: a?.beratAkhir.trim() ?? '', tebalAkhir: a?.tebalAkhir.trim() ?? '', ...(a?.fotoAkhir && { fotoAkhir: a.fotoAkhir }) };
     }),
-    finishedAt: new Date().toISOString(),
-    ...(treatments && treatmentRows(treatments).length && { treatments }),
   };
+  const now = new Date().toISOString();
+  if (final) {
+    next.finishedAt = now;
+    delete next.akhirSavedAt;
+  } else next.akhirSavedAt = now;
+  if (treatments) {
+    if (treatmentRows(treatments).length) next.treatments = treatments;
+    else delete next.treatments;
+  }
   await d.put('records', next);
   return next;
 }
@@ -271,11 +340,14 @@ export function buildCatatReport(rec: CatatRecord, generatedAt = new Date().toLo
       pptxOmitImages: true,
     },
   ];
-  if (rec.finishedAt) {
+  const akhirOn = hasAkhir(rec);
+  if (akhirOn) {
     blocks.push({
-      heading: 'Data akhir',
+      heading: rec.finishedAt ? 'Data akhir' : 'Data akhir (sementara, belum lengkap)',
       level: 1,
-      lines: [`Dicatat: ${rec.finishedAt.slice(0, 16).replace('T', ' ')}`],
+      lines: rec.finishedAt
+        ? [`Dicatat: ${rec.finishedAt.slice(0, 16).replace('T', ' ')}`]
+        : [`Disimpan sementara: ${rec.akhirSavedAt!.slice(0, 16).replace('T', ' ')}`, `Terisi: ${akhirFilled(rec)} dari ${rec.count} nomor`],
       table: { head: ['No', 'Berat akhir (g)', ...(coco ? ['Tebal daging akhir (mm)'] : [])], rows: rec.rows.map((r) => [String(r.no), v(r.beratAkhir), ...(coco ? [v(r.tebalAkhir)] : [])]) },
       images: photos(rec, 'akhir'),
       pptxOmitImages: true,
@@ -289,7 +361,9 @@ export function buildCatatReport(rec: CatatRecord, generatedAt = new Date().toLo
         x: s.rows.map((r) => String(r.no)),
         xTitle: 'Nomor',
         series: [
-          { name: 'Awal', color: '#1FA88F', values: s.rows.map((r) => r.awal ?? null) },
+          s.formula === 'awal-air-akhir'
+            ? { name: 'Awal − air', color: '#1FA88F', values: s.rows.map((r) => r.basis ?? null) }
+            : { name: 'Awal', color: '#1FA88F', values: s.rows.map((r) => r.awal ?? null) },
           { name: 'Akhir', color: '#F5A524', values: s.rows.map((r) => r.akhir ?? null) },
         ],
         note: 'Nilai isian pengguna; nomor tanpa angka dibiarkan kosong.',
@@ -297,8 +371,8 @@ export function buildCatatReport(rec: CatatRecord, generatedAt = new Date().toLo
       blocks.push({
         heading: `Perbandingan ${s.label.toLowerCase()}`,
         level: 1,
-        lines: [`Pasangan lengkap: ${s.n} dari ${rec.count}`, `Rata-rata awal: ${f(s.meanAwal)} ${s.unit}`, `Rata-rata akhir: ${f(s.meanAkhir)} ${s.unit}`, `Rata-rata perubahan: ${fp(s.meanPct)}`],
-        table: { head: ['No', `Awal (${s.unit})`, `Akhir (${s.unit})`, `Selisih (${s.unit})`, 'Perubahan'], rows: s.rows.map((r) => [String(r.no), f(r.awal, 2), f(r.akhir, 2), f(r.selisih, 2), fp(r.pct)]) },
+        lines: [formulaNote(s), `Pasangan lengkap: ${s.n} dari ${rec.count}`, `Rata-rata selisih: ${f(s.meanSelisih, 2)} ${s.unit} (${fp(s.meanPct)})`],
+        table: compareTable(s),
         images: [],
         ...(s.n >= 2 && { charts: [chart] }),
       });
@@ -307,8 +381,8 @@ export function buildCatatReport(rec: CatatRecord, generatedAt = new Date().toLo
   // PowerPoint: grid foto + data per nomor (awal atas, akhir bawah; akhir tanpa volume/berat air)
   if (rec.rows.some((r) => r.fotoAwal || r.fotoAkhir)) {
     const u = (s: string | undefined, unit: string) => (s && s.trim() ? `${s.trim()} ${unit}` : '–');
-    blocks.splice(rec.finishedAt ? 2 : 1, 0, {
-      heading: rec.finishedAt ? 'Foto data awal & akhir' : 'Foto data awal',
+    blocks.splice(akhirOn ? 2 : 1, 0, {
+      heading: akhirOn ? 'Foto data awal & akhir' : 'Foto data awal',
       level: 1,
       lines: [],
       images: [],
@@ -319,7 +393,7 @@ export function buildCatatReport(rec: CatatRecord, generatedAt = new Date().toLo
           ...(r.fotoAwal && { image: r.fotoAwal }),
           lines: coco ? [`Berat ${u(r.beratAwal, 'g')}`, `Vol. air ${u(r.volAir, 'mL')}`, `Berat air ${u(r.beratAir, 'g')}`, `Tebal ${u(r.tebalAwal, 'mm')}`] : [`Berat ${u(r.beratAwal, 'g')}`],
         },
-        ...(rec.finishedAt && { akhir: { ...(r.fotoAkhir && { image: r.fotoAkhir }), lines: coco ? [`Berat ${u(r.beratAkhir, 'g')}`, `Tebal ${u(r.tebalAkhir, 'mm')}`] : [`Berat ${u(r.beratAkhir, 'g')}`] } }),
+        ...(akhirOn && { akhir: { ...(r.fotoAkhir && { image: r.fotoAkhir }), lines: coco ? [`Berat ${u(r.beratAkhir, 'g')}`, `Tebal ${u(r.tebalAkhir, 'mm')}`] : [`Berat ${u(r.beratAkhir, 'g')}`] } }),
       })),
     });
   }
@@ -335,7 +409,7 @@ export function buildCatatReport(rec: CatatRecord, generatedAt = new Date().toLo
     ...(tRows.length && { pptxTable: { head: tHead, rows: tRows } }),
   });
   const title = `Pencatatan data — ${rec.item} (${rec.count})`;
-  const status = rec.finishedAt ? 'Awal & akhir lengkap' : 'Menunggu data akhir';
+  const status = rec.finishedAt ? 'Awal & akhir lengkap' : rec.akhirSavedAt ? 'Menunggu data akhir · tersimpan sementara' : 'Menunggu data akhir';
   return {
     title,
     subtitle: `${rec.id} · ${status}`,
@@ -350,16 +424,16 @@ export function buildCatatReport(rec: CatatRecord, generatedAt = new Date().toLo
         ['Item', rec.item],
         ['Jumlah', String(rec.count)],
         ['Data awal', rec.createdAt.slice(0, 10)],
-        ['Data akhir', rec.finishedAt ? rec.finishedAt.slice(0, 10) : 'belum dicatat'],
+        ['Data akhir', rec.finishedAt ? rec.finishedAt.slice(0, 10) : rec.akhirSavedAt ? `sementara ${rec.akhirSavedAt.slice(0, 10)}` : 'belum dicatat'],
       ],
     },
     kpis: [
       { label: 'Jumlah item', value: String(rec.count) },
       { label: 'Data awal terisi', value: String(rec.rows.filter((r) => r.beratAwal.trim()).length) },
       { label: 'Data akhir terisi', value: String(rec.rows.filter((r) => (r.beratAkhir ?? '').trim()).length) },
-      ...cmp.map((s) => ({ label: `Rata-rata ${s.label.toLowerCase()}`, value: rec.finishedAt ? fp(s.meanPct) : NOT_RECORDED })),
+      ...cmp.map((s) => ({ label: `Rata-rata selisih ${s.label.toLowerCase()}`, value: akhirOn ? fp(s.meanPct) : NOT_RECORDED })),
     ],
     blocks,
-    footer: `GEMA RnD Lab · pencatatan data ${rec.id} · dibuat ${generatedAt}`,
+    footer: `GnD Lab · pencatatan data ${rec.id} · dibuat ${generatedAt}`,
   };
 }

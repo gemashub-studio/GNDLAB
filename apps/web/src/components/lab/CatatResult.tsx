@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { downloadBlob } from '@/lib/labMedia';
-import { awalColumns, buildCatatReport, compareRecord, conclusions, hasThickness, treatmentRows, type CatatRecord } from '@/lib/pencatatan';
+import { akhirFilled, awalColumns, buildCatatReport, compareRecord, compareTable, conclusions, formulaNote, hasAkhir, hasThickness, treatmentRows, type CatatRecord } from '@/lib/pencatatan';
 import { fmtNum } from '@/lib/reportCharts';
 import { ImagePreview } from './Overlays';
 
@@ -101,7 +101,12 @@ export function CatatResult({ rec }: { rec: CatatRecord }) {
       </section>
       <section className="flex flex-col gap-2">
         <h2 className="text-lg"><span className="mr-2 rounded bg-ink px-1.5 py-0.5 font-mono text-xs text-acid">2</span>Data akhir</h2>
-        {rec.finishedAt ? (
+        {!rec.finishedAt && rec.akhirSavedAt && (
+          <p className="self-start rounded-lg bg-safety px-2 py-1 text-xs font-semibold" data-testid="catat-akhir-draft-note">
+            Sementara, belum lengkap: {akhirFilled(rec)} dari {rec.count} nomor terisi · disimpan {rec.akhirSavedAt.slice(0, 16).replace('T', ' ')}
+          </p>
+        )}
+        {hasAkhir(rec) ? (
           <Table testId="catat-tbl-akhir" head={['No', 'Foto', 'Berat akhir (g)', ...(coco ? ['Tebal daging akhir (mm)'] : [])]} rows={rec.rows.map((r) => [r.no, <Thumb key="f" src={r.fotoAkhir} alt={`Foto akhir nomor ${r.no}`} />, r.beratAkhir || '', ...(coco ? [r.tebalAkhir || ''] : [])])} />
         ) : (
           <p className="text-sm italic text-muted">Belum dicatat — buat pencatatan data akhir dulu.</p>
@@ -109,15 +114,12 @@ export function CatatResult({ rec }: { rec: CatatRecord }) {
       </section>
       <section className="flex flex-col gap-3">
         <h2 className="text-lg"><span className="mr-2 rounded bg-ink px-1.5 py-0.5 font-mono text-xs text-acid">3</span>Perbandingan data awal &amp; akhir</h2>
-        {rec.finishedAt &&
+        {hasAkhir(rec) &&
           cmp.map((s) => (
             <div key={s.label} className="flex flex-col gap-2">
               <h3 className="text-sm font-semibold">{s.label} ({s.unit})</h3>
-              <Table
-                testId={`catat-tbl-cmp-${s.label === 'Berat' ? 'berat' : 'tebal'}`}
-                head={['No', 'Awal', 'Akhir', 'Selisih', 'Perubahan']}
-                rows={[...s.rows.map((r) => [r.no, n(r.awal), n(r.akhir), n(r.selisih), pct(r.pct)]), ['Rata-rata', n(s.meanAwal), n(s.meanAkhir), n(s.meanAwal !== undefined && s.meanAkhir !== undefined ? s.meanAkhir - s.meanAwal : undefined), pct(s.meanPct)]]}
-              />
+              <p className="text-xs text-muted" data-testid={`catat-formula-${s.label === 'Berat' ? 'berat' : 'tebal'}`}>{formulaNote(s)}</p>
+              <Table testId={`catat-tbl-cmp-${s.label === 'Berat' ? 'berat' : 'tebal'}`} {...compareTable(s)} />
             </div>
           ))}
         {treatmentRows(rec.treatments).length > 0 && (

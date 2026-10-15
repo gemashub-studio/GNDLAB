@@ -1,7 +1,8 @@
 'use client';
 
-import { useEffect, useRef, type ReactNode } from 'react';
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
+import { createRoot } from 'react-dom/client';
 
 /** Animasi loading "file terbang" (DEC-075, CSS di globals.css). */
 export function FileLoader() {
@@ -99,4 +100,104 @@ export function ImagePreview({ src, alt, onClose }: { src: string; alt: string; 
     </div>,
     document.body,
   );
+}
+
+export interface ConfirmOptions {
+  title?: string;
+  message: string;
+  /** Label tombol setuju (default "Hapus"). */
+  okLabel?: string;
+  /** null = hanya tombol OK (pemberitahuan). */
+  cancelLabel?: string | null;
+  danger?: boolean;
+  /** Wajib ketik teks ini (tidak peka huruf besar/kecil) sebelum tombol setuju aktif. */
+  requireText?: string;
+}
+
+/**
+ * Dialog konfirmasi DI HALAMAN (DEC-083) — pengganti window.confirm/prompt/alert yang diblokir di sebagian
+ * browser (webview, aplikasi terpasang dari tautan): di sana confirm() langsung bernilai false sehingga hapus tidak jalan.
+ */
+function ConfirmDialog({ title = 'Konfirmasi', message, okLabel = 'Hapus', cancelLabel = 'Batal', danger = true, requireText, onDone }: ConfirmOptions & { onDone: (ok: boolean) => void }) {
+  const [typed, setTyped] = useState('');
+  const first = useRef<HTMLElement | null>(null);
+  const ready = !requireText || typed.trim().toUpperCase() === requireText.toUpperCase();
+  useEffect(() => {
+    first.current?.focus();
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.stopPropagation();
+        onDone(false);
+      }
+    };
+    window.addEventListener('keydown', onKey, true);
+    return () => window.removeEventListener('keydown', onKey, true);
+  }, [onDone]);
+  return createPortal(
+    <div className="fixed inset-0 z-[90] flex items-center justify-center bg-ink/70 p-4" role="alertdialog" aria-modal="true" aria-labelledby="confirm-dialog-t" aria-describedby="confirm-dialog-m" data-testid="confirm-dialog">
+      <form
+        className="flex w-full max-w-md flex-col gap-3 rounded-2xl bg-white p-5 text-ink shadow-2xl"
+        onSubmit={(e) => {
+          e.preventDefault();
+          if (ready) onDone(true);
+        }}
+      >
+        <p id="confirm-dialog-t" className="font-display text-lg font-semibold">{title}</p>
+        <p id="confirm-dialog-m" className="whitespace-pre-line text-sm text-zinc-600">{message}</p>
+        {requireText && (
+          <label className="flex flex-col gap-1.5">
+            <span className="label-mono">Ketik {requireText} untuk melanjutkan</span>
+            <input ref={(el) => { first.current = el; }} className="field min-h-[44px] bg-white text-sm" value={typed} onChange={(e) => setTyped(e.target.value)} autoComplete="off" data-testid="confirm-input" />
+          </label>
+        )}
+        <div className="mt-1 flex flex-wrap justify-end gap-2">
+          {cancelLabel !== null && (
+            <button type="button" className="btn-ghost" onClick={() => onDone(false)} ref={(el) => { if (!requireText) first.current = el; }} data-testid="confirm-cancel">{cancelLabel}</button>
+          )}
+          <button
+            type="submit"
+            disabled={!ready}
+            className={danger ? 'inline-flex min-h-[44px] items-center rounded-xl bg-[#c0392b] px-4 text-sm font-semibold text-white disabled:opacity-40' : 'btn-primary'}
+            ref={(el) => { if (!requireText && cancelLabel === null) first.current = el; }}
+            data-testid="confirm-ok"
+          >
+            {okLabel}
+          </button>
+        </div>
+      </form>
+    </div>,
+    document.body,
+  );
+}
+
+/** `const [ask, dialog] = useConfirm()` → `if (await ask({...})) …`; render `{dialog}` di komponen. */
+export function useConfirm() {
+  const [req, setReq] = useState<{ opts: ConfirmOptions; resolve: (ok: boolean) => void } | null>(null);
+  const ask = useCallback((opts: ConfirmOptions) => new Promise<boolean>((resolve) => setReq({ opts, resolve })), []);
+  const done = useCallback(
+    (ok: boolean) => {
+      req?.resolve(ok);
+      setReq(null);
+    },
+    [req],
+  );
+  const dialog = req ? <ConfirmDialog key={req.opts.message} {...req.opts} onDone={done} /> : null;
+  return [ask, dialog] as const;
+}
+
+/** Versi fungsi (tanpa perlu merender apa pun di komponen): `if (await askConfirm({...})) …` (DEC-083). */
+export function askConfirm(opts: ConfirmOptions): Promise<boolean> {
+  return new Promise((resolve) => {
+    const host = document.createElement('div');
+    document.body.appendChild(host);
+    const root = createRoot(host);
+    const done = (ok: boolean) => {
+      resolve(ok);
+      window.setTimeout(() => {
+        root.unmount();
+        host.remove();
+      });
+    };
+    root.render(<ConfirmDialog {...opts} onDone={done} />);
+  });
 }

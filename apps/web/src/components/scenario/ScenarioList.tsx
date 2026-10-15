@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useCallback, useEffect, useState } from 'react';
 import { deleteLocal, listLocal, syncPending, type LocalScenario } from '@/lib/localScenarios';
 import { encodeState, type ScenarioState } from '@/lib/scenario';
+import { askConfirm as ask } from '@/components/lab/Overlays';
 
 const PATH: Record<ScenarioState['kind'], string> = { CONTAINER: '/muat', WAREHOUSE: '/gudang', CONVERT: '/konversi' };
 const KIND: Record<ScenarioState['kind'], string> = { CONTAINER: 'Container', WAREHOUSE: 'Gudang', CONVERT: 'Konversi' };
@@ -94,7 +95,7 @@ export function ScenarioList({ loggedIn, server }: { loggedIn: boolean; server: 
                   className="font-mono text-xs font-bold underline"
                   aria-label={`Hapus ${s.name} dari perangkat`}
                   onClick={async () => {
-                    if (!confirm(`Hapus "${s.name}" dari perangkat ini?`)) return;
+                    if (!(await ask({ title: 'Hapus skenario', message: `Hapus "${s.name}" dari perangkat ini?` }))) return;
                     await deleteLocal(s.id);
                     void reload();
                   }}

@@ -177,3 +177,4 @@
 - DEC-079: perlakuan pencatatan, GnD Lab (gsap StrokeText — dependensi baru gsap 3.15.0), loading 4s, alert dari kanan, urutan kartu, hapus. Catatan: testid lab-title sudah dipakai wizard → judul pakai lab-heading; cache .next korup (EUNKNOWN) → hapus .next & restart preview.
 - DEC-080: judul GnD Lab StrokeText trigger=loop.
 - DEC-081: perlakuan pindah ke form data akhir, multi-kolom (+/x), Treatments = entry[] (kompatibel format lama).
+- DEC-082/083: LightTunnel di hero, Simpan dulu (akhirSavedAt), dialog konfirmasi di halaman (window.confirm diblokir di webview → hapus gagal), revisi data akhir, rumus berat awal − air − akhir.

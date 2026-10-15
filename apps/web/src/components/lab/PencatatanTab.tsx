@@ -17,6 +17,8 @@ import {
   type AkhirInput,
   TREATMENT_GROUPS,
   treatmentRows,
+  treatmentEntries,
+  akhirFilled,
   type Treatments,
   type TreatmentEntry,
   type TreatmentKey,
@@ -26,7 +28,7 @@ import {
 import { photoDataUrl } from '@/lib/photo';
 import { CatatResult, DownloadButtons } from './CatatResult';
 import { Dropdown } from './Dropdown';
-import { ImagePreview, LoadingOverlay, SuccessAlert } from './Overlays';
+import { ImagePreview, LoadingOverlay, SuccessAlert, useConfirm } from './Overlays';
 
 /** Loading tampil minimal 4 detik (satu siklus animasi, DEC-079). */
 const SAVE_MS = 4000;
@@ -41,6 +43,11 @@ export function PencatatanTab({ records, oldRaw, onChanged }: { records: CatatRe
   const [preview, setPreview] = useState<CatatRecord>();
   const [toast, setToast] = useState<'' | 'saving' | 'finishing'>('');
   const [done, setDone] = useState<CatatRecord>();
+  const [drafted, setDrafted] = useState<CatatRecord>();
+  // revisi data akhir catatan yang sudah lengkap (DEC-083)
+  const [revise, setRevise] = useState<CatatRecord>();
+  const [revised, setRevised] = useState<CatatRecord>();
+  const [ask, dialog] = useConfirm();
   // mode pilih (DEC-076): hanya catatan lengkap (awal & akhir) yang bisa dipilih
   const [selecting, setSelecting] = useState(false);
   const [picked, setPicked] = useState<Set<string>>(new Set());
@@ -52,8 +59,9 @@ export function PencatatanTab({ records, oldRaw, onChanged }: { records: CatatRe
     return n;
   });
   const removePicked = async () => {
-    if (!window.confirm(`Hapus ${picked.size} catatan terpilih? Data yang sudah dihapus TIDAK dapat dipulihkan.`)) return;
     const ids = [...picked];
+    if (!ids.length) return;
+    if (!(await ask({ title: 'Hapus catatan', message: `Hapus ${ids.length} catatan terpilih?\nData yang sudah dihapus TIDAK dapat dipulihkan.`, okLabel: `Hapus (${ids.length})` }))) return;
     const n = await deleteCatat(ids);
     // langsung hilang dari layar (tidak menunggu muat ulang), lalu muat ulang dari penyimpanan
     setRemoved((cur) => new Set([...cur, ...ids]));
@@ -79,15 +87,29 @@ export function PencatatanTab({ records, oldRaw, onChanged }: { records: CatatRe
     await onChanged();
     window.setTimeout(() => setToast(''), Math.max(0, SAVE_MS - (Date.now() - started)));
   };
-  const saveAkhir = async (id: string, akhir: AkhirInput[], treatments: Treatments) => {
+  const saveAkhir = async (id: string, akhir: AkhirInput[], treatments: Treatments, isRevision = false) => {
     setMode('');
+    setRevise(undefined);
     setToast('finishing');
     const started = Date.now();
     const rec = await saveCatatAkhir(id, akhir, treatments);
     await onChanged();
     window.setTimeout(() => {
       setToast('');
-      setDone(rec);
+      if (isRevision) setRevised(rec);
+      else setDone(rec);
+    }, Math.max(0, SAVE_MS - (Date.now() - started)));
+  };
+  // "Simpan dulu": data akhir belum lengkap disimpan sebagai pembaruan terbaru (DEC-082)
+  const saveDraft = async (id: string, akhir: AkhirInput[], treatments: Treatments) => {
+    setMode('');
+    setToast('saving');
+    const started = Date.now();
+    const rec = await saveCatatAkhir(id, akhir, treatments, false);
+    await onChanged();
+    window.setTimeout(() => {
+      setToast('');
+      setDrafted(rec);
     }, Math.max(0, SAVE_MS - (Date.now() - started)));
   };
 
@@ -171,6 +193,7 @@ export function PencatatanTab({ records, oldRaw, onChanged }: { records: CatatRe
                   {treatmentRows(r.treatments).length > 0 && <span className="text-xs text-muted">{treatmentRows(r.treatments).map(([t, c, m]) => `${t.replace('Jumlah perlakuan ', '')}: ${c} × ${m}`).join(' · ')}</span>}
                   <span className={`self-start rounded-full px-2.5 py-0.5 font-mono text-[11px] font-semibold ${r.finishedAt ? 'bg-acid text-ink' : 'bg-safety text-ink'}`}>
                     {r.finishedAt ? 'Awal & akhir lengkap' : 'Menunggu data akhir'}
+                    {!r.finishedAt && r.akhirSavedAt && ` · tersimpan sementara (${akhirFilled(r)}/${r.count})`}
                   </span>
                 </div>
                 {!selecting && <DownloadButtons rec={r} testId={`catat-dl-${r.id}`} />}
@@ -193,13 +216,27 @@ export function PencatatanTab({ records, oldRaw, onChanged }: { records: CatatRe
       )}
 
       {mode === 'awal' && <AwalModal onClose={() => setMode('')} onConfirm={(item, rows) => void saveAwal(item, rows)} />}
-      {mode === 'akhir' && <AkhirModal pending={pending} onClose={() => setMode('')} onConfirm={(id, a, t) => void saveAkhir(id, a, t)} />}
+      {mode === 'akhir' && <AkhirModal pending={pending} onClose={() => setMode('')} onConfirm={(id, a, t) => void saveAkhir(id, a, t)} onDraft={(id, a, t) => void saveDraft(id, a, t)} />}
+      {revise && <AkhirModal key={revise.id} pending={[revise]} revision onClose={() => setRevise(undefined)} onConfirm={(id, a, t) => void saveAkhir(id, a, t, true)} onDraft={() => undefined} />}
       {preview && (
         <PageModal title={`Pratinjau ${preview.id}`} onClose={() => setPreview(undefined)} testId="catat-preview" wide>
           <CatatResult rec={preview} />
           <div className="mt-5 border-t border-paper-grid pt-4">
             <p className="label-mono mb-2">Unduh</p>
             <DownloadButtons rec={preview} testId="catat-preview-dl" />
+            {preview.finishedAt && (
+              <button
+                type="button"
+                className="btn-acid mt-3"
+                onClick={() => {
+                  setRevise(preview);
+                  setPreview(undefined);
+                }}
+                data-testid="catat-revise"
+              >
+                Revisi data akhir
+              </button>
+            )}
           </div>
         </PageModal>
       )}
@@ -210,6 +247,11 @@ export function PencatatanTab({ records, oldRaw, onChanged }: { records: CatatRe
           <button type="button" className="rounded-lg border border-[#66cdaa] px-4 py-1.5 text-sm font-semibold text-[#3a9e7c]" onClick={() => setDone(undefined)} data-testid="catat-done-later">Nanti</button>
         </SuccessAlert>
       )}
+      {drafted && (
+        <SuccessAlert testId="catat-drafted" title="Tersimpan !" message={`Data akhir ${drafted.id} disimpan sementara (${akhirFilled(drafted)} dari ${drafted.count} nomor). Lanjutkan kapan saja; unduhan sudah memakai data terbaru.`} onClose={() => setDrafted(undefined)} />
+      )}
+      {revised && <SuccessAlert testId="catat-revised" title="Tersimpan !" message={`Revisi data akhir ${revised.id} tersimpan. Unduhan sudah memakai data terbaru.`} onClose={() => setRevised(undefined)} />}
+      {dialog}
       {deleted > 0 && <SuccessAlert testId="catat-deleted" message={`${deleted} catatan dihapus permanen.`} onClose={() => setDeleted(0)} />}
     </div>
   );
@@ -437,11 +479,20 @@ function RowsGrid({ head, rows, render }: { head: string[]; rows: CatatRow[]; re
 }
 
 /** Form data akhir: pilih catatan awal (bila >1), lalu isi akhir di samping nilai awal. */
-function AkhirModal({ pending, onClose, onConfirm }: { pending: CatatRecord[]; onClose: () => void; onConfirm: (id: string, akhir: AkhirInput[], treatments: Treatments) => void }) {
-  const [tr, setTr] = useState<TreatmentState>(() => Object.fromEntries(TREATMENT_GROUPS.map((g) => [g.key, [{ count: '', method: '' }]])) as TreatmentState);
+type AkhirVals = Record<number, { beratAkhir: string; tebalAkhir: string; fotoAkhir?: string }>;
+/** Isian awal form data akhir = data yang sudah tersimpan (termasuk "Simpan dulu"). */
+const valsOf = (rec?: CatatRecord): AkhirVals => Object.fromEntries((rec?.rows ?? []).map((r) => [r.no, { beratAkhir: r.beratAkhir ?? '', tebalAkhir: r.tebalAkhir ?? '', ...(r.fotoAkhir && { fotoAkhir: r.fotoAkhir }) }]));
+const trOf = (rec?: CatatRecord): TreatmentState =>
+  Object.fromEntries(TREATMENT_GROUPS.map((g) => {
+    const e = treatmentEntries(rec?.treatments, g.key);
+    return [g.key, e.length ? e.map((x) => ({ ...x })) : [{ count: '', method: '' }]];
+  })) as TreatmentState;
+
+function AkhirModal({ pending, onClose, onConfirm, onDraft, revision = false }: { pending: CatatRecord[]; revision?: boolean; onClose: () => void; onConfirm: (id: string, akhir: AkhirInput[], treatments: Treatments) => void; onDraft: (id: string, akhir: AkhirInput[], treatments: Treatments) => void }) {
   const [id, setId] = useState(pending.length === 1 ? pending[0]!.id : '');
   const rec = pending.find((p) => p.id === id);
-  const [vals, setVals] = useState<Record<number, { beratAkhir: string; tebalAkhir: string; fotoAkhir?: string }>>({});
+  const [tr, setTr] = useState<TreatmentState>(() => trOf(rec));
+  const [vals, setVals] = useState<AkhirVals>(() => valsOf(rec));
   const [err, setErr] = useState('');
   const coco = rec ? hasThickness(rec.item) : false;
   const merged = rec ? rec.rows.map((r) => ({ ...r, beratAkhir: vals[r.no]?.beratAkhir ?? '', tebalAkhir: vals[r.no]?.tebalAkhir ?? '', ...(vals[r.no]?.fotoAkhir && { fotoAkhir: vals[r.no]!.fotoAkhir }) })) : [];
@@ -454,19 +505,25 @@ function AkhirModal({ pending, onClose, onConfirm }: { pending: CatatRecord[]; o
     if (!rec) return setErr('Pilih catatan awal dulu.');
     const miss = missingAkhir(rec.item, merged);
     if (miss.length) return setErr(`Data akhir masih kosong di nomor: ${miss.slice(0, 12).join(', ')}${miss.length > 12 ? `, … (${miss.length} nomor)` : ''}.`);
-    onConfirm(rec.id, merged.map((r) => ({ no: r.no, beratAkhir: r.beratAkhir, tebalAkhir: r.tebalAkhir, ...(r.fotoAkhir && { fotoAkhir: r.fotoAkhir }) })), tr);
+    onConfirm(rec.id, akhirOut(), tr);
+  };
+  const akhirOut = () => merged.map((r) => ({ no: r.no, beratAkhir: r.beratAkhir, tebalAkhir: r.tebalAkhir, ...(r.fotoAkhir && { fotoAkhir: r.fotoAkhir }) }));
+  const draft = () => {
+    if (!rec) return setErr('Pilih catatan awal dulu.');
+    onDraft(rec.id, akhirOut(), tr);
   };
   const ro = 'field min-h-[40px] w-full bg-paper-grid/60 px-2 text-sm text-muted';
 
   return (
     <PageModal
-      title="Pencatatan data akhir"
+      title={revision ? `Revisi data akhir · ${pending[0]?.id ?? ''}` : 'Pencatatan data akhir'}
       onClose={onClose}
       testId="catat-akhir-modal"
       footer={
         <>
           <button type="button" className="btn-ghost" onClick={onClose}>Batal</button>
-          <button type="button" className="btn-primary" onClick={confirm} data-testid="catat-akhir-confirm">Konfirmasi data akhir</button>
+          {!revision && <button type="button" className="btn-acid" onClick={draft} title="Simpan isian yang sudah ada walau belum lengkap; bisa dilanjutkan nanti" data-testid="catat-akhir-draft">Simpan dulu</button>}
+          <button type="button" className="btn-primary" onClick={confirm} data-testid="catat-akhir-confirm">{revision ? 'Simpan revisi' : 'Konfirmasi data akhir'}</button>
         </>
       }
     >
@@ -479,7 +536,9 @@ function AkhirModal({ pending, onClose, onConfirm }: { pending: CatatRecord[]; o
             value={id}
             onChange={(v) => {
               setId(v);
-              setVals({});
+              const next = pending.find((p) => p.id === v);
+              setVals(valsOf(next));
+              setTr(trOf(next));
             }}
             placeholder="— pilih catatan awal —"
             options={pending.map((p) => ({ value: p.id, label: `${p.item} · ${p.count} item`, note: `${p.id} · ${p.createdAt.slice(0, 10)}` }))}

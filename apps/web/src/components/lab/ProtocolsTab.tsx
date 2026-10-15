@@ -38,6 +38,7 @@ import {
 import { DailyLog } from './DailyLog';
 import { MediaPicker } from './MediaPicker';
 import { ProductMark, Section, TextInput } from './ui';
+import { askConfirm as ask } from './Overlays';
 
 type ExportKind = 'pdf' | 'docx' | 'pptx' | 'html';
 
@@ -174,8 +175,8 @@ export function ProtocolsTab({ protocols, entries, media, refresh, incomingRaw, 
                 <button
                   type="button"
                   className="btn-ghost"
-                  onClick={() => {
-                    if (!window.confirm(`Hapus draf "${d.name || '(tanpa nama)'}" beserta foto/video yang belum disimpan? Tidak bisa dibatalkan.`)) return;
+                  onClick={async () => {
+                    if (!(await ask({ title: 'Hapus draf', message: `Hapus draf "${d.name || '(tanpa nama)'}" beserta foto/video yang belum disimpan? Tidak bisa dibatalkan.` }))) return;
                     void deleteDraft(d.id).then(loadDrafts);
                   }}
                   data-testid={`draft-del-${d.id}`}
@@ -230,18 +231,19 @@ export function ProtocolsTab({ protocols, entries, media, refresh, incomingRaw, 
                   <button
                     type="button"
                     className="btn-ghost"
-                    onClick={() => {
-                      const typed = window.prompt(`Hapus hasil riset ${k} "${latest.name}" beserta SEMUA versi, laporan harian, dan foto/videonya? Tidak bisa dibatalkan — sebaiknya unduh cadangan dulu (tab Ringkasan).
-
-Ketik kode ${k} untuk menghapus:`);
-                      if (typed === null) return;
-                      if (typed.trim().toUpperCase() !== k) return window.alert('Kode tidak cocok — tidak ada yang dihapus.');
+                    onClick={async () => {
+                      const ok = await ask({
+                        title: `Hapus hasil riset ${k}`,
+                        message: `Hapus hasil riset ${k} "${latest.name}" beserta SEMUA versi, laporan harian, dan foto/videonya? Tidak bisa dibatalkan — sebaiknya unduh cadangan dulu (tab Ringkasan).`,
+                        requireText: k,
+                      });
+                      if (!ok) return;
                       void deleteResearch(k)
                         .then(async (n) => {
                           await refresh();
-                          window.alert(`Terhapus: ${n.versions} versi, ${n.entries} laporan harian, ${n.media} foto/video.`);
+                          await ask({ title: 'Terhapus', message: `Terhapus: ${n.versions} versi, ${n.entries} laporan harian, ${n.media} foto/video.`, okLabel: 'OK', cancelLabel: null, danger: false });
                         })
-                        .catch((e: Error) => window.alert(e.message));
+                        .catch((e: Error) => void ask({ title: 'Gagal menghapus', message: e.message, okLabel: 'OK', cancelLabel: null, danger: false }));
                     }}
                     data-testid={`proto-del-${k}`}
                   >

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { awalColumns, blankRows, buildCatatReport, compareRecord, conclusions, missingAkhir, missingAwal, nextCatatId, type CatatRecord } from '@/lib/pencatatan';
+import { awalColumns, blankRows, buildCatatReport, compareRecord, compareTable, conclusions, missingAkhir, missingAwal, nextCatatId, type CatatRecord } from '@/lib/pencatatan';
 import { buildDocx, buildPptx } from '@/lib/officeExport';
 
 const rec = (finished = true): CatatRecord => ({
@@ -30,23 +30,40 @@ describe('pencatatan data awal & akhir (DEC-074)', () => {
   });
 
   it('perbandingan: selisih, persen, rata-rata; kesimpulan deskriptif', () => {
-    const [berat, tebal] = compareRecord(rec());
-    expect(berat!.rows.map((r) => [r.selisih, Number(r.pct!.toFixed(1))])).toEqual([[-100, -10], [-60, -5], [-200, -25]]);
-    expect(berat!.meanAwal).toBeCloseTo(1000);
-    expect(berat!.meanAkhir).toBeCloseTo(880);
-    expect(berat!.meanPct).toBeCloseTo(-13.333, 2);
+    // rumus owner (DEC-083): selisih berat = berat awal − berat air − berat akhir; % terhadap (awal − air)
+    const full: CatatRecord = { ...rec(), rows: rec().rows.map((r, i) => ({ ...r, beratAir: ['310', '160', '100'][i]! })) };
+    const [berat, tebal] = compareRecord(full);
+    expect(berat!.formula).toBe('awal-air-akhir');
+    // 1000−310−900 = −210 ; 1200−160−1140 = −100 ; 800−100−600 = 100
+    expect(berat!.rows.map((r) => [r.basis, r.selisih, Number(r.pct!.toFixed(2))])).toEqual([[690, -210, -30.43], [1040, -100, -9.62], [700, 100, 14.29]]);
+    expect(berat!.meanSelisih).toBeCloseTo(-70);
+    expect(berat!.meanBasis).toBeCloseTo(810);
+    expect(berat!.noAir).toEqual([]);
+    expect(compareTable(berat!).head).toEqual(['No', 'Berat awal (g)', 'Berat air (g)', 'Awal − air (g)', 'Berat akhir (g)', 'Selisih (g)', 'Selisih (%)']);
+    expect(compareTable(berat!).rows[0]).toEqual(['1', '1000', '310', '690', '900', '-210', '-30,4%']);
+    expect(compareTable(berat!).rows.at(-1)![0]).toBe('Rata-rata');
+    // tebal tetap akhir − awal
+    expect(tebal!.formula).toBe('akhir-awal');
     expect(tebal!.rows[2]!.pct).toBe(0);
-    const c = conclusions(rec());
-    expect(c[0]).toBe('Berat rata-rata turun 13,3% (dari 1000 g ke 880 g) pada 3 dari 3 kelapa tua. Perubahan terkecil di nomor 2 (-5%), terbesar di nomor 3 (-25%).');
+    const c = conclusions(full);
+    expect(c[0]).toContain('Berat (berat awal − berat air − berat akhir): selisih rata-rata -70 g');
     expect(c[1]).toContain('Tebal daging rata-rata turun');
+    // berat air kosong → nomor itu tidak dihitung (tidak dianggap 0)
+    const partial = compareRecord(rec())[0]!;
+    expect(partial.n).toBe(1);
+    expect(partial.noAir).toEqual([2, 3]);
+    expect(conclusions(rec())[0]).toContain('Nomor 2, 3 belum dihitung karena berat air kosong');
+    // item tanpa kolom berat air (mis. sekam) tetap akhir − awal
+    expect(compareRecord({ ...rec(), item: 'Sekam' })[0]!.formula).toBe('akhir-awal');
     expect(conclusions(rec(false))[0]).toContain('Data akhir belum dicatat');
   });
 
   it('laporan: data awal, akhir, perbandingan (+grafik), kesimpulan → PDF/Word/PPTX', () => {
-    const r = buildCatatReport(rec(), 'x');
+    const r = buildCatatReport({ ...rec(), rows: rec().rows.map((x, i) => ({ ...x, beratAir: ['310', '160', '100'][i]! })) }, 'x');
     expect(r.blocks.map((b) => b.heading)).toEqual(['Data awal', 'Data akhir', 'Perbandingan berat', 'Perbandingan tebal daging', 'Kesimpulan']);
     expect(r.blocks[2]!.charts).toHaveLength(1);
-    expect(r.blocks[2]!.table!.rows[0]).toEqual(['1', '1000', '900', '-100', '-10%']);
+    expect(r.blocks[2]!.lines[0]).toContain('berat awal − berat air − berat akhir');
+    expect(r.blocks[2]!.table!.rows[0]).toEqual(['1', '1000', '310', '690', '900', '-210', '-30,4%']);
     expect(buildCatatReport(rec(false), 'x').blocks.map((b) => b.heading)).toEqual(['Data awal', 'Kesimpulan']);
     expect(buildDocx(r).length).toBeGreaterThan(100);
     expect(buildPptx(r).length).toBeGreaterThan(100);
@@ -73,6 +90,24 @@ describe('pencatatan data awal & akhir (DEC-074)', () => {
     expect(pptx).not.toContain('— foto/video');
     expect(r.blocks.find((b) => b.photoPairs)!.photoPairs![2]!.akhir!.lines).toEqual(['Berat 600 g', 'Tebal 9 mm']);
     expect(r.blocks.find((b) => b.photoPairs)!.pptxOnly).toBe(true);
+  });
+
+  it('Simpan dulu: data akhir sementara ikut laporan & unduhan, status tetap menunggu (DEC-082)', () => {
+    const base0 = rec(false);
+    const draft: CatatRecord = { ...base0, akhirSavedAt: '2026-10-16T09:30:00.000Z', rows: base0.rows.map((r) => (r.no === 1 ? { ...r, beratAkhir: '900', tebalAkhir: '8' } : r)) };
+    const r = buildCatatReport(draft, 'x');
+    expect(r.subtitle).toContain('tersimpan sementara');
+    expect(r.cover!.done).toBe(false);
+    const akhir = r.blocks.find((b) => b.heading.startsWith('Data akhir'))!;
+    expect(akhir.heading).toBe('Data akhir (sementara, belum lengkap)');
+    expect(akhir.lines).toContain('Terisi: 1 dari 3 nomor');
+    expect(akhir.table!.rows[0]).toEqual(['1', '900', '8']);
+    expect(akhir.table!.rows[1]).toEqual(['2', '–', '–']);
+    expect(conclusions(draft)[0]).toContain('1 dari 3 nomor terisi');
+    expect(new TextDecoder().decode(buildDocx(r))).toContain('Data akhir (sementara, belum lengkap)');
+    expect(new TextDecoder().decode(buildPptx(r))).toContain('sementara');
+    // tanpa data akhir sama sekali: tetap seperti sebelumnya
+    expect(buildCatatReport(rec(false), 'x').blocks.some((b) => b.heading.startsWith('Data akhir'))).toBe(false);
   });
 
   it('perlakuan: bagian sendiri di PDF/Word, digabung ke slide Kesimpulan di PPTX (DEC-079)', async () => {

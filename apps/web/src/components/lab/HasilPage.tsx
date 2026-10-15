@@ -21,7 +21,7 @@ export function HasilPage() {
       <header className="card-ink flex flex-col gap-2">
         <span className="font-mono text-[11px] tracking-[0.14em] text-muted-ink">GnD Lab · pencatatan data</span>
         <h1 className="text-[28px] text-paper sm:text-[40px]">Hasil pencatatan data awal dan akhir</h1>
-        {rec && <p className="font-mono text-sm text-muted-ink">{rec.id} · {rec.item} · {rec.count} item · awal {rec.createdAt.slice(0, 10)} · akhir {rec.finishedAt ? rec.finishedAt.slice(0, 10) : 'belum dicatat'}</p>}
+        {rec && <p className="font-mono text-sm text-muted-ink">{rec.id} · {rec.item} · {rec.count} item · awal {rec.createdAt.slice(0, 10)} · akhir {rec.finishedAt ? rec.finishedAt.slice(0, 10) : rec.akhirSavedAt ? `sementara ${rec.akhirSavedAt.slice(0, 10)}` : 'belum dicatat'}</p>}
       </header>
       {rec === undefined && <p className="text-sm text-muted">Memuat…</p>}
       {rec === null && <p className="text-sm">Catatan tidak ditemukan di perangkat ini. Data tersimpan per perangkat — buka dari perangkat yang mencatatnya.</p>}

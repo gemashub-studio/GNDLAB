@@ -75,8 +75,8 @@ test('laptop & HP: data digabung lewat Google Drive; hapus ikut terhapus', async
 
   // hapus di HP → setelah sinkron, hilang juga di laptop (tidak muncul lagi)
   await hp.goto('/lab?t=belanja');
-  hp.once('dialog', (d) => void d.accept());
   await hp.getByTestId('lpj-list').locator('li', { hasText: 'Belanja laptop E2E' }).getByRole('button', { name: 'Hapus' }).click();
+  await hp.getByTestId('confirm-ok').click();
   await expect(hp.getByTestId('lpj-list')).not.toContainText('Belanja laptop E2E');
   await sync(hp);
   await expect(hp.getByTestId('lab-drive-msg')).toContainText('0 perubahan diambil');
