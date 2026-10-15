@@ -4,20 +4,21 @@ import { BelanjaTab } from './BelanjaTab';
 import Link from 'next/link';
 import { useCallback, useEffect, useState } from 'react';
 import { GEMA_SOURCES, sourceCounts } from '@/lib/gemaSources';
-import { listEntries, listExperiments, listMedia, listProtocols, type DailyEntry, type Experiment, type LabProductId, type MediaItem, type ProtocolVersion, type RawMaterial, listDrafts, researchStatus } from '@/lib/labStore';
+import { listEntries, listExperiments, listMedia, listProtocols, type DailyEntry, type Experiment, type LabProductId, type MediaItem, type ProtocolVersion, listDrafts, researchStatus } from '@/lib/labStore';
 import { BackupPanel } from './BackupPanel';
 import { ExperimentsTab } from './ExperimentsTab';
 import { LabOverview } from './LabOverview';
 import { LibraryTab } from './LibraryTab';
 import { ProtocolsTab } from './ProtocolsTab';
-import { BahanBakuTab } from './BahanBakuTab';
+import { PencatatanTab } from './PencatatanTab';
+import { listCatat, type CatatRecord } from '@/lib/pencatatan';
 import { listRaw, type RawRecord } from '@/lib/bahanBaku';
 import { StandardsTab } from './StandardsTab';
 
 const TABS = [
   { id: 'ringkasan', label: 'Ringkasan' },
   { id: 'eksperimen', label: 'Eksperimen' },
-  { id: 'bahan', label: 'Bahan Baku' },
+  { id: 'bahan', label: 'Pencatatan Data' },
   { id: 'protokol', label: 'Riset Produk' },
   { id: 'belanja', label: 'Laporan Belanja' },
   { id: 'library', label: 'Library' },
@@ -32,10 +33,9 @@ export function LabPage() {
   const [media, setMedia] = useState<MediaItem[]>([]);
   const [protocols, setProtocols] = useState<ProtocolVersion[]>([]);
   const [rawRecs, setRawRecs] = useState<RawRecord[]>([]);
+  const [catat, setCatat] = useState<CatatRecord[]>([]);
   const [draftCount, setDraftCount] = useState(0);
   const [tab, setTab] = useState<TabId>('ringkasan');
-  const [rawIn, setRawIn] = useState<RawMaterial>();
-  const clearRaw = useCallback(() => setRawIn(undefined), []);
   const [product, setProduct] = useState<LabProductId | 'all'>('all');
   const [stdProduct, setStdProduct] = useState<LabProductId>('KE');
   const [openId, setOpenId] = useState<string>();
@@ -44,6 +44,7 @@ export function LabPage() {
     try {
       const [x, e, m, p] = await Promise.all([listExperiments(), listEntries(), listMedia(), listProtocols()]);
       setRawRecs(await listRaw().catch(() => []));
+      setCatat(await listCatat().catch(() => []));
       setDraftCount((await listDrafts().catch(() => [])).length);
       setItems(x);
       setEntries(e);
@@ -96,7 +97,7 @@ export function LabPage() {
         </div>
         <dl className="relative grid grid-cols-2 gap-px overflow-hidden rounded-xl bg-acid/15 sm:grid-cols-4">
           {[
-            ['Bahan baku', rawRecs.length],
+            ['Pencatatan data', catat.length],
             ['Berjalan', running],
             ['Catatan harian', entries.length],
             ['Sumber diperiksa', `${counts.diperiksa}/${GEMA_SOURCES.length}`],
@@ -143,8 +144,8 @@ export function LabPage() {
       {tab === 'eksperimen' && (
         <ExperimentsTab items={items} entries={entries} media={media} protocols={protocols} product={product} setProduct={setProduct} openId={openId} setOpenId={setOpenId} refresh={refresh} />
       )}
-      {tab === 'bahan' && <BahanBakuTab protocols={protocols} entries={entries} records={rawRecs} onSaved={refresh} onConfirm={(r) => { setRawIn(r); setTab('protokol'); }} />}
-      {tab === 'protokol' && <ProtocolsTab protocols={protocols} entries={entries} media={media} refresh={refresh} {...(rawIn && { incomingRaw: rawIn })} onRawUsed={clearRaw} />}
+      {tab === 'bahan' && <PencatatanTab records={catat} oldRaw={rawRecs} onChanged={refresh} />}
+      {tab === 'protokol' && <ProtocolsTab protocols={protocols} entries={entries} media={media} refresh={refresh} />}
       {tab === 'belanja' && <BelanjaTab />}
       {tab === 'library' && <LibraryTab />}
       {tab === 'standar' && <StandardsTab product={stdProduct} setProduct={setStdProduct} />}

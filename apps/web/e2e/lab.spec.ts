@@ -374,86 +374,97 @@ test.describe('GEMA RnD Lab', () => {
 });
 
 test.describe('Hapus hasil riset', () => {
-  test('menu Bahan Baku: perlakuan air (Cuka/Bioleather 1–10) & perlakuan daging (Kopra 1–10) terpisah, tebal mm → Konfirmasi: jalur produk = varian + data bahan baku', async ({ page }) => {
-    await page.goto('/lab?t=protokol');
-    // resep berjalur "Cuka2" → slot Cuka2 otomatis terisi
-    await page.getByTestId('proto-new').click();
-    await page.getByTestId('proto-product').fill('Cuka2');
-    await expect(page.getByTestId('proto-product-code')).toContainText('Kode jalur: CK');
-    await page.getByTestId('proto-name').fill('Cuka varian dua E2E');
-    await page.getByTestId('proto-finish').click();
-    await expect(page.getByTestId('proto-list')).toContainText('Cuka varian dua E2E');
-    await expect(page.getByTestId('proto-coco-add')).toHaveCount(0);
+  test('Pencatatan Data: catatan awal N baris → simpan → data akhir berdampingan → Lihat hasil (awal, akhir, perbandingan + kesimpulan) & unduh', async ({ page }) => {
+    test.setTimeout(240_000);
+    await page.goto('/lab?t=bahan');
+    await expect(page.getByTestId('lab-tab-bahan')).toHaveText('Pencatatan Data');
+    await expect(page.getByTestId('lab-hero')).toContainText('Pencatatan data');
+    await expect(page.getByTestId('catat-stat-awal')).toContainText('0');
+    // data akhir belum bisa dibuka tanpa catatan awal
+    await expect(page.getByTestId('catat-akhir')).toBeDisabled();
 
-    await page.getByTestId('lab-tab-bahan').click();
-    const hero = page.getByTestId('lab-hero');
-    await expect(hero).toContainText('Bahan baku');
-    await page.getByTestId('raw-new').click();
-    const modal = page.getByTestId('raw-modal');
-    // dropdown kustom (bukan <select>): klik → daftar putih → pilih
-    const pick = async (id: string, value: string) => {
-      await modal.getByTestId(id).click();
-      await modal.getByTestId(`${id}-opt-${value}`).click();
-    };
-    await expect(modal.locator('select')).toHaveCount(0);
-    await modal.getByTestId('raw-item').click();
-    for (const it of ['Kelapa tua', 'Kelapa muda', 'Arang mix residu', 'Granul halus', 'Granul kasar', 'Sekam']) await expect(modal.getByTestId('raw-item-list')).toContainText(it);
-    await modal.getByTestId('raw-item-opt-Sekam').click();
-    // sekam: cukup barang + berat utuh (air/daging/tebal opsional)
-    await modal.getByTestId('raw-confirm').click();
-    await expect(modal).toContainText('Wajib diisi: Barang, Berat utuh.');
-    await pick('raw-item', 'Kelapa tua');
-    await modal.getByTestId('raw-name').fill('Kelapa tua butir 1');
-    await modal.getByTestId('raw-whole').fill('1.200');
-    await modal.getByTestId('raw-confirm').click();
-    await expect(modal).toContainText('Wajib diisi: Air, Perlakuan daging, Tebal daging.');
-    await modal.getByTestId('raw-water').fill('300');
-    // tooltip keterangan perlakuan saat kolom diklik
-    await modal.getByTestId('raw-water-variant').click();
-    await expect(modal.getByTestId('raw-water-variant-tip')).toContainText('jumlah uji coba yang akan dilakukan');
-    const list = modal.getByTestId('raw-water-variant-list');
-    await expect(list.getByRole('option')).toHaveCount(21);
-    await expect(list).toContainText('Cuka varian dua E2E');
-    await expect(list).toContainText('Bioleather10');
-    await list.getByTestId('raw-water-variant-opt-CK-2').click();
-    await expect(modal.getByTestId('raw-water-variant')).toContainText('Cuka2');
-    await expect(modal.getByTestId('raw-water-variant-info')).toContainText('Cuka2 sudah dipakai');
-    await modal.getByTestId('raw-meat-variant').click();
-    await expect(modal.getByTestId('raw-meat-variant-list').getByRole('option')).toHaveCount(11);
-    await modal.getByTestId('raw-meat-variant-opt-KE-3').click();
-    await modal.getByTestId('raw-meat').fill('10,5');
-    // halaman tetap bisa digulir saat modal terbuka
-    const y0 = await page.evaluate(() => window.scrollY);
-    await page.mouse.move(10, 300);
-    await page.mouse.wheel(0, 400);
-    await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(y0);
-    await modal.getByTestId('raw-confirm').click();
-    await expect(modal).toContainText('Pilih varian mana yang jadi jalur produk');
-    await modal.getByTestId('raw-jalur-CK-2').check();
-    await expect(modal.getByTestId('raw-jalur-info')).toContainText('Cuka2');
-    await modal.getByTestId('raw-confirm').click();
-    await expect(page.getByTestId('raw-preparing')).toContainText('Sebentar ya, lagi disiapin.');
+    await page.getByTestId('catat-new').click();
+    const awal = page.getByTestId('catat-awal-modal');
+    await expect(awal).not.toContainText('Perlakuan');
+    await awal.getByTestId('catat-count').fill('3');
+    await expect(awal.locator('[data-testid^="catat-awal-beratAwal-"]')).toHaveCount(3);
+    await expect(awal.locator('[data-testid^="catat-awal-tebalAwal-"]')).toHaveCount(3);
+    await awal.getByTestId('catat-awal-beratAwal-1').fill('1.000');
+    await awal.getByTestId('catat-awal-confirm').click();
+    await expect(awal).toContainText('Masih kosong');
+    const vals: [string, string, string, string][] = [['1.000', '300', '310', '10'], ['1.200', '', '', '12'], ['800', '', '', '9']];
+    for (const [i, [b, va, ba, t]] of vals.entries()) {
+      await awal.getByTestId(`catat-awal-beratAwal-${i + 1}`).fill(b);
+      if (va) await awal.getByTestId(`catat-awal-volAir-${i + 1}`).fill(va);
+      if (ba) await awal.getByTestId(`catat-awal-beratAir-${i + 1}`).fill(ba);
+      await awal.getByTestId(`catat-awal-tebalAwal-${i + 1}`).fill(t);
+    }
+    await awal.getByTestId('catat-awal-confirm').click();
+    await expect(page.getByTestId('catat-toast')).toContainText('Tunggu ya, data sedang di save.');
+    await expect(page.getByTestId('catat-toast')).toHaveCount(0);
+    const card = page.locator('[data-testid^="catat-card-PD-"]');
+    await expect(card).toHaveCount(1);
+    await expect(card).toContainText('Kelapa tua · 3 item');
+    await expect(card).toContainText('Menunggu data akhir');
+    await expect(page.getByTestId('catat-stat-awal')).toContainText('1');
+    const id = (await card.getAttribute('data-testid'))!.replace('catat-card-', '');
+    // unduh dari kartu
+    const dl = page.waitForEvent('download');
+    await page.getByTestId(`catat-dl-${id}-pdf`).click();
+    expect((await dl).suggestedFilename()).toBe(`${id}-pencatatan-data.pdf`);
+    // pratinjau saat kartu diklik
+    await card.click();
+    const pv = page.getByTestId('catat-preview');
+    await expect(pv.getByTestId('catat-tbl-awal')).toContainText('1.200');
+    await expect(pv.getByTestId('catat-preview-dl-docx')).toBeVisible();
+    await pv.getByTestId('catat-preview-close').click();
 
-    // otomatis ke Riset Produk: jalur produk = Cuka2, data bahan baku sudah masuk
-    await expect(page.getByTestId('lab-tab-protokol')).toHaveAttribute('aria-selected', 'true');
-    await expect(page.getByTestId('raw-preparing')).toHaveCount(0);
-    await expect(page.getByTestId('proto-product')).toHaveValue('Cuka2');
-    await expect(page.getByTestId('proto-product-code')).toContainText('CK');
-    const raw = page.getByTestId('proto-raw');
-    await expect(raw).toContainText('Kelapa tua butir 1');
-    await expect(raw.getByTestId('proto-raw-whole')).toHaveValue('1.200');
-    await expect(raw.getByTestId('proto-raw-water')).toHaveValue('300');
-    await expect(raw.getByTestId('proto-raw-meat')).toHaveValue('10,5');
-    await expect(raw.getByTestId('proto-raw-variant')).toContainText('Cuka2');
-    await expect(raw).toContainText('perlakuan daging Kopra3');
-    const key = (await page.getByTestId('proto-id').textContent())!.replace(/-v1$/, '');
-    await page.getByTestId('proto-name').fill('Cuka dari bahan baku E2E');
-    await page.getByTestId('proto-finish').click();
-    await page.getByTestId(`proto-open-${key}`).click();
-    const shown = page.getByTestId('rp-raw');
-    await expect(shown).toContainText('Cuka2');
-    await expect(shown).toContainText('Kopra3');
-    await expect(shown).toContainText('10,5');
+    // catatan awal kedua (sekam) → pilihan "Pilih catatan awal yang tersedia" muncul
+    await page.getByTestId('catat-new').click();
+    await page.getByTestId('catat-item').click();
+    await page.getByTestId('catat-item-opt-Sekam').click();
+    await page.getByTestId('catat-count').fill('1');
+    await expect(page.locator('[data-testid^="catat-awal-tebalAwal-"]')).toHaveCount(0);
+    await page.getByTestId('catat-awal-beratAwal-1').fill('500');
+    await page.getByTestId('catat-awal-confirm').click();
+    await expect(page.locator('[data-testid^="catat-card-PD-"]')).toHaveCount(2);
+
+    await page.getByTestId('catat-akhir').click();
+    const akhir = page.getByTestId('catat-akhir-modal');
+    await expect(akhir).toContainText('Pencatatan data akhir');
+    await akhir.getByTestId('catat-pick').click();
+    await akhir.getByTestId(`catat-pick-opt-${id}`).click();
+    await expect(akhir.getByTestId('catat-akhir-info')).toContainText('Kelapa tua · 3 item');
+    // data awal di samping kolom akhir yang masih kosong
+    await expect(akhir.getByLabel('Berat awal nomor 2')).toHaveValue('1.200');
+    await expect(akhir.getByTestId('catat-akhir-berat-2')).toHaveValue('');
+    await akhir.getByTestId('catat-akhir-confirm').click();
+    await expect(akhir).toContainText('Data akhir masih kosong di nomor: 1, 2, 3');
+    for (const [no, b, t] of [[1, '900', '8'], [2, '1.140', '11,4'], [3, '600', '9']] as const) {
+      await akhir.getByTestId(`catat-akhir-berat-${no}`).fill(b);
+      await akhir.getByTestId(`catat-akhir-tebal-${no}`).fill(t);
+    }
+    await akhir.getByTestId('catat-akhir-confirm').click();
+    await expect(page.getByTestId('catat-toast')).toBeVisible();
+    const done = page.getByTestId('catat-done');
+    await expect(done).toContainText('Yes!! akhirnya selesai.., yuk download/simpan hasil data nya.');
+    await expect(page.getByTestId('catat-stat-akhir')).toContainText('1');
+    await done.getByTestId('catat-done-view').click();
+
+    // halaman hasil: 3 bagian + kesimpulan + unduh
+    await expect(page).toHaveURL(new RegExp(`/lab/hasil\\?id=${id}`));
+    const hasil = page.getByTestId('hasil-page');
+    await expect(hasil).toContainText('Hasil pencatatan data awal dan akhir');
+    await expect(hasil.getByTestId('catat-tbl-awal')).toContainText('1.000');
+    await expect(hasil.getByTestId('catat-tbl-akhir')).toContainText('1.140');
+    await expect(hasil.getByTestId('catat-tbl-cmp-berat')).toContainText('-10%');
+    await expect(hasil.getByTestId('catat-tbl-cmp-tebal')).toContainText('Rata-rata');
+    await expect(hasil.getByTestId('catat-conclusion')).toContainText('Berat rata-rata turun 13,3%');
+    for (const k of ['docx', 'pptx'] as const) {
+      const d = page.waitForEvent('download');
+      await hasil.getByTestId(`hasil-dl-${k}`).click();
+      expect((await d).suggestedFilename()).toBe(`${id}-pencatatan-data.${k}`);
+    }
   });
   test('jalur produk bisa diisi manual → kode otomatis, nama tersimpan', async ({ page }) => {
     await page.goto('/lab?t=protokol');
@@ -517,7 +528,8 @@ test.describe('GEMA RnD Lab — HP 360 px', () => {
       if (t === 'eksperimen') await page.getByTestId('lab-new').click();
       if (t === 'protokol') await page.getByTestId('proto-new').click();
       if (t === 'belanja') await page.getByTestId('lpj-new').click();
-      if (t === 'bahan') await page.getByTestId('raw-new').click();
+      if (t === 'bahan') await page.getByTestId('catat-new').click();
+      if (t === 'bahan') await page.getByTestId('catat-count').fill('3');
       const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
       expect(overflow).toBeLessThanOrEqual(1);
     });
