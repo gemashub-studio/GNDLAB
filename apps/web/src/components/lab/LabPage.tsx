@@ -8,7 +8,9 @@ import { StrokeText } from '@/components/ui/StrokeText';
 import { LightTunnel } from '@/components/ui/LightTunnel';
 import { listEntries, listExperiments, listMedia, listProtocols, type DailyEntry, type Experiment, type LabProductId, type MediaItem, type ProtocolVersion, listDrafts, researchStatus } from '@/lib/labStore';
 import { BackupPanel } from './BackupPanel';
-import { SupabaseStatus } from './SupabaseStatus';
+import { SupabasePanel } from './SupabasePanel';
+import { ProgressCamera } from './ProgressCamera';
+import { requestSync, startAutoSync } from '@/lib/supabaseSync';
 import { ExperimentsTab } from './ExperimentsTab';
 import { LabOverview } from './LabOverview';
 import { LibraryTab } from './LibraryTab';
@@ -56,7 +58,11 @@ export function LabPage() {
     } catch {
       setItems([]);
     }
+    // data lokal mungkin berubah → kirim ke Supabase sebentar lagi (DEC-085)
+    requestSync();
   }, []);
+  // sinkron otomatis Supabase selama halaman lab terbuka; muat ulang bila ada data dari perangkat lain
+  useEffect(() => startAutoSync(() => void refresh()), [refresh]);
   useEffect(() => {
     void refresh();
     const p = new URLSearchParams(window.location.search);
@@ -86,7 +92,7 @@ export function LabPage() {
   const counts = sourceCounts();
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-6 pb-24">
       <header className="card-ink relative flex flex-col gap-6 overflow-hidden" data-testid="lab-hero">
         <LightTunnel
           className="pointer-events-none !absolute inset-0"
@@ -120,6 +126,7 @@ export function LabPage() {
           mouseStrength={0.1}
           intro
           lightMode={false}
+          dpr={1}
         />
         <div aria-hidden className="pointer-events-none absolute inset-0 opacity-30 [background-image:radial-gradient(600px_260px_at_90%_0%,rgba(99,230,207,0.22),transparent_70%),linear-gradient(rgba(99,230,207,0.07)_1px,transparent_1px),linear-gradient(90deg,rgba(99,230,207,0.07)_1px,transparent_1px)] [background-size:auto,28px_28px,28px_28px]" />
         <div className="relative flex flex-wrap items-end justify-between gap-4">
@@ -181,7 +188,7 @@ export function LabPage() {
       {tab === 'ringkasan' && <BackupPanel onRestored={refresh} />}
       {tab === 'ringkasan' && (
         <div className="card">
-          <SupabaseStatus />
+          <SupabasePanel />
         </div>
       )}
       {tab === 'eksperimen' && (
@@ -196,6 +203,8 @@ export function LabPage() {
       <p className="text-xs text-muted">
         Data eksperimen tersimpan di perangkat ini (offline). Rutin unduh cadangan. GnD Lab tidak menyatakan produk aman dikonsumsi atau memenuhi standar.
       </p>
+      {/* navbar bawah melayang: kamera foto progres harian (DEC-086) */}
+      <ProgressCamera records={catat} onUploaded={() => void refresh()} />
     </div>
   );
 }

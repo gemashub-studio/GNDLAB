@@ -6,6 +6,7 @@
  */
 import { openDB, type DBSchema } from 'idb';
 import { deviceTag } from './device';
+import { addTomb } from './labSync';
 import { isCoconutItem, NOT_RECORDED, parseMeasure } from './labStore';
 import { fmtNum, type ChartSpec } from './reportCharts';
 import type { ReportBlock, ResearchReport } from './researchReport';
@@ -74,9 +75,57 @@ export interface CatatRecord {
   finishedAt?: string;
   /** Data akhir disimpan sementara ("Simpan dulu", belum lengkap) — DEC-082. */
   akhirSavedAt?: string;
+  /** Waktu perubahan terakhir — penentu versi saat sinkron (DEC-085). */
+  updatedAt?: string;
+  /** Foto progres harian setelah data lengkap (kamera melayang, DEC-086). */
+  progress?: CatatProgress[];
   /** Jumlah perlakuan & metode per jalur (DEC-079). */
   treatments?: Treatments;
 }
+
+export type ProgressStage = 'harian' | 'mingguan' | 'bulanan';
+export const PROGRESS_STAGES: readonly { key: ProgressStage; label: string }[] = [
+  { key: 'harian', label: 'Harian' },
+  { key: 'mingguan', label: 'Mingguan' },
+  { key: 'bulanan', label: 'Bulanan' },
+];
+
+export interface CatatProgress {
+  id: string;
+  /** Tanggal foto (YYYY-MM-DD, dari kalender). */
+  date: string;
+  title: string;
+  /** Suhu ruang (°C), isian. */
+  temp: string;
+  note: string;
+  stage: ProgressStage;
+  /** JPEG data URL. */
+  photo: string;
+  /** Waktu unggah. */
+  at: string;
+}
+
+/**
+ * Usulan tahap dari jarak hari ke foto progres PERTAMA catatan itu: hari ke-1–7 = harian, ke-8–30 = mingguan,
+ * sesudahnya = bulanan. Hanya usulan — pengguna bisa mengganti di form.
+ */
+export function suggestStage(existing: readonly CatatProgress[] | undefined, date: string): ProgressStage {
+  const first = [...(existing ?? [])].map((p) => p.date).sort()[0] ?? date;
+  const days = Math.floor((Date.parse(date) - Date.parse(first)) / 86_400_000);
+  if (!Number.isFinite(days) || days < 7) return 'harian';
+  return days < 30 ? 'mingguan' : 'bulanan';
+}
+
+/** Urut tanggal lalu waktu unggah. */
+export const sortProgress = (list: readonly CatatProgress[] = []) => [...list].sort((a, b) => a.date.localeCompare(b.date) || a.at.localeCompare(b.at));
+
+/** Baris data satu foto progres (dipakai halaman hasil & semua unduhan). */
+export const progressLines = (p: CatatProgress) => [
+  `${p.date} · ${PROGRESS_STAGES.find((s) => s.key === p.stage)?.label ?? p.stage}`,
+  p.title || '–',
+  `Suhu ruang: ${p.temp.trim() ? `${p.temp.trim()} °C` : '–'}`,
+  ...(p.note.trim() ? [p.note.trim()] : []),
+];
 
 export const blankRows = (n: number): CatatRow[] => Array.from({ length: n }, (_, i) => ({ no: i + 1, beratAwal: '', volAir: '', beratAir: '', tebalAwal: '' }));
 
@@ -254,7 +303,8 @@ export function nextCatatId(existing: readonly string[], now = new Date(), tag =
 
 export async function addCatatAwal(item: string, rows: CatatRow[], treatments?: Treatments): Promise<CatatRecord> {
   const d = await catatDb();
-  const rec: CatatRecord = { id: nextCatatId((await d.getAllKeys('records')).map(String)), item, count: rows.length, rows, createdAt: new Date().toISOString(), ...(treatments && treatmentRows(treatments).length && { treatments }) };
+  const now = new Date().toISOString();
+  const rec: CatatRecord = { id: nextCatatId((await d.getAllKeys('records')).map(String)), item, count: rows.length, rows, createdAt: now, updatedAt: now, ...(treatments && treatmentRows(treatments).length && { treatments }) };
   await d.add('records', rec);
   return rec;
 }
@@ -289,6 +339,7 @@ export async function saveCatatAkhir(id: string, akhir: AkhirInput[], treatments
     }),
   };
   const now = new Date().toISOString();
+  next.updatedAt = now;
   if (final) {
     next.finishedAt = now;
     delete next.akhirSavedAt;
@@ -297,6 +348,19 @@ export async function saveCatatAkhir(id: string, akhir: AkhirInput[], treatments
     if (treatmentRows(treatments).length) next.treatments = treatments;
     else delete next.treatments;
   }
+  await d.put('records', next);
+  return next;
+}
+
+/** Tambah foto progres harian ke catatan yang SUDAH LENGKAP (DEC-086). */
+export async function addCatatProgress(id: string, p: Omit<CatatProgress, 'id' | 'at'>): Promise<CatatRecord> {
+  const d = await catatDb();
+  const rec = await d.get('records', id);
+  if (!rec) throw new Error(`Catatan ${id} tidak ditemukan`);
+  if (!rec.finishedAt) throw new Error('Progres hanya untuk catatan yang sudah lengkap (awal & akhir).');
+  const at = new Date().toISOString();
+  const item: CatatProgress = { ...p, title: p.title.trim(), temp: p.temp.trim(), note: p.note.trim(), id: `PR-${at.replace(/\D/g, '').slice(2, 14)}-${Math.random().toString(36).slice(2, 5)}`, at };
+  const next: CatatRecord = { ...rec, progress: [...(rec.progress ?? []), item], updatedAt: at };
   await d.put('records', next);
   return next;
 }
@@ -314,6 +378,8 @@ export async function deleteCatat(ids: readonly string[]): Promise<number> {
     }
   }
   await tx.done;
+  // nisan: agar tidak muncul lagi dari perangkat lain saat sinkron (DEC-085)
+  for (const id of ids) addTomb('catat', id);
   return n;
 }
 
@@ -395,6 +461,26 @@ export function buildCatatReport(rec: CatatRecord, generatedAt = new Date().toLo
         },
         ...(akhirOn && { akhir: { ...(r.fotoAkhir && { image: r.fotoAkhir }), lines: coco ? [`Berat ${u(r.beratAkhir, 'g')}`, `Tebal ${u(r.tebalAkhir, 'mm')}`] : [`Berat ${u(r.beratAkhir, 'g')}`] } }),
       })),
+    });
+  }
+  // progres harian (DEC-086): PDF/Word = tabel + foto; PPTX = 3 kolom tahap (harian | mingguan | bulanan), maks. 10 foto/slide
+  const prog = sortProgress(rec.progress);
+  if (prog.length) {
+    blocks.push({
+      heading: 'Progres harian',
+      level: 1,
+      lines: [`${prog.length} foto progres · ${prog[0]!.date} s.d. ${prog[prog.length - 1]!.date}`],
+      table: { head: ['Tanggal', 'Tahap', 'Judul', 'Suhu ruang (°C)', 'Catatan'], rows: prog.map((p) => [p.date, PROGRESS_STAGES.find((x) => x.key === p.stage)?.label ?? p.stage, p.title || '–', p.temp || '–', p.note || '–']) },
+      images: prog.map((p) => ({ dataUrl: p.photo, name: `${p.date} ${p.title}`.trim(), caption: progressLines(p).join(' · '), video: false })),
+      pptxSkip: true,
+    });
+    blocks.push({
+      heading: 'Progres harian · mingguan · bulanan',
+      level: 1,
+      lines: [],
+      images: [],
+      pptxOnly: true,
+      progressColumns: PROGRESS_STAGES.map((st) => ({ title: st.label, items: prog.filter((p) => p.stage === st.key).map((p) => ({ image: p.photo, lines: progressLines(p) })) })),
     });
   }
   // perlakuan: PDF/Word = bagian sendiri; PPTX = disatukan ke slide Kesimpulan (DEC-079)

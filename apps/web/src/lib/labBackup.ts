@@ -9,7 +9,7 @@
 import { belanjaDb, type LpjReport } from './belanja';
 import { bahanDb, type RawRecord } from './bahanBaku';
 import { catatDb, type CatatRecord } from './pencatatan';
-import { readTombs, writeTombs, type SyncPlan, type Tomb } from './labSync';
+import { readTombs, writeTombs, type SyncPlan, type Tomb, catatRev } from './labSync';
 import { labDb, type DailyEntry, type Experiment, type MediaItem, type NewMedia, type ProtocolDraft, type ProtocolVersion } from './labStore';
 
 export type MediaJson = Omit<MediaItem, 'blob'> & { data: string };
@@ -100,6 +100,25 @@ const base64ToBlob = (data: string, type: string) => {
   return new Blob([bytes], { type });
 };
 
+/** Satu media → bentuk JSON (base64) — dipakai sinkron Supabase per dokumen (DEC-085). */
+export async function mediaToJson({ blob, ...m }: MediaItem): Promise<MediaJson> {
+  return { ...m, data: await blobToBase64(blob) };
+}
+
+/** Satu draf → bentuk JSON (foto/video tertunda sebagai base64). */
+export async function draftToJson(dr: ProtocolDraft): Promise<DraftJson> {
+  const conv = async (rows: NewMedia[][]) => {
+    const out: NewMediaJson[][] = [];
+    for (const row of rows) {
+      const r: NewMediaJson[] = [];
+      for (const { blob, ...m } of row) r.push({ ...m, data: await blobToBase64(blob) });
+      out.push(r);
+    }
+    return out;
+  };
+  return { ...dr, pending: { ingredients: await conv(dr.pending.ingredients), tools: await conv(dr.pending.tools), steps: await conv(dr.pending.steps), ...(dr.pending.coconuts && { coconuts: await conv(dr.pending.coconuts) }) } };
+}
+
 /** Kumpulkan seluruh isi lab (termasuk media asli) menjadi teks JSON cadangan. */
 export async function exportLabBackup(): Promise<{ json: string; counts: Record<string, number> }> {
   const d = await labDb();
@@ -168,7 +187,9 @@ export async function localSyncState() {
   const drafts = new Map((await d.getAll('drafts')).map((x) => [x.id, x.updatedAt] as const));
   const belanja = new Map((await (await belanjaDb()).getAll('reports')).map((x) => [x.id, x.updatedAt] as const));
   const researchKeys = new Set((await d.getAll('protocols')).map((p) => p.key));
-  return { experiments: await created('experiments'), entries: await created('entries'), protocols: await created('protocols'), media: new Set((await d.getAllKeys('media')).map(String)), drafts, belanja, researchKeys };
+  const catat = new Map((await (await catatDb()).getAll('records')).map((x) => [x.id, catatRev(x)] as const));
+  const bahan = new Set((await (await bahanDb()).getAllKeys('items')).map(String));
+  return { experiments: await created('experiments'), entries: await created('entries'), protocols: await created('protocols'), media: new Set((await d.getAllKeys('media')).map(String)), drafts, belanja, researchKeys, catat, bahan };
 }
 
 /** Terapkan rencana sinkron: tambah, ganti draf/laporan belanja yang lebih baru, hapus yang dihapus di perangkat lain. */
@@ -183,10 +204,15 @@ export async function applySync(plan: SyncPlan): Promise<void> {
     const b = await belanjaDb();
     for (const r of plan.replaceBelanja) await b.put('reports', r);
   }
+  if (plan.replaceCatat.length) {
+    const c = await catatDb();
+    for (const r of plan.replaceCatat) await c.put('records', r);
+  }
   for (const t of plan.deleteLocal) {
     try {
       if (t.kind === 'draf') await deleteDraft(t.id);
       else if (t.kind === 'belanja') await deleteLpj(t.id);
+      else if (t.kind === 'catat') await (await catatDb()).delete('records', t.id);
       else await deleteResearch(t.id);
     } catch {
       /* mis. riset masih dipakai eksperimen — dibiarkan */

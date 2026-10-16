@@ -563,6 +563,30 @@ test.describe('Hapus hasil riset', () => {
     await expect(page.getByTestId('catat-preview').getByTestId('catat-tbl-akhir')).toContainText('650');
     await page.getByTestId('catat-preview-close').click();
 
+    // kamera melayang → kartu detail dari bawah → upload ke progres harian catatan lengkap (DEC-086)
+    await expect(page.getByTestId('float-cam')).toBeVisible();
+    await page.getByTestId('float-cam-input').setInputFiles({ name: 'progres.png', mimeType: 'image/png', buffer: png });
+    const sheet = page.getByTestId('progress-sheet');
+    await expect(sheet.getByTestId('progress-sheet-card')).toHaveClass(/sheet-up/);
+    await expect(sheet.getByTestId('progress-photo')).toHaveAttribute('src', /^data:image\/jpeg/);
+    await expect(sheet.getByTestId('progress-date')).toHaveValue(/^\d{4}-\d{2}-\d{2}$/);
+    // hanya catatan lengkap yang bisa dipilih (satu-satunya → langsung terpilih)
+    await sheet.getByTestId('progress-rec').click();
+    await expect(sheet.getByTestId('progress-rec-list').getByRole('option')).toHaveCount(1);
+    await sheet.getByTestId(`progress-rec-opt-${id}`).click();
+    await sheet.getByTestId('progress-title').fill('Hari ke-1 pengeringan');
+    await sheet.getByTestId('progress-temp').fill('28,5');
+    await sheet.getByTestId('progress-note').fill('warna mulai kecokelatan');
+    await sheet.getByTestId('progress-upload').click();
+    await expect(page.getByTestId('progress-done')).toContainText(`Foto progres masuk ke ${id}`);
+    await page.getByTestId('progress-done-close').click();
+    await expect(page.getByTestId(`catat-progress-${id}`)).toContainText('Progres harian sedang berlangsung');
+    await expect(page.getByTestId(`catat-progress-${id}`)).toContainText('1 foto');
+    await page.getByTestId(`catat-card-${id}`).click();
+    await expect(page.getByTestId('catat-preview').getByTestId('catat-progress-list')).toContainText('Suhu ruang: 28,5 °C');
+    await expect(page.getByTestId('catat-preview').getByTestId('catat-progress-list')).toContainText('Hari ke-1 pengeringan');
+    await page.getByTestId('catat-preview-close').click();
+
     // Pilih → pilih salah satu → hanya catatan lengkap → Hapus (permanen)
     await page.goto('/lab?t=bahan');
     await expect(page.locator('[data-testid^="catat-card-PD-"]')).toHaveCount(2);

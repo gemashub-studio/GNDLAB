@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { downloadBlob } from '@/lib/labMedia';
-import { akhirFilled, awalColumns, buildCatatReport, compareRecord, compareTable, conclusions, formulaNote, hasAkhir, hasThickness, treatmentRows, type CatatRecord } from '@/lib/pencatatan';
+import { akhirFilled, progressLines, sortProgress, awalColumns, buildCatatReport, compareRecord, compareTable, conclusions, formulaNote, hasAkhir, hasThickness, treatmentRows, type CatatRecord } from '@/lib/pencatatan';
 import { fmtNum } from '@/lib/reportCharts';
 import { ImagePreview } from './Overlays';
 
@@ -136,6 +136,21 @@ export function CatatResult({ rec }: { rec: CatatRecord }) {
           <p className="mt-2 text-xs text-muted">Deskriptif dari angka isian; bukan uji statistik dan bukan klaim mutu produk.</p>
         </div>
       </section>
+      {!!rec.progress?.length && (
+        <section className="flex flex-col gap-3" data-testid="catat-progress-list">
+          <h2 className="text-lg"><span className="mr-2 rounded bg-ink px-1.5 py-0.5 font-mono text-xs text-acid">4</span>Progres harian <span className="text-sm font-normal text-muted">({rec.progress.length} foto)</span></h2>
+          <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            {sortProgress(rec.progress).map((p) => (
+              <li key={p.id} className="flex gap-3 rounded-xl border border-paper-grid bg-white p-2">
+                <Thumb src={p.photo} alt={`Progres ${p.date} ${p.title}`} />
+                <div className="flex min-w-0 flex-col text-sm">
+                  {progressLines(p).map((l, i) => <span key={i} className={i === 1 ? 'font-semibold' : i === 0 ? 'font-mono text-xs text-[#1FA88F]' : 'text-muted'}>{l}</span>)}
+                </div>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
     </div>
   );
 }

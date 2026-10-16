@@ -19,7 +19,7 @@ function recorderType(): string {
 }
 
 /** Webcam di dalam halaman hanya tersedia di konteks aman (https / localhost). */
-const canUseWebcam = () => typeof window !== 'undefined' && window.isSecureContext && !!navigator.mediaDevices?.getUserMedia;
+export const canUseWebcam = () => typeof window !== 'undefined' && window.isSecureContext && !!navigator.mediaDevices?.getUserMedia;
 
 /**
  * Pemilih foto/video (DEC-055): Galeri (berkas), Foto & Video lewat kamera bawaan HP (atribut `capture`
@@ -54,7 +54,8 @@ export function MediaPicker({ onFiles, testId, compact = false }: { onFiles: (fi
   );
 }
 
-function CameraDialog({ onClose, onFile, testId }: { onClose: () => void; onFile: (f: File) => void; testId: string }) {
+/** `photoOnly` (kamera progres, DEC-086): tanpa rekam video/mikrofon, tertutup otomatis setelah satu foto. */
+export function CameraDialog({ onClose, onFile, testId, photoOnly = false }: { onClose: () => void; onFile: (f: File) => void; testId: string; photoOnly?: boolean }) {
   const video = useRef<HTMLVideoElement>(null);
   const stream = useRef<MediaStream | null>(null);
   const rec = useRef<MediaRecorder | null>(null);
@@ -69,7 +70,7 @@ function CameraDialog({ onClose, onFile, testId }: { onClose: () => void; onFile
     (async () => {
       try {
         stream.current?.getTracks().forEach((t) => t.stop());
-        const s = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: facing } }, audio: true }).catch(() => navigator.mediaDevices.getUserMedia({ video: true, audio: false }));
+        const s = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: facing } }, audio: !photoOnly }).catch(() => navigator.mediaDevices.getUserMedia({ video: true, audio: false }));
         if (!alive) return s.getTracks().forEach((t) => t.stop());
         stream.current = s;
         if (video.current) {
@@ -99,6 +100,7 @@ function CameraDialog({ onClose, onFile, testId }: { onClose: () => void; onFile
       if (!b) return;
       onFile(new File([b], `foto-${stamp()}.jpg`, { type: 'image/jpeg' }));
       setTaken((n) => n + 1);
+      if (photoOnly) onClose();
     }, 'image/jpeg', 0.9);
   };
 
@@ -133,7 +135,7 @@ function CameraDialog({ onClose, onFile, testId }: { onClose: () => void; onFile
         {err && <p className="text-xs"><span className="bg-safety px-1">{err}</span></p>}
         <div className="flex flex-wrap items-center gap-2">
           <button type="button" className="btn-primary" disabled={recording} onClick={snap} data-testid={`${testId}-snap`}>Ambil foto</button>
-          <button type="button" className="btn-ghost" onClick={toggleRec} data-testid={`${testId}-rec`}>{recording ? 'Berhenti rekam' : 'Rekam video'}</button>
+          {!photoOnly && <button type="button" className="btn-ghost" onClick={toggleRec} data-testid={`${testId}-rec`}>{recording ? 'Berhenti rekam' : 'Rekam video'}</button>}
           <button type="button" className="btn-ghost" disabled={recording} onClick={() => setFacing((f) => (f === 'environment' ? 'user' : 'environment'))}>Ganti kamera</button>
           <button type="button" className="btn-ghost ml-auto" disabled={recording} onClick={onClose} data-testid={`${testId}-close`}>Selesai{taken ? ` (${taken})` : ''}</button>
         </div>

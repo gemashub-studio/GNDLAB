@@ -326,6 +326,8 @@ export function LightTunnel({
   useEffect(() => {
     const container = containerRef.current;
     const canvas = canvasRef.current;
+    // browser uji otomatis (webdriver): lewati animasi berat agar uji stabil (DEC-086)
+    if (typeof navigator !== 'undefined' && navigator.webdriver) return undefined;
     const gl = canvas?.getContext('webgl2', { alpha: true, premultipliedAlpha: true, antialias: false, depth: false, stencil: false });
     if (!container || !canvas || !gl) return undefined;
 

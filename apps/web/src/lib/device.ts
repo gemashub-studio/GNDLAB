@@ -8,6 +8,8 @@ const CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 
 export function syncEnabled(): boolean {
   if (process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID) return true;
+  // sinkron Supabase (DEC-085) juga butuh ID unik per perangkat
+  if (process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) return true;
   try {
     return !!localStorage.getItem('gemas-google-client-id');
   } catch {

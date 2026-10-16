@@ -134,3 +134,50 @@ describe('pencatatan data awal & akhir (DEC-074)', () => {
     expect(nextCatatId(['PD-261015-01', 'PD-261015-04'], new Date(2026, 9, 15), '')).toBe('PD-261015-05');
   });
 });
+
+describe('progres harian & PPTX padat (DEC-086)', () => {
+  const JPG = `data:image/jpeg;base64,${Buffer.from([0xff, 0xd8, 0xff, 0xc0, 0, 17, 8, 0, 10, 0, 20, 3, 1, 0x22, 0, 2, 0x11, 1, 3, 0x11, 1, 0xff, 0xd9]).toString('base64')}`;
+  const withAir = (): CatatRecord => ({ ...rec(), rows: rec().rows.map((x, i) => ({ ...x, beratAir: ['310', '160', '100'][i]! })) });
+  const prog = (n: number, stage: 'harian' | 'mingguan' | 'bulanan', day0 = 1) =>
+    Array.from({ length: n }, (_, i) => ({ id: `PR-${stage}-${i}`, date: `2026-10-${String(day0 + i).padStart(2, '0')}`, title: `Foto ${stage} ${i + 1}`, temp: '28', note: i ? '' : 'mulai kering', stage, photo: JPG, at: `2026-10-${String(day0 + i).padStart(2, '0')}T08:00:00.000Z` }));
+
+  it('usulan tahap dari jarak hari ke foto pertama', async () => {
+    const { suggestStage } = await import('@/lib/pencatatan');
+    expect(suggestStage(undefined, '2026-10-16')).toBe('harian');
+    const first = prog(1, 'harian');
+    expect(suggestStage(first, '2026-10-07')).toBe('harian');
+    expect(suggestStage(first, '2026-10-08')).toBe('mingguan');
+    expect(suggestStage(first, '2026-10-31')).toBe('bulanan');
+  });
+
+  it('laporan: tabel progres di PDF/Word; PPTX 3 kolom tahap, maks. 10 foto per slide', () => {
+    const r = buildCatatReport({ ...withAir(), progress: [...prog(6, 'harian'), ...prog(2, 'mingguan', 10), ...prog(1, 'bulanan', 20)] }, 'x');
+    const tbl = r.blocks.find((b) => b.heading === 'Progres harian')!;
+    expect(tbl.pptxSkip).toBe(true);
+    expect(tbl.table!.head).toEqual(['Tanggal', 'Tahap', 'Judul', 'Suhu ruang (°C)', 'Catatan']);
+    expect(tbl.table!.rows[0]).toEqual(['2026-10-01', 'Harian', 'Foto harian 1', '28', 'mulai kering']);
+    expect(new TextDecoder().decode(buildDocx(r))).toContain('Suhu ruang (°C)');
+    const slides = new TextDecoder().decode(buildPptx(r)).split('<p:sld ').slice(1);
+    const progSlides = slides.filter((x) => x.includes('HARIAN · '));
+    // 6 harian (4 per slide) → 2 slide; tiap slide memuat ketiga tahap & ≤ 10 foto
+    expect(progSlides).toHaveLength(2);
+    for (const sl of progSlides) {
+      expect(sl).toContain('MINGGUAN · 2 FOTO');
+      expect(sl).toContain('BULANAN · 1 FOTO');
+      expect((sl.match(/<p:pic>/g) ?? []).length).toBeLessThanOrEqual(10);
+    }
+    expect(progSlides[0]).toContain('Suhu ruang: 28 °C');
+  });
+
+  it('PPTX: tabel perbandingan tebal daging satu slide dengan grafiknya (di bawah grafik)', () => {
+    const r = buildCatatReport(withAir(), 'x');
+    const slides = new TextDecoder().decode(buildPptx(r)).split('<p:sld ').slice(1);
+    const tebal = slides.filter((x) => x.includes('Perbandingan tebal daging'));
+    expect(tebal).toHaveLength(1);
+    expect(tebal[0]).toContain('<a:tbl>');
+    expect(tebal[0]).toContain('grafik tidak tersedia');
+    // grafik/teks lebih dulu (y lebih kecil) daripada tabel
+    const tblY = Number(/<p:graphicFrame>[\s\S]*?<a:off x="\d+" y="(\d+)"/.exec(tebal[0]!)![1]);
+    expect(tblY).toBeGreaterThan(1150000);
+  });
+});

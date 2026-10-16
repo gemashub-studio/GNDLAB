@@ -19,6 +19,7 @@ import {
   treatmentRows,
   treatmentEntries,
   akhirFilled,
+  sortProgress,
   type Treatments,
   type TreatmentEntry,
   type TreatmentKey,
@@ -195,6 +196,19 @@ export function PencatatanTab({ records, oldRaw, onChanged }: { records: CatatRe
                     {r.finishedAt ? 'Awal & akhir lengkap' : 'Menunggu data akhir'}
                     {!r.finishedAt && r.akhirSavedAt && ` · tersimpan sementara (${akhirFilled(r)}/${r.count})`}
                   </span>
+                  {r.finishedAt && !!r.progress?.length && (
+                    <span className="flex flex-wrap items-center gap-2 rounded-xl border border-acid/50 bg-acid/10 px-2.5 py-1.5 text-xs" data-testid={`catat-progress-${r.id}`}>
+                      <span className="prog-pulse inline-block h-2 w-2 rounded-full bg-[#1FA88F]" aria-hidden />
+                      <span className="font-semibold">Progres harian sedang berlangsung</span>
+                      <span className="text-muted">{r.progress.length} foto · terakhir {[...r.progress].map((p) => p.date).sort().at(-1)}</span>
+                      <span className="flex -space-x-2">
+                        {sortProgress(r.progress).slice(-4).map((p) => (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img key={p.id} src={p.photo} alt={`Progres ${p.date}`} className="h-7 w-7 rounded-full border-2 border-white object-cover" />
+                        ))}
+                      </span>
+                    </span>
+                  )}
                 </div>
                 {!selecting && <DownloadButtons rec={r} testId={`catat-dl-${r.id}`} />}
               </div>

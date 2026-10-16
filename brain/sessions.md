@@ -179,3 +179,5 @@
 - DEC-081: perlakuan pindah ke form data akhir, multi-kolom (+/x), Treatments = entry[] (kompatibel format lama).
 - DEC-082/083: LightTunnel di hero, Simpan dulu (akhirSavedAt), dialog konfirmasi di halaman (window.confirm diblokir di webview → hapus gagal), revisi data akhir, rumus berat awal − air − akhir.
 - DEC-084: Supabase init+link (gopdardjgllizvjpkfwm), env PROJECT_URL/ANON_KEY_SUPABASE -> NEXT_PUBLIC_* via next.config, status koneksi di Ringkasan. Belum ada tabel/sinkron. Catatan: PowerShell owner blokir npx.ps1 -> pakai npx.cmd.
+- DEC-085: sinkron Supabase GnD Lab (lab_docs + lab-blobs + lab_members, login email link). db push via login role tanpa kata sandi DB (npx supabase db push). `supabase db query` menggantung di Git Bash — pakai `db advisors`/`migration list`. Anggota baru: insert into lab_members.
+- DEC-086: kamera melayang + progres harian (3 tahap) + PPTX padat; remote GitHub GNDLAB (publik). Catatan: owner sering memakai browser pane sendiri — jangan klik/isi data di pane saat dia aktif; .next sering korup (UNKNOWN -4094) → stop, rm -rf .next, start.

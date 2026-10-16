@@ -35,6 +35,8 @@ export interface ReportBlock {
   pptxSkip?: boolean;
   /** Tabel khusus PowerPoint (ditaruh di slide blok ini, menggantikan `table`). */
   pptxTable?: { head: string[]; rows: string[][] };
+  /** PowerPoint: progres foto 3 tahap (harian | mingguan | bulanan) berdampingan, maks. 10 foto/slide (DEC-086). */
+  progressColumns?: { title: string; items: PhotoCell[] }[];
 }
 
 export interface PhotoCell {

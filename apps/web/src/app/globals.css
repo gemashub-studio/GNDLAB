@@ -102,6 +102,21 @@
 .alert-slide-in { animation: slideInRight 0.45s cubic-bezier(0.22, 1, 0.36, 1) both; }
 
 /* StrokeText (GSAP, komponen owner — DEC-079). */
+/* kartu foto progres muncul dari bawah (DEC-086) */
+@keyframes sheetUp {
+  from { transform: translateY(100%); opacity: 0.4; }
+  to { transform: translateY(0); opacity: 1; }
+}
+.sheet-up { animation: sheetUp 0.42s cubic-bezier(0.22, 1, 0.36, 1) both; }
+@keyframes progPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+.prog-pulse { animation: progPulse 1.6s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) {
+  .sheet-up, .prog-pulse { animation: none; }
+}
+
 /* LightTunnel (DEC-082) */
 .light-tunnel-container {
   position: relative;
