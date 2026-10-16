@@ -4,9 +4,12 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { getCatat, type CatatRecord } from '@/lib/pencatatan';
 import { CatatResult, DownloadButtons } from './CatatResult';
+import { LoginForm } from '@/components/auth/LoginDialog';
+import { needsLogin, useAuth } from '@/lib/useAuth';
 
 /** Halaman "Hasil pencatatan data awal dan akhir" (DEC-074): /lab/hasil?id=PD-… — data dibaca dari perangkat ini. */
 export function HasilPage() {
+  const auth = useAuth();
   const [rec, setRec] = useState<CatatRecord | null>();
   useEffect(() => {
     const id = new URLSearchParams(window.location.search).get('id') ?? '';
@@ -23,6 +26,13 @@ export function HasilPage() {
         <h1 className="text-[28px] text-paper sm:text-[40px]">Hasil pencatatan data awal dan akhir</h1>
         {rec && <p className="font-mono text-sm text-muted-ink">{rec.id} · {rec.item} · {rec.count} item · awal {rec.createdAt.slice(0, 10)} · akhir {rec.finishedAt ? rec.finishedAt.slice(0, 10) : rec.akhirSavedAt ? `sementara ${rec.akhirSavedAt.slice(0, 10)}` : 'belum dicatat'}</p>}
       </header>
+      {needsLogin(auth) ? (
+        <section className="card flex max-w-xl flex-col gap-2" data-testid="hasil-locked">
+          <h2 className="font-display text-xl font-semibold">Masuk dulu untuk melihat hasil pencatatan</h2>
+          <LoginForm testId="hasil-login" />
+        </section>
+      ) : (
+        <>
       {rec === undefined && <p className="text-sm text-muted">Memuat…</p>}
       {rec === null && <p className="text-sm">Catatan tidak ditemukan di perangkat ini. Data tersimpan per perangkat — buka dari perangkat yang mencatatnya.</p>}
       {rec && (
@@ -34,6 +44,8 @@ export function HasilPage() {
             <p className="label-mono">Unduh / simpan hasil</p>
             <DownloadButtons rec={rec} testId="hasil-dl" />
           </div>
+        </>
+      )}
         </>
       )}
     </div>

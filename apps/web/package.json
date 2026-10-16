@@ -4,7 +4,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "next dev -p 3000",
+    "dev": "next dev --turbopack -p 3000",
+    "dev:webpack": "next dev -p 3000",
     "build": "next build",
     "vercel-build": "node ../../packages/dataset/scripts/sync-dataset.mjs && prisma generate && next build",
     "start": "next start -p 3000",

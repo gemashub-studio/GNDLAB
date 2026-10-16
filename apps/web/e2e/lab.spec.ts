@@ -383,6 +383,9 @@ test.describe('Hapus hasil riset', () => {
     // urutan menu: Ringkasan → Pencatatan Data → Riset Produk → …
     await expect(page.getByRole('tab')).toHaveText(['Ringkasan', 'Pencatatan Data', 'Riset Produk', 'Eksperimen', 'Laporan Belanja', 'Library', 'Standar']);
     await expect(page.getByTestId('lab-tab-bahan')).toHaveText('Pencatatan Data');
+    // Tanya Lab AI: sambutan + pesan otomatis saat membuka Pencatatan Data (DEC-087)
+    await expect(page.getByTestId('lab-ai').getByTestId('lab-ai-auto').first()).toContainText('Selamat datang di GnD Lab');
+    await expect(page.getByTestId('lab-ai')).toContainText('kamu mau buat pencatatan data baru? aku bisa bantu kapan pun kamu mau!');
     await expect(page.getByTestId('lab-hero')).toContainText('Pencatatan data');
     await expect(page.getByTestId('catat-stat-awal')).toContainText('0');
     // data akhir belum bisa dibuka tanpa catatan awal

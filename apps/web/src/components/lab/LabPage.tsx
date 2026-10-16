@@ -10,6 +10,9 @@ import { listEntries, listExperiments, listMedia, listProtocols, type DailyEntry
 import { BackupPanel } from './BackupPanel';
 import { SupabasePanel } from './SupabasePanel';
 import { ProgressCamera } from './ProgressCamera';
+import { AskLabAI } from './AskLabAI';
+import { LoginForm } from '@/components/auth/LoginDialog';
+import { needsLogin, useAuth } from '@/lib/useAuth';
 import { requestSync, startAutoSync } from '@/lib/supabaseSync';
 import { ExperimentsTab } from './ExperimentsTab';
 import { LabOverview } from './LabOverview';
@@ -44,12 +47,17 @@ export function LabPage() {
   const [product, setProduct] = useState<LabProductId | 'all'>('all');
   const [stdProduct, setStdProduct] = useState<LabProductId>('KE');
   const [openId, setOpenId] = useState<string>();
+  const auth = useAuth();
+  // semua pendataan butuh login bila Supabase aktif (DEC-087); tanpa Supabase (offline) tetap terbuka
+  const locked = needsLogin(auth);
 
   const refresh = useCallback(async () => {
     try {
       const [x, e, m, p] = await Promise.all([listExperiments(), listEntries(), listMedia(), listProtocols()]);
       setRawRecs(await listRaw().catch(() => []));
       setCatat(await listCatat().catch(() => []));
+      // menu GnD Lab berkedip bila ada pencatatan belum lengkap (header membaca ulang)
+      window.dispatchEvent(new Event('gemas-catat-changed'));
       setDraftCount((await listDrafts().catch(() => [])).length);
       setItems(x);
       setEntries(e);
@@ -155,6 +163,17 @@ export function LabPage() {
         </dl>
       </header>
 
+      {!auth.ready && auth.configured ? (
+        <p className="text-sm text-muted">Memeriksa login…</p>
+      ) : locked ? (
+        <section className="card flex max-w-xl flex-col gap-2" data-testid="lab-locked">
+          <h2 className="font-display text-xl font-semibold">Masuk dulu untuk membuka GnD Lab</h2>
+          <LoginForm testId="lab-login" note="Semua pencatatan dan data lab hanya bisa dibuka & diisi setelah login. Masukkan email — kami kirim link masuk." />
+        </section>
+      ) : (
+        <>
+      <AskLabAI tab={tab} username={auth.username} />
+
       <nav role="tablist" aria-label="Bagian lab" className="flex gap-1 overflow-x-auto rounded-2xl border-3 border-ink bg-surface p-1">
         {TABS.map((t) => (
           <button
@@ -200,11 +219,14 @@ export function LabPage() {
       {tab === 'library' && <LibraryTab />}
       {tab === 'standar' && <StandardsTab product={stdProduct} setProduct={setStdProduct} />}
 
+        </>
+      )}
+
       <p className="text-xs text-muted">
         Data eksperimen tersimpan di perangkat ini (offline). Rutin unduh cadangan. GnD Lab tidak menyatakan produk aman dikonsumsi atau memenuhi standar.
       </p>
       {/* navbar bawah melayang: kamera foto progres harian (DEC-086) */}
-      <ProgressCamera records={catat} onUploaded={() => void refresh()} />
+      {!locked && auth.ready && <ProgressCamera records={catat} onUploaded={() => void refresh()} />}
     </div>
   );
 }

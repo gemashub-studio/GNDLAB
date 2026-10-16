@@ -110,7 +110,7 @@ describe('pencatatan data awal & akhir (DEC-074)', () => {
     expect(buildCatatReport(rec(false), 'x').blocks.some((b) => b.heading.startsWith('Data akhir'))).toBe(false);
   });
 
-  it('perlakuan: bagian sendiri di PDF/Word, digabung ke slide Kesimpulan di PPTX (DEC-079)', async () => {
+  it('perlakuan: bagian sendiri di PDF/Word; di PPTX di bawah data akhir + slide penjelasan (DEC-079/087)', async () => {
     const { treatmentRows, TREATMENT_GROUPS } = await import('@/lib/pencatatan');
     expect(TREATMENT_GROUPS.map((g) => g.title)).toEqual(['Jumlah perlakuan kopra', 'Jumlah perlakuan bibit bio leather', 'Jumlah perlakuan cuka', 'Jumlah perlakuan bio leather']);
     expect(TREATMENT_GROUPS[0].methods).toEqual(['GreenHouse', 'Oven Gas', 'Oven Briket']);
@@ -123,11 +123,35 @@ describe('pencatatan data awal & akhir (DEC-074)', () => {
     const docx = new TextDecoder().decode(buildDocx(r));
     expect(docx).toContain('Perlakuan/metode');
     const pptx = new TextDecoder().decode(buildPptx(r));
-    // PPTX: tidak ada slide "Perlakuan" sendiri; tabel perlakuan ada di slide Kesimpulan
+    // PPTX (DEC-087): tabel perlakuan tepat di bawah tabel data akhir (bukan di Kesimpulan)
     const slides = pptx.split('<p:sld ').slice(1);
-    const kes = slides.filter((x) => x.includes('Kesimpulan'));
-    expect(kes.some((x) => x.includes('Oven Gas') && x.includes('Perlakuan/metode'))).toBe(true);
-    expect(slides.some((x) => x.includes('>Perlakuan<') && !x.includes('Kesimpulan'))).toBe(false);
+    const akhir = slides.find((x) => x.includes('>Data akhir<'))!;
+    expect(akhir).toContain('PERLAKUAN');
+    expect(akhir).toContain('Oven Gas');
+    expect(akhir.indexOf('Berat akhir (g)')).toBeLessThan(akhir.indexOf('Perlakuan/metode'));
+    expect(slides.find((x) => x.includes('>Kesimpulan<'))).not.toContain('Perlakuan/metode');
+    // satu slide penjelasan semua perlakuan yang tersedia
+    const info = slides.filter((x) => x.includes('Penjelasan perlakuan'));
+    expect(info).toHaveLength(1);
+    for (const m of ['GreenHouse', 'Oven Briket', 'A - PH 40', 'CUKA 3 - GULA 50', 'Bio Leather B - Gula 50g']) expect(info[0]).toContain(m);
+    expect(info[0]).toContain('bukan protokol');
+  });
+
+  it('PPTX: perbandingan = grafik garis native + penjelasan di bawahnya + tabel (DEC-087)', async () => {
+    const { statConclusion, compareRecord } = await import('@/lib/pencatatan');
+    const r = buildCatatReport(rec(), 'x');
+    const tebal = r.blocks.find((b) => b.heading === 'Perbandingan tebal daging')!;
+    expect(tebal.nativeChart).toBe(true);
+    expect(tebal.chartCaption).toContain('Garis hijau = tebal daging awal');
+    expect(tebal.chartCaption).toContain(statConclusion(rec(), compareRecord(rec())[1]!));
+    const slides = new TextDecoder().decode(buildPptx(r)).split('<p:sld ').slice(1);
+    const sl = slides.find((x) => x.includes('>Perbandingan tebal daging<'))!;
+    // garis seri (konektor) + legenda Awal/Akhir; tanpa gambar PNG; penjelasan sebelum tabel
+    expect((sl.match(/<p:cxnSp>/g) ?? []).length).toBeGreaterThan(6);
+    expect(sl).toContain('>Awal<');
+    expect(sl).toContain('>Akhir<');
+    expect(sl).not.toContain('grafik tidak tersedia');
+    expect(sl.indexOf('Garis hijau')).toBeLessThan(sl.indexOf('<a:tbl>'));
   });
 
   it('kode PD-YYMMDD-NN', () => {
@@ -175,7 +199,6 @@ describe('progres harian & PPTX padat (DEC-086)', () => {
     const tebal = slides.filter((x) => x.includes('Perbandingan tebal daging'));
     expect(tebal).toHaveLength(1);
     expect(tebal[0]).toContain('<a:tbl>');
-    expect(tebal[0]).toContain('grafik tidak tersedia');
     // grafik/teks lebih dulu (y lebih kecil) daripada tabel
     const tblY = Number(/<p:graphicFrame>[\s\S]*?<a:off x="\d+" y="(\d+)"/.exec(tebal[0]!)![1]);
     expect(tblY).toBeGreaterThan(1150000);

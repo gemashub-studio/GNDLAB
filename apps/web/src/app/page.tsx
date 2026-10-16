@@ -7,6 +7,7 @@ import { ConfidenceBadge } from '@/components/ui/badges';
 import { FillBar } from '@/components/ui/bars';
 import { Hint } from '@/components/ui/Hint';
 import { WarningList } from '@/components/ui/Warnings';
+import { HomeCtas, HomeWelcome } from '@/components/auth/HomeAuth';
 import { COMMODITY_UI, formLabel } from '@/lib/catalog';
 import { fmt, fmtTon } from '@/lib/format';
 import { containerFtName } from '@/lib/imperial';
@@ -56,6 +57,7 @@ export default async function Home() {
     <>
       <header className="flex flex-wrap items-end justify-between gap-[18px]">
         <div className="flex flex-col gap-2.5">
+          <HomeWelcome />
           <span className="tag-mono self-start">DATASET v{ds.version} // ENGINE V1</span>
           <h1 className="text-[40px] sm:text-[52px]">
             Ringkasan
@@ -64,15 +66,7 @@ export default async function Home() {
           </h1>
         </div>
         <div className="flex flex-wrap items-center gap-3">
-          <Link href="/gudang" className="btn-ghost no-underline">
-            Hitung gudang
-          </Link>
-          <Link href="/muat?wizard=1" className="btn-primary no-underline shadow-[5px_5px_0_#0E1A1F]" data-testid="cta-plan">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" aria-hidden>
-              <path d="M12 5v14M5 12h14" />
-            </svg>
-            Rencana muat
-          </Link>
+          <HomeCtas />
         </div>
       </header>
 

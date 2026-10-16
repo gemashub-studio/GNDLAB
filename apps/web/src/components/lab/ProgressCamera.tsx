@@ -43,22 +43,24 @@ export function ProgressCamera({ records, onUploaded }: { records: CatatRecord[]
 
   return (
     <>
-      <nav aria-label="Aksi cepat" className="pointer-events-none fixed inset-x-0 bottom-0 z-[55] flex justify-center px-4 pb-[max(16px,env(safe-area-inset-bottom))]" data-testid="float-nav">
-        <div className="pointer-events-auto flex items-center gap-3 rounded-full border border-acid/40 bg-ink/90 py-2 pl-5 pr-2 text-paper shadow-2xl backdrop-blur">
-          <span className="font-mono text-[11px] tracking-[0.12em] text-muted-ink">{busy ? 'MEMPROSES FOTO…' : err ? 'ULANGI FOTO' : 'FOTO PROGRES'}</span>
+      <nav aria-label="Aksi cepat" className="pointer-events-none fixed inset-x-0 bottom-0 z-[55] flex justify-center px-4 pb-[max(14px,env(safe-area-inset-bottom))]" data-testid="float-nav">
+        <div className="pointer-events-auto relative flex h-11 w-[132px] items-end justify-center rounded-2xl border border-acid/40 bg-ink/90 pb-1 shadow-[0_10px_30px_rgba(14,26,31,0.35)] backdrop-blur" data-testid="float-cam-card">
+          {/* tombol kamera timbul: di tengah, naik ke atas dan lebih besar dari kartunya */}
           <button
             type="button"
             onClick={open}
             disabled={busy}
-            className="inline-flex h-14 w-14 items-center justify-center rounded-full bg-acid text-ink shadow-lg transition hover:scale-105 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-acid disabled:opacity-60"
-            aria-label="Buka kamera untuk foto progres harian"
+            className="cam-raise absolute -top-7 left-1/2 inline-flex h-[60px] w-[60px] -translate-x-1/2 items-center justify-center rounded-full border-4 border-surface bg-gradient-to-b from-[#8ff0de] to-acid text-ink transition hover:-translate-y-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-acid disabled:opacity-60"
+            aria-label={busy ? 'Memproses foto…' : err ? 'Ulangi foto progres' : 'Buka kamera untuk foto progres harian'}
+            title={err || undefined}
             data-testid="float-cam"
           >
-            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden className={busy ? 'prog-pulse' : ''}>
               <path d="M3 8.5A2.5 2.5 0 0 1 5.5 6h1.6l1.4-2h7l1.4 2h1.6A2.5 2.5 0 0 1 21 8.5v9a2.5 2.5 0 0 1-2.5 2.5h-13A2.5 2.5 0 0 1 3 17.5z" />
               <circle cx="12" cy="13" r="3.6" />
             </svg>
           </button>
+          {err && <span className="absolute -bottom-0.5 right-2 h-2 w-2 rounded-full bg-safety" aria-hidden />}
         </div>
         <input
           ref={file}

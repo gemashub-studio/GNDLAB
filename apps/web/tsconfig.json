@@ -33,7 +33,8 @@
     "playwright.config.ts",
     "src",
     "test",
-    "vitest.config.ts"
+    "vitest.config.ts",
+    ".next-turbo/types/**/*.ts"
   ],
   "exclude": [
     "node_modules",

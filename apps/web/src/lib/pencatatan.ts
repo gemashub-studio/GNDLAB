@@ -41,6 +41,29 @@ export const TREATMENT_GROUPS = [
   { key: 'bio', title: 'Jumlah perlakuan bio leather', methods: ['Bio Leather A - Gula 25g', 'Bio Leather B - Gula 50g'] },
 ] as const;
 export type TreatmentKey = (typeof TREATMENT_GROUPS)[number]['key'];
+
+/**
+ * Penjelasan UMUM tiap perlakuan untuk slide PPTX (DEC-087) — diturunkan dari nama perlakuan yang dipakai owner,
+ * BUKAN protokol, dosis, atau klaim hasil. Detail proses mengikuti protokol/catatan lab masing-masing.
+ */
+export const TREATMENT_INFO: Record<TreatmentKey, { about: string; methods: Record<string, string> }> = {
+  kopra: {
+    about: 'Pengeringan daging kelapa menjadi kopra. Perlakuan dibedakan dari sumber panas / tempat pengeringan.',
+    methods: { GreenHouse: 'dijemur dengan panas matahari di dalam rumah kaca (greenhouse)', 'Oven Gas': 'dikeringkan di oven berbahan bakar gas', 'Oven Briket': 'dikeringkan di oven berbahan bakar briket' },
+  },
+  bibit: {
+    about: 'Bibit (kultur starter) untuk pembuatan bio leather dari air kelapa. Varian dibedakan dengan kode A dan B.',
+    methods: { 'A - PH 40': 'bibit varian A, label "PH 40" sesuai isian', 'B - PH 40': 'bibit varian B, label "PH 40" sesuai isian' },
+  },
+  cuka: {
+    about: 'Fermentasi air kelapa menjadi cuka. Perlakuan dibedakan dari jumlah gula yang ditambahkan (sesuai label).',
+    methods: { 'CUKA 1 - GULA 25g': 'tambahan gula 25 g', 'CUKA 2 - GULA 75g': 'tambahan gula 75 g', 'CUKA 3 - GULA 50': 'tambahan gula 50 (satuan sesuai label)' },
+  },
+  bio: {
+    about: 'Lembaran bio leather (selulosa hasil fermentasi). Perlakuan dibedakan dari jumlah gula (sesuai label).',
+    methods: { 'Bio Leather A - Gula 25g': 'varian A, gula 25 g', 'Bio Leather B - Gula 50g': 'varian B, gula 50 g' },
+  },
+};
 export interface TreatmentEntry {
   /** Jumlah perlakuan (isian). */
   count: string;
@@ -257,22 +280,25 @@ export function compareTable(s: CompareStat): { head: string[]; rows: string[][]
 const f = (v?: number, d = 1) => (v === undefined ? '–' : fmtNum(Number(v.toFixed(d))));
 const fp = (v?: number) => (v === undefined ? '–' : `${v > 0 ? '+' : ''}${fmtNum(Number(v.toFixed(1)))}%`);
 
+/** Kesimpulan satu perbandingan (berat / tebal daging). */
+export function statConclusion(rec: CatatRecord, s: CompareStat): string {
+  if (!s.n || s.meanPct === undefined) return `${s.label}: belum ada pasangan data awal & akhir yang lengkap.${s.noAir.length ? ` Berat air kosong di nomor ${s.noAir.join(', ')}.` : ''}`;
+  const byAbs = s.rows.filter((r) => r.pct !== undefined).sort((p, q) => Math.abs(p.pct!) - Math.abs(q.pct!));
+  const lo = byAbs[0];
+  const hi = byAbs[byAbs.length - 1];
+  const ext = lo && hi && lo.no !== hi.no ? ` Selisih terkecil di nomor ${lo.no} (${fp(lo.pct)}), terbesar di nomor ${hi.no} (${fp(hi.pct)}).` : '';
+  const skip = s.noAir.length ? ` Nomor ${s.noAir.join(', ')} belum dihitung karena berat air kosong.` : '';
+  if (s.formula === 'awal-air-akhir')
+    return `Berat (berat awal − berat air − berat akhir): selisih rata-rata ${f(s.meanSelisih)} g atau ${fp(s.meanPct)} dari berat awal − air (rata-rata ${f(s.meanBasis)} g → berat akhir ${f(s.meanAkhir)} g) pada ${s.n} dari ${rec.count} ${rec.item.toLowerCase()}.${ext}${skip}`;
+  const arah = s.meanPct < 0 ? 'turun' : s.meanPct > 0 ? 'naik' : 'tetap';
+  return `${s.label} rata-rata ${arah} ${f(Math.abs(s.meanPct))}% (dari ${f(s.meanAwal)} ${s.unit} ke ${f(s.meanAkhir)} ${s.unit}) pada ${s.n} dari ${rec.count} ${rec.item.toLowerCase()}.${ext}`;
+}
+
 /** Kesimpulan deskriptif dari angka isian (tanpa uji statistik, tanpa klaim kualitas). */
 export function conclusions(rec: CatatRecord): string[] {
   if (!hasAkhir(rec)) return ['Data akhir belum dicatat — kesimpulan muncul setelah pencatatan data akhir.'];
   const draft = rec.finishedAt ? [] : [`Data akhir sementara (belum lengkap): ${akhirFilled(rec)} dari ${rec.count} nomor terisi — angka di bawah bisa berubah.`];
-  return [...draft, ...compareRecord(rec).map((s) => {
-    if (!s.n || s.meanPct === undefined) return `${s.label}: belum ada pasangan data awal & akhir yang lengkap.${s.noAir.length ? ` Berat air kosong di nomor ${s.noAir.join(', ')}.` : ''}`;
-    const byAbs = s.rows.filter((r) => r.pct !== undefined).sort((p, q) => Math.abs(p.pct!) - Math.abs(q.pct!));
-    const lo = byAbs[0];
-    const hi = byAbs[byAbs.length - 1];
-    const ext = lo && hi && lo.no !== hi.no ? ` Selisih terkecil di nomor ${lo.no} (${fp(lo.pct)}), terbesar di nomor ${hi.no} (${fp(hi.pct)}).` : '';
-    const skip = s.noAir.length ? ` Nomor ${s.noAir.join(', ')} belum dihitung karena berat air kosong.` : '';
-    if (s.formula === 'awal-air-akhir')
-      return `Berat (berat awal − berat air − berat akhir): selisih rata-rata ${f(s.meanSelisih)} g atau ${fp(s.meanPct)} dari berat awal − air (rata-rata ${f(s.meanBasis)} g → berat akhir ${f(s.meanAkhir)} g) pada ${s.n} dari ${rec.count} ${rec.item.toLowerCase()}.${ext}${skip}`;
-    const arah = s.meanPct < 0 ? 'turun' : s.meanPct > 0 ? 'naik' : 'tetap';
-    return `${s.label} rata-rata ${arah} ${f(Math.abs(s.meanPct))}% (dari ${f(s.meanAwal)} ${s.unit} ke ${f(s.meanAkhir)} ${s.unit}) pada ${s.n} dari ${rec.count} ${rec.item.toLowerCase()}.${ext}`;
-  })];
+  return [...draft, ...compareRecord(rec).map((s) => statConclusion(rec, s))];
 }
 
 // ------------------------------------------------------------------ penyimpanan
@@ -391,10 +417,24 @@ const photos = (rec: CatatRecord, k: 'awal' | 'akhir') =>
     .filter((r) => (k === 'awal' ? r.fotoAwal : r.fotoAkhir))
     .map((r) => ({ name: `${rec.id}-${String(r.no).padStart(3, '0')}-${k}.jpg`, caption: `No ${r.no} · data ${k}`, dataUrl: (k === 'awal' ? r.fotoAwal : r.fotoAkhir)!, video: false }));
 
+/** Slide penjelasan semua perlakuan yang tersedia (PPTX saja). */
+function treatmentInfoBlock(): ReportBlock {
+  return {
+    heading: 'Penjelasan perlakuan',
+    level: 1,
+    lines: ['Penjelasan umum dari nama perlakuan — bukan protokol, dosis, atau klaim hasil.'],
+    images: [],
+    pptxOnly: true,
+    cards: TREATMENT_GROUPS.map((g) => ({ title: g.title.replace('Jumlah perlakuan ', 'Perlakuan ').replace(/^./, (c) => c.toUpperCase()), lines: [TREATMENT_INFO[g.key].about, ...g.methods.map((m) => `${m}: ${TREATMENT_INFO[g.key].methods[m] ?? 'sesuai label'}`)] })),
+  };
+}
+
 export function buildCatatReport(rec: CatatRecord, generatedAt = new Date().toLocaleString('id-ID')): ResearchReport {
   const coco = hasThickness(rec.item);
   const cols = awalColumns(rec.item);
   const cmp = compareRecord(rec);
+  const tRows = treatmentRows(rec.treatments);
+  const tHead = ['Perlakuan', 'Jumlah', 'Perlakuan/metode'];
   const v = (s?: string) => (s && s.trim() ? s.trim() : '–');
   const blocks: ReportBlock[] = [
     {
@@ -417,7 +457,9 @@ export function buildCatatReport(rec: CatatRecord, generatedAt = new Date().toLo
       table: { head: ['No', 'Berat akhir (g)', ...(coco ? ['Tebal daging akhir (mm)'] : [])], rows: rec.rows.map((r) => [String(r.no), v(r.beratAkhir), ...(coco ? [v(r.tebalAkhir)] : [])]) },
       images: photos(rec, 'akhir'),
       pptxOmitImages: true,
+      ...(tRows.length && { pptxAfterTable: { title: 'Perlakuan', head: tHead, rows: tRows } }),
     });
+    if (tRows.length) blocks.push(treatmentInfoBlock());
     for (const s of cmp) {
       const chart: ChartSpec = {
         id: `cmp-${s.label}`,
@@ -440,7 +482,11 @@ export function buildCatatReport(rec: CatatRecord, generatedAt = new Date().toLo
         lines: [formulaNote(s), `Pasangan lengkap: ${s.n} dari ${rec.count}`, `Rata-rata selisih: ${f(s.meanSelisih, 2)} ${s.unit} (${fp(s.meanPct)})`],
         table: compareTable(s),
         images: [],
-        ...(s.n >= 2 && { charts: [chart] }),
+        ...(s.n >= 2 && {
+          charts: [chart],
+          nativeChart: true,
+          chartCaption: `${s.formula === 'awal-air-akhir' ? 'Garis hijau = berat awal − berat air, garis oranye = berat akhir' : `Garis hijau = ${s.label.toLowerCase()} awal, garis oranye = ${s.label.toLowerCase()} akhir`}, per nomor sampel. ${statConclusion(rec, s)}`,
+        }),
       });
     }
   }
@@ -484,15 +530,13 @@ export function buildCatatReport(rec: CatatRecord, generatedAt = new Date().toLo
     });
   }
   // perlakuan: PDF/Word = bagian sendiri; PPTX = disatukan ke slide Kesimpulan (DEC-079)
-  const tRows = treatmentRows(rec.treatments);
-  const tHead = ['Perlakuan', 'Jumlah', 'Perlakuan/metode'];
   if (tRows.length) blocks.push({ heading: 'Perlakuan', level: 1, lines: [], table: { head: tHead, rows: tRows }, images: [], pptxSkip: true });
   blocks.push({
     heading: 'Kesimpulan',
     level: 1,
     lines: [...conclusions(rec), 'Kesimpulan deskriptif dari angka isian; bukan uji statistik dan bukan klaim mutu produk.'],
     images: [],
-    ...(tRows.length && { pptxTable: { head: tHead, rows: tRows } }),
+    ...(tRows.length && !akhirOn && { pptxTable: { head: tHead, rows: tRows } }),
   });
   const title = `Pencatatan data — ${rec.item} (${rec.count})`;
   const status = rec.finishedAt ? 'Awal & akhir lengkap' : rec.akhirSavedAt ? 'Menunggu data akhir · tersimpan sementara' : 'Menunggu data akhir';

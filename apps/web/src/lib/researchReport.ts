@@ -37,6 +37,13 @@ export interface ReportBlock {
   pptxTable?: { head: string[]; rows: string[][] };
   /** PowerPoint: progres foto 3 tahap (harian | mingguan | bulanan) berdampingan, maks. 10 foto/slide (DEC-086). */
   progressColumns?: { title: string; items: PhotoCell[] }[];
+  /** PowerPoint: tabel tambahan tepat di bawah tabel utama (mis. perlakuan di bawah data akhir, DEC-087). */
+  pptxAfterTable?: { title: string; head: string[]; rows: string[][] };
+  /** PowerPoint: kartu penjelasan (2 kolom) dalam satu slide. */
+  cards?: { title: string; lines: string[] }[];
+  /** PowerPoint: grafik garis digambar langsung (bisa diedit) + teks penjelasan di bawah grafik. */
+  nativeChart?: boolean;
+  chartCaption?: string;
 }
 
 export interface PhotoCell {

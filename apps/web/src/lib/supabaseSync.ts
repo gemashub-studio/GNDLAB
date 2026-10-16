@@ -254,10 +254,10 @@ async function run(): Promise<SyncOutcome> {
 // ------------------------------------------------------------------ login & sinkron otomatis
 
 /** Kirim link masuk ke email (Supabase Auth). */
-export async function sendLoginLink(email: string): Promise<void> {
+export async function sendLoginLink(email: string, path = '/lab'): Promise<void> {
   const sb = getSupabase();
   if (!sb) throw new Error('Supabase belum diatur.');
-  const { error } = await sb.auth.signInWithOtp({ email: email.trim().toLowerCase(), options: { emailRedirectTo: `${window.location.origin}/lab`, shouldCreateUser: true } });
+  const { error } = await sb.auth.signInWithOtp({ email: email.trim().toLowerCase(), options: { emailRedirectTo: `${window.location.origin}${path}`, shouldCreateUser: true } });
   if (error) throw new Error(error.message);
 }
 

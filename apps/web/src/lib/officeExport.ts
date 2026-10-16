@@ -2,6 +2,7 @@
  * Ekspor DOCX & PPTX TANPA dependensi (DEC-052): file Office = zip (metode "store") berisi XML
  * Office Open XML minimal. Gambar = thumbnail JPEG yang sudah tersimpan + grafik PNG (DEC-058). Offline di browser.
  */
+import type { ChartSpec } from './reportCharts';
 import type { ResearchReport } from './researchReport';
 
 // ------------------------------------------------------------------ zip (store, tanpa kompresi)
@@ -476,6 +477,7 @@ export function buildPptx(r: ResearchReport, charts: ChartPngs = new Map(), vide
   const wrapped = (ps: readonly PPara[], perLine: number) => ps.reduce((n, p) => n + Math.max(1, Math.ceil(paraText(p).length / perLine)), 0);
   const shrink = (p: PPara, sz: number): PPara => (Array.isArray(p) ? p.map((r) => ({ ...r, sz: Math.min(r.sz ?? sz, sz) })) : { ...p, sz: Math.min(p.sz ?? sz, sz) });
   let pack: { slide: Slide; y: number; id: number } | null = null;
+  let tail: { slide: Slide; y: number } | undefined;
 
   /** Progres 3 tahap berdampingan (Harian | Mingguan | Bulanan): foto berderet ke bawah + data di sampingnya, maks. 10 foto/slide. */
   function progressSlides(cols: NonNullable<ResearchReport['blocks'][number]['progressColumns']>, head: string, num?: number): Slide[] {
@@ -537,6 +539,27 @@ export function buildPptx(r: ResearchReport, charts: ChartPngs = new Map(), vide
       for (const s of photoGridSlides(b.photoPairs, head, first ? num : undefined)) slides.push(s);
       first = false;
     }
+    tail = undefined;
+    // kartu penjelasan 2 kolom dalam satu slide (mis. penjelasan perlakuan, DEC-087)
+    if (b.cards?.length) {
+      let sh = t();
+      let id = 300;
+      const gap = 200000;
+      const cw = (CW - gap) / 2;
+      const top = BODY_TOP + (b.lines.length ? 380000 : 0);
+      if (b.lines.length) sh += pTextBox(id++, M, BODY_TOP, CW, 340000, b.lines.map((l) => ({ t: l, sz: 1100, color: MUTED })), { autofit: false });
+      const rowsN = Math.ceil(b.cards.length / 2);
+      const ch = (BODY_BOTTOM - top - gap * (rowsN - 1)) / rowsN;
+      b.cards.forEach((c, k) => {
+        const x = M + (k % 2) * (cw + gap);
+        const yy = top + Math.floor(k / 2) * (ch + gap);
+        sh += pRect(id++, x, yy, cw, ch, PAPER, 'roundRect') + pRect(id++, x, yy + 150000, 60000, ch - 300000, MINT_D);
+        sh += pTextBox(id++, x + 200000, yy + 90000, cw - 300000, ch - 180000, [{ t: c.title, sz: 1300, b: true }, ...c.lines.map((l, j) => (j === 0 ? { t: l, sz: 1000, color: '2A3A41' } : [{ t: '• ', sz: 1000, b: true, color: MINT_D }, { t: l, sz: 1000 }]))], { autofit: false });
+      });
+      slides.push({ shapes: sh, pics: [] });
+      pack = null;
+      continue;
+    }
     // progres foto 3 tahap (DEC-086)
     if (b.progressColumns) {
       for (const sl of progressSlides(b.progressColumns, head, first ? num : undefined)) slides.push(sl);
@@ -587,8 +610,23 @@ export function buildPptx(r: ResearchReport, charts: ChartPngs = new Map(), vide
       } else if (!charts0.length && !rows.length) {
         shapes += pTextBox(30, M, y, CW, 600000, [{ t: b.images.length ? '' : 'belum dicatat', sz: 1500, color: MUTED }]);
       }
-      const onSlide = charts0.slice(0, 2);
-      if (onSlide.length) {
+      const onSlide = b.nativeChart ? charts0.slice(0, 1) : charts0.slice(0, 2);
+      if (b.nativeChart && onSlide.length) {
+        // grafik garis native + teks penjelasan singkat di bawahnya (DEC-087)
+        const cap = b.chartCaption ? [{ t: b.chartCaption, sz: 1100 }] : [];
+        const capH = b.chartCaption ? Math.ceil(b.chartCaption.length / 185) * 240000 + 90000 : 0;
+        // sisakan tempat agar minimal beberapa baris tabel muat di bawah grafik & penjelasan (DEC-086/087)
+        const keep = rows.length ? (Math.min(rows.length, 5) + 1) * TROW : 0;
+        const free = BODY_BOTTOM - y - 140000 - capH - keep;
+        const chartH = rows.length ? Math.max(1600000, Math.min(2500000, free)) : Math.max(1600000, free);
+        const g = pLineChart(400, M, y, CW, chartH, onSlide[0]!);
+        shapes += g.xml;
+        y += chartH + 40000;
+        if (cap.length) {
+          shapes += pTextBox(48, M, y, CW, capH, cap, { fill: PAPER, geom: 'roundRect', autofit: false });
+          y += capH + 100000;
+        }
+      } else if (onSlide.length) {
         const gap = 200000;
         const cw = onSlide.length === 2 ? (CW - gap) / 2 : CW;
         const avail = BODY_BOTTOM - y - 280000;
@@ -612,11 +650,15 @@ export function buildPptx(r: ResearchReport, charts: ChartPngs = new Map(), vide
       }
       if (rows.length) {
         const n = rowsFit(BODY_BOTTOM - y);
-        if (n >= 3) {
-          shapes += pTable(31, M, y, CW, b.table!.head, rows.splice(0, n), { rowH: TROW, sz: 1000 });
+        if (n >= Math.min(3, rows.length)) {
+          const part = rows.splice(0, n);
+          shapes += pTable(31, M, y, CW, b.table!.head, part, { rowH: TROW, sz: 1000 });
+          y += (part.length + 1) * TROW;
         }
       }
-      slides.push({ shapes, pics });
+      const comp: Slide = { shapes, pics };
+      slides.push(comp);
+      tail = { slide: comp, y: rows.length ? BODY_BOTTOM : y };
       // grafik ke-3 dst: 2 per slide
       for (let i = 2; i < charts0.length; i += 2) {
         const pics2: Slide['pics'] = [];
@@ -639,7 +681,26 @@ export function buildPptx(r: ResearchReport, charts: ChartPngs = new Map(), vide
     }
     // sisa baris tabel: sebanyak mungkin per slide
     const per = rowsFit(BODY_BOTTOM - BODY_TOP);
-    while (rows.length) slides.push({ shapes: t() + pTable(31, M, BODY_TOP, CW, b.table!.head, rows.splice(0, per), { rowH: TROW, sz: 1000 }), pics: [] });
+    while (rows.length) {
+      const part = rows.splice(0, per);
+      const sl: Slide = { shapes: t() + pTable(31, M, BODY_TOP, CW, b.table!.head, part, { rowH: TROW, sz: 1000 }), pics: [] };
+      slides.push(sl);
+      tail = { slide: sl, y: BODY_TOP + (part.length + 1) * TROW };
+    }
+    // tabel tambahan tepat di bawah tabel utama (mis. perlakuan di bawah data akhir)
+    if (b.pptxAfterTable && b.pptxAfterTable.rows.length) {
+      const at = b.pptxAfterTable;
+      const need = 330000 + (at.rows.length + 1) * TROW;
+      let target = tail && tail.y + 150000 + need <= BODY_BOTTOM ? tail : undefined;
+      if (!target) {
+        const sl: Slide = { shapes: t(), pics: [] };
+        slides.push(sl);
+        target = { slide: sl, y: BODY_TOP - 150000 };
+      }
+      const y0 = target.y + 150000;
+      target.slide.shapes += pTextBox(70, M, y0, CW, 300000, [{ t: at.title.toUpperCase(), sz: 1000, b: true, color: MINT_D, mono: true }], { autofit: false });
+      target.slide.shapes += pTable(71, M, y0 + 330000, CW, at.head, at.rows, { rowH: TROW, sz: 1000 });
+    }
     // foto: 6 per slide (2 baris × 3); kelompok berisi video tetap 3 per slide agar video cukup besar
     for (let i = 0; !b.pptxOmitImages && i < b.images.length; ) {
       const hasVid = b.images.slice(i, i + 6).some((im) => im.video && im.mediaId && videos.get(im.mediaId));
@@ -722,6 +783,85 @@ function packPptx(slides: Slide[], vidExts: ReadonlyMap<string, string> = new Ma
     { name: 'ppt/theme/theme1.xml', data: txt(theme) },
     ...files,
   ]);
+}
+
+/** Segmen garis ke arah mana pun (flipH/flipV), untuk grafik garis native (DEC-087). */
+const pSeg = (id: number, x1: number, y1: number, x2: number, y2: number, color: string, w = 25400) => {
+  const fh = x2 < x1 ? ' flipH="1"' : '';
+  const fv = y2 < y1 ? ' flipV="1"' : '';
+  return `<p:cxnSp><p:nvCxnSpPr><p:cNvPr id="${id}" name="Garis ${id}"/><p:cNvCxnSpPr/><p:nvPr/></p:nvCxnSpPr><p:spPr><a:xfrm${fh}${fv}><a:off x="${Math.round(Math.min(x1, x2))}" y="${Math.round(Math.min(y1, y2))}"/><a:ext cx="${Math.max(1, Math.round(Math.abs(x2 - x1)))}" cy="${Math.max(1, Math.round(Math.abs(y2 - y1)))}"/></a:xfrm><a:prstGeom prst="line"><a:avLst/></a:prstGeom><a:ln w="${w}"><a:solidFill><a:srgbClr val="${color}"/></a:solidFill><a:round/></a:ln></p:spPr></p:cxnSp>`;
+};
+
+/** Angka sumbu ringkas (koma desimal). */
+const axisNum = (v: number) => {
+  const r = Math.abs(v) >= 100 ? Math.round(v) : Math.round(v * 10) / 10;
+  return String(r).replace('.', ',');
+};
+
+/**
+ * Grafik garis digambar langsung dengan bentuk PowerPoint (tanpa gambar): sumbu, garis bantu, label,
+ * garis tiap seri + titik, legenda. Mengembalikan XML & id berikutnya.
+ */
+export function pLineChart(id0: number, x: number, y: number, w: number, h: number, spec: ChartSpec): { xml: string; next: number } {
+  let id = id0;
+  let xml = '';
+  const vals = spec.series.flatMap((se) => se.values.filter((v): v is number => v !== null && Number.isFinite(v)));
+  if (!vals.length) return { xml: pTextBox(id++, x, y, w, 400000, [{ t: '(belum ada angka untuk grafik)', sz: 1100, color: MUTED }]), next: id };
+  let lo = Math.min(...vals);
+  let hi = Math.max(...vals);
+  if (lo === hi) {
+    lo -= 1;
+    hi += 1;
+  }
+  const pad = (hi - lo) * 0.08;
+  lo -= pad;
+  hi += pad;
+  const left = x + 620000;
+  const top = y + 330000;
+  const right = x + w - 120000;
+  const bottom = y + h - 470000;
+  const n = spec.x.length;
+  const px = (i: number) => (n <= 1 ? (left + right) / 2 : left + ((right - left) * i) / (n - 1));
+  const py = (v: number) => bottom - ((v - lo) / (hi - lo)) * (bottom - top);
+  // garis bantu & label sumbu Y (5 tingkat)
+  for (let k = 0; k <= 4; k++) {
+    const v = lo + ((hi - lo) * k) / 4;
+    const yy = py(v);
+    xml += pSeg(id++, left, yy, right, yy, k === 0 ? '5B6B72' : GRID, k === 0 ? 12700 : 6350);
+    xml += pTextBox(id++, x, yy - 120000, 560000, 240000, [{ t: axisNum(v), sz: 800, color: MUTED, mono: true }], { autofit: false });
+  }
+  // label sumbu X (maks. ±14 label)
+  const step = Math.max(1, Math.ceil(n / 14));
+  spec.x.forEach((lab, i) => {
+    if (i % step && i !== n - 1) return;
+    xml += pTextBox(id++, px(i) - 200000, bottom + 40000, 400000, 220000, [{ t: lab, sz: 800, color: MUTED, mono: true }], { autofit: false, align: 'ctr' });
+  });
+  if (spec.xTitle) xml += pTextBox(id++, left, bottom + 240000, right - left, 200000, [{ t: spec.xTitle, sz: 800, color: MUTED }], { autofit: false, align: 'ctr' });
+  if (spec.unit) xml += pTextBox(id++, x, top - 300000, 900000, 220000, [{ t: spec.unit, sz: 800, b: true, color: MUTED, mono: true }], { autofit: false });
+  // seri: garis antar titik berurutan yang ada nilainya + titik kecil
+  spec.series.forEach((se) => {
+    const col = se.color.replace('#', '').toUpperCase();
+    let prev: [number, number] | undefined;
+    se.values.forEach((v, i) => {
+      if (v === null || !Number.isFinite(v)) {
+        prev = undefined;
+        return;
+      }
+      const pt: [number, number] = [px(i), py(v)];
+      if (prev) xml += pSeg(id++, prev[0], prev[1], pt[0], pt[1], col, 28575);
+      if (n <= 60) xml += pRect(id++, pt[0] - 38000, pt[1] - 38000, 76000, 76000, col, 'ellipse');
+      prev = pt;
+    });
+  });
+  // legenda (kanan atas)
+  let lx = right;
+  [...spec.series].reverse().forEach((se) => {
+    const tw = 160000 + se.name.length * 70000;
+    lx -= tw + 120000;
+    xml += pRect(id++, lx, y + 90000, 150000, 60000, se.color.replace('#', '').toUpperCase());
+    xml += pTextBox(id++, lx + 180000, y + 10000, tw, 220000, [{ t: se.name, sz: 900, b: true }], { autofit: false });
+  });
+  return { xml, next: id };
 }
 
 /** Garis lurus (konektor) untuk diagram. */

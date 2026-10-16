@@ -5,6 +5,8 @@ import { usePathname } from 'next/navigation';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Icon, type IconName } from './icons';
 import { LogoMark, Wordmark } from './Logo';
+import { ProfileMenu } from '@/components/auth/ProfileMenu';
+import { useAuth } from '@/lib/useAuth';
 
 interface NavItem {
   href: string;
@@ -68,8 +70,31 @@ function useOnline() {
   return online;
 }
 
+/** Jumlah pencatatan data yang belum lengkap (untuk menu GnD Lab berkedip neon, DEC-087). */
+function usePendingCatat(path: string): number {
+  const [n, setN] = useState(0);
+  useEffect(() => {
+    let alive = true;
+    const load = () =>
+      void import('@/lib/pencatatan')
+        .then((m) => m.listCatat())
+        .then((rs) => alive && setN(rs.filter((r) => !r.finishedAt).length))
+        .catch(() => undefined);
+    load();
+    window.addEventListener('gemas-catat-changed', load);
+    return () => {
+      alive = false;
+      window.removeEventListener('gemas-catat-changed', load);
+    };
+  }, [path]);
+  return n;
+}
+
 export function Shell({ children, datasetVersion, profile }: { children: ReactNode; datasetVersion: string; profile: string }) {
   const path = usePathname() ?? '/';
+  const pendingCatat = usePendingCatat(path);
+  const signedIn = !!useAuth().email;
+  const neon = (href: string) => (href === '/lab' && pendingCatat > 0 ? ' neon-blink' : '');
   const online = useOnline();
   const [open, setOpen] = useState(false);
   const burger = useRef<HTMLButtonElement>(null);
@@ -126,7 +151,8 @@ export function Shell({ children, datasetVersion, profile }: { children: ReactNo
                   key={n.href}
                   href={n.href}
                   aria-current={active ? 'page' : undefined}
-                  className={`rounded-full px-3.5 py-2 text-sm font-semibold no-underline transition ${active ? 'bg-acid text-ink' : 'text-paper hover:bg-line-ink'}`}
+                  className={`rounded-full px-3.5 py-2 text-sm font-semibold no-underline transition ${active ? 'bg-acid text-ink' : 'text-paper hover:bg-line-ink'}${neon(n.href)}`}
+                  {...(neon(n.href) && { title: `${pendingCatat} pencatatan data belum lengkap`, 'data-pending': pendingCatat })}
                 >
                   {n.label}
                 </Link>
@@ -141,6 +167,8 @@ export function Shell({ children, datasetVersion, profile }: { children: ReactNo
             {online ? 'ONLINE' : 'OFFLINE'} · v{datasetVersion}
           </span>
 
+          <ProfileMenu />
+
           <button
             ref={burger}
             type="button"
@@ -148,10 +176,11 @@ export function Shell({ children, datasetVersion, profile }: { children: ReactNo
             aria-label="Buka menu"
             aria-expanded={open}
             aria-controls="menu-utama"
-            className="ml-auto inline-flex h-11 w-11 flex-none items-center justify-center rounded-xl border border-line-ink text-paper transition hover:border-acid hover:text-acid sm:ml-0"
+            className={`relative inline-flex h-11 w-11 flex-none items-center justify-center rounded-xl border border-line-ink text-paper transition hover:border-acid hover:text-acid sm:ml-0 ${signedIn ? 'ml-2' : 'ml-auto'}`}
             data-testid="menu-open"
           >
             <Icon.menu />
+            {pendingCatat > 0 && <span className="neon-dot absolute -right-1 -top-1 h-3 w-3 rounded-full bg-acid lg:hidden" aria-hidden />}
           </button>
         </div>
       </header>
@@ -204,10 +233,12 @@ export function Shell({ children, datasetVersion, profile }: { children: ReactNo
                           aria-current={active ? 'page' : undefined}
                           className={`flex min-h-touch items-center gap-3 rounded-xl px-3 text-[15px] no-underline transition ${
                             active ? 'bg-acid font-bold text-ink' : 'font-semibold text-paper hover:bg-line-ink'
-                          }`}
+                          }${neon(n.href)}`}
+                          data-testid={`nav-${n.href.replace(/\W/g, '') || 'home'}`}
                         >
                           <IconC />
                           <span className="flex-1">{n.label}</span>
+                          {neon(n.href) && <span className="rounded-full bg-acid px-2 py-0.5 font-mono text-[10px] font-bold text-ink">{pendingCatat} belum lengkap</span>}
                         </Link>
                       </li>
                     );
