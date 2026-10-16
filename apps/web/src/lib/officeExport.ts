@@ -577,6 +577,31 @@ export function buildPptx(r: ResearchReport, charts: ChartPngs = new Map(), vide
       pack = null;
       continue;
     }
+    // foto berjajar potret + data di bawahnya, maks. 5 per slide (mis. foto perlakuan, DEC-089)
+    if (b.photoCards?.length) {
+      const per = 5;
+      const gap = 180000;
+      const cw = (CW - gap * (per - 1)) / per;
+      const imgH = Math.round(cw / 0.75);
+      for (let i = 0; i < b.photoCards.length; i += per) {
+        const pics: Slide['pics'] = [];
+        let sh = t();
+        let id = 500;
+        b.photoCards.slice(i, i + per).forEach((c, k) => {
+          const x = M + k * (cw + gap);
+          const bytes = c.image ? dataUrlBytes(c.image) : undefined;
+          if (bytes) {
+            const sz = jpegSize(bytes);
+            const p = pic(bytes, 'jpeg', sz.w, sz.h, c.lines[0] ?? '', pics);
+            sh += pPicCover(id++, p.rid, x, BODY_TOP, cw, imgH, p.file, sz.w, sz.h);
+          } else sh += pTextBox(id++, x, BODY_TOP, cw, imgH, [{ t: 'tanpa foto', sz: 900, color: MUTED }], { fill: PAPER, geom: 'roundRect', anchor: 'ctr', autofit: false });
+          sh += pTextBox(id++, x, BODY_TOP + imgH + 60000, cw, BODY_BOTTOM - BODY_TOP - imgH - 60000, c.lines.map((l, j) => ({ t: l, sz: j === 0 ? 1100 : 950, b: j === 0, color: j === 1 ? MINT_D : '2A3A41' })), { autofit: false });
+        });
+        slides.push({ shapes: sh, pics });
+      }
+      pack = null;
+      continue;
+    }
     // progres foto 3 tahap (DEC-086)
     if (b.progressColumns) {
       for (const sl of progressSlides(b.progressColumns, head, first ? num : undefined)) slides.push(sl);

@@ -182,3 +182,4 @@
 - DEC-085: sinkron Supabase GnD Lab (lab_docs + lab-blobs + lab_members, login email link). db push via login role tanpa kata sandi DB (npx supabase db push). `supabase db query` menggantung di Git Bash — pakai `db advisors`/`migration list`. Anggota baru: insert into lab_members.
 - DEC-086: kamera melayang + progres harian (3 tahap) + PPTX padat; remote GitHub GNDLAB (publik). Catatan: owner sering memakai browser pane sendiri — jangan klik/isi data di pane saat dia aktif; .next sering korup (UNKNOWN -4094) → stop, rm -rf .next, start.
 - DEC-087: login wajib (Supabase) untuk lab, profil header, neon menu, Tanya Lab AI (siputzx glm47flash; saat dicek 503 All nodes failed), PPTX grafik garis native + perlakuan di bawah data akhir + slide penjelasan perlakuan; dev pakai --turbopack.
+- DEC-088/089: foto potret 3:4; perlakuan + foto & keterangan. Push GitHub sekarang jalan dari agen (kredensial GCM owner tersimpan).

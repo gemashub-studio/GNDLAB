@@ -41,6 +41,8 @@ export interface ReportBlock {
   pptxAfterTable?: { title: string; head: string[]; rows: string[][] };
   /** PowerPoint: kartu penjelasan (2 kolom) dalam satu slide. */
   cards?: { title: string; lines: string[] }[];
+  /** PowerPoint: foto potret berjajar (maks. 5/slide) dengan data di bawah tiap foto (DEC-089). */
+  photoCards?: PhotoCell[];
   /** PowerPoint: grafik garis digambar langsung (bisa diedit) + teks penjelasan di bawah grafik. */
   nativeChart?: boolean;
   chartCaption?: string;

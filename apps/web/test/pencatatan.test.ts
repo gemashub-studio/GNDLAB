@@ -204,3 +204,25 @@ describe('progres harian & PPTX padat (DEC-086)', () => {
     expect(tblY).toBeGreaterThan(1150000);
   });
 });
+
+describe('perlakuan: foto & keterangan (DEC-089)', () => {
+  const JPG = `data:image/jpeg;base64,${Buffer.from([0xff, 0xd8, 0xff, 0xc0, 0, 17, 8, 0, 40, 0, 30, 3, 1, 0x22, 0, 2, 0x11, 1, 3, 0x11, 1, 0xff, 0xd9]).toString('base64')}`;
+  it('kolom keterangan di tabel; foto ikut PDF/Word & slide foto perlakuan di PPTX', async () => {
+    const { treatmentItems } = await import('@/lib/pencatatan');
+    const t = { kopra: [{ count: '3', method: 'Oven Gas', note: 'suhu 60 °C', photo: JPG }, { count: '', method: '', note: 'kontrol tanpa oven' }] };
+    expect(treatmentItems(t).map((i) => [i.method, i.note, !!i.photo])).toEqual([['Oven Gas', 'suhu 60 °C', true], ['–', 'kontrol tanpa oven', false]]);
+    const r = buildCatatReport({ ...rec(), treatments: t }, 'x');
+    const pr = r.blocks.find((b) => b.heading === 'Perlakuan')!;
+    expect(pr.table!.head).toEqual(['Perlakuan', 'Jumlah', 'Perlakuan/metode', 'Keterangan']);
+    expect(pr.table!.rows[0]).toEqual(['Jumlah perlakuan kopra', '3', 'Oven Gas', 'suhu 60 °C']);
+    expect(pr.images).toHaveLength(1);
+    const cards = r.blocks.find((b) => b.heading === 'Foto perlakuan')!;
+    expect(cards.pptxOnly).toBe(true);
+    expect(cards.photoCards![0]!.lines).toEqual(['Perlakuan kopra', 'Oven Gas', 'Jumlah: 3', 'suhu 60 °C']);
+    const slides = new TextDecoder().decode(buildPptx(r)).split('<p:sld ').slice(1);
+    const fs = slides.find((x) => x.includes('>Foto perlakuan<'))!;
+    expect(fs).toContain('<p:pic>');
+    expect(fs).toContain('suhu 60 °C');
+    expect(slides.find((x) => x.includes('>Data akhir<'))).toContain('Keterangan');
+  });
+});

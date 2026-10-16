@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { downloadBlob } from '@/lib/labMedia';
-import { akhirFilled, progressLines, sortProgress, awalColumns, buildCatatReport, compareRecord, compareTable, conclusions, formulaNote, hasAkhir, hasThickness, treatmentRows, type CatatRecord } from '@/lib/pencatatan';
+import { akhirFilled, progressLines, sortProgress, awalColumns, buildCatatReport, compareRecord, compareTable, conclusions, formulaNote, hasAkhir, hasThickness, treatmentItems, treatmentRows, type CatatRecord } from '@/lib/pencatatan';
 import { fmtNum } from '@/lib/reportCharts';
 import { ImagePreview } from './Overlays';
 
@@ -125,7 +125,7 @@ export function CatatResult({ rec }: { rec: CatatRecord }) {
         {treatmentRows(rec.treatments).length > 0 && (
           <div className="flex flex-col gap-2">
             <h3 className="text-sm font-semibold">Perlakuan</h3>
-            <Table testId="catat-tbl-treat" head={['Perlakuan', 'Jumlah', 'Perlakuan/metode']} rows={treatmentRows(rec.treatments)} />
+            <Table testId="catat-tbl-treat" head={['Perlakuan', 'Foto', 'Jumlah', 'Perlakuan/metode', 'Keterangan']} rows={treatmentItems(rec.treatments).map((t, i) => [t.title, <Thumb key={`f${i}`} src={t.photo} alt={`Foto ${t.title} · ${t.method}`} />, t.count, t.method, t.note])} />
           </div>
         )}
         <div className="rounded-xl border-l-4 border-acid bg-paper p-4" data-testid="catat-conclusion">

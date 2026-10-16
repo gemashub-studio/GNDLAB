@@ -69,6 +69,10 @@ export interface TreatmentEntry {
   count: string;
   /** Perlakuan/metode terpilih. */
   method: string;
+  /** Keterangan bebas (DEC-089). */
+  note?: string;
+  /** Foto perlakuan, JPEG data URL potret 3:4 (DEC-089). */
+  photo?: string;
 }
 /** Tiap jenis perlakuan bisa punya beberapa kolom (tombol +, DEC-081). Catatan lama menyimpan satu objek. */
 export type Treatments = Partial<Record<TreatmentKey, TreatmentEntry[] | TreatmentEntry>>;
@@ -80,11 +84,30 @@ export const treatmentEntries = (t: Treatments | undefined, key: TreatmentKey): 
 };
 
 /** Baris tabel perlakuan yang terisi (jumlah atau metode), satu baris per kolom. */
+/** Kolom perlakuan dianggap terisi bila ada jumlah, metode, keterangan, atau foto. */
+const trFilled = (e: TreatmentEntry) => !!(e.count.trim() || e.method || e.note?.trim() || e.photo);
+
 export const treatmentRows = (t?: Treatments): [string, string, string][] =>
   TREATMENT_GROUPS.flatMap((g) =>
     treatmentEntries(t, g.key)
-      .filter((e) => e.count.trim() || e.method)
+      .filter(trFilled)
       .map((e): [string, string, string] => [g.title, e.count.trim() || '–', e.method || '–']),
+  );
+
+export interface TreatmentItem {
+  title: string;
+  count: string;
+  method: string;
+  note: string;
+  photo?: string;
+}
+
+/** Semua kolom perlakuan yang terisi, lengkap dengan keterangan & foto (DEC-089). */
+export const treatmentItems = (t?: Treatments): TreatmentItem[] =>
+  TREATMENT_GROUPS.flatMap((g) =>
+    treatmentEntries(t, g.key)
+      .filter(trFilled)
+      .map((e) => ({ title: g.title, count: e.count.trim() || '–', method: e.method || '–', note: e.note?.trim() || '–', ...(e.photo && { photo: e.photo }) })),
   );
 
 export interface CatatRecord {
@@ -433,8 +456,10 @@ export function buildCatatReport(rec: CatatRecord, generatedAt = new Date().toLo
   const coco = hasThickness(rec.item);
   const cols = awalColumns(rec.item);
   const cmp = compareRecord(rec);
-  const tRows = treatmentRows(rec.treatments);
-  const tHead = ['Perlakuan', 'Jumlah', 'Perlakuan/metode'];
+  const tItems = treatmentItems(rec.treatments);
+  const tRows = tItems.map((i) => [i.title, i.count, i.method, i.note]);
+  const tHead = ['Perlakuan', 'Jumlah', 'Perlakuan/metode', 'Keterangan'];
+  const tPhotos = tItems.filter((i) => i.photo);
   const v = (s?: string) => (s && s.trim() ? s.trim() : '–');
   const blocks: ReportBlock[] = [
     {
@@ -459,6 +484,16 @@ export function buildCatatReport(rec: CatatRecord, generatedAt = new Date().toLo
       pptxOmitImages: true,
       ...(tRows.length && { pptxAfterTable: { title: 'Perlakuan', head: tHead, rows: tRows } }),
     });
+    // foto perlakuan (PPTX): foto potret berjajar + data di bawahnya (DEC-089)
+    if (tPhotos.length)
+      blocks.push({
+        heading: 'Foto perlakuan',
+        level: 1,
+        lines: [],
+        images: [],
+        pptxOnly: true,
+        photoCards: tPhotos.map((i) => ({ image: i.photo, lines: [i.title.replace('Jumlah perlakuan ', 'Perlakuan '), i.method, `Jumlah: ${i.count}`, ...(i.note !== '–' ? [i.note] : [])] })),
+      });
     if (tRows.length) blocks.push(treatmentInfoBlock());
     for (const s of cmp) {
       const chart: ChartSpec = {
@@ -530,7 +565,15 @@ export function buildCatatReport(rec: CatatRecord, generatedAt = new Date().toLo
     });
   }
   // perlakuan: PDF/Word = bagian sendiri; PPTX = disatukan ke slide Kesimpulan (DEC-079)
-  if (tRows.length) blocks.push({ heading: 'Perlakuan', level: 1, lines: [], table: { head: tHead, rows: tRows }, images: [], pptxSkip: true });
+  if (tRows.length)
+    blocks.push({
+      heading: 'Perlakuan',
+      level: 1,
+      lines: [],
+      table: { head: tHead, rows: tRows },
+      images: tPhotos.map((i) => ({ dataUrl: i.photo!, name: `${i.title} · ${i.method}`, caption: [i.method, `jumlah ${i.count}`, ...(i.note !== '–' ? [i.note] : [])].join(' · '), video: false })),
+      pptxSkip: true,
+    });
   blocks.push({
     heading: 'Kesimpulan',
     level: 1,

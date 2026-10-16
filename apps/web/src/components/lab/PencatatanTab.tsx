@@ -603,7 +603,8 @@ function TreatmentFields({ value, onChange }: { value: TreatmentState; onChange:
         <div key={g.key} className="flex flex-col gap-2 rounded-xl bg-white p-3" data-testid={`catat-tr-${g.key}`}>
           <span className="label-mono">{g.title}</span>
           {value[g.key].map((e, i) => (
-            <div key={i} className={`flex items-end gap-2 ${i > 0 ? 'border-t border-ink/10 pt-2' : ''}`}>
+            <div key={i} className={`flex flex-col gap-2 ${i > 0 ? 'border-t border-ink/10 pt-2' : ''}`}>
+            <div className="flex items-end gap-2">
               <label className="flex w-24 flex-none flex-col gap-1.5">
                 <span className="text-xs text-muted">Jumlah</span>
                 <input
@@ -636,6 +637,27 @@ function TreatmentFields({ value, onChange }: { value: TreatmentState; onChange:
                   ✕
                 </button>
               )}
+            </div>
+            {/* foto (potret 3:4) & keterangan per kolom perlakuan (DEC-089) */}
+            <div className="flex items-start gap-2">
+              <div className="flex flex-none flex-col gap-1">
+                <span className="text-xs text-muted">Foto</span>
+                <RowPhoto value={e.photo} label={`Foto ${g.title} ${i + 1}`} onChange={(v) => edit(g.key, i, { photo: v })} testId={`catat-tr-photo-${g.key}-${i}`} />
+              </div>
+              <label className="flex min-w-0 flex-1 flex-col gap-1">
+                <span className="text-xs text-muted">Keterangan</span>
+                <textarea
+                  className="field min-h-[44px] w-full resize-y bg-white text-sm"
+                  rows={2}
+                  value={e.note ?? ''}
+                  maxLength={500}
+                  onChange={(ev) => edit(g.key, i, { note: ev.target.value })}
+                  placeholder="mis. suhu oven 60 °C, dibalik tiap 2 jam"
+                  aria-label={`Keterangan ${g.title} ${i + 1}`}
+                  data-testid={`catat-tr-note-${g.key}-${i}`}
+                />
+              </label>
+            </div>
             </div>
           ))}
           <button

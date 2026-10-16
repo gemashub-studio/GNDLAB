@@ -481,6 +481,10 @@ test.describe('Hapus hasil riset', () => {
     await expect(akhir.getByTestId('catat-tr-method-cuka-0-list').getByRole('option')).toHaveText(['— pilih —', 'CUKA 1 - GULA 25g', 'CUKA 2 - GULA 75g', 'CUKA 3 - GULA 50']);
     await akhir.getByTestId('catat-tr-method-cuka-0-opt-CUKA 2 - GULA 75g').click();
     await akhir.getByTestId('catat-tr-count-cuka-0').fill('2');
+    // foto & keterangan per perlakuan (DEC-089)
+    await akhir.getByTestId('catat-tr-note-kopra-0').fill('suhu oven 60 C, dibalik tiap 2 jam');
+    await akhir.getByTestId('catat-tr-photo-kopra-0').setInputFiles({ name: 'oven.png', mimeType: 'image/png', buffer: png });
+    await expect(akhir.getByTestId('catat-tr-photo-kopra-0-img')).toBeVisible();
     // "Simpan dulu": baru nomor 1 yang terisi → tersimpan sementara, catatan tetap menunggu (DEC-082)
     await akhir.getByTestId('catat-akhir-berat-1').fill('900');
     await akhir.getByTestId('catat-akhir-tebal-1').fill('8');
@@ -538,6 +542,8 @@ test.describe('Hapus hasil riset', () => {
     await expect(hasil.getByTestId('catat-tbl-treat')).toContainText('Oven Gas');
     await expect(hasil.getByTestId('catat-tbl-treat')).toContainText('CUKA 2 - GULA 75g');
     await expect(hasil.getByTestId('catat-tbl-treat')).toContainText('Oven Briket');
+    await expect(hasil.getByTestId('catat-tbl-treat')).toContainText('suhu oven 60 C, dibalik tiap 2 jam');
+    await expect(hasil.getByTestId('catat-tbl-treat').getByRole('img', { name: /Foto Jumlah perlakuan kopra · Oven Gas/ })).toBeVisible();
     for (const k of ['docx', 'pptx'] as const) {
       const d = page.waitForEvent('download');
       await hasil.getByTestId(`hasil-dl-${k}`).click();
