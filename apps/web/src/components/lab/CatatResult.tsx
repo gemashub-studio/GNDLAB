@@ -81,7 +81,7 @@ function Thumb({ src, alt }: { src?: string; alt: string }) {
     <>
       <button type="button" className="inline-block rounded-lg" onClick={() => setZoom(true)} aria-label={`Lihat ${alt}`}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={src} alt={alt} className="ml-auto h-12 w-12 rounded-lg object-cover" />
+        <img src={src} alt={alt} className="ml-auto h-14 w-[42px] rounded-lg object-cover" />
       </button>
       {zoom && <ImagePreview src={src} alt={alt} onClose={() => setZoom(false)} />}
     </>

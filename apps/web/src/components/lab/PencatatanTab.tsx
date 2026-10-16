@@ -377,7 +377,7 @@ function RowPhoto({ value, onChange, label, testId, readOnly = false }: { value?
       <>
         <button type="button" onClick={() => setZoom(true)} aria-label={`Lihat ${label}`} className="rounded-lg">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={value} alt={label} className="h-12 w-12 rounded-lg object-cover" data-testid={testId} />
+          <img src={value} alt={label} className="h-14 w-[42px] rounded-lg object-cover" data-testid={testId} />
         </button>
         {pv}
       </>
@@ -390,7 +390,7 @@ function RowPhoto({ value, onChange, label, testId, readOnly = false }: { value?
         <span className="relative">
           <button type="button" onClick={() => setZoom(true)} aria-label={`Lihat ${label}`} className="rounded-lg">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={value} alt={label} className="h-12 w-12 rounded-lg object-cover" data-testid={`${testId}-img`} />
+            <img src={value} alt={label} className="h-14 w-[42px] rounded-lg object-cover" data-testid={`${testId}-img`} />
           </button>
           <button type="button" aria-label={`Hapus ${label}`} className="absolute -right-1.5 -top-1.5 h-5 w-5 rounded-full bg-ink text-[11px] leading-none text-paper" onClick={() => onChange?.(undefined)}>×</button>
         </span>
@@ -406,7 +406,7 @@ function RowPhoto({ value, onChange, label, testId, readOnly = false }: { value?
             e.target.value = '';
             if (!f) return;
             setBusy(true);
-            onChange?.(await photoDataUrl(f));
+            onChange?.(await photoDataUrl(f, 1000, 0.82, true));
             setBusy(false);
           }}
           data-testid={testId}

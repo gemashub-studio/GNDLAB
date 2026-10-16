@@ -129,7 +129,7 @@ export function CameraDialog({ onClose, onFile, testId, photoOnly = false }: { o
     <div role="dialog" aria-modal="true" aria-label="Kamera" className="fixed inset-0 z-50 flex items-center justify-center bg-ink/80 p-4" data-testid={testId}>
       <div className="flex w-full max-w-lg flex-col gap-3 rounded-2xl bg-surface p-4">
         <div className="relative overflow-hidden rounded-xl bg-ink">
-          <video ref={video} muted playsInline className="aspect-video w-full object-cover" />
+          <video ref={video} muted playsInline className={photoOnly ? 'mx-auto aspect-[3/4] max-h-[70vh] object-cover' : 'aspect-video w-full object-cover'} />
           {recording && <span className="absolute left-3 top-3 rounded-full bg-safety px-2.5 py-0.5 font-mono text-[11px] font-semibold">● MEREKAM</span>}
         </div>
         {err && <p className="text-xs"><span className="bg-safety px-1">{err}</span></p>}

@@ -325,6 +325,21 @@ function pPic(id: number, rid: string, x: number, y: number, w: number, h: numbe
   return `<p:pic><p:nvPicPr><p:cNvPr id="${id}" name="${xml(name)}"/><p:cNvPicPr><a:picLocks noChangeAspect="1"/></p:cNvPicPr><p:nvPr/></p:nvPicPr><p:blipFill><a:blip r:embed="${rid}"/><a:stretch><a:fillRect/></a:stretch></p:blipFill><p:spPr><a:xfrm><a:off x="${Math.round(x)}" y="${Math.round(y)}"/><a:ext cx="${Math.round(w)}" cy="${Math.round(h)}"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></p:spPr></p:pic>`;
 }
 
+/**
+ * Gambar mengisi penuh kotak (mis. potret 3:4) dengan memotong bagian tepi secara simetris lewat srcRect —
+ * tidak gepeng; foto lanskap lama tampil bagian tengahnya (DEC-088).
+ */
+function pPicCover(id: number, rid: string, x: number, y: number, w: number, h: number, name: string, imgW: number, imgH: number): string {
+  const box = w / h;
+  const img = imgW / imgH;
+  let l = 0;
+  let t = 0;
+  if (img > box) l = Math.round(((1 - box / img) / 2) * 100000);
+  else if (img < box) t = Math.round(((1 - img / box) / 2) * 100000);
+  const crop = l || t ? `<a:srcRect l="${l}" t="${t}" r="${l}" b="${t}"/>` : '';
+  return `<p:pic><p:nvPicPr><p:cNvPr id="${id}" name="${xml(name)}"/><p:cNvPicPr><a:picLocks noChangeAspect="1"/></p:cNvPicPr><p:nvPr/></p:nvPicPr><p:blipFill><a:blip r:embed="${rid}"/>${crop}<a:stretch><a:fillRect/></a:stretch></p:blipFill><p:spPr><a:xfrm><a:off x="${Math.round(x)}" y="${Math.round(y)}"/><a:ext cx="${Math.round(w)}" cy="${Math.round(h)}"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></p:spPr></p:pic>`;
+}
+
 function pTable(id: number, x: number, y: number, w: number, head: string[], rows: string[][], opt: { rowH?: number; sz?: number } = {}): string {
   const colW = Math.floor(w / head.length);
   const rowH = opt.rowH ?? 370000;
@@ -427,7 +442,8 @@ export function buildPptx(r: ResearchReport, charts: ChartPngs = new Map(), vide
     const cellW = CW / COLS;
     const gap = 70000;
     const imgW = cellW - gap;
-    const imgH = 1050000;
+    // potret 3:4 (DEC-088)
+    const imgH = Math.round(imgW / 0.75);
     const out: Slide[] = [];
     for (let i = 0; i < pairs.length; i += per) {
       const chunk = pairs.slice(i, i + per);
@@ -439,8 +455,7 @@ export function buildPptx(r: ResearchReport, charts: ChartPngs = new Map(), vide
         if (bytes) {
           const sz = jpegSize(bytes);
           const p = pic(bytes, 'jpeg', sz.w, sz.h, `No ${no} ${tag}`, pics);
-          const f = fitBox(sz.w, sz.h, imgW, imgH);
-          shapes += pPic(id++, p.rid, x + (imgW - f.w) / 2, y + (imgH - f.h) / 2, f.w, f.h, p.file);
+          shapes += pPicCover(id++, p.rid, x, y, imgW, imgH, p.file, sz.w, sz.h);
         } else {
           shapes += pTextBox(id++, x, y, imgW, imgH, [{ t: 'tanpa foto', sz: 800, color: MUTED }], { fill: PAPER, geom: 'roundRect', anchor: 'ctr', autofit: false });
         }
@@ -450,17 +465,19 @@ export function buildPptx(r: ResearchReport, charts: ChartPngs = new Map(), vide
         shapes += pTextBox(id++, M, y, 3000000, 230000, [{ t, sz: 1000, b: true, color, mono: true }], { autofit: false });
       };
       if (hasAkhir) {
-        const yA = 1300000;
-        const yB = 3720000;
-        label('DATA AWAL', yA - 260000, MINT_D);
-        chunk.forEach((p, k) => cell(p.awal, p.no, M + k * cellW, yA, 950000, 'awal'));
-        shapes += pRect(id++, M, 3320000, CW, 28000, MINT);
-        label('DATA AKHIR', yB - 260000, AMBER);
-        chunk.forEach((p, k) => p.akhir && cell(p.akhir, p.no, M + k * cellW, yB, 620000, 'akhir'));
+        const yA = 1250000;
+        const yB = yA + imgH + 1120000;
+        label('DATA AWAL', yA - 250000, MINT_D);
+        chunk.forEach((p, k) => cell(p.awal, p.no, M + k * cellW, yA, 780000, 'awal'));
+        shapes += pRect(id++, M, yA + imgH + 840000, CW, 28000, MINT);
+        label('DATA AKHIR', yB - 250000, AMBER);
+        chunk.forEach((p, k) => p.akhir && cell(p.akhir, p.no, M + k * cellW, yB, 420000, 'akhir'));
       } else {
-        label('DATA AWAL', 1040000, MINT_D);
-        chunk.forEach((p, k) => cell(p.awal, p.no, M + (k % COLS) * cellW, k < COLS ? 1300000 : 3720000, 950000, 'awal'));
-        if (chunk.length > COLS) shapes += pRect(id++, M, 3320000, CW, 28000, MINT);
+        const yA = 1250000;
+        const y2 = yA + imgH + 1120000;
+        label('DATA AWAL', yA - 250000, MINT_D);
+        chunk.forEach((p, k) => cell(p.awal, p.no, M + (k % COLS) * cellW, k < COLS ? yA : y2, 780000, 'awal'));
+        if (chunk.length > COLS) shapes += pRect(id++, M, yA + imgH + 840000, CW, 28000, MINT);
       }
       out.push({ shapes, pics });
     }
@@ -500,14 +517,14 @@ export function buildPptx(r: ResearchReport, charts: ChartPngs = new Map(), vide
         if (!items.length) shapes += pTextBox(id++, x, top, colW, 500000, [{ t: c.items.length ? '—' : 'belum ada foto tahap ini', sz: 1000, color: MUTED }], { autofit: false });
         items.forEach((it, r) => {
           const y = top + r * rowH;
-          const imgW = colW * 0.42;
           const imgH = rowH - 90000;
+          // potret 3:4 (DEC-088)
+          const imgW = Math.min(colW * 0.42, imgH * 0.75);
           const bytes = it.image ? dataUrlBytes(it.image) : undefined;
           if (bytes) {
             const sz = jpegSize(bytes);
             const p = pic(bytes, 'jpeg', sz.w, sz.h, it.lines[0] ?? '', pics);
-            const f = fitBox(sz.w, sz.h, imgW, imgH);
-            shapes += pPic(id++, p.rid, x + (imgW - f.w) / 2, y + (imgH - f.h) / 2, f.w, f.h, p.file);
+            shapes += pPicCover(id++, p.rid, x, y, imgW, imgH, p.file, sz.w, sz.h);
           } else shapes += pTextBox(id++, x, y, imgW, imgH, [{ t: 'tanpa foto', sz: 800, color: MUTED }], { fill: PAPER, geom: 'roundRect', anchor: 'ctr', autofit: false });
           shapes += pTextBox(id++, x + imgW + 70000, y, colW - imgW - 70000, imgH, it.lines.map((t, j) => ({ t, sz: j === 1 ? 1000 : 850, b: j === 1, color: j === 0 ? MINT_D : '2A3A41' })), { autofit: false });
           if (r < items.length - 1) shapes += pRect(id++, x, y + rowH - 45000, colW, 9000, GRID);

@@ -17,7 +17,8 @@ export default defineConfig({
     baseURL: 'http://localhost:3000',
     channel: 'msedge',
     locale: 'id-ID',
-    trace: 'retain-on-failure',
+    // trace berat untuk tes panjang berfoto (penutupan bisa >2 menit) → nyalakan bila perlu: PW_TRACE=1 (DEC-088)
+    trace: process.env.PW_TRACE ? 'retain-on-failure' : 'off',
   },
   projects: [
     {

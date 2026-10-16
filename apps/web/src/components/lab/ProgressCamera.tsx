@@ -35,7 +35,7 @@ export function ProgressCamera({ records, onUploaded }: { records: CatatRecord[]
   const take = async (f?: File | null) => {
     if (!f) return;
     setBusy(true);
-    const url = await photoDataUrl(f, 1280, 0.82).catch(() => undefined);
+    const url = await photoDataUrl(f, 1280, 0.82, true).catch(() => undefined);
     setBusy(false);
     if (!url) return setErr('Foto tidak bisa dibaca. Coba ambil ulang.');
     setPhoto(url);
@@ -147,7 +147,7 @@ function ProgressSheet({ photo, records, onClose, onRetake, onSaved }: { photo: 
         <div className="flex flex-col gap-3 overflow-y-auto px-5 pb-5">
           <div className="relative">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={photo} alt="Foto progres yang baru diambil" className="max-h-56 w-full rounded-2xl bg-ink object-contain" data-testid="progress-photo" />
+            <img src={photo} alt="Foto progres yang baru diambil" className="mx-auto aspect-[3/4] max-h-72 rounded-2xl bg-ink object-cover" data-testid="progress-photo" />
             <button type="button" onClick={onRetake} disabled={busy} className="absolute bottom-2 right-2 rounded-full bg-white/90 px-3 py-1 text-xs font-semibold shadow">Ulangi foto</button>
           </div>
           {!complete.length && (

@@ -377,7 +377,7 @@ test.describe('GEMA RnD Lab', () => {
 
 test.describe('Hapus hasil riset', () => {
   test('Pencatatan Data: catatan awal N baris → simpan → data akhir berdampingan → Lihat hasil (awal, akhir, perbandingan + kesimpulan) & unduh', async ({ page }) => {
-    test.setTimeout(240_000);
+    test.setTimeout(480_000);
     const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==', 'base64');
     await page.goto('/lab?t=bahan');
     // urutan menu: Ringkasan → Pencatatan Data → Riset Produk → …
