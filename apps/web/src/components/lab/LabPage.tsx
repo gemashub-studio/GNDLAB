@@ -8,6 +8,7 @@ import { StrokeText } from '@/components/ui/StrokeText';
 import { LightTunnel } from '@/components/ui/LightTunnel';
 import { listEntries, listExperiments, listMedia, listProtocols, type DailyEntry, type Experiment, type LabProductId, type MediaItem, type ProtocolVersion, listDrafts, researchStatus } from '@/lib/labStore';
 import { BackupPanel } from './BackupPanel';
+import { SupabaseStatus } from './SupabaseStatus';
 import { ExperimentsTab } from './ExperimentsTab';
 import { LabOverview } from './LabOverview';
 import { LibraryTab } from './LibraryTab';
@@ -178,6 +179,11 @@ export function LabPage() {
         />
       )}
       {tab === 'ringkasan' && <BackupPanel onRestored={refresh} />}
+      {tab === 'ringkasan' && (
+        <div className="card">
+          <SupabaseStatus />
+        </div>
+      )}
       {tab === 'eksperimen' && (
         <ExperimentsTab items={items} entries={entries} media={media} protocols={protocols} product={product} setProduct={setProduct} openId={openId} setOpenId={setOpenId} refresh={refresh} />
       )}

@@ -178,3 +178,4 @@
 - DEC-080: judul GnD Lab StrokeText trigger=loop.
 - DEC-081: perlakuan pindah ke form data akhir, multi-kolom (+/x), Treatments = entry[] (kompatibel format lama).
 - DEC-082/083: LightTunnel di hero, Simpan dulu (akhirSavedAt), dialog konfirmasi di halaman (window.confirm diblokir di webview → hapus gagal), revisi data akhir, rumus berat awal − air − akhir.
+- DEC-084: Supabase init+link (gopdardjgllizvjpkfwm), env PROJECT_URL/ANON_KEY_SUPABASE -> NEXT_PUBLIC_* via next.config, status koneksi di Ringkasan. Belum ada tabel/sinkron. Catatan: PowerShell owner blokir npx.ps1 -> pakai npx.cmd.
