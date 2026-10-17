@@ -62,3 +62,35 @@ export function labGreeting(username?: string, now = new Date()): string {
 }
 
 export const CATAT_HINT = 'kamu mau buat pencatatan data baru? aku bisa bantu kapan pun kamu mau!';
+
+/**
+ * Pecah jawaban AI menjadi kartu berisi maks. `perCard` paragraf (DEC-093). Paragraf = blok teks dipisah baris kosong;
+ * blok yang sangat panjang dipecah per kalimat (±`maxChars` karakter) agar satu kartu tidak terlalu panjang.
+ */
+export function answerCards(text: string, perCard = 2, maxChars = 420): string[][] {
+  const blocks = text
+    .replace(/\r/g, '')
+    .split(/\n\s*\n/)
+    .map((b) => b.trim())
+    .filter(Boolean);
+  const paras: string[] = [];
+  for (const b of blocks) {
+    if (b.length <= maxChars || b.includes('\n')) {
+      paras.push(b);
+      continue;
+    }
+    // pecah per kalimat
+    let cur = '';
+    for (const s of b.match(/[^.!?]+[.!?]+["')\]]*\s*|[^.!?]+$/g) ?? [b]) {
+      if (cur && (cur + s).length > maxChars) {
+        paras.push(cur.trim());
+        cur = '';
+      }
+      cur += s;
+    }
+    if (cur.trim()) paras.push(cur.trim());
+  }
+  const cards: string[][] = [];
+  for (let i = 0; i < paras.length; i += perCard) cards.push(paras.slice(i, i + perCard));
+  return cards.length ? cards : [[text.trim()]];
+}

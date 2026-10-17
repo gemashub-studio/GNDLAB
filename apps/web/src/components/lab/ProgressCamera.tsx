@@ -24,6 +24,53 @@ export function ProgressCamera({ records, onUploaded }: { records: CatatRecord[]
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState<CatatRecord>();
   const [err, setErr] = useState('');
+  // DEC-093: bawaan tersembunyi di bawah layar (bergerak pelan). Desktop: arahkan kursor; HP: ketuk 2× di layar.
+  const [shown, setShown] = useState(false);
+  const [tipClosed, setTipClosed] = useState(true);
+  const hideTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const scheduleHide = (ms = 6000) => {
+    clearTimeout(hideTimer.current);
+    hideTimer.current = setTimeout(() => setShown(false), ms);
+  };
+  useEffect(() => {
+    try {
+      setTipClosed(localStorage.getItem('gemas-cam-tip-closed') === '1');
+    } catch {
+      setTipClosed(false);
+    }
+    let lastTap = 0;
+    let lastX = 0;
+    let lastY = 0;
+    const onTouchEnd = (e: TouchEvent) => {
+      const t = e.changedTouches[0];
+      if (!t || e.touches.length) return;
+      const el = e.target as HTMLElement | null;
+      if (el?.closest('input,textarea,select,button,a,[role="button"],[contenteditable="true"],[role="dialog"]')) return;
+      const now = Date.now();
+      if (now - lastTap < 320 && Math.hypot(t.clientX - lastX, t.clientY - lastY) < 40) {
+        lastTap = 0;
+        setShown(true);
+        scheduleHide();
+        return;
+      }
+      lastTap = now;
+      lastX = t.clientX;
+      lastY = t.clientY;
+    };
+    document.addEventListener('touchend', onTouchEnd, { passive: true });
+    return () => {
+      document.removeEventListener('touchend', onTouchEnd);
+      clearTimeout(hideTimer.current);
+    };
+  }, []);
+  const closeTip = () => {
+    setTipClosed(true);
+    try {
+      localStorage.setItem('gemas-cam-tip-closed', '1');
+    } catch {
+      /* abaikan */
+    }
+  };
 
   const open = () => {
     setErr('');
@@ -44,11 +91,39 @@ export function ProgressCamera({ records, onUploaded }: { records: CatatRecord[]
   return (
     <>
       <nav aria-label="Aksi cepat" className="pointer-events-none fixed inset-x-0 bottom-0 z-[55] flex justify-center px-4 pb-[max(14px,env(safe-area-inset-bottom))]" data-testid="float-nav">
-        <div className="pointer-events-auto relative flex h-11 w-[132px] items-end justify-center rounded-2xl border border-acid/40 bg-ink/90 pb-1 shadow-[0_10px_30px_rgba(14,26,31,0.35)] backdrop-blur" data-testid="float-cam-card">
+        <div
+          className={`pointer-events-auto relative transition-transform duration-500 ease-out ${shown ? 'translate-y-0' : 'translate-y-[calc(100%+30px)]'}`}
+          onMouseEnter={() => {
+            clearTimeout(hideTimer.current);
+            setShown(true);
+          }}
+          onMouseLeave={() => scheduleHide(1200)}
+          onFocusCapture={() => {
+            clearTimeout(hideTimer.current);
+            setShown(true);
+          }}
+          data-testid="float-cam-wrap"
+          data-shown={shown}
+        >
+        {/* tool bar kecil (bisa ditutup) */}
+        {shown && !tipClosed && (
+          <div className="alert-slide-in absolute -top-[74px] left-1/2 flex -translate-x-1/2 items-center gap-2 whitespace-nowrap rounded-full bg-ink px-3 py-1.5 text-xs font-semibold text-paper shadow-lg" role="status" data-testid="float-cam-tip">
+            Upload Progres Harian?
+            <button type="button" onClick={closeTip} aria-label="Tutup petunjuk" className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-white/15 hover:bg-white/30" data-testid="float-cam-tip-close">✕</button>
+          </div>
+        )}
+        <div className={`relative flex h-11 w-[132px] items-end justify-center rounded-2xl border border-acid/40 bg-ink/90 pb-1 shadow-[0_10px_30px_rgba(14,26,31,0.35)] backdrop-blur ${shown ? '' : 'cam-bob'}`} data-testid="float-cam-card">
           {/* tombol kamera timbul: di tengah, naik ke atas dan lebih besar dari kartunya */}
           <button
             type="button"
-            onClick={open}
+            onClick={() => {
+              if (!shown) {
+                setShown(true);
+                scheduleHide();
+                return;
+              }
+              open();
+            }}
             disabled={busy}
             className="cam-raise absolute -top-7 left-1/2 inline-flex h-[60px] w-[60px] -translate-x-1/2 items-center justify-center rounded-full border-4 border-surface bg-gradient-to-b from-[#8ff0de] to-acid text-ink transition hover:-translate-y-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-acid disabled:opacity-60"
             aria-label={busy ? 'Memproses foto…' : err ? 'Ulangi foto progres' : 'Buka kamera untuk foto progres harian'}
@@ -61,6 +136,7 @@ export function ProgressCamera({ records, onUploaded }: { records: CatatRecord[]
             </svg>
           </button>
           {err && <span className="absolute -bottom-0.5 right-2 h-2 w-2 rounded-full bg-safety" aria-hidden />}
+        </div>
         </div>
         <input
           ref={file}

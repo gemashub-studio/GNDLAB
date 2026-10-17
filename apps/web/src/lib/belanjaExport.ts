@@ -16,7 +16,7 @@ export function lpjTreeSlides(r: LpjReport, generatedAt = new Date().toLocaleStr
     roots: p.receipts.map((ph) => ({ image: ph.dataUrl, label: ph.name })),
     rootLabel: `Nota / bukti bayar — ${toko(p.title, i)}`,
     leaves: p.goods.map((g) => ({ image: g.dataUrl, label: g.label?.trim() || '' })),
-    footer: `GEMA RnD Lab · laporan belanja ${r.id} · dibuat ${generatedAt}`,
+    footer: `GnD Lab · laporan belanja ${r.id} · dibuat ${generatedAt}`,
   }));
 }
 
@@ -60,6 +60,6 @@ export function lpjReport(r: LpjReport, generatedAt = new Date().toLocaleString(
       { label: 'Barang', value: String(r.proofs.reduce((n, p) => n + p.goods.length, 0)) },
     ],
     blocks,
-    footer: `GEMA RnD Lab · laporan belanja ${r.id} · dibuat ${generatedAt}`,
+    footer: `GnD Lab · laporan belanja ${r.id} · dibuat ${generatedAt}`,
   };
 }

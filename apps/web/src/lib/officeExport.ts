@@ -215,7 +215,7 @@ export function buildDocx(r: ResearchReport, charts: ChartPngs = new Map()): Uin
     );
 
   // sampul
-  body.push(wPara('GEMA RND LAB · RISET PRODUK', { b: true, sz: 18, color: MINT_D, mono: true, after: 240 }));
+  body.push(wPara('GnD LAB · RISET PRODUK', { b: true, sz: 18, color: MINT_D, mono: true, after: 240 }));
   body.push(wP(wRun(r.title, { b: true, sz: 52, color: INK }), { after: 200, border: `<w:pBdr><w:bottom w:val="single" w:sz="24" w:space="8" w:color="${MINT}"/></w:pBdr>` }));
   body.push(wP(wRun(`  ${r.cover.status}  `, { b: true, sz: 20, color: INK, shade: r.cover.done ? MINT : AMBER }), { after: 280 }));
   body.push(
@@ -402,7 +402,7 @@ export function buildPptx(r: ResearchReport, charts: ChartPngs = new Map(), vide
   {
     const pics: Slide['pics'] = [];
     let shapes = pRect(5, 0, 0, SW, SH, INK) + pRect(6, M, 1150000, 1100000, 60000, MINT);
-    shapes += pTextBox(7, M, 650000, CW, 400000, [{ t: 'GEMA RND LAB · RISET PRODUK', sz: 1200, b: true, color: MINT, mono: true }]);
+    shapes += pTextBox(7, M, 650000, CW, 400000, [{ t: 'GnD LAB · RISET PRODUK', sz: 1200, b: true, color: MINT, mono: true }]);
     const img = r.cover.image?.dataUrl ? dataUrlBytes(r.cover.image.dataUrl) : undefined;
     const textW = img ? CW * 0.56 : CW;
     shapes += pTextBox(8, M, 1350000, textW, 1500000, [{ t: r.title, sz: 3400, b: true, color: 'FFFFFF' }], { autofit: true });
@@ -485,6 +485,26 @@ export function buildPptx(r: ResearchReport, charts: ChartPngs = new Map(), vide
   }
 
   const BODY_TOP = 1150000;
+  /** Tinggi baris foto di dalam slide (foto + keterangan). */
+  const IMG_STRIP_H = 1900000;
+  /** Baris foto (maks. 4) mengisi ruang tersisa sebuah slide: foto dipotong rapi + keterangan di bawahnya. */
+  const drawImgStrip = (sl: Slide, imgs: ResearchReport['blocks'][number]['images'], y: number, id0: number): number => {
+    let id = id0;
+    const n = Math.max(1, imgs.length);
+    const gap = 180000;
+    const boxW = Math.min(2700000, (CW - gap * (n - 1)) / n);
+    const boxH = IMG_STRIP_H - 360000;
+    imgs.forEach((im, k) => {
+      const x = M + k * (boxW + gap);
+      const bytes = dataUrlBytes(im.dataUrl);
+      if (!bytes) return;
+      const sz = jpegSize(bytes);
+      const p = pic(bytes, 'jpeg', sz.w, sz.h, imgCaption(im), sl.pics);
+      sl.shapes += pPicCover(id++, p.rid, x, y, boxW, boxH, p.file, sz.w, sz.h);
+      sl.shapes += pTextBox(id++, x, y + boxH + 30000, boxW, 320000, [{ t: imgCaption(im), sz: 900 }], { autofit: false });
+    });
+    return id;
+  };
   const BODY_BOTTOM = SH - 600000;
   const TROW = 290000;
   const rowsFit = (h: number) => Math.max(1, Math.floor(h / TROW) - 1);
@@ -495,6 +515,7 @@ export function buildPptx(r: ResearchReport, charts: ChartPngs = new Map(), vide
   const shrink = (p: PPara, sz: number): PPara => (Array.isArray(p) ? p.map((r) => ({ ...r, sz: Math.min(r.sz ?? sz, sz) })) : { ...p, sz: Math.min(p.sz ?? sz, sz) });
   let pack: { slide: Slide; y: number; id: number } | null = null;
   let tail: { slide: Slide; y: number } | undefined;
+  let sectionPrefix: { head: string; num?: number } | undefined;
 
   /** Progres 3 tahap berdampingan (Harian | Mingguan | Bulanan): foto berderet ke bawah + data di sampingnya, maks. 10 foto/slide. */
   function progressSlides(cols: NonNullable<ResearchReport['blocks'][number]['progressColumns']>, head: string, num?: number): Slide[] {
@@ -537,8 +558,19 @@ export function buildPptx(r: ResearchReport, charts: ChartPngs = new Map(), vide
 
   for (const b0 of r.blocks.filter((x) => !x.pptxSkip)) {
     const b = b0.pptxTable ? { ...b0, table: b0.pptxTable } : b0;
-    const num = b.level === 1 ? ++sec : undefined;
-    const head = b.heading;
+    let num = b.level === 1 ? ++sec : undefined;
+    let head = b.heading;
+    // DEC-093: bagian tanpa isi (mis. "Laporan harian") tidak dibuatkan slide sendiri → awalan judul slide berikutnya
+    const emptySection = !b.lines.length && !(b.table?.rows.length) && !(b.charts?.length) && !b.photoPairs && !b.progressColumns && !b.cards?.length && !b.photoCards?.length && (b.pptxOmitImages || !b.images.length);
+    if (emptySection) {
+      sectionPrefix = { head, ...(num && { num }) };
+      continue;
+    }
+    if (sectionPrefix) {
+      head = `${sectionPrefix.head} · ${head}`;
+      num = num ?? sectionPrefix.num;
+      sectionPrefix = undefined;
+    }
     const lines = b.lines.map(linePara);
     const tableRows = b.table?.rows ?? [];
     const lineChunks: PPara[][] = [];
@@ -612,23 +644,49 @@ export function buildPptx(r: ResearchReport, charts: ChartPngs = new Map(), vide
     // DEC-086: slide dipadatkan — teks, grafik, dan tabel blok yang sama digabung selama muat;
     // blok teks pendek berturut-turut ditumpuk di satu slide. Isi/penjelasan tidak diubah.
     const charts0 = b.charts ?? [];
-    const textOnly = !b.photoPairs && !charts0.length && !tableRows.length && (b.pptxOmitImages || !b.images.length);
     const blockLines = b.photoPairs ? [] : lines;
-    if (textOnly && blockLines.length <= LINES_PER_SLIDE) {
-      const need = 420000 + textH(Math.max(wrapped(blockLines, 110), 1));
+    const inlineImgs = b.pptxOmitImages ? [] : b.images.filter((im) => !(im.video && im.mediaId && videos.get(im.mediaId)) && dataUrlBytes(im.dataUrl));
+    const small = !b.photoPairs && !b.pptxAfterTable && !charts0.length && tableRows.length <= 10 && blockLines.length <= 7 && inlineImgs.length <= 4 && inlineImgs.length === (b.pptxOmitImages ? 0 : b.images.length);
+    if (small) {
+      const linesH = blockLines.length ? (tableRows.length || inlineImgs.length ? wrapped(blockLines, 135) * 260000 + 60000 : textH(wrapped(blockLines, 110))) : 0;
+      const tableH = tableRows.length ? (tableRows.length + 1) * TROW + 80000 : 0;
+      const imgH = inlineImgs.length ? IMG_STRIP_H : 0;
+      const bodyH = Math.max(linesH + tableH + imgH, blockLines.length || tableRows.length || inlineImgs.length ? 0 : 400000);
+      const draw = (sl: Slide, y0: number, idBase: number) => {
+        let y = y0;
+        let id = idBase;
+        if (blockLines.length) {
+          const ps = tableRows.length || inlineImgs.length ? blockLines.map((p) => shrink(p, 1200)) : blockLines;
+          sl.shapes += pTextBox(id++, M, y, CW, linesH, ps);
+          y += linesH;
+        } else if (!tableRows.length && !inlineImgs.length) {
+          sl.shapes += pTextBox(id++, M, y, CW, 400000, [{ t: 'belum dicatat', sz: 1500, color: MUTED }]);
+          y += 400000;
+        }
+        if (tableRows.length) {
+          sl.shapes += pTable(id++, M, y, CW, b.table!.head, tableRows, { rowH: TROW, sz: 1000 });
+          y += tableH;
+        }
+        if (inlineImgs.length) {
+          id = drawImgStrip(sl, inlineImgs, y, id);
+          y += imgH;
+        }
+        return { y, id };
+      };
+      const need = 420000 + bodyH;
       if (pack && pack.y + need <= BODY_BOTTOM) {
-        // tumpuk di slide teks sebelumnya: sub-judul bernomor + baris
-        let sh = '';
-        if (num) sh += pTextBox(pack.id++, M, pack.y, 560000, 340000, [{ t: pad2(num), sz: 1100, b: true, color: MINT, mono: true }], { fill: INK, geom: 'roundRect', anchor: 'ctr', autofit: false });
-        sh += pTextBox(pack.id++, num ? M + 640000 : M, pack.y - 20000, CW - 640000, 380000, [{ t: head, sz: 1800, b: true }], { anchor: 'ctr', autofit: false });
-        sh += pTextBox(pack.id++, M, pack.y + 420000, CW, textH(Math.max(wrapped(blockLines, 110), 1)), blockLines.length ? blockLines : [{ t: 'belum dicatat', sz: 1500, color: MUTED }]);
-        pack.slide.shapes += sh;
-        pack.y += need + 120000;
+        // tumpuk di slide sebelumnya: sub-judul (bernomor bila bagian utama) + isi
+        if (num) pack.slide.shapes += pTextBox(pack.id++, M, pack.y, 560000, 340000, [{ t: pad2(num), sz: 1100, b: true, color: MINT, mono: true }], { fill: INK, geom: 'roundRect', anchor: 'ctr', autofit: false });
+        pack.slide.shapes += pTextBox(pack.id++, num ? M + 640000 : M, pack.y - 20000, CW - 640000, 380000, [{ t: head, sz: num ? 1800 : 1500, b: true }], { anchor: 'ctr', autofit: false });
+        const r = draw(pack.slide, pack.y + 420000, pack.id);
+        pack.id = r.id;
+        pack.y = r.y + 160000;
         continue;
       }
-      const sl: Slide = { shapes: t() + pTextBox(30, M, BODY_TOP, CW, textH(Math.max(blockLines.length, 1)), blockLines.length ? blockLines : [{ t: 'belum dicatat', sz: 1500, color: MUTED }]), pics: [] };
+      const sl: Slide = { shapes: t(), pics: [] };
       slides.push(sl);
-      pack = { slide: sl, y: BODY_TOP + textH(Math.max(wrapped(blockLines, 110), 1)) + 200000, id: 200 };
+      const r = draw(sl, BODY_TOP, 200);
+      pack = { slide: sl, y: r.y + 200000, id: r.id + 1 };
       continue;
     }
     pack = null;
@@ -638,6 +696,7 @@ export function buildPptx(r: ResearchReport, charts: ChartPngs = new Map(), vide
     const lastLines = chunks.length ? chunks.pop()! : [];
     for (const c of chunks) slides.push({ shapes: t() + pTextBox(30, M, BODY_TOP, CW, SH - 1900000, c), pics: [] });
     const rows = [...tableRows];
+    let inlineDone = 0;
     const compactLines = charts0.length > 0 || rows.length > 0;
     if (!b.photoPairs && (lastLines.length || charts0.length || rows.length || !b.images.length)) {
       // slide gabungan: teks (ringkas) → grafik (maks. 2 berdampingan) → tabel di bawahnya
@@ -699,6 +758,13 @@ export function buildPptx(r: ResearchReport, charts: ChartPngs = new Map(), vide
         }
       }
       const comp: Slide = { shapes, pics };
+      // foto ikut di slide yang sama bila tabel sudah habis & masih ada ruang (DEC-093)
+      if (!rows.length && inlineImgs.length && y + IMG_STRIP_H <= BODY_BOTTOM) {
+        const take = inlineImgs.slice(0, 4);
+        drawImgStrip(comp, take, y + 60000, 600);
+        y += IMG_STRIP_H + 60000;
+        inlineDone = take.length;
+      }
       slides.push(comp);
       tail = { slide: comp, y: rows.length ? BODY_BOTTOM : y };
       // grafik ke-3 dst: 2 per slide
@@ -744,10 +810,11 @@ export function buildPptx(r: ResearchReport, charts: ChartPngs = new Map(), vide
       target.slide.shapes += pTable(71, M, y0 + 330000, CW, at.head, at.rows, { rowH: TROW, sz: 1000 });
     }
     // foto: 6 per slide (2 baris × 3); kelompok berisi video tetap 3 per slide agar video cukup besar
-    for (let i = 0; !b.pptxOmitImages && i < b.images.length; ) {
-      const hasVid = b.images.slice(i, i + 6).some((im) => im.video && im.mediaId && videos.get(im.mediaId));
+    const restImgs = inlineDone ? b.images.filter((im) => !inlineImgs.slice(0, inlineDone).includes(im)) : b.images;
+    for (let i = 0; !b.pptxOmitImages && i < restImgs.length; ) {
+      const hasVid = restImgs.slice(i, i + 6).some((im) => im.video && im.mediaId && videos.get(im.mediaId));
       const take = hasVid ? 3 : 6;
-      const group = b.images.slice(i, i + take);
+      const group = restImgs.slice(i, i + take);
       i += take;
       const pics: Slide['pics'] = [];
       const vids: NonNullable<Slide['vids']> = [];

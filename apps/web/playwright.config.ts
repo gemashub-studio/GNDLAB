@@ -14,7 +14,8 @@ export default defineConfig({
   workers: 1,
   reporter: [['list']],
   use: {
-    baseURL: 'http://localhost:3000',
+    // server uji sendiri (port 3210) dengan Supabase DIMATIKAN agar tidak tertahan di layar login (DEC-093)
+    baseURL: 'http://localhost:3210',
     channel: 'msedge',
     locale: 'id-ID',
     // trace berat untuk tes panjang berfoto (penutupan bisa >2 menit) → nyalakan bila perlu: PW_TRACE=1 (DEC-088)
@@ -31,6 +32,12 @@ export default defineConfig({
   ],
   // Uji PWA memakai server produksi terpisah (PWA_URL) → jangan nyalakan dev server.
   ...(!process.env.PWA_URL && {
-    webServer: { command: 'pnpm dev', url: 'http://localhost:3000', reuseExistingServer: true, timeout: 180_000 },
+    webServer: {
+      // server tetap bisa dinyalakan terpisah (preview "web-e2e") agar uji memakai server yang sudah hangat
+      command: 'node e2e/dev-server.mjs',
+      url: 'http://localhost:3210',
+      reuseExistingServer: true,
+      timeout: 600_000,
+    },
   }),
 });

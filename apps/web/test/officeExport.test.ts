@@ -59,7 +59,11 @@ describe('ekspor laporan riset produk (DEC-052)', () => {
     expect(docXml).toContain('Kopra oven &lt;bertahap&gt; &amp; &quot;putih&quot;');
     const names = zipNames(buildPptx(r));
     for (const n of ['ppt/presentation.xml', 'ppt/slideMasters/slideMaster1.xml', 'ppt/slideLayouts/slideLayout1.xml', 'ppt/theme/theme1.xml', 'ppt/slides/slide1.xml']) expect(names).toContain(n);
-    expect(names.filter((n) => /^ppt\/slides\/slide\d+\.xml$/.test(n)).length).toBeGreaterThanOrEqual(r.blocks.length + 2);
+    // DEC-093: slide dipadatkan (bagian kecil ditumpuk) tanpa menghilangkan isi — semua judul bagian tetap ada
+    const pptxXml = new TextDecoder().decode(buildPptx(r));
+    const esc = (t: string) => t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    for (const b of r.blocks.filter((x) => !x.pptxSkip)) expect(pptxXml).toContain(esc(b.heading));
+    expect(names.filter((n) => /^ppt\/slides\/slide\d+\.xml$/.test(n)).length).toBeLessThan(r.blocks.length + 2);
   });
 
   it('ukuran JPEG dibaca dari penanda SOF', () => {

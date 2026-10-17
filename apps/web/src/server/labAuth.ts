@@ -58,15 +58,41 @@ const anon = (): SupabaseClient => createClient(env().url, env().anon, noSession
 
 async function sendOtpEmail(to: string, code: string, purpose: OtpPurpose, username: string, origin: string) {
   const mail = otpEmail({ code, purpose, username, logoUrl: `${origin}/email-logo.png`, siteUrl: `${origin}/lab` });
-  const res = await fetch('https://api.resend.com/emails', {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${env().resend}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ from: env().from, to: [to], subject: mail.subject, html: mail.html, text: mail.text }),
+  const body = JSON.stringify({
+    from: env().from,
+    to: [to],
+    subject: mail.subject,
+    html: mail.html,
+    text: mail.text,
+    // ID unik per email agar Gmail tidak menumpuk kode dalam satu utas
+    headers: { 'X-Entity-Ref-ID': crypto.randomUUID() },
+    tags: [{ name: 'app', value: 'gnd-lab' }, { name: 'purpose', value: purpose }],
   });
-  if (!res.ok) {
-    const detail = await res.text().catch(() => '');
-    console.error('[lab-auth] Resend gagal', res.status, detail.slice(0, 300));
-    throw new AuthError(502, 'Email kode verifikasi gagal dikirim. Coba lagi sebentar lagi.');
+  // 1x coba ulang bila Resend sibuk / gangguan sementara (DEC-093)
+  for (let attempt = 1; attempt <= 2; attempt++) {
+    const res = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${env().resend}`, 'Content-Type': 'application/json', 'Idempotency-Key': `otp-${purpose}-${to}-${code}` },
+      body,
+    }).catch(() => undefined);
+    if (res?.ok) {
+      const j = (await res.json().catch(() => ({}))) as { id?: string };
+      console.log('[lab-auth] OTP terkirim lewat Resend', purpose, j.id ?? '');
+      return;
+    }
+    const detail = res ? await res.text().catch(() => '') : 'network error';
+    console.error('[lab-auth] Resend gagal', attempt, res?.status ?? 0, detail.slice(0, 300));
+    const retryable = !res || res.status === 429 || res.status >= 500;
+    if (!retryable || attempt === 2) {
+      let name = '';
+      try {
+        name = String((JSON.parse(detail) as { name?: string }).name ?? '');
+      } catch {
+        /* bukan JSON */
+      }
+      throw new AuthError(502, `Email kode verifikasi gagal dikirim${name ? ` (${name})` : ''}. Coba lagi sebentar lagi.`);
+    }
+    await new Promise((r) => setTimeout(r, 1500));
   }
 }
 
@@ -92,17 +118,29 @@ async function createOtp(email: string, purpose: OtpPurpose, payload?: string): 
 async function consumeOtp(email: string, purpose: OtpPurpose, code: string): Promise<{ payload: string | null }> {
   if (!isOtpFormat(code)) throw new AuthError(400, 'Kode terdiri dari 6 angka.');
   const db = admin();
-  const { data, error } = await db.from('auth_otps').select('id,code_hash,payload,expires_at,attempts').eq('email', email).eq('purpose', purpose).is('used_at', null).order('created_at', { ascending: false }).limit(1);
+  // semua kode yang masih berlaku (email yang datang terlambat berisi kode lama tetap diterima, DEC-093)
+  const { data, error } = await db
+    .from('auth_otps')
+    .select('id,code_hash,payload,expires_at,attempts')
+    .eq('email', email)
+    .eq('purpose', purpose)
+    .is('used_at', null)
+    .gt('expires_at', new Date().toISOString())
+    .order('created_at', { ascending: false })
+    .limit(OTP_MAX_PER_HOUR);
   if (error) throw new AuthError(500, 'Server sibuk. Coba lagi.');
-  const row = data?.[0] as { id: string; code_hash: string; payload: string | null; expires_at: string; attempts: number } | undefined;
-  if (!row || Date.parse(row.expires_at) < Date.now()) throw new AuthError(400, 'Kode sudah kedaluwarsa. Minta kode baru.');
-  if (row.attempts >= OTP_MAX_ATTEMPTS) throw new AuthError(429, 'Terlalu banyak percobaan. Minta kode baru.');
-  if (!otpMatches(secret(), purpose, email, code, row.code_hash)) {
-    await db.from('auth_otps').update({ attempts: row.attempts + 1 }).eq('id', row.id);
-    throw new AuthError(400, `Kode salah. Sisa percobaan: ${OTP_MAX_ATTEMPTS - row.attempts - 1}.`);
+  const rows = (data ?? []) as { id: string; code_hash: string; payload: string | null; expires_at: string; attempts: number }[];
+  const latest = rows[0];
+  if (!latest) throw new AuthError(400, 'Kode sudah kedaluwarsa. Minta kode baru.');
+  if (latest.attempts >= OTP_MAX_ATTEMPTS) throw new AuthError(429, 'Terlalu banyak percobaan. Minta kode baru.');
+  const hit = rows.find((r) => otpMatches(secret(), purpose, email, code, r.code_hash));
+  if (!hit) {
+    await db.from('auth_otps').update({ attempts: latest.attempts + 1 }).eq('id', latest.id);
+    throw new AuthError(400, `Kode salah. Sisa percobaan: ${OTP_MAX_ATTEMPTS - latest.attempts - 1}.`);
   }
-  await db.from('auth_otps').update({ used_at: new Date().toISOString(), payload: null }).eq('id', row.id);
-  return { payload: row.payload };
+  // pakai kode ini & batalkan kode lain yang masih berlaku untuk email yang sama
+  await db.from('auth_otps').update({ used_at: new Date().toISOString(), payload: null }).in('id', rows.map((r) => r.id));
+  return { payload: hit.payload };
 }
 
 async function userIdByEmail(email: string): Promise<string | undefined> {

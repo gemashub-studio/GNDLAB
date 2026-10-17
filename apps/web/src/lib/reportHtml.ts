@@ -101,7 +101,7 @@ export async function buildReportHtml(r: ResearchReport, media: readonly MediaIt
     const url = await src(c.image);
     coverMedia = c.image.video && url.startsWith('data:video') ? `<video class="cover-media" controls playsinline src="${url}"></video>` : url ? `<img class="cover-media" src="${url}" alt="">` : '';
   }
-  out.push(`<header class="cover"><div class="brand">GEMA RND LAB · RISET PRODUK</div><div class="bar"></div><h1>${esc(r.title)}</h1>
+  out.push(`<header class="cover"><div class="brand">GnD LAB · RISET PRODUK</div><div class="bar"></div><h1>${esc(r.title)}</h1>
 <span class="pill" style="background:${c.done ? 'var(--mint2)' : 'var(--amber)'}">${esc(c.status)}</span>
 <dl class="meta">${c.meta.map(([k, v]) => `<div><dt>${esc(k)}</dt><dd>${esc(v)}</dd></div>`).join('')}</dl>${coverMedia}</header>`);
   let n = 0;

@@ -8,6 +8,7 @@ import { FillBar } from '@/components/ui/bars';
 import { Hint } from '@/components/ui/Hint';
 import { WarningList } from '@/components/ui/Warnings';
 import { HomeCtas, HomeWelcome } from '@/components/auth/HomeAuth';
+import { HomeDriftBg } from '@/components/home/HomeDriftBg';
 import { COMMODITY_UI, formLabel } from '@/lib/catalog';
 import { fmt, fmtTon } from '@/lib/format';
 import { containerFtName } from '@/lib/imperial';
@@ -55,7 +56,10 @@ export default async function Home() {
 
   return (
     <>
-      <header className="flex flex-wrap items-end justify-between gap-[18px]">
+      {/* hero dengan latar animasi DriftWall (DEC-092); kartu Mulai cepat menutupi bagian bawahnya */}
+      <div className="relative isolate">
+      <HomeDriftBg />
+      <header className="flex flex-wrap items-end justify-between gap-[18px] pb-16 pt-10 sm:pb-20 sm:pt-14">
         <div className="flex flex-col gap-2.5">
           <HomeWelcome />
           <span className="tag-mono self-start">DATASET v{ds.version} // ENGINE V1</span>
@@ -69,9 +73,10 @@ export default async function Home() {
           <HomeCtas />
         </div>
       </header>
+      </div>
 
       {/* Mulai cepat — orientasi tugas untuk pengguna baru */}
-      <section aria-label="Mulai cepat" className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
+      <section aria-label="Mulai cepat" className="relative z-10 grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
         {[
           { href: '/proses', n: '01', t: 'Kelapa masuk, jadi apa aja?', d: 'Dari kupas sabut sampai kopra & arang — lengkap rak jemur & dipisah per asal kelapa.' },
           { href: '/muat?wizard=1', n: '02', t: 'Muat berapa di container?', d: 'Tinggal pilih barang, bentuk, dan container — langsung ketemu jawabannya.' },

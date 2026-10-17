@@ -102,3 +102,45 @@ export function otpEmail(opts: { code: string; purpose: OtpPurpose; username: st
   const text = `Halo ${opts.username},\n\nKode verifikasi GnD Lab kamu untuk ${action}: ${opts.code}\nBerlaku 10 menit dan hanya sekali pakai.\n\nBukan kamu? Abaikan email ini.\n${opts.siteUrl}`;
   return { subject, html, text };
 }
+
+export interface PendingItem {
+  id: string;
+  item: string;
+  count: number;
+  createdAt: string;
+  /** Data akhir sudah tersimpan sebagian ("Simpan dulu"). */
+  draft: boolean;
+}
+
+/** Email pengingat (DEC-093): daftar pencatatan data yang belum lengkap, dikirim tiap jam selama masih ada. */
+export function reminderEmail(opts: { username: string; items: PendingItem[]; logoUrl: string; siteUrl: string }): { subject: string; html: string; text: string } {
+  const n = opts.items.length;
+  const subject = `Pengingat GnD Lab: ${n} pencatatan data belum lengkap`;
+  const rows = opts.items
+    .slice(0, 20)
+    .map(
+      (i) =>
+        `<tr><td style="padding:8px 10px;border-bottom:1px solid #E2E8EA;font:600 13px 'Courier New',monospace;color:#0E1A1F">${esc(i.id)}</td><td style="padding:8px 10px;border-bottom:1px solid #E2E8EA;font-size:13px;color:#2A3A41">${esc(i.item)} · ${i.count} item</td><td style="padding:8px 10px;border-bottom:1px solid #E2E8EA;font-size:12px;color:${i.draft ? '#B7791F' : '#5B6B72'}">${i.draft ? 'data akhir sebagian' : 'menunggu data akhir'}</td></tr>`,
+    )
+    .join('');
+  const html = `<!doctype html><html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>${esc(subject)}</title></head>
+<body style="margin:0;padding:0;background:#EEF2F3;font-family:Arial,Helvetica,sans-serif;color:#0E1A1F">
+<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#EEF2F3;padding:28px 12px"><tr><td align="center">
+<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:520px;background:#FFFFFF;border-radius:16px;overflow:hidden;border:1px solid #DCE3E6">
+<tr><td style="background:#0E1A1F;padding:20px 24px"><img src="${esc(opts.logoUrl)}" width="168" height="44" alt="gemasSTUDIO · GnD Lab" style="display:block;border:0"></td></tr>
+<tr><td style="padding:26px 24px 8px">
+<p style="margin:0 0 6px;font-size:13px;letter-spacing:.12em;text-transform:uppercase;color:#B7791F;font-weight:700">Pengingat</p>
+<h1 style="margin:0 0 10px;font-size:21px;line-height:1.3">Halo ${esc(opts.username)}, masih ada ${n} pencatatan yang belum lengkap</h1>
+<p style="margin:0 0 16px;font-size:14px;line-height:1.6;color:#2A3A41">Lengkapi data akhirnya di GnD Lab supaya hasil, perbandingan, dan laporannya bisa diunduh.</p>
+<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border:1px solid #E2E8EA;border-radius:10px;border-collapse:separate;overflow:hidden">${rows}</table>
+${n > 20 ? `<p style="margin:8px 0 0;font-size:12px;color:#5B6B72">…dan ${n - 20} lainnya.</p>` : ''}
+<p style="margin:20px 0 6px;text-align:center"><a href="${esc(opts.siteUrl)}" style="display:inline-block;padding:12px 22px;background:#63E6CF;color:#0E1A1F;border-radius:10px;font-weight:700;text-decoration:none">Buka Pencatatan Data</a></p>
+</td></tr>
+<tr><td style="padding:14px 24px;border-top:1px solid #E2E8EA;font-size:11px;line-height:1.6;color:#8A9AA0">Pengingat otomatis dikirim tiap jam selama masih ada data yang belum lengkap, dan berhenti sendiri bila semua sudah lengkap.</td></tr>
+</table></td></tr></table></body></html>`;
+  const text = `Halo ${opts.username},\n\nMasih ada ${n} pencatatan data GnD Lab yang belum lengkap:\n${opts.items
+    .slice(0, 20)
+    .map((i) => `- ${i.id} · ${i.item} · ${i.count} item (${i.draft ? 'data akhir sebagian' : 'menunggu data akhir'})`)
+    .join('\n')}\n\nLengkapi di ${opts.siteUrl}\n\nPengingat ini dikirim tiap jam selama masih ada data yang belum lengkap.`;
+  return { subject, html, text };
+}

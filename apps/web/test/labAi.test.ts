@@ -29,3 +29,26 @@ describe('Tanya Lab AI & username (DEC-087)', () => {
     expect(emailSlug('@x.com')).toBe('pengguna');
   });
 });
+
+describe('jawaban AI sebagai kartu & email pengingat (DEC-093)', () => {
+  it('maks. 2 paragraf per kartu; paragraf sangat panjang dipecah per kalimat', async () => {
+    const { answerCards } = await import('@/lib/labAi');
+    expect(answerCards('A1.\n\nB2.\n\nC3.\n\nD4.\n\nE5.')).toEqual([['A1.', 'B2.'], ['C3.', 'D4.'], ['E5.']]);
+    expect(answerCards('Satu paragraf saja.')).toEqual([['Satu paragraf saja.']]);
+    const long = Array.from({ length: 12 }, (_, i) => `Kalimat nomor ${i + 1} tentang briket kelapa yang cukup panjang.`).join(' ');
+    const cards = answerCards(long, 2, 200);
+    expect(cards.flat().every((p) => p.length <= 260)).toBe(true);
+    expect(cards.every((c) => c.length <= 2)).toBe(true);
+    expect(cards.flat().join(' ').replace(/\s+/g, ' ')).toBe(long);
+  });
+  it('email pengingat berisi daftar pencatatan belum lengkap & tautan', async () => {
+    const { reminderEmail } = await import('@/server/labAuthCore');
+    const m = reminderEmail({ username: 'dimas', items: [{ id: 'PD-261017-01', item: 'Kelapa tua', count: 12, createdAt: 'x', draft: true }, { id: 'PD-261017-02', item: 'Sekam', count: 3, createdAt: 'y', draft: false }], logoUrl: 'https://x/email-logo.png', siteUrl: 'https://x/lab?t=bahan' });
+    expect(m.subject).toBe('Pengingat GnD Lab: 2 pencatatan data belum lengkap');
+    expect(m.html).toContain('PD-261017-01');
+    expect(m.html).toContain('data akhir sebagian');
+    expect(m.html).toContain('menunggu data akhir');
+    expect(m.html).toContain('href="https://x/lab?t=bahan"');
+    expect(m.text).toContain('Sekam · 3 item');
+  });
+});

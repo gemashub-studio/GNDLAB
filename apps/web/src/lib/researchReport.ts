@@ -276,7 +276,7 @@ export function buildResearchReport(
     { label: 'Grafik', value: String(res.charts.length) },
     { label: 'Foto & video', value: String(allImages.length) },
   ];
-  return { title: `Riset Produk — ${latest.name} (versi ${latest.version})`, subtitle: `${key} · ${protocolProductName(latest)} · ${STATUS[status]}`, generatedAt, cover, kpis, blocks, footer: `GEMA RnD Lab · dibuat ${generatedAt}` };
+  return { title: `Riset Produk — ${latest.name} (versi ${latest.version})`, subtitle: `${key} · ${protocolProductName(latest)} · ${STATUS[status]}`, generatedAt, cover, kpis, blocks, footer: `GnD Lab · dibuat ${generatedAt}` };
 }
 
 /**
@@ -331,6 +331,6 @@ export function buildDailyResearchReport(
     subtitle: `${key} · ${entry.id} · ${entry.entryDate}`,
     cover: { ...full.cover, meta: [['Laporan', `${dayLabel} · ${entry.entryDate}`], ['Kode entri', entry.id], ...full.cover.meta] },
     blocks,
-    footer: `GEMA RnD Lab · laporan harian ${entry.id} · dibuat ${generatedAt}`,
+    footer: `GnD Lab · laporan harian ${entry.id} · dibuat ${generatedAt}`,
   };
 }

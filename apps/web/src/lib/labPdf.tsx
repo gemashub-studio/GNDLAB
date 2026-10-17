@@ -187,7 +187,7 @@ function EntryBody({ e, protocols, media }: { e: DailyEntry; protocols: Protocol
 function Header({ title, e, sub }: { title: string; e: Experiment; sub: string }) {
   return (
     <View style={s.head}>
-      <Text style={s.brand}>GEMA RnD Lab · gemasSTUDIO</Text>
+      <Text style={s.brand}>GnD Lab · gemasSTUDIO</Text>
       <Text style={s.title}>{title}</Text>
       <Text style={s.meta}>{e.id} · {productName(e.product)} · {statusName(e.status)} · mulai {e.startedAt} · {sub}</Text>
     </View>
@@ -484,7 +484,7 @@ function ResearchDoc({ r: rep }: { r: ResearchReport }) {
   return (
     <Document title={rep.title} author="GEMA RnD">
       <Page size="A4" style={r.cover}>
-        <Text style={r.brand}>GEMA RND LAB · RISET PRODUK</Text>
+        <Text style={r.brand}>GnD LAB · RISET PRODUK</Text>
         <View style={r.bar} />
         <Text style={r.coverTitle}>{rep.title}</Text>
         <Text style={[r.pill, { backgroundColor: rep.cover.done ? C.mintLight : C.amber }]}>{rep.cover.status}</Text>

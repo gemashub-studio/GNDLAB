@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { askLabAI, CATAT_HINT, labGreeting, MAX_PROMPT } from '@/lib/labAi';
+import { answerCards, askLabAI, CATAT_HINT, labGreeting, MAX_PROMPT } from '@/lib/labAi';
 
 interface Msg {
   role: 'ai' | 'user';
@@ -65,14 +65,18 @@ export function AskLabAI({ tab, username }: { tab: string; username?: string }) 
       <div ref={list} className="flex max-h-72 flex-col gap-2 overflow-y-auto pr-1" aria-live="polite" data-testid="lab-ai-msgs">
         {msgs.map((m, i) => (
           <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-            <p
-              className={`max-w-[85%] whitespace-pre-wrap rounded-2xl px-3.5 py-2 text-sm ${
-                m.role === 'user' ? 'rounded-br-md bg-ink text-paper' : m.error ? 'rounded-bl-md bg-safety/70' : 'rounded-bl-md bg-white/80 text-ink shadow-sm'
-              }`}
-              data-testid={m.role === 'user' ? 'lab-ai-user' : m.auto ? 'lab-ai-auto' : m.error ? 'lab-ai-error' : 'lab-ai-answer'}
-            >
-              {m.text}
-            </p>
+            {m.role === 'ai' && !m.auto && !m.error ? (
+              <AnswerCards text={m.text} />
+            ) : (
+              <p
+                className={`max-w-[85%] whitespace-pre-wrap rounded-2xl px-3.5 py-2 text-sm ${
+                  m.role === 'user' ? 'rounded-br-md bg-ink text-paper' : m.error ? 'rounded-bl-md bg-safety/70' : 'rounded-bl-md bg-white/80 text-ink shadow-sm'
+                }`}
+                data-testid={m.role === 'user' ? 'lab-ai-user' : m.auto ? 'lab-ai-auto' : 'lab-ai-error'}
+              >
+                {m.text}
+              </p>
+            )}
           </div>
         ))}
         {busy && (
@@ -107,5 +111,52 @@ export function AskLabAI({ tab, username }: { tab: string; username?: string }) 
         <button type="submit" className="btn-primary" disabled={busy || !q.trim()} data-testid="lab-ai-send">Kirim</button>
       </form>
     </section>
+  );
+}
+
+/** Jawaban AI sebagai kartu bertahap (maks. 2 paragraf per kartu); klik kartu / "Selanjutnya" untuk bagian berikutnya. */
+function AnswerCards({ text }: { text: string }) {
+  const cards = answerCards(text);
+  const [i, setI] = useState(0);
+  const last = i >= cards.length - 1;
+  const next = () => !last && setI(i + 1);
+  return (
+    <div className="flex w-full max-w-[90%] flex-col gap-1.5" data-testid="lab-ai-answer">
+      <div
+        role="button"
+        tabIndex={0}
+        onClick={next}
+        onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), next())}
+        aria-label={last ? 'Bagian terakhir jawaban AI' : 'Tampilkan bagian jawaban berikutnya'}
+        className={`sheet-up flex flex-col gap-2 rounded-2xl rounded-bl-md border border-ink/10 bg-white/90 px-4 py-3 text-sm text-ink shadow-sm transition ${last ? '' : 'cursor-pointer hover:border-acid hover:shadow-md'}`}
+        key={i}
+        data-testid="lab-ai-card"
+      >
+        {cards[i]!.map((p, k) => (
+          <p key={k} className="whitespace-pre-wrap leading-relaxed">
+            {p}
+          </p>
+        ))}
+      </div>
+      {cards.length > 1 && (
+        <div className="flex items-center gap-2 pl-1 text-xs">
+          <span className="font-mono text-muted" data-testid="lab-ai-page">
+            {i + 1}/{cards.length}
+          </span>
+          {i > 0 && (
+            <button type="button" className="font-semibold text-muted underline" onClick={() => setI(i - 1)}>
+              Sebelumnya
+            </button>
+          )}
+          {!last ? (
+            <button type="button" className="font-semibold text-[#1FA88F] underline" onClick={next} data-testid="lab-ai-next">
+              Selanjutnya →
+            </button>
+          ) : (
+            <span className="text-muted">selesai</span>
+          )}
+        </div>
+      )}
+    </div>
   );
 }

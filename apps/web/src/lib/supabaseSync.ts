@@ -267,9 +267,11 @@ export async function sendLoginLink(email: string, path = '/lab'): Promise<void>
   if (error) throw new Error(error.message);
 }
 
+/** Keluar → langsung kembali ke halaman Ringkasan (tanpa login, DEC-093). */
 export async function signOut(): Promise<void> {
   await getSupabase()?.auth.signOut();
   setStatus({ phase: 'signed-out', email: undefined, message: undefined });
+  if (typeof window !== 'undefined') window.location.assign('/');
 }
 
 let timer: ReturnType<typeof setTimeout> | undefined;
