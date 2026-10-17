@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { getSupabase, supabaseConfigured } from './supabase';
 
-/** Username otomatis dari slug email (bagian sebelum @), mis. "Budi.Santoso+lab@x.com" → "budi-santoso-lab". */
+/** Username: dari pendaftaran (user_metadata.username, DEC-090); cadangan untuk akun lama = slug email (bagian sebelum @), mis. "Budi.Santoso+lab@x.com" → "budi-santoso-lab". */
 export function emailSlug(email: string): string {
   return (email.split('@')[0] ?? '')
     .toLowerCase()
@@ -30,8 +30,8 @@ export function useAuth(): AuthState {
   useEffect(() => {
     const sb = getSupabase();
     if (!sb) return setSt({ configured: false, ready: true });
-    const apply = (u?: { email?: string; last_sign_in_at?: string; created_at?: string } | null) =>
-      setSt({ configured: true, ready: true, ...(u?.email && { email: u.email, username: emailSlug(u.email), ...(u.last_sign_in_at && { lastSignIn: u.last_sign_in_at }), ...(u.created_at && { createdAt: u.created_at }) }) });
+    const apply = (u?: { email?: string; last_sign_in_at?: string; created_at?: string; user_metadata?: { username?: unknown } } | null) =>
+      setSt({ configured: true, ready: true, ...(u?.email && { email: u.email, username: typeof u.user_metadata?.username === 'string' && u.user_metadata.username ? u.user_metadata.username : emailSlug(u.email), ...(u.last_sign_in_at && { lastSignIn: u.last_sign_in_at }), ...(u.created_at && { createdAt: u.created_at }) }) });
     void sb.auth.getSession().then(({ data }) => apply(data.session?.user));
     const { data } = sb.auth.onAuthStateChange((_e, s) => apply(s?.user));
     return () => data.subscription.unsubscribe();

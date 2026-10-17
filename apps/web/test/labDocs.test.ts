@@ -84,3 +84,37 @@ describe('sinkron Supabase — dokumen (DEC-085)', () => {
     expect(planSync(remote, { ...empty(), catat: new Map([['PD-1', '2026-10-17']]) }, []).replaceCatat).toEqual([]);
   });
 });
+
+describe('tabel bersama rnd_data (DEC-090)', () => {
+  it('pencatatan dipecah ke data_awal / data_akhir / perlakuan / progres_harian lalu utuh kembali', async () => {
+    const { splitCatat, joinCatat, docToRow, rowToDoc } = await import('@/lib/labDocs');
+    const rec = {
+      id: 'PD-1', item: 'Kelapa tua', count: 2, createdAt: 'c', updatedAt: 'u', finishedAt: 'f',
+      rows: [{ no: 1, beratAwal: '1000', volAir: '', beratAir: '300', tebalAwal: '10', beratAkhir: '600', tebalAkhir: '8', fotoAwal: 'sbblob:u:image/jpeg:a', fotoAkhir: 'sbblob:u:image/jpeg:b' }, { no: 2, beratAwal: '900', volAir: '', beratAir: '', tebalAwal: '9', beratAkhir: '', tebalAkhir: '' }],
+      treatments: { kopra: [{ count: '3', method: 'Oven Gas' }] },
+      progress: [{ id: 'p', date: '2026-10-17', title: 't', temp: '28', note: '', stage: 'harian', photo: 'sbblob:u:image/jpeg:c', at: 'x' }],
+    };
+    const parts = splitCatat(rec);
+    expect(parts.data_awal).toEqual({ id: 'PD-1', item: 'Kelapa tua', count: 2, createdAt: 'c', updatedAt: 'u', rows: [{ no: 1, beratAwal: '1000', volAir: '', beratAir: '300', tebalAwal: '10', fotoAwal: 'sbblob:u:image/jpeg:a' }, { no: 2, beratAwal: '900', volAir: '', beratAir: '', tebalAwal: '9' }] });
+    expect(parts.data_akhir).toEqual({ finishedAt: 'f', rows: [{ no: 1, beratAkhir: '600', tebalAkhir: '8', fotoAkhir: 'sbblob:u:image/jpeg:b' }, { no: 2, beratAkhir: '', tebalAkhir: '' }] });
+    expect(parts.perlakuan).toEqual(rec.treatments);
+    expect(parts.progres_harian).toEqual(rec.progress);
+    expect(joinCatat(parts)).toEqual(rec);
+    const row = docToRow({ kind: 'catat', id: 'PD-1', rev: 'u', data: rec });
+    expect(row.menu).toBe('pencatatan_data');
+    expect(rowToDoc(row)).toEqual({ kind: 'catat', id: 'PD-1', rev: 'u', data: rec });
+    // tanpa data akhir: tidak ada finishedAt
+    const pending = { ...rec, finishedAt: undefined, treatments: undefined, progress: undefined };
+    delete (pending as Record<string, unknown>).finishedAt;
+    expect(joinCatat(splitCatat(pending as Record<string, unknown>))!.finishedAt).toBeUndefined();
+  });
+  it('menu lain: satu kolom bernama sama dengan menunya; baris terhapus diabaikan', async () => {
+    const { docToRow, rowToDoc, MENU_OF, rndTombTargets } = await import('@/lib/labDocs');
+    expect(MENU_OF).toMatchObject({ protocol: 'riset_produk', experiment: 'eksperimen', entry: 'catatan_harian', belanja: 'laporan_belanja', bahan: 'bahan_baku', media: 'media', draft: 'draf_riset', tomb: 'penghapusan' });
+    const row = docToRow({ kind: 'protocol', id: 'KE-P01-v1', rev: 'r', data: { id: 'KE-P01-v1', key: 'KE-P01' } });
+    expect(row).toEqual({ menu: 'riset_produk', id: 'KE-P01-v1', rev: 'r', deleted: false, riset_produk: { id: 'KE-P01-v1', key: 'KE-P01' } });
+    expect(rowToDoc(row)!.kind).toBe('protocol');
+    expect(rowToDoc({ ...row, deleted: true })).toBeUndefined();
+    expect(rndTombTargets({ kind: 'riset', id: 'KE-P01' })[0]).toEqual(['riset_produk', 'riset_produk->>key', 'KE-P01']);
+  });
+});

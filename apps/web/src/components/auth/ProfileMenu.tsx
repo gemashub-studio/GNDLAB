@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { getSupabase } from '@/lib/supabase';
 import { signOut } from '@/lib/supabaseSync';
 import { useAuth } from '@/lib/useAuth';
 
@@ -11,13 +10,9 @@ const fmt = (iso?: string) => (iso ? new Date(iso).toLocaleString('id-ID', { dat
 export function ProfileMenu() {
   const a = useAuth();
   const [open, setOpen] = useState(false);
-  const [member, setMember] = useState<boolean>();
   const wrap = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (!open) return;
-    void getSupabase()
-      ?.rpc('is_lab_member')
-      .then(({ data }) => setMember(!!data));
     const onDown = (e: PointerEvent) => wrap.current && !wrap.current.contains(e.target as Node) && setOpen(false);
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setOpen(false);
     window.addEventListener('pointerdown', onDown);
@@ -54,11 +49,11 @@ export function ProfileMenu() {
             <dt className="text-muted">Username</dt>
             <dd className="font-mono">{a.username}</dd>
             <dt className="text-muted">Masuk via</dt>
-            <dd>Email link</dd>
+            <dd>Username + password + kode email</dd>
             <dt className="text-muted">Terakhir masuk</dt>
             <dd>{fmt(a.lastSignIn)}</dd>
             <dt className="text-muted">Akses GnD Lab</dt>
-            <dd>{member === undefined ? 'memeriksa…' : member ? 'anggota (sinkron aktif)' : 'belum terdaftar sebagai anggota'}</dd>
+            <dd>data bersama (semua pengguna yang login)</dd>
           </dl>
           <button type="button" className="btn-ghost mt-3 w-full justify-center" onClick={() => void signOut().then(() => setOpen(false))} data-testid="profile-logout">
             Keluar

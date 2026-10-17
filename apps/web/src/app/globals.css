@@ -132,6 +132,72 @@
   box-shadow: 0 10px 18px rgba(14, 26, 31, 0.45), 0 2px 0 #1fa88f inset, 0 -3px 0 rgba(14, 26, 31, 0.18) inset;
 }
 
+/* Kartu login/daftar bolak-balik — diadaptasi dari Uiverse.io (andrew-demchenk0), DEC-090 */
+.gnd-auth {
+  --input-focus: #1fa88f;
+  --font-color: #323232;
+  --font-color-sub: #666;
+  --bg-color: #fff;
+  --main-color: #323232;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 22px;
+  width: 100%;
+}
+.gnd-auth__switch { display: flex; align-items: center; gap: 14px; }
+.gnd-auth__tab { font-weight: 600; color: var(--font-color); text-decoration: none; text-underline-offset: 3px; }
+.gnd-auth__tab.is-on { text-decoration: underline; }
+.gnd-auth__slider {
+  position: relative; width: 50px; height: 20px; box-sizing: border-box; border-radius: 5px;
+  border: 2px solid var(--main-color); box-shadow: 4px 4px var(--main-color); background-color: var(--bg-color);
+  cursor: pointer; transition: 0.3s;
+}
+.gnd-auth__slider::before {
+  content: ''; position: absolute; box-sizing: border-box; height: 20px; width: 20px; left: -2px; bottom: 2px;
+  border: 2px solid var(--main-color); border-radius: 5px; background-color: var(--bg-color);
+  box-shadow: 0 3px 0 var(--main-color); transition: 0.3s;
+}
+.gnd-auth__slider.is-on { background-color: var(--input-focus); }
+.gnd-auth__slider.is-on::before { transform: translateX(30px); }
+.gnd-auth__inner {
+  width: min(320px, 100%); height: 430px; position: relative; perspective: 1000px; text-align: center;
+  transition: transform 0.8s; transform-style: preserve-3d;
+}
+.gnd-auth__inner.is-flipped { transform: rotateY(180deg); }
+.gnd-auth__face {
+  position: absolute; inset: 0; padding: 20px; display: flex; flex-direction: column; justify-content: center; gap: 14px;
+  -webkit-backface-visibility: hidden; backface-visibility: hidden; background: #e4e9eb; border-radius: 5px;
+  border: 2px solid var(--main-color); box-shadow: 4px 4px var(--main-color);
+}
+.gnd-auth__back { transform: rotateY(180deg); }
+.gnd-auth__form { display: flex; flex-direction: column; align-items: center; gap: 16px; }
+.gnd-auth__title { margin: 6px 0; font-size: 25px; font-weight: 900; text-align: center; color: var(--main-color); }
+.gnd-auth__input {
+  width: min(250px, 100%); height: 40px; border-radius: 5px; border: 2px solid var(--main-color); background-color: var(--bg-color);
+  box-shadow: 4px 4px var(--main-color); font-size: 15px; font-weight: 600; color: var(--font-color); padding: 5px 10px; outline: none;
+}
+.gnd-auth__input::placeholder { color: var(--font-color-sub); opacity: 0.8; }
+.gnd-auth__input:focus { border: 2px solid var(--input-focus); }
+.gnd-auth__btn {
+  margin: 6px 0; min-width: 120px; height: 40px; padding: 0 16px; border-radius: 5px; border: 2px solid var(--main-color);
+  background-color: var(--bg-color); box-shadow: 4px 4px var(--main-color); font-size: 17px; font-weight: 600; color: var(--font-color); cursor: pointer;
+}
+.gnd-auth__btn:active { box-shadow: 0 0 var(--main-color); transform: translate(3px, 3px); }
+.gnd-auth__btn:disabled { opacity: 0.55; cursor: not-allowed; }
+.gnd-auth__err { max-width: 250px; margin: 0; padding: 4px 8px; border-radius: 5px; background: #ffd9c7; font-size: 13px; color: #7a2a00; }
+.gnd-auth__hint { max-width: 260px; margin: 0; font-size: 13px; line-height: 1.5; color: var(--font-color-sub); }
+.gnd-auth__otp { display: flex; gap: 6px; }
+.gnd-auth__digit {
+  width: 36px; height: 46px; border-radius: 5px; border: 2px solid var(--main-color); background: var(--bg-color);
+  box-shadow: 3px 3px var(--main-color); text-align: center; font: 700 22px/1 ui-monospace, monospace; color: var(--font-color); outline: none;
+}
+.gnd-auth__digit:focus { border-color: var(--input-focus); }
+.gnd-auth__links { display: flex; gap: 18px; font-size: 13px; font-weight: 600; }
+.gnd-auth__links button { color: var(--font-color); text-decoration: underline; }
+.gnd-auth__links button:disabled { opacity: 0.5; text-decoration: none; }
+@media (prefers-reduced-motion: reduce) { .gnd-auth__inner { transition: none; } }
+
 /* LightTunnel (DEC-082) */
 .light-tunnel-container {
   position: relative;

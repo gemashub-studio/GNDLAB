@@ -168,7 +168,7 @@ export function LabPage() {
       ) : locked ? (
         <section className="card flex max-w-xl flex-col gap-2" data-testid="lab-locked">
           <h2 className="font-display text-xl font-semibold">Masuk dulu untuk membuka GnD Lab</h2>
-          <LoginForm testId="lab-login" note="Semua pencatatan dan data lab hanya bisa dibuka & diisi setelah login. Masukkan email — kami kirim link masuk." />
+          <LoginForm testId="lab-login" note="Semua pencatatan dan data lab hanya bisa dibuka & diisi setelah login. Masuk dengan username & password — kode verifikasi dikirim ke emailmu." />
         </section>
       ) : (
         <>

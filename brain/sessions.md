@@ -183,3 +183,4 @@
 - DEC-086: kamera melayang + progres harian (3 tahap) + PPTX padat; remote GitHub GNDLAB (publik). Catatan: owner sering memakai browser pane sendiri — jangan klik/isi data di pane saat dia aktif; .next sering korup (UNKNOWN -4094) → stop, rm -rf .next, start.
 - DEC-087: login wajib (Supabase) untuk lab, profil header, neon menu, Tanya Lab AI (siputzx glm47flash; saat dicek 503 All nodes failed), PPTX grafik garis native + perlakuan di bawah data akhir + slide penjelasan perlakuan; dev pakai --turbopack.
 - DEC-088/089: foto potret 3:4; perlakuan + foto & keterangan. Push GitHub sekarang jalan dari agen (kredensial GCM owner tersimpan).
+- DEC-090: auth username/password + OTP Resend, tabel users & rnd_data (shared). Menunggu owner mengisi RESEND_API_KEY & SUPABASE_SERVICE_ROLE_KEY (apps/web/.env + Vercel env).

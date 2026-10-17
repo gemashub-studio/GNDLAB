@@ -7,7 +7,7 @@
 import { bahanDb } from './bahanBaku';
 import { belanjaDb } from './belanja';
 import { draftToJson, localSyncState, mediaToJson, applySync } from './labBackup';
-import { backupFromDocs, docKey, extractBlobs, pullFilter, pushPlan, restoreBlobs, tombTargets, type DocKind, type DocMeta, type LabDoc, type RemoteMeta } from './labDocs';
+import { backupFromDocs, docKey, docToRow, extractBlobs, KIND_OF, pullFilter, pushPlan, RND_COLS, rndTombTargets, restoreBlobs, rowToDoc, type DocKind, type DocMeta, type LabDoc, type RemoteMeta, type RndMenu, type RndRow } from './labDocs';
 import { catatRev, planSync, readTombs, syncCount, type Tomb } from './labSync';
 import { labDb } from './labStore';
 import { catatDb } from './pencatatan';
@@ -15,7 +15,9 @@ import { getSupabase } from './supabase';
 
 const BUCKET = 'lab-blobs';
 const PAGE = 500;
-const LAST_PULL = 'gemas-sb-last-pull';
+// tabel bersama rnd_data (DEC-090) — kunci baru agar perangkat menarik ulang semuanya dari tabel baru
+const LAST_PULL = 'gemas-sb-last-pull-rnd';
+const TABLE = 'rnd_data';
 const KNOWN_BLOBS = 'gemas-sb-blobs';
 
 export interface SyncOutcome {
@@ -188,52 +190,56 @@ async function run(): Promise<SyncOutcome> {
     // 1) ambil perubahan dari server
     const since = ls.get(LAST_PULL);
     const sinceAt = since ? new Date(new Date(since).getTime() - 5 * 60_000).toISOString() : '';
-    type Row = { kind: DocKind; id: string; rev: string; deleted: boolean; data: unknown; synced_at: string };
+    type Row = RndRow & { kind: DocKind; updated_at: string };
     const rows: Row[] = [];
     for (let from = 0; ; from += PAGE) {
-      let q = sb.from('lab_docs').select('kind,id,rev,deleted,data,synced_at').order('synced_at', { ascending: true }).range(from, from + PAGE - 1);
-      if (sinceAt) q = q.gte('synced_at', sinceAt);
+      let q = sb.from(TABLE).select(`menu,id,rev,deleted,updated_at,${RND_COLS.join(',')}`).order('updated_at', { ascending: true }).range(from, from + PAGE - 1);
+      if (sinceAt) q = q.gte('updated_at', sinceAt);
       const { data, error } = await q;
       if (error) throw new Error(`Ambil data gagal: ${error.message}`);
-      rows.push(...((data ?? []) as Row[]));
+      for (const r of (data ?? []) as unknown as (RndRow & { updated_at: string })[]) if (KIND_OF[r.menu]) rows.push({ ...r, kind: KIND_OF[r.menu] });
       if (!data || data.length < PAGE) break;
     }
     const localRev = new Map((await localMeta()).map((m) => [docKey(m.kind, m.id), m.rev] as const));
     const fresh = pullFilter(rows, localRev);
     const docs: LabDoc[] = [];
-    for (const r of fresh) docs.push({ kind: r.kind, id: r.id, rev: r.rev, data: await restoreBlobs(r.data, get) });
+    for (const r of fresh) {
+      const d = rowToDoc(r);
+      if (d) docs.push({ ...d, data: await restoreBlobs(d.data, get) });
+    }
     const remote = backupFromDocs(docs);
     const plan = planSync(remote, await localSyncState(), readTombs());
     const pulled = syncCount(plan);
     if (pulled || (remote.deleted ?? []).length) await applySync(plan);
-    const maxAt = rows.reduce((m, r) => (r.synced_at > m ? r.synced_at : m), since);
+    const maxAt = rows.reduce((m, r) => (r.updated_at > m ? r.updated_at : m), since);
 
     // 2) unggah yang belum ada / lebih baru
     const index = new Map<string, RemoteMeta>();
     for (let from = 0; ; from += 1000) {
-      const { data, error } = await sb.from('lab_docs').select('kind,id,rev,deleted').range(from, from + 999);
+      const { data, error } = await sb.from(TABLE).select('menu,id,rev,deleted').range(from, from + 999);
       if (error) throw new Error(`Baca indeks gagal: ${error.message}`);
-      for (const r of (data ?? []) as { kind: string; id: string; rev: string; deleted: boolean }[]) index.set(docKey(r.kind, r.id), { rev: r.rev, deleted: r.deleted });
+      for (const r of (data ?? []) as { menu: RndMenu; id: string; rev: string; deleted: boolean }[]) if (KIND_OF[r.menu]) index.set(docKey(KIND_OF[r.menu], r.id), { rev: r.rev, deleted: r.deleted });
       if (!data || data.length < 1000) break;
     }
     const todo = pushPlan(await localMeta(), index);
     let pushed = 0;
     for (let i = 0; i < todo.length; i += 10) {
-      const batch: { kind: DocKind; id: string; rev: string; data: unknown; deleted: boolean }[] = [];
+      const docs: LabDoc[] = [];
       for (const m of todo.slice(i, i + 10)) {
         const raw = await loadLocal(m);
         if (raw === undefined) continue;
-        batch.push({ kind: m.kind, id: m.id, rev: m.rev, data: await extractBlobs(raw, put), deleted: false });
+        docs.push({ kind: m.kind, id: m.id, rev: m.rev, data: await extractBlobs(raw, put) });
       }
-      if (!batch.length) continue;
+      if (!docs.length) continue;
       setStatus({ message: `Mengunggah ${Math.min(i + 10, todo.length)} dari ${todo.length} catatan…` });
-      const { error } = await sb.from('lab_docs').upsert(batch, { onConflict: 'kind,id' });
+      const { error } = await sb.from(TABLE).upsert(docs.map(docToRow), { onConflict: 'menu,id' });
       if (error) throw new Error(`Unggah data gagal: ${error.message}`);
-      pushed += batch.length;
+      pushed += docs.length;
       // nisan baru → kosongkan isi catatan yang dihapus di server
-      for (const b of batch.filter((x) => x.kind === 'tomb')) {
-        for (const [kind, col, val] of tombTargets(b.data as Tomb)) {
-          const { error: e2 } = await sb.from('lab_docs').update({ deleted: true, data: null }).eq('kind', kind).eq(col, val);
+      const empty = Object.fromEntries(RND_COLS.map((c) => [c, null]));
+      for (const d of docs.filter((x) => x.kind === 'tomb')) {
+        for (const [menu, col, val] of rndTombTargets(d.data as Tomb)) {
+          const { error: e2 } = await sb.from(TABLE).update({ ...empty, deleted: true }).eq('menu', menu).eq(col, val);
           if (e2) throw new Error(`Hapus di server gagal: ${e2.message}`);
         }
       }
@@ -290,9 +296,7 @@ export function startAutoSync(onPulled: () => void): () => void {
     const { data } = await sb.auth.getSession();
     const email = data.session?.user.email ?? undefined;
     if (!email) return setStatus({ phase: 'signed-out', email: undefined });
-    const { data: member, error } = await sb.rpc('is_lab_member');
-    if (error) return setStatus({ phase: 'error', email, message: `Cek anggota gagal: ${error.message}` });
-    if (!member) return setStatus({ phase: 'not-member', email });
+    // DEC-090: semua pengguna yang login berbagi data GnD Lab (tanpa daftar anggota)
     if (status.phase !== 'syncing') setStatus({ phase: 'idle', email, last: status.last ?? (ls.get('gemas-sb-last-sync') || undefined) });
     try {
       const r = await syncNow();

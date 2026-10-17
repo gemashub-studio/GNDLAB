@@ -156,3 +156,80 @@ export async function restoreBlobs(v: unknown, get: (path: string) => Promise<st
   }
   return v;
 }
+
+// ------------------------------------------------------------------ tabel bersama rnd_data (DEC-090)
+
+export type RndMenu = 'pencatatan_data' | 'riset_produk' | 'eksperimen' | 'catatan_harian' | 'laporan_belanja' | 'bahan_baku' | 'media' | 'draf_riset' | 'penghapusan';
+
+/** Jenis dokumen → menu GnD Lab (= nilai kolom `menu`). */
+export const MENU_OF: Record<DocKind, RndMenu> = {
+  catat: 'pencatatan_data',
+  protocol: 'riset_produk',
+  experiment: 'eksperimen',
+  entry: 'catatan_harian',
+  belanja: 'laporan_belanja',
+  bahan: 'bahan_baku',
+  media: 'media',
+  draft: 'draf_riset',
+  tomb: 'penghapusan',
+};
+export const KIND_OF = Object.fromEntries(Object.entries(MENU_OF).map(([k, m]) => [m, k])) as Record<RndMenu, DocKind>;
+
+/** Kolom isi; Pencatatan Data dipecah ke empat kolom, menu lain satu kolom bernama sama dengan menunya. */
+export const RND_COLS = ['data_awal', 'data_akhir', 'perlakuan', 'progres_harian', 'riset_produk', 'eksperimen', 'catatan_harian', 'laporan_belanja', 'bahan_baku', 'media', 'draf_riset', 'penghapusan'] as const;
+export type RndCol = (typeof RND_COLS)[number];
+
+export type RndRow = { menu: RndMenu; id: string; rev: string; deleted: boolean } & Partial<Record<RndCol, unknown>>;
+
+type Obj = Record<string, unknown>;
+const omit = (o: Obj, keys: readonly string[]) => Object.fromEntries(Object.entries(o).filter(([k]) => !keys.includes(k)));
+const defined = (o: Obj) => Object.fromEntries(Object.entries(o).filter(([, v]) => v !== undefined));
+const AKHIR_ROW = ['beratAkhir', 'tebalAkhir', 'fotoAkhir'];
+
+/** Pencatatan → {data_awal, data_akhir, perlakuan, progres_harian} (sama persis dengan migrasi SQL). */
+export function splitCatat(rec: Obj): Pick<RndRow, 'data_awal' | 'data_akhir' | 'perlakuan' | 'progres_harian'> {
+  const rows = (Array.isArray(rec.rows) ? rec.rows : []) as Obj[];
+  return {
+    data_awal: { ...omit(rec, ['rows', 'finishedAt', 'akhirSavedAt', 'treatments', 'progress']), rows: rows.map((r) => omit(r, AKHIR_ROW)) },
+    data_akhir: defined({ finishedAt: rec.finishedAt, akhirSavedAt: rec.akhirSavedAt, rows: rows.map((r) => defined({ no: r.no, beratAkhir: r.beratAkhir, tebalAkhir: r.tebalAkhir, fotoAkhir: r.fotoAkhir })) }),
+    perlakuan: rec.treatments ?? null,
+    progres_harian: rec.progress ?? null,
+  };
+}
+
+/** Kebalikan splitCatat. */
+export function joinCatat(r: Pick<RndRow, 'data_awal' | 'data_akhir' | 'perlakuan' | 'progres_harian'>): Obj | undefined {
+  const awal = r.data_awal as Obj | null | undefined;
+  if (!awal) return undefined;
+  const akhir = (r.data_akhir ?? {}) as Obj;
+  const byNo = new Map(((akhir.rows ?? []) as Obj[]).map((x) => [x.no, x]));
+  const rows = ((awal.rows ?? []) as Obj[]).map((x) => ({ ...x, ...omit(byNo.get(x.no) ?? {}, ['no']) }));
+  return defined({ ...awal, rows, finishedAt: akhir.finishedAt, akhirSavedAt: akhir.akhirSavedAt, treatments: r.perlakuan ?? undefined, progress: r.progres_harian ?? undefined });
+}
+
+/** Dokumen → baris rnd_data. */
+export function docToRow(d: LabDoc): RndRow {
+  const base = { menu: MENU_OF[d.kind], id: d.id, rev: d.rev, deleted: false };
+  if (d.kind === 'catat') return { ...base, ...splitCatat(d.data as Obj) };
+  return { ...base, [MENU_OF[d.kind]]: d.data };
+}
+
+/** Baris rnd_data → dokumen (undefined bila terhapus/kosong). */
+export function rowToDoc(r: RndRow): LabDoc | undefined {
+  const kind = KIND_OF[r.menu];
+  if (!kind || r.deleted) return undefined;
+  const data = kind === 'catat' ? joinCatat(r) : r[r.menu as RndCol];
+  return data == null ? undefined : { kind, id: r.id, rev: r.rev, data };
+}
+
+/** Target penghapusan di rnd_data untuk satu nisan: [menu, kolom filter, nilai]. */
+export function rndTombTargets(t: { kind: TombKind; id: string }): [RndMenu, string, string][] {
+  if (t.kind === 'draf') return [['draf_riset', 'id', t.id]];
+  if (t.kind === 'belanja') return [['laporan_belanja', 'id', t.id]];
+  if (t.kind === 'catat') return [['pencatatan_data', 'id', t.id]];
+  return [
+    ['riset_produk', 'riset_produk->>key', t.id],
+    ['catatan_harian', 'catatan_harian->>experimentId', t.id],
+    ['media', 'media->>experimentId', t.id],
+  ];
+}
