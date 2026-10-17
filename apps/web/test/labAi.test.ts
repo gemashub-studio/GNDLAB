@@ -52,3 +52,16 @@ describe('jawaban AI sebagai kartu & email pengingat (DEC-093)', () => {
     expect(m.text).toContain('Sekam · 3 item');
   });
 });
+
+describe('kolom tanya PromptBar (DEC-094)', () => {
+  it('@topik → konteks, /perintah → instruksi, tingkat jawaban → panjang; teks pengguna tetap utuh', async () => {
+    const { buildLabPrompt } = await import('@/lib/labAi');
+    expect(buildLabPrompt('berapa suhu oven yang aman?')).toBe('berapa suhu oven yang aman?');
+    expect(buildLabPrompt('@Kopra berapa suhu oven?', 'Singkat')).toBe('Topik: Kopra.\nJawab singkat, maksimal 3 kalimat.\nKopra berapa suhu oven?');
+    expect(buildLabPrompt('/langkah membuat @Bio leather', 'Sedang')).toBe('Topik: Bio leather.\nJawab dalam bentuk langkah-langkah bernomor.\nmembuat Bio leather');
+    expect(buildLabPrompt('/bandingkan oven gas dan greenhouse', 'Mendalam')).toContain('Bandingkan pilihan yang disebut');
+    expect(buildLabPrompt('/bandingkan oven gas dan greenhouse', 'Mendalam')).toContain('Jawab mendalam');
+    // email/teks bukan perintah tidak diubah
+    expect(buildLabPrompt('kirim ke a@kopra.id dan path a/langkah')).toBe('kirim ke a@kopra.id dan path a/langkah');
+  });
+});

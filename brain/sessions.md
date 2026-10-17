@@ -185,3 +185,4 @@
 - DEC-088/089: foto potret 3:4; perlakuan + foto & keterangan. Push GitHub sekarang jalan dari agen (kredensial GCM owner tersimpan).
 - DEC-090: auth username/password + OTP Resend, tabel users & rnd_data (shared). Menunggu owner mengisi RESEND_API_KEY & SUPABASE_SERVICE_ROLE_KEY (apps/web/.env + Vercel env).
 - DEC-092/093: DriftWall beranda, OTP diperkuat, logout→/, kartu jawaban AI, PPTX padat (riset), pengingat tiap jam (pg_cron→/api/lab-reminder), kamera sembunyi. E2E: preview 'web-e2e' port 3210 tanpa Supabase. Windows sering mengunci file .next (antivirus?) → stop/hapus folder/start.
+- DEC-094: PromptBar di Tanya Lab AI (motion + hugeicons).

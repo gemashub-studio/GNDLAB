@@ -31,11 +31,64 @@ export function aiText(j: unknown): string | undefined {
   return pick(j);
 }
 
-export async function askLabAI(prompt: string, timeoutMs = 45_000): Promise<string> {
+/** Topik (@) dan perintah (/) di kolom tanya, serta tingkat jawaban (DEC-094). */
+export const LAB_TOPICS = [
+  { key: 'briket', name: 'Briket', description: 'Briket arang batok & tempurung' },
+  { key: 'kopra', name: 'Kopra', description: 'Pengeringan daging kelapa' },
+  { key: 'cuka', name: 'Cuka', description: 'Fermentasi air kelapa' },
+  { key: 'bioleather', name: 'Bio leather', description: 'Selulosa hasil fermentasi' },
+  { key: 'pencatatan', name: 'Pencatatan data', description: 'Data awal, akhir & perlakuan' },
+] as const;
+export const LAB_COMMANDS = [
+  { key: 'jelaskan', name: '/jelaskan', description: 'Penjelasan sederhana', instruction: 'Jelaskan dengan bahasa sederhana.' },
+  { key: 'langkah', name: '/langkah', description: 'Urutan langkah kerja', instruction: 'Jawab dalam bentuk langkah-langkah bernomor.' },
+  { key: 'bandingkan', name: '/bandingkan', description: 'Bandingkan dua pilihan', instruction: 'Bandingkan pilihan yang disebut, sertakan kelebihan dan kekurangannya.' },
+  { key: 'ringkas', name: '/ringkas', description: 'Rangkum poin penting', instruction: 'Rangkum poin-poin penting secara singkat.' },
+  { key: 'cek', name: '/cek', description: 'Cek kewajaran angka', instruction: 'Periksa apakah angka atau data yang disebut masuk akal dan jelaskan alasannya.' },
+] as const;
+export const LAB_EFFORTS = ['Singkat', 'Sedang', 'Lengkap', 'Mendalam'];
+const EFFORT_HINT: Record<string, string> = {
+  Singkat: 'Jawab singkat, maksimal 3 kalimat.',
+  Sedang: '',
+  Lengkap: 'Jawab lengkap dengan beberapa paragraf.',
+  Mendalam: 'Jawab mendalam dan rinci, sertakan alasan dan hal yang perlu diperhatikan.',
+};
+const escRe = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+/** Susun prompt akhir dari ketikan pengguna: topik @… → konteks, /perintah → instruksi, tingkat jawaban → panjang. */
+export function buildLabPrompt(text: string, effort = 'Sedang'): string {
+  let body = text.trim();
+  const topics: string[] = [];
+  for (const t of LAB_TOPICS) {
+    // hanya @topik di awal teks / setelah spasi (bukan alamat email seperti a@kopra.id)
+    const re = new RegExp(`(^|\\s)@${escRe(t.name).replace(/\s+/g, '\\s+')}(?![\\w])`, 'gi');
+    if (re.test(body)) {
+      topics.push(t.name);
+      body = body.replace(re, `$1${t.name}`);
+    }
+  }
+  const instructions: string[] = [];
+  for (const c of LAB_COMMANDS) {
+    const re = new RegExp(`(^|\\s)${escRe(c.name)}(?=\\s|$)`, 'gi');
+    if (re.test(body)) {
+      instructions.push(c.instruction);
+      body = body.replace(re, ' ');
+    }
+  }
+  const hint = EFFORT_HINT[effort] ?? '';
+  if (hint) instructions.push(hint);
+  body = body.replace(/[ \t]{2,}/g, ' ').trim();
+  return [topics.length ? `Topik: ${topics.join(', ')}.` : '', instructions.join(' '), body].filter(Boolean).join('\n');
+}
+
+export async function askLabAI(prompt: string, timeoutMs = 45_000, signal?: AbortSignal): Promise<string> {
   const q = prompt.trim();
   if (!q) throw new Error('Tulis pertanyaan dulu.');
   const ctl = new AbortController();
   const t = setTimeout(() => ctl.abort(), timeoutMs);
+  // tombol Stop di kolom tanya membatalkan permintaan
+  const onStop = () => ctl.abort();
+  signal?.addEventListener('abort', onStop);
   try {
     const res = await fetch(labAiUrl(q), { method: 'GET', signal: ctl.signal, cache: 'no-store' });
     const body: unknown = await res.json().catch(() => undefined);
@@ -46,11 +99,13 @@ export async function askLabAI(prompt: string, timeoutMs = 45_000): Promise<stri
     }
     return text;
   } catch (e) {
+    if (signal?.aborted) throw new Error('Dihentikan.');
     if (e instanceof DOMException && e.name === 'AbortError') throw new Error('AI terlalu lama menjawab. Coba lagi.');
     if (e instanceof TypeError) throw new Error('Tidak bisa menghubungi layanan AI. Periksa koneksi internet.');
     throw e;
   } finally {
     clearTimeout(t);
+    signal?.removeEventListener('abort', onStop);
   }
 }
 
