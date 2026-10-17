@@ -61,6 +61,8 @@ export interface LocalState {
   catat?: Map<string, string>;
   /** catatan bahan baku lama (append-only) */
   bahan?: Set<string>;
+  /** upload progres perlakuan (append-only, DEC-095) */
+  progres?: Set<string>;
 }
 
 /** Versi pencatatan data untuk membandingkan perangkat (catatan lama belum punya updatedAt). */
@@ -91,6 +93,7 @@ export function planSync(remote: LabBackup, local: LocalState, localTombs: reado
     belanja: (remote.belanja ?? []).filter((x) => !local.belanja.has(x.id) && !dead('belanja', x.id)),
     catat: (remote.catat ?? []).filter((x) => !local.catat?.has(x.id) && !dead('catat', x.id)),
     bahan: (remote.bahan ?? []).filter((x: RawRecord) => !local.bahan?.has(x.id)),
+    progres: (remote.progres ?? []).filter((x) => !local.progres?.has(x.id)),
   };
   const clash = <T extends { id: string; createdAt: string }>(list: T[] | undefined, m: Map<string, string>) => (list ?? []).filter((x) => m.has(x.id) && m.get(x.id) !== x.createdAt).map((x) => x.id);
   const conflicts = [...clash(remote.experiments, local.experiments), ...clash(remote.protocols, local.protocols), ...clash(remote.entries, local.entries)];
@@ -111,4 +114,4 @@ export function planSync(remote: LabBackup, local: LocalState, localTombs: reado
 }
 
 export const syncCount = (p: SyncPlan) =>
-  p.add.experiments.length + p.add.entries.length + p.add.protocols.length + p.add.media.length + p.add.drafts.length + p.add.belanja.length + p.replaceDrafts.length + p.replaceBelanja.length + p.replaceCatat.length + (p.add.catat?.length ?? 0) + (p.add.bahan?.length ?? 0) + p.deleteLocal.length;
+  p.add.experiments.length + p.add.entries.length + p.add.protocols.length + p.add.media.length + p.add.drafts.length + p.add.belanja.length + p.replaceDrafts.length + p.replaceBelanja.length + p.replaceCatat.length + (p.add.catat?.length ?? 0) + (p.add.bahan?.length ?? 0) + (p.add.progres?.length ?? 0) + p.deleteLocal.length;

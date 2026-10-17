@@ -3,6 +3,16 @@
 Format: [Keep a Changelog](https://keepachangelog.com/id/1.1.0/) · Versi dataset mengikuti SemVer (ADR-002).
 Waktu dalam WIB (UTC+7).
 
+## [Gabungkan data, progres perlakuan, scan foto] — 2026-10-17
+### Ditambahkan
+- Halaman Media dan Data Progres Perlakuan (/lab/progres) + modal Upload Progres Perlakuan; kamera melayang membuka modal ini.
+- Gabungkan data: pencatatan lengkap + riset produk + progres + laporan belanja → TXT/PPTX/Word; slide Laporan belanja padat (nota bercabang ke barang).
+- Tanya Lab AI: scan teks dari foto (potong + OCR); skeleton loading menu data.
+- Latar animasi DriftWall di semua halaman kecuali GnD Lab.
+### Diubah
+- Tanya Lab AI: pilihan model dihapus; mode Mendalam = 4 paragraf per kartu + pertanyaan penutup ramah dengan emoji.
+- Form pencatatan: klik di luar menutup (konfirmasi bila ada isian); modal digulir ke tengah layar.
+
 ## [GnD Lab & perlakuan pencatatan] — 2026-10-15
 ### Ditambahkan
 - Pencatatan awal: 4 jumlah perlakuan + metode (kopra, bibit bio leather, cuka, bio leather), ikut PDF/Word/PPTX (PPTX di slide Kesimpulan).

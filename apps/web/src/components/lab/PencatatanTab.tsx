@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import type { RawRecord } from '@/lib/bahanBaku';
 import { RAW_ITEMS } from '@/lib/labStore';
@@ -29,7 +29,8 @@ import {
 import { photoDataUrl } from '@/lib/photo';
 import { CatatResult, DownloadButtons } from './CatatResult';
 import { Dropdown } from './Dropdown';
-import { ImagePreview, LoadingOverlay, SuccessAlert, useConfirm } from './Overlays';
+import { askConfirm, ImagePreview, LoadingOverlay, SuccessAlert, useConfirm } from './Overlays';
+import { UploadProgresModal } from './UploadProgresModal';
 
 /** Loading tampil minimal 4 detik (satu siklus animasi, DEC-079). */
 const SAVE_MS = 4000;
@@ -45,6 +46,7 @@ export function PencatatanTab({ records, oldRaw, onChanged }: { records: CatatRe
   const [toast, setToast] = useState<'' | 'saving' | 'finishing'>('');
   const [done, setDone] = useState<CatatRecord>();
   const [drafted, setDrafted] = useState<CatatRecord>();
+  const [uploadOpen, setUploadOpen] = useState(false);
   // revisi data akhir catatan yang sudah lengkap (DEC-083)
   const [revise, setRevise] = useState<CatatRecord>();
   const [revised, setRevised] = useState<CatatRecord>();
@@ -140,6 +142,9 @@ export function PencatatanTab({ records, oldRaw, onChanged }: { records: CatatRe
           data-testid="catat-akhir"
         >
           Buat pencatatan data akhir
+        </button>
+        <button type="button" className="btn-acid" onClick={() => setUploadOpen(true)} data-testid="catat-upload-progres">
+          Upload Progres
         </button>
         <SelectMenu
           selecting={selecting}
@@ -266,6 +271,7 @@ export function PencatatanTab({ records, oldRaw, onChanged }: { records: CatatRe
       )}
       {revised && <SuccessAlert testId="catat-revised" title="Tersimpan !" message={`Revisi data akhir ${revised.id} tersimpan. Unduhan sudah memakai data terbaru.`} onClose={() => setRevised(undefined)} />}
       {dialog}
+      {uploadOpen && <UploadProgresModal onClose={() => setUploadOpen(false)} />}
       {deleted > 0 && <SuccessAlert testId="catat-deleted" message={`${deleted} catatan dihapus permanen.`} onClose={() => setDeleted(0)} />}
     </div>
   );
@@ -291,21 +297,32 @@ function enterToNext(e: React.KeyboardEvent<HTMLElement>) {
   target?.scrollIntoView({ block: 'nearest' });
 }
 
-function PageModal({ title, onClose, children, footer, testId, wide = false, enterNext = false }: { title: string; onClose: () => void; children: ReactNode; footer?: ReactNode; testId: string; wide?: boolean; enterNext?: boolean }) {
+function PageModal({ title, onClose, children, footer, testId, wide = false, enterNext = false, dirty = false }: { title: string; onClose: () => void; children: ReactNode; footer?: ReactNode; testId: string; wide?: boolean; enterNext?: boolean; dirty?: boolean }) {
   const [top, setTop] = useState(0);
   const card = useRef<HTMLDivElement>(null);
+  const dirtyRef = useRef(dirty);
+  dirtyRef.current = dirty;
+  // klik di luar / Esc menutup form; bila sudah ada isian, minta konfirmasi dulu (DEC-095)
+  const requestClose = useCallback(async () => {
+    if (dirtyRef.current && !(await askConfirm({ title: 'Tutup form?', message: 'Isian yang belum disimpan akan hilang.', okLabel: 'Tutup', danger: false }))) return;
+    onClose();
+  }, [onClose]);
   useLayoutEffect(() => setTop(window.scrollY + 80), []);
   useEffect(() => {
-    card.current?.querySelector<HTMLElement>('input,[role=combobox],button')?.focus();
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
+    // layar otomatis diarahkan ke modal yang dibuka
+    if (top) card.current?.scrollIntoView({ block: 'start', behavior: 'smooth' });
+  }, [top]);
+  useEffect(() => {
+    card.current?.querySelector<HTMLElement>('input,[role=combobox],button')?.focus({ preventScroll: true });
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && !document.querySelector('[data-testid="confirm-dialog"]') && void requestClose();
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [onClose]);
+  }, [requestClose]);
   return createPortal(
     <>
-      <div className="fixed inset-0 z-[45] bg-ink/50" onClick={onClose} aria-hidden />
-      <div className="absolute inset-x-0 z-50 flex justify-center px-3 pb-10 sm:px-4" style={{ top }}>
-        <div ref={card} role="dialog" aria-modal="true" aria-label={title} className={`w-full ${wide ? 'max-w-4xl' : 'max-w-2xl'} rounded-2xl bg-surface shadow-2xl`} data-testid={testId} {...(enterNext && { onKeyDown: enterToNext })}>
+      <div className="fixed inset-0 z-[45] bg-ink/50" onClick={() => void requestClose()} aria-hidden data-testid={`${testId}-backdrop`} />
+      <div className="absolute inset-x-0 z-50 flex justify-center px-3 pb-10 sm:px-4" style={{ top, scrollMarginTop: 72 }} onClick={(e) => e.target === e.currentTarget && void requestClose()}>
+        <div ref={card} role="dialog" aria-modal="true" aria-label={title} style={{ scrollMarginTop: 80 }} className={`w-full ${wide ? 'max-w-4xl' : 'max-w-2xl'} rounded-2xl bg-surface shadow-2xl`} data-testid={testId} {...(enterNext && { onKeyDown: enterToNext })}>
           <div className="flex items-center justify-between gap-3 border-b border-paper-grid px-5 py-4">
             <h2 className="text-lg">{title}</h2>
             <button type="button" className="font-mono text-sm underline" onClick={onClose} data-testid={`${testId}-close`}>Tutup</button>
@@ -352,6 +369,7 @@ function AwalModal({ onClose, onConfirm }: { onClose: () => void; onConfirm: (it
       onClose={onClose}
       testId="catat-awal-modal"
       enterNext
+      dirty={!!countText || rows.some((r) => !!(r.beratAwal || r.volAir || r.beratAir || r.tebalAwal || r.fotoAwal))}
       footer={
         <>
           <button type="button" className="btn-ghost" onClick={onClose}>Batal</button>
@@ -530,7 +548,9 @@ function AkhirModal({ pending, onClose, onConfirm, onDraft, revision = false }: 
   const [err, setErr] = useState('');
   const coco = rec ? hasThickness(rec.item) : false;
   const merged = rec ? rec.rows.map((r) => ({ ...r, beratAkhir: vals[r.no]?.beratAkhir ?? '', tebalAkhir: vals[r.no]?.tebalAkhir ?? '', ...(vals[r.no]?.fotoAkhir && { fotoAkhir: vals[r.no]!.fotoAkhir }) })) : [];
+  const [touched, setTouched] = useState(false);
   const set = (no: number, k: 'beratAkhir' | 'tebalAkhir' | 'fotoAkhir', v: string | undefined) => {
+    setTouched(true);
     // pertahankan isian lain di nomor yang sama (termasuk foto) saat satu kolom diubah
     setVals((x) => ({ ...x, [no]: { beratAkhir: '', tebalAkhir: '', ...x[no], [k]: v } }));
     setErr('');
@@ -554,6 +574,7 @@ function AkhirModal({ pending, onClose, onConfirm, onDraft, revision = false }: 
       onClose={onClose}
       testId="catat-akhir-modal"
       enterNext
+      dirty={touched}
       footer={
         <>
           <button type="button" className="btn-ghost" onClick={onClose}>Batal</button>
@@ -600,7 +621,7 @@ function AkhirModal({ pending, onClose, onConfirm, onDraft, revision = false }: 
                 <RowPhoto key="fk" value={r.fotoAkhir} label={`Foto akhir nomor ${r.no}`} onChange={(v) => set(r.no, 'fotoAkhir', v)} testId={`catat-akhir-foto-${r.no}`} />,
               ]}
             />
-            <TreatmentFields value={tr} onChange={setTr} />
+            <TreatmentFields value={tr} onChange={(fn) => { setTouched(true); setTr(fn); }} />
           </>
         )}
         {err && <p className="text-sm" role="alert"><span className="bg-safety px-1">{err}</span></p>}

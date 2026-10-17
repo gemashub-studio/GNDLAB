@@ -724,3 +724,88 @@ test.describe('GEMA RnD Lab — HP 360 px', () => {
     });
   }
 });
+
+test.describe('Upload progres perlakuan, form & foto OCR (DEC-095)', () => {
+  const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==', 'base64');
+  test('Upload Progres → modal (pratinjau, perlakuan, kategori, jumlah, waktu otomatis) → spinner → halaman 3 tabel', async ({ page }) => {
+    test.setTimeout(240_000);
+    await page.goto('/lab?t=bahan');
+    await page.getByTestId('catat-upload-progres').click();
+    const m = page.getByTestId('upload-progres');
+    await expect(m).toContainText('Upload Progres Perlakuan');
+    await expect(m.getByTestId('upload-progres-at')).toHaveValue(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/);
+    await m.getByTestId('upload-progres-submit').click();
+    await expect(m).toContainText('Pilih foto dulu.');
+    await m.getByTestId('upload-progres-file').setInputFiles({ name: 'progres.png', mimeType: 'image/png', buffer: png });
+    await m.getByTestId('upload-progres-thumb').click();
+    await expect(page.getByTestId('img-preview')).toBeVisible();
+    await page.getByTestId('img-preview-close').click();
+    await m.getByTestId('upload-progres-treatment').click();
+    await expect(m.getByTestId('upload-progres-treatment-list')).toContainText('Green House');
+    await m.getByTestId('upload-progres-treatment-opt-CUKA 2 - GULA 75g').click();
+    await expect(m.getByTestId('upload-progres-note')).toContainText('tambahan gula 75 g');
+    await m.getByTestId('upload-progres-category').click();
+    await m.getByTestId('upload-progres-category-opt-mingguan').click();
+    await m.getByTestId('upload-progres-qty').fill('25x');
+    await expect(m.getByTestId('upload-progres-qty')).toHaveValue('25');
+    await m.getByTestId('upload-progres-submit').click();
+    await expect(page.getByTestId('upload-progres-loading')).toContainText('Tunggu ya, media sedang di upload.');
+    await page.waitForURL(/\/lab\/progres\?baru=PP-/, { waitUntil: 'commit', timeout: 120_000 });
+    await expect(page.getByTestId('progres-page')).toContainText('Media dan Data Progres Perlakuan');
+    const tbl = page.getByTestId('progres-tbl-mingguan');
+    await expect(tbl).toContainText('CUKA 2 - GULA 75g');
+    await expect(tbl).toContainText('25');
+    await expect(page.getByTestId('progres-tbl-harian')).toContainText('Belum ada upload harian');
+  });
+
+  test('form catatan awal: klik di luar menutup (kosong langsung; ada isian → konfirmasi)', async ({ page }) => {
+    await page.goto('/lab?t=bahan');
+    await page.getByTestId('catat-new').click();
+    await expect(page.getByTestId('catat-awal-modal')).toBeVisible();
+    await page.getByTestId('catat-awal-modal-backdrop').click({ position: { x: 5, y: 5 } });
+    await expect(page.getByTestId('catat-awal-modal')).toHaveCount(0);
+    await page.getByTestId('catat-new').click();
+    await page.getByTestId('catat-count').fill('2');
+    await page.getByTestId('catat-awal-modal-backdrop').click({ position: { x: 5, y: 5 } });
+    await expect(page.getByTestId('confirm-dialog')).toContainText('Isian yang belum disimpan akan hilang.');
+    await page.getByTestId('confirm-ok').click();
+    await expect(page.getByTestId('catat-awal-modal')).toHaveCount(0);
+  });
+
+  test('Tanya Lab AI: ＋ → Foto/kamera → dialog scan teks dengan pemotong foto', async ({ page }) => {
+    await page.goto('/lab?t=ringkasan');
+    await page.getByTestId('lab-ai-bar-plus').click();
+    await page.getByTestId('lab-ai-bar-opt-foto').click();
+    const d = page.getByTestId('ocr-dialog');
+    await expect(d).toContainText('Scan teks dari foto');
+    await d.getByTestId('ocr-file').setInputFiles({ name: 'catatan.png', mimeType: 'image/png', buffer: png });
+    await expect(d.getByTestId('ocr-cropper')).toBeVisible();
+    await expect(d.getByTestId('ocr-scan')).toBeEnabled();
+  });
+});
+
+test.describe('Latar DriftWall & Gabungkan data (DEC-096)', () => {
+  test.setTimeout(240_000);
+  test('latar animasi tampil di halaman lain, tidak di GnD Lab; Lab AI tanpa pilihan model', async ({ page }) => {
+    await page.goto('/lab?t=ringkasan', { waitUntil: 'commit', timeout: 180_000 });
+    await expect(page.getByTestId('lab-ai-bar-input')).toBeVisible({ timeout: 120_000 });
+    await expect(page.getByTestId('page-drift')).toHaveCount(0);
+    await expect(page.getByLabel('Pilih model')).toHaveCount(0);
+    // dev server: tunggu kompilasi rute berikutnya selesai sebelum memeriksa (navigasi bisa dibatalkan oleh muat ulang HMR)
+    await expect(async () => {
+      await page.goto('/gudang', { waitUntil: 'domcontentloaded' });
+      await expect(page.getByTestId('page-drift')).toHaveCount(1, { timeout: 15_000 });
+    }).toPass({ timeout: 90_000 });
+  });
+
+  test('halaman progres: Gabungkan data → form pilih pencatatan lengkap & riset produk', async ({ page }) => {
+    await page.goto('/lab/progres');
+    await page.getByTestId('progres-gabung').click();
+    const d = page.getByTestId('gabung-dialog');
+    await expect(d).toContainText('Pilih data yang tersedia');
+    await expect(d).toContainText('Riset produk');
+    await expect(d.getByTestId('gabung-catat')).toBeVisible();
+    await d.getByTestId('gabung-close').click();
+    await expect(d).toHaveCount(0);
+  });
+});

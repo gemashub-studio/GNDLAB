@@ -1,9 +1,10 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { Fire02Icon, Leaf01Icon, Notebook01Icon, TestTube01Icon, DropletIcon } from '@hugeicons/core-free-icons';
+import { DropletIcon, Fire02Icon, ImageUploadIcon, Leaf01Icon, Notebook01Icon, TestTube01Icon } from '@hugeicons/core-free-icons';
 import { PromptBar, type PromptSendMeta } from '@/components/ui/PromptBar';
-import { answerCards, askLabAI, buildLabPrompt, CATAT_HINT, LAB_COMMANDS, LAB_EFFORTS, LAB_TOPICS, labGreeting, MAX_PROMPT } from '@/lib/labAi';
+import { PhotoOcrDialog, type OcrResult } from './PhotoOcrDialog';
+import { answerCards, askLabAI, buildLabPrompt, withOcrText, CATAT_HINT, LAB_COMMANDS, LAB_EFFORTS, LAB_TOPICS, labGreeting, MAX_PROMPT } from '@/lib/labAi';
 
 interface Msg {
   role: 'ai' | 'user';
@@ -11,6 +12,8 @@ interface Msg {
   /** sambutan/pesan otomatis (lokal) vs jawaban AI asli */
   auto?: boolean;
   error?: boolean;
+  /** paragraf per kartu jawaban (2, atau 4 untuk mode Mendalam) */
+  perCard?: number;
 }
 
 /**
@@ -37,16 +40,39 @@ export function AskLabAI({ tab, username }: { tab: string; username?: string }) 
   }, [msgs, busy]);
 
   const controller = useRef<AbortController | null>(null);
+  // foto → potong → scan teks (OCR) → chip di kolom tanya; teksnya ikut dikirim ke AI (DEC-095)
+  const ocrTexts = useRef(new Map<string, string>());
+  const [ocrOpen, setOcrOpen] = useState(false);
+  const ocrResolve = useRef<((label?: string) => void) | null>(null);
+  const pickPhoto = () =>
+    new Promise<string | undefined>((resolve) => {
+      ocrResolve.current = resolve;
+      setOcrOpen(true);
+    });
+  const finishOcr = (r?: OcrResult) => {
+    setOcrOpen(false);
+    let label: string | undefined;
+    if (r) {
+      label = r.label;
+      for (let n = 2; ocrTexts.current.has(label); n++) label = `${r.label} #${n}`;
+      ocrTexts.current.set(label, r.text);
+    }
+    ocrResolve.current?.(label);
+    ocrResolve.current = null;
+  };
   const send = async (raw: string, meta: PromptSendMeta) => {
-    const text = raw.trim().slice(0, MAX_PROMPT);
+    const ocr = meta.attachments.map((l) => ocrTexts.current.get(l)).filter((t): t is string => !!t);
+    const typed = raw.trim();
+    const text = (typed || (ocr.length ? 'Jelaskan isi teks dari foto berikut.' : '')).slice(0, MAX_PROMPT);
     if (!text || busy) return;
-    setMsgs((m) => [...m, { role: 'user', text }]);
+    setMsgs((m) => [...m, { role: 'user', text: meta.attachments.length ? `${text}\n📷 ${meta.attachments.join(', ')}` : text }]);
     setBusy(true);
     controller.current = new AbortController();
     try {
       // @topik, /perintah, dan tingkat jawaban diubah menjadi petunjuk untuk AI (DEC-094)
-      const a = await askLabAI(buildLabPrompt(text, meta.effort), 45_000, controller.current.signal);
-      setMsgs((m) => [...m, { role: 'ai', text: a }]);
+      const a = await askLabAI(withOcrText(buildLabPrompt(text, meta.effort), ocr), 45_000, controller.current.signal);
+      // mode Mendalam: maks. 4 paragraf per kartu (lainnya 2)
+      setMsgs((m) => [...m, { role: 'ai', text: a, perCard: meta.effort === 'Mendalam' ? 4 : 2 }]);
     } catch (e) {
       setMsgs((m) => [...m, { role: 'ai', text: e instanceof Error ? e.message : String(e), error: true }]);
     } finally {
@@ -90,7 +116,7 @@ export function AskLabAI({ tab, username }: { tab: string; username?: string }) 
         {msgs.map((m, i) => (
           <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
             {m.role === 'ai' && !m.auto && !m.error ? (
-              <AnswerCards text={m.text} />
+              <AnswerCards text={m.text} perCard={m.perCard ?? 2} />
             ) : (
               <p
                 className={`max-w-[85%] whitespace-pre-wrap rounded-2xl px-3.5 py-2 text-sm ${
@@ -113,9 +139,12 @@ export function AskLabAI({ tab, username }: { tab: string; username?: string }) 
       <PromptBar
         testId="lab-ai-bar"
         placeholder="Tanya soal briket, kopra, cuka, bio leather… (ketik @ untuk topik, / untuk perintah)"
-        sources={LAB_TOPICS.map((t, i) => ({ key: t.key, name: t.name, description: t.description, icon: [Fire02Icon, Leaf01Icon, DropletIcon, TestTube01Icon, Notebook01Icon][i]! }))}
+        sources={[
+          { key: 'foto', name: 'Foto / kamera', description: 'Scan teks dari foto (OCR)', icon: ImageUploadIcon, attach: true },
+          ...LAB_TOPICS.map((t, i) => ({ key: t.key, name: t.name, description: t.description, icon: [Fire02Icon, Leaf01Icon, DropletIcon, TestTube01Icon, Notebook01Icon][i]! })),
+        ]}
+        onAttach={pickPhoto}
         commands={LAB_COMMANDS.map((c) => ({ key: c.key, name: c.name, description: c.description }))}
-        models={[{ key: 'glm-4.7-flash', name: 'GLM-4.7 Flash', tag: 'Lab AI' }]}
         efforts={LAB_EFFORTS}
         defaultEffort="Sedang"
         busy={busy}
@@ -135,13 +164,14 @@ export function AskLabAI({ tab, username }: { tab: string; username?: string }) 
         tilt={8}
         pressScale={0.96}
       />
+      {ocrOpen && <PhotoOcrDialog onDone={(r) => finishOcr(r)} onCancel={() => finishOcr()} />}
     </section>
   );
 }
 
 /** Jawaban AI sebagai kartu bertahap (maks. 2 paragraf per kartu); klik kartu / "Selanjutnya" untuk bagian berikutnya. */
-function AnswerCards({ text }: { text: string }) {
-  const cards = answerCards(text);
+function AnswerCards({ text, perCard }: { text: string; perCard: number }) {
+  const cards = answerCards(text, perCard);
   const [i, setI] = useState(0);
   const last = i >= cards.length - 1;
   const next = () => !last && setI(i + 1);

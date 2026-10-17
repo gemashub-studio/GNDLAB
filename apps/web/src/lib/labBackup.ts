@@ -9,6 +9,7 @@
 import { belanjaDb, type LpjReport } from './belanja';
 import { bahanDb, type RawRecord } from './bahanBaku';
 import { catatDb, type CatatRecord } from './pencatatan';
+import { progresDb, type ProgresItem } from './progresPerlakuan';
 import { readTombs, writeTombs, type SyncPlan, type Tomb, catatRev } from './labSync';
 import { labDb, type DailyEntry, type Experiment, type MediaItem, type NewMedia, type ProtocolDraft, type ProtocolVersion } from './labStore';
 
@@ -31,13 +32,15 @@ export interface LabBackup {
   bahan?: RawRecord[];
   /** Pencatatan data awal/akhir (DEC-074). */
   catat?: CatatRecord[];
+  /** Upload Progres Perlakuan (DEC-095) — foto sebagai data URL. */
+  progres?: ProgresItem[];
   /** Nisan penghapusan untuk sinkron (DEC-065). */
   deleted?: Tomb[];
 }
 
 /** Bentuk cadangan tanpa media (dipakai juga oleh uji unit). */
-export function labBackupJson(experiments: readonly Experiment[], exportedAt = new Date().toISOString(), rest: Partial<Pick<LabBackup, 'entries' | 'protocols' | 'media' | 'drafts' | 'belanja' | 'bahan' | 'catat' | 'deleted'>> = {}): string {
-  return JSON.stringify({ format: 'gemas-lab', version: 2, exportedAt, experiments, entries: rest.entries ?? [], protocols: rest.protocols ?? [], media: rest.media ?? [], ...(rest.drafts?.length && { drafts: rest.drafts }), ...(rest.belanja?.length && { belanja: rest.belanja }), ...(rest.bahan?.length && { bahan: rest.bahan }), ...(rest.catat?.length && { catat: rest.catat }), ...(rest.deleted?.length && { deleted: rest.deleted }) }, null, 2);
+export function labBackupJson(experiments: readonly Experiment[], exportedAt = new Date().toISOString(), rest: Partial<Pick<LabBackup, 'entries' | 'protocols' | 'media' | 'drafts' | 'belanja' | 'bahan' | 'catat' | 'progres' | 'deleted'>> = {}): string {
+  return JSON.stringify({ format: 'gemas-lab', version: 2, exportedAt, experiments, entries: rest.entries ?? [], protocols: rest.protocols ?? [], media: rest.media ?? [], ...(rest.drafts?.length && { drafts: rest.drafts }), ...(rest.belanja?.length && { belanja: rest.belanja }), ...(rest.bahan?.length && { bahan: rest.bahan }), ...(rest.catat?.length && { catat: rest.catat }), ...(rest.progres?.length && { progres: rest.progres }), ...(rest.deleted?.length && { deleted: rest.deleted }) }, null, 2);
 }
 
 export function parseBackup(text: string): LabBackup {
@@ -55,12 +58,12 @@ export function parseBackup(text: string): LabBackup {
 }
 
 export interface RestorePlan {
-  add: { experiments: Experiment[]; entries: DailyEntry[]; protocols: ProtocolVersion[]; media: MediaJson[]; drafts: DraftJson[]; belanja: LpjReport[]; bahan?: RawRecord[]; catat?: CatatRecord[] };
+  add: { experiments: Experiment[]; entries: DailyEntry[]; protocols: ProtocolVersion[]; media: MediaJson[]; drafts: DraftJson[]; belanja: LpjReport[]; bahan?: RawRecord[]; catat?: CatatRecord[]; progres?: ProgresItem[] };
   skipped: { kind: string; id: string }[];
 }
 
 /** Rencana pemulihan: yang ID-nya belum ada ditambah; yang sudah ada dilewati (tidak menimpa). */
-export function planRestore(b: LabBackup, existing: { experiments: Set<string>; entries: Set<string>; protocols: Set<string>; media: Set<string>; drafts?: Set<string>; belanja?: Set<string>; bahan?: Set<string>; catat?: Set<string> }): RestorePlan {
+export function planRestore(b: LabBackup, existing: { experiments: Set<string>; entries: Set<string>; protocols: Set<string>; media: Set<string>; drafts?: Set<string>; belanja?: Set<string>; bahan?: Set<string>; catat?: Set<string>; progres?: Set<string> }): RestorePlan {
   const skipped: RestorePlan['skipped'] = [];
   const pick = <T extends { id: string }>(kind: string, list: T[] | undefined, have: Set<string>) =>
     (list ?? []).filter((x) => {
@@ -80,6 +83,7 @@ export function planRestore(b: LabBackup, existing: { experiments: Set<string>; 
       belanja: pick('laporan belanja', b.belanja, existing.belanja ?? new Set()),
       bahan: pick('bahan baku', b.bahan, existing.bahan ?? new Set()),
       catat: pick('pencatatan data', b.catat, existing.catat ?? new Set()),
+      progres: pick('progres perlakuan', b.progres, existing.progres ?? new Set()),
     },
     skipped,
   };
@@ -138,10 +142,11 @@ export async function exportLabBackup(): Promise<{ json: string; counts: Record<
   const belanja = await (await belanjaDb()).getAll('reports');
   const bahan = await (await bahanDb()).getAll('items');
   const catat = await (await catatDb()).getAll('records');
+  const progres = await (await progresDb()).getAll('items');
   for (const dr of drafts) draftJson.push({ ...dr, pending: { ingredients: await conv(dr.pending.ingredients), tools: await conv(dr.pending.tools), steps: await conv(dr.pending.steps), ...(dr.pending.coconuts && { coconuts: await conv(dr.pending.coconuts) }) } });
   return {
-    json: labBackupJson(experiments, new Date().toISOString(), { entries, protocols, media: mediaJson, drafts: draftJson, belanja, bahan, catat, deleted: readTombs() }),
-    counts: { eksperimen: experiments.length, 'catatan harian': entries.length, 'riset produk': protocols.length, draf: drafts.length, media: media.length, 'laporan belanja': belanja.length, 'bahan baku': bahan.length, 'pencatatan data': catat.length },
+    json: labBackupJson(experiments, new Date().toISOString(), { entries, protocols, media: mediaJson, drafts: draftJson, belanja, bahan, catat, progres, deleted: readTombs() }),
+    counts: { eksperimen: experiments.length, 'catatan harian': entries.length, 'riset produk': protocols.length, draf: drafts.length, media: media.length, 'laporan belanja': belanja.length, 'bahan baku': bahan.length, 'pencatatan data': catat.length, 'progres perlakuan': progres.length },
   };
 }
 
@@ -149,7 +154,7 @@ export async function previewRestore(text: string): Promise<RestorePlan> {
   const b = parseBackup(text);
   const d = await labDb();
   const keys = async (s: 'experiments' | 'entries' | 'protocols' | 'media') => new Set((await d.getAllKeys(s)).map(String));
-  return planRestore(b, { experiments: await keys('experiments'), entries: await keys('entries'), protocols: await keys('protocols'), media: await keys('media'), drafts: new Set((await d.getAllKeys('drafts')).map(String)), belanja: new Set((await (await belanjaDb()).getAllKeys('reports')).map(String)), bahan: new Set((await (await bahanDb()).getAllKeys('items')).map(String)), catat: new Set((await (await catatDb()).getAllKeys('records')).map(String)) });
+  return planRestore(b, { experiments: await keys('experiments'), entries: await keys('entries'), protocols: await keys('protocols'), media: await keys('media'), drafts: new Set((await d.getAllKeys('drafts')).map(String)), belanja: new Set((await (await belanjaDb()).getAllKeys('reports')).map(String)), bahan: new Set((await (await bahanDb()).getAllKeys('items')).map(String)), catat: new Set((await (await catatDb()).getAllKeys('records')).map(String)), progres: new Set((await (await progresDb()).getAllKeys('items')).map(String)) });
 }
 
 /** Terapkan rencana: hanya `add` (gagal bila ada bentrok ID baru — tidak menimpa). */
@@ -163,6 +168,11 @@ export async function applyRestore(plan: RestorePlan): Promise<void> {
   const back = (rows: NewMediaJson[][]) => rows.map((row) => row.map(({ data, ...m }) => ({ ...m, blob: base64ToBlob(data, m.type) })));
   for (const dr of plan.add.drafts) await tx.objectStore('drafts').add({ ...dr, pending: { ingredients: back(dr.pending.ingredients), tools: back(dr.pending.tools), steps: back(dr.pending.steps), ...(dr.pending.coconuts && { coconuts: back(dr.pending.coconuts) }) } });
   await tx.done;
+  if (plan.add.progres?.length) {
+    const pt = (await progresDb()).transaction('items', 'readwrite');
+    for (const r of plan.add.progres) await pt.store.put(r);
+    await pt.done;
+  }
   if (plan.add.catat?.length) {
     const ct = (await catatDb()).transaction('records', 'readwrite');
     for (const r of plan.add.catat) await ct.store.add(r);
@@ -189,7 +199,8 @@ export async function localSyncState() {
   const researchKeys = new Set((await d.getAll('protocols')).map((p) => p.key));
   const catat = new Map((await (await catatDb()).getAll('records')).map((x) => [x.id, catatRev(x)] as const));
   const bahan = new Set((await (await bahanDb()).getAllKeys('items')).map(String));
-  return { experiments: await created('experiments'), entries: await created('entries'), protocols: await created('protocols'), media: new Set((await d.getAllKeys('media')).map(String)), drafts, belanja, researchKeys, catat, bahan };
+  const progres = new Set((await (await progresDb()).getAllKeys('items')).map(String));
+  return { experiments: await created('experiments'), entries: await created('entries'), protocols: await created('protocols'), media: new Set((await d.getAllKeys('media')).map(String)), drafts, belanja, researchKeys, catat, bahan, progres };
 }
 
 /** Terapkan rencana sinkron: tambah, ganti draf/laporan belanja yang lebih baru, hapus yang dihapus di perangkat lain. */

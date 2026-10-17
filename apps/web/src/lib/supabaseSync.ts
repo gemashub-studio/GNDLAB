@@ -11,6 +11,7 @@ import { backupFromDocs, docKey, docToRow, extractBlobs, KIND_OF, pullFilter, pu
 import { catatRev, planSync, readTombs, syncCount, type Tomb } from './labSync';
 import { labDb } from './labStore';
 import { catatDb } from './pencatatan';
+import { progresDb } from './progresPerlakuan';
 import { getSupabase } from './supabase';
 
 const BUCKET = 'lab-blobs';
@@ -82,6 +83,7 @@ async function localMeta(): Promise<DocMeta[]> {
   for (const x of await (await belanjaDb()).getAll('reports')) add('belanja', x.id, x.updatedAt);
   for (const x of await (await bahanDb()).getAll('items')) add('bahan', x.id, x.createdAt);
   for (const x of await (await catatDb()).getAll('records')) add('catat', x.id, catatRev(x));
+  for (const x of await (await progresDb()).getAll('items')) add('progres', x.id, x.createdAt);
   for (const t of readTombs()) add('tomb', `${t.kind}|${t.id}`, t.at);
   return out;
 }
@@ -110,6 +112,8 @@ async function loadLocal(m: DocMeta): Promise<unknown> {
       return (await bahanDb()).get('items', m.id);
     case 'catat':
       return (await catatDb()).get('records', m.id);
+    case 'progres':
+      return (await progresDb()).get('items', m.id);
     case 'tomb':
       return readTombs().find((t) => `${t.kind}|${t.id}` === m.id);
   }

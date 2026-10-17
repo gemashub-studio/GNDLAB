@@ -306,6 +306,11 @@ html, body { overflow-x: clip; }
   .prompt-bar__tool:active, .prompt-bar__send[data-pressed] { transform: none; }
 }
 
+/* skeleton pemuatan (DEC-095) */
+@keyframes skeletonShimmer { 0% { background-position: 100% 0; } 100% { background-position: -100% 0; } }
+.skeleton { background: linear-gradient(90deg, #e3e9eb 25%, #f1f5f6 37%, #e3e9eb 63%); background-size: 400% 100%; animation: skeletonShimmer 1.4s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) { .skeleton { animation: none; } }
+
 /* LightTunnel (DEC-082) */
 .light-tunnel-container {
   position: relative;

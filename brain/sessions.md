@@ -186,3 +186,6 @@
 - DEC-090: auth username/password + OTP Resend, tabel users & rnd_data (shared). Menunggu owner mengisi RESEND_API_KEY & SUPABASE_SERVICE_ROLE_KEY (apps/web/.env + Vercel env).
 - DEC-092/093: DriftWall beranda, OTP diperkuat, logout→/, kartu jawaban AI, PPTX padat (riset), pengingat tiap jam (pg_cron→/api/lab-reminder), kamera sembunyi. E2E: preview 'web-e2e' port 3210 tanpa Supabase. Windows sering mengunci file .next (antivirus?) → stop/hapus folder/start.
 - DEC-094: PromptBar di Tanya Lab AI (motion + hugeicons).
+- DEC-095: skeleton, foto→potong→OCR (tesseract.js 7, react-easy-crop 6) ke prompt AI, klik-luar tutup form, Upload Progres Perlakuan + halaman /lab/progres (rnd_data kolom progres_perlakuan). Bug PromptBar diperbaiki: onFocus kolom menutup menu ＋ (focusInput(keep)).
+- DEC-096: DriftWall di semua halaman kecuali / (punya sendiri) & /lab; model AI dihapus; Mendalam = 4 paragraf/kartu + pertanyaan ramah + emoji; Gabungkan data (gabungData.ts, GabungDataDialog) TXT/PPTX/Word dengan slide Laporan belanja padat (belanjaSlides di officeExport). E2E dev server 3210 lambat saat kompilasi dingin → mulai preview web-e2e & hangatkan rute (curl) sebelum playwright.
+

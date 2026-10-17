@@ -53,10 +53,13 @@ const EFFORT_HINT: Record<string, string> = {
   Lengkap: 'Jawab lengkap dengan beberapa paragraf.',
   Mendalam: 'Jawab mendalam dan rinci, sertakan alasan dan hal yang perlu diperhatikan.',
 };
+
+/** Emoji ramah untuk pertanyaan penutup jawaban mode Mendalam (DEC-096). */
+export const FRIENDLY_EMOJI = ['😊', '🌱', '🥥', '🔥', '✨', '🙌', '🧪', '💡', '👍', '🌿', '😄', '🤝'];
 const escRe = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 /** Susun prompt akhir dari ketikan pengguna: topik @… → konteks, /perintah → instruksi, tingkat jawaban → panjang. */
-export function buildLabPrompt(text: string, effort = 'Sedang'): string {
+export function buildLabPrompt(text: string, effort = 'Sedang', rand: () => number = Math.random): string {
   let body = text.trim();
   const topics: string[] = [];
   for (const t of LAB_TOPICS) {
@@ -77,8 +80,18 @@ export function buildLabPrompt(text: string, effort = 'Sedang'): string {
   }
   const hint = EFFORT_HINT[effort] ?? '';
   if (hint) instructions.push(hint);
+  // mode Mendalam: selalu akhiri dengan satu pertanyaan lanjutan yang ramah + emoji acak (DEC-096)
+  if (effort === 'Mendalam') instructions.push(`Selalu akhiri jawaban dengan satu pertanyaan lanjutan yang ramah untuk pengguna, ditutup emoji ${FRIENDLY_EMOJI[Math.floor(rand() * FRIENDLY_EMOJI.length)]}.`);
   body = body.replace(/[ \t]{2,}/g, ' ').trim();
   return [topics.length ? `Topik: ${topics.join(', ')}.` : '', instructions.join(' '), body].filter(Boolean).join('\n');
+}
+
+/** Tambahkan teks hasil scan foto (OCR) ke prompt, dibatasi agar tetap di bawah batas panjang (DEC-095). */
+export function withOcrText(prompt: string, texts: readonly string[]): string {
+  if (!texts.length) return prompt;
+  const room = Math.max(200, MAX_PROMPT - prompt.length - 40);
+  const joined = texts.map((t, i) => (texts.length > 1 ? `[Foto ${i + 1}]\n${t}` : t)).join('\n\n').slice(0, room);
+  return `${prompt}\n\nTeks hasil scan foto:\n${joined}`;
 }
 
 export async function askLabAI(prompt: string, timeoutMs = 45_000, signal?: AbortSignal): Promise<string> {

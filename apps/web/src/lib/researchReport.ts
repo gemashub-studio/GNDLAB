@@ -46,6 +46,17 @@ export interface ReportBlock {
   /** PowerPoint: grafik garis digambar langsung (bisa diedit) + teks penjelasan di bawah grafik. */
   nativeChart?: boolean;
   chartCaption?: string;
+  /** PowerPoint: laporan belanja padat (DEC-096) — tiap kelompok = foto nota → cabang ke foto barang, selalu satu bingkai. */
+  belanja?: BelanjaGroup[];
+}
+
+export interface BelanjaGroup {
+  /** Nama toko · total. */
+  label: string;
+  /** Foto nota / bukti bayar (maks. 2 ditampilkan). */
+  roots: { image?: string; label: string }[];
+  /** Foto barang + nama barang. */
+  leaves: { image?: string; label: string }[];
 }
 
 export interface PhotoCell {

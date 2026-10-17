@@ -2,7 +2,7 @@
 
 import { BelanjaTab } from './BelanjaTab';
 import Link from 'next/link';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { GEMA_SOURCES, sourceCounts } from '@/lib/gemaSources';
 import { StrokeText } from '@/components/ui/StrokeText';
 import { LightTunnel } from '@/components/ui/LightTunnel';
@@ -13,7 +13,8 @@ import { ProgressCamera } from './ProgressCamera';
 import { AskLabAI } from './AskLabAI';
 import { LoginForm } from '@/components/auth/LoginDialog';
 import { needsLogin, useAuth } from '@/lib/useAuth';
-import { requestSync, startAutoSync } from '@/lib/supabaseSync';
+import { onSyncStatus, requestSync, startAutoSync } from '@/lib/supabaseSync';
+import { LabSkeleton } from './LabSkeleton';
 import { ExperimentsTab } from './ExperimentsTab';
 import { LabOverview } from './LabOverview';
 import { LibraryTab } from './LibraryTab';
@@ -33,6 +34,8 @@ const TABS = [
   { id: 'standar', label: 'Standar' },
 ] as const;
 type TabId = (typeof TABS)[number]['id'];
+/** Menu yang perlu mengambil data dulu → pakai skeleton saat pertama dimuat. */
+const DATA_TABS = new Set<string>(['ringkasan', 'bahan', 'protokol', 'eksperimen', 'belanja']);
 const isTab = (s: string | null): s is TabId => TABS.some((t) => t.id === s);
 
 export function LabPage() {
@@ -51,6 +54,32 @@ export function LabPage() {
   // semua pendataan butuh login bila Supabase aktif (DEC-087); tanpa Supabase (offline) tetap terbuka
   const locked = needsLogin(auth);
 
+  // skeleton saat pertama membuka GnD Lab: sampai data perangkat terbaca, dan — bila perangkat masih kosong —
+  // sampai sinkron pertama dari database selesai (maks. 10 dtk) (DEC-095)
+  const [loaded, setLoaded] = useState(false);
+  // pindah menu → layar diarahkan ke menu yang dibuka (bukan saat halaman pertama dimuat)
+  const tabsRef = useRef<HTMLElement>(null);
+  const firstTab = useRef(true);
+  useEffect(() => {
+    if (firstTab.current) {
+      firstTab.current = false;
+      return;
+    }
+    const nav = tabsRef.current;
+    if (nav && nav.getBoundingClientRect().top < 0) nav.scrollIntoView({ block: 'start', behavior: 'smooth' });
+  }, [tab]);
+  const [firstSync, setFirstSync] = useState(false);
+  useEffect(() => {
+    const t = setTimeout(() => setFirstSync(true), 10_000);
+    const off = onSyncStatus((st) => {
+      if (st.phase !== 'syncing' && (st.phase !== 'idle' || st.last)) setFirstSync(true);
+    });
+    return () => {
+      clearTimeout(t);
+      off();
+    };
+  }, []);
+  const showSkel = !loaded || (!!auth.email && !firstSync && !items.length && !catat.length && !protocols.length);
   const refresh = useCallback(async () => {
     try {
       const [x, e, m, p] = await Promise.all([listExperiments(), listEntries(), listMedia(), listProtocols()]);
@@ -66,6 +95,7 @@ export function LabPage() {
     } catch {
       setItems([]);
     }
+    setLoaded(true);
     // data lokal mungkin berubah → kirim ke Supabase sebentar lagi (DEC-085)
     requestSync();
   }, []);
@@ -174,7 +204,7 @@ export function LabPage() {
         <>
       <AskLabAI tab={tab} username={auth.username} />
 
-      <nav role="tablist" aria-label="Bagian lab" className="flex gap-1 overflow-x-auto rounded-2xl border-3 border-ink bg-surface p-1">
+      <nav ref={tabsRef} style={{ scrollMarginTop: 80 }} role="tablist" aria-label="Bagian lab" className="flex gap-1 overflow-x-auto rounded-2xl border-3 border-ink bg-surface p-1">
         {TABS.map((t) => (
           <button
             key={t.id}
@@ -193,6 +223,11 @@ export function LabPage() {
         ))}
       </nav>
 
+      {/* skeleton hanya untuk menu yang mengambil data dulu (DEC-095) */}
+      {showSkel && DATA_TABS.has(tab) ? (
+        <LabSkeleton kind={tab} />
+      ) : (
+        <>
       {tab === 'ringkasan' && (
         <LabOverview
           items={items}
@@ -216,6 +251,8 @@ export function LabPage() {
       {tab === 'bahan' && <PencatatanTab records={catat} oldRaw={rawRecs} onChanged={refresh} />}
       {tab === 'protokol' && <ProtocolsTab protocols={protocols} entries={entries} media={media} refresh={refresh} />}
       {tab === 'belanja' && <BelanjaTab />}
+        </>
+      )}
       {tab === 'library' && <LibraryTab />}
       {tab === 'standar' && <StandardsTab product={stdProduct} setProduct={setStdProduct} />}
 

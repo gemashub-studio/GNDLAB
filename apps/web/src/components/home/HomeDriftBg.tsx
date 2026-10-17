@@ -28,9 +28,15 @@ const ITEMS: DriftItem[] = [
  * Latar animasi hero Ringkasan: penuh lebar layar, di belakang judul, dan menjulur ke bawah sehingga
  * kartu "Mulai cepat" menutupi setengah bagian bawahnya (kartu tampak mengambang di depan animasi).
  */
-export function HomeDriftBg() {
+export function HomeDriftBg({ page = false }: { page?: boolean }) {
+  // page = latar yang sama untuk halaman lain (DEC-096): penempatan sama (penuh lebar, di belakang judul), tinggi tetap
+  // karena tinggi judul tiap halaman berbeda, dan memudar ke warna latar di bagian bawah agar kartu tampak mengambang.
   return (
-    <div aria-hidden className="pointer-events-auto absolute -top-8 bottom-[-150px] left-1/2 -z-10 w-screen -translate-x-1/2 lg:-top-10" data-testid="home-drift">
+    <div
+      aria-hidden
+      className={`pointer-events-auto absolute -top-8 left-1/2 -z-10 w-screen -translate-x-1/2 lg:-top-10 ${page ? 'h-[340px] sm:h-[400px]' : 'bottom-[-150px]'}`}
+      data-testid={page ? 'page-drift' : 'home-drift'}
+    >
       <DriftWall
         items={ITEMS}
         columns={6}
@@ -60,6 +66,7 @@ export function HomeDriftBg() {
       {/* lapisan terang di belakang teks judul agar tetap mudah dibaca */}
       <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-[#F3F6F7]/80 via-[#F3F6F7]/25 to-transparent" />
       <div className="pointer-events-none absolute inset-x-0 top-0 h-16 bg-gradient-to-b from-[#F3F6F7] to-transparent" />
+      {page && <div className="pointer-events-none absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-[#F3F6F7] to-transparent" />}
     </div>
   );
 }

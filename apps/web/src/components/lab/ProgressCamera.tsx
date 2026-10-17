@@ -7,6 +7,7 @@ import { photoDataUrl } from '@/lib/photo';
 import { Dropdown } from './Dropdown';
 import { CameraDialog, canUseWebcam } from './MediaPicker';
 import { SuccessAlert } from './Overlays';
+import { UploadProgresModal } from './UploadProgresModal';
 
 const today = () => {
   const d = new Date();
@@ -126,7 +127,7 @@ export function ProgressCamera({ records, onUploaded }: { records: CatatRecord[]
             }}
             disabled={busy}
             className="cam-raise absolute -top-7 left-1/2 inline-flex h-[60px] w-[60px] -translate-x-1/2 items-center justify-center rounded-full border-4 border-surface bg-gradient-to-b from-[#8ff0de] to-acid text-ink transition hover:-translate-y-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-acid disabled:opacity-60"
-            aria-label={busy ? 'Memproses foto…' : err ? 'Ulangi foto progres' : 'Buka kamera untuk foto progres harian'}
+            aria-label={busy ? 'Memproses foto…' : err ? 'Ulangi foto progres' : 'Buka kamera untuk upload progres perlakuan'}
             title={err || undefined}
             data-testid="float-cam"
           >
@@ -153,22 +154,8 @@ export function ProgressCamera({ records, onUploaded }: { records: CatatRecord[]
         />
       </nav>
       {cam && <CameraDialog photoOnly onClose={() => setCam(false)} onFile={(f) => void take(f)} testId="float-camdlg" />}
-      {photo && (
-        <ProgressSheet
-          photo={photo}
-          records={records}
-          onRetake={() => {
-            setPhoto(undefined);
-            open();
-          }}
-          onClose={() => setPhoto(undefined)}
-          onSaved={(rec) => {
-            setPhoto(undefined);
-            setDone(rec);
-            onUploaded();
-          }}
-        />
-      )}
+      {/* DEC-095: ikon kamera tersambung ke modal Upload Progres Perlakuan (foto langsung terisi) */}
+      {photo && <UploadProgresModal initialPhoto={photo} onClose={() => setPhoto(undefined)} />}
       {done && <SuccessAlert testId="progress-done" title="Terunggah !" message={`Foto progres masuk ke ${done.id} (${done.item}). Total ${done.progress?.length ?? 0} foto progres.`} onClose={() => setDone(undefined)} />}
     </>
   );

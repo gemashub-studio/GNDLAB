@@ -556,12 +556,102 @@ export function buildPptx(r: ResearchReport, charts: ChartPngs = new Map(), vide
     return out;
   }
 
+  /**
+   * Laporan belanja padat (DEC-096): kelompok (nota → cabang → barang) dikemas berdampingan, maks. 8 kolom barang per slide.
+   * Satu kelompok tidak pernah dipisah dari notanya: >8 barang → kelompok lanjutan yang mengulang foto nota.
+   */
+  function belanjaSlides(groups: NonNullable<ResearchReport['blocks'][number]['belanja']>, head: string, num?: number): Slide[] {
+    const UNITS = 8;
+    const parts: { g: (typeof groups)[number]; leaves: (typeof groups)[number]['leaves']; cont: boolean }[] = [];
+    for (const g of groups) {
+      if (!g.leaves.length) parts.push({ g, leaves: [], cont: false });
+      for (let i = 0; i < g.leaves.length; i += UNITS) parts.push({ g, leaves: g.leaves.slice(i, i + UNITS), cont: i > 0 });
+    }
+    const units = (x: (typeof parts)[number]) => Math.max(2, x.leaves.length);
+    const pages: (typeof parts)[] = [];
+    for (const x of parts) {
+      const cur = pages[pages.length - 1];
+      if (cur && cur.reduce((n, y) => n + units(y), 0) + units(x) <= UNITS) cur.push(x);
+      else pages.push([x]);
+    }
+    const out: Slide[] = [];
+    const gap = 140000;
+    const top = BODY_TOP;
+    const bottom = SH - 560000;
+    pages.forEach((pg, pi) => {
+      const pics: Slide['pics'] = [];
+      let id = 400;
+      let shapes = title(head + (pi ? ' (lanjutan)' : ''), pi ? undefined : num);
+      const used = pg.reduce((n, y) => n + units(y), 0);
+      // kolom dilebarkan agar slide penuh (ruang kosong minimal)
+      const unitW = (CW - gap * (pg.length - 1)) / used;
+      let x = M;
+      for (const part of pg) {
+        const w = unitW * units(part);
+        // bingkai kelompok: nota & barang selalu dalam satu kotak
+        shapes += pRect(id++, x, top, w, bottom - top, PAPER, 'roundRect') + pRect(id++, x + 120000, top, w - 240000, 50000, MINT_D);
+        shapes += pTextBox(id++, x + 80000, top + 70000, w - 160000, 300000, [{ t: part.g.label + (part.cont ? ' (lanjutan)' : ''), sz: 1100, b: true }], { autofit: false, align: 'ctr' });
+        const roots = part.g.roots.length ? part.g.roots.slice(0, 2) : [{ label: 'tanpa foto nota' }];
+        const rootY = top + 400000;
+        const rootH = 1600000;
+        const rw = (w - 240000 - (roots.length - 1) * 80000) / roots.length;
+        roots.forEach((n, k) => {
+          const rx = x + 120000 + k * (rw + 80000);
+          const bytes = n.image ? dataUrlBytes(n.image) : undefined;
+          if (bytes) {
+            const sz = jpegSize(bytes);
+            const p = pic(bytes, 'jpeg', sz.w, sz.h, `Nota · ${part.g.label}`, pics);
+            const f = fitBox(sz.w, sz.h, rw, rootH);
+            const fx = rx + (rw - f.w) / 2;
+            const fy = rootY + (rootH - f.h) / 2;
+            shapes += pRect(id++, fx - 30000, fy - 30000, f.w + 60000, f.h + 60000, MINT);
+            shapes += pPic(id++, p.rid, fx, fy, f.w, f.h, p.file);
+          } else shapes += pTextBox(id++, rx, rootY, rw, rootH, [{ t: n.label, sz: 900, color: MUTED }], { fill: 'FFFFFF', geom: 'roundRect', anchor: 'ctr', autofit: false, align: 'ctr' });
+        });
+        shapes += pTextBox(id++, x + 80000, rootY + rootH + 10000, w - 160000, 220000, [{ t: 'NOTA / BUKTI BAYAR', sz: 750, b: true, color: MINT_D, mono: true }], { autofit: false, align: 'ctr' });
+        const n = part.leaves.length;
+        const stemTop = rootY + rootH + 240000;
+        const branchY = stemTop + 170000;
+        const leafY = branchY + 160000;
+        const capH = 380000;
+        const cellW = (w - 160000) / Math.max(n, 1);
+        const leafW = cellW - 90000;
+        const leafH = bottom - leafY - capH - 60000;
+        const cx = (k: number) => x + 80000 + cellW * k + cellW / 2;
+        if (n) {
+          shapes += pLine(id++, x + w / 2, stemTop, x + w / 2, branchY);
+          if (n > 1) shapes += pLine(id++, cx(0), branchY, cx(n - 1), branchY);
+          part.leaves.forEach((leaf, k) => {
+            shapes += pLine(id++, cx(k), branchY, cx(k), leafY - 20000);
+            const lx = cx(k) - leafW / 2;
+            const bytes = leaf.image ? dataUrlBytes(leaf.image) : undefined;
+            let bottomY = leafY + leafH;
+            if (bytes) {
+              const sz = jpegSize(bytes);
+              const p = pic(bytes, 'jpeg', sz.w, sz.h, leaf.label, pics);
+              const f = fitBox(sz.w, sz.h, leafW, leafH);
+              const fx = lx + (leafW - f.w) / 2;
+              shapes += pRect(id++, fx - 12000, leafY - 12000, f.w + 24000, f.h + 24000, GRID);
+              shapes += pPic(id++, p.rid, fx, leafY, f.w, f.h, p.file);
+              bottomY = leafY + f.h;
+            } else shapes += pTextBox(id++, lx, leafY, leafW, Math.min(leafH, 1200000), [{ t: 'tanpa foto', sz: 800, color: MUTED }], { fill: 'FFFFFF', geom: 'roundRect', anchor: 'ctr', autofit: false, align: 'ctr' });
+            if (!bytes) bottomY = leafY + Math.min(leafH, 1200000);
+            shapes += pTextBox(id++, lx - 40000, bottomY + 30000, leafW + 80000, capH, [{ t: leaf.label || '(tanpa nama)', sz: n > 5 ? 800 : 950, b: true }], { autofit: false, align: 'ctr' });
+          });
+        } else shapes += pTextBox(id++, x + 80000, leafY, w - 160000, 400000, [{ t: 'Belum ada foto barang.', sz: 900, color: MUTED }], { autofit: false, align: 'ctr' });
+        x += w + gap;
+      }
+      out.push({ shapes, pics });
+    });
+    return out;
+  }
+
   for (const b0 of r.blocks.filter((x) => !x.pptxSkip)) {
     const b = b0.pptxTable ? { ...b0, table: b0.pptxTable } : b0;
     let num = b.level === 1 ? ++sec : undefined;
     let head = b.heading;
     // DEC-093: bagian tanpa isi (mis. "Laporan harian") tidak dibuatkan slide sendiri → awalan judul slide berikutnya
-    const emptySection = !b.lines.length && !(b.table?.rows.length) && !(b.charts?.length) && !b.photoPairs && !b.progressColumns && !b.cards?.length && !b.photoCards?.length && (b.pptxOmitImages || !b.images.length);
+    const emptySection = !b.lines.length && !(b.table?.rows.length) && !(b.charts?.length) && !b.photoPairs && !b.progressColumns && !b.cards?.length && !b.photoCards?.length && !b.belanja?.length && (b.pptxOmitImages || !b.images.length);
     if (emptySection) {
       sectionPrefix = { head, ...(num && { num }) };
       continue;
@@ -583,6 +673,11 @@ export function buildPptx(r: ResearchReport, charts: ChartPngs = new Map(), vide
       first = false;
       return s;
     };
+    if (b.belanja?.length) {
+      for (const sl of belanjaSlides(b.belanja, head, num)) slides.push(sl);
+      tail = undefined;
+      continue;
+    }
     // grid foto per nomor (DEC-077): maks. 20 foto/slide — 10 awal di atas, garis pembatas, 10 akhir di bawah
     if (b.photoPairs?.length) {
       for (const s of photoGridSlides(b.photoPairs, head, first ? num : undefined)) slides.push(s);

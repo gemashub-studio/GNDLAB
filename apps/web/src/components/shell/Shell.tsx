@@ -6,6 +6,7 @@ import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Icon, type IconName } from './icons';
 import { LogoMark, Wordmark } from './Logo';
 import { ProfileMenu } from '@/components/auth/ProfileMenu';
+import { HomeDriftBg } from '@/components/home/HomeDriftBg';
 import { useAuth } from '@/lib/useAuth';
 
 interface NavItem {
@@ -257,7 +258,11 @@ export function Shell({ children, datasetVersion, profile }: { children: ReactNo
       </div>
 
       <main id="konten" className="min-w-0 flex-1 px-4 pb-14 pt-6 sm:px-6 lg:px-10 lg:pt-8">
-        <div className="mx-auto flex max-w-[1180px] flex-col gap-7">{children}</div>
+        <div className="relative isolate mx-auto flex max-w-[1180px] flex-col gap-7">
+          {/* latar animasi DriftWall seperti Ringkasan di semua halaman, kecuali Ringkasan (punya sendiri) & GnD Lab (DEC-096) */}
+          {path !== '/' && path !== '/lab' && <HomeDriftBg page />}
+          {children}
+        </div>
       </main>
     </div>
   );

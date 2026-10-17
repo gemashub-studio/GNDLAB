@@ -187,7 +187,13 @@ export function PromptBar({
   const level = efforts[effortIndex] ?? '';
   const maxed = efforts.length > 1 && effortIndex === efforts.length - 1;
 
-  const focusInput = () => inputRef.current?.focus({ preventScroll: true });
+  // fokus ke kolom tanpa menutup menu yang baru dibuka (bug komponen asli: klik ＋ saat kolom belum aktif → menu langsung tertutup)
+  const keepMenus = useRef(false);
+  const focusInput = (keep = false) => {
+    keepMenus.current = keep;
+    inputRef.current?.focus({ preventScroll: true });
+    keepMenus.current = false;
+  };
   const closeMenus = useCallback(() => {
     setPlusOpen(false);
     setModelOpen(false);
@@ -539,7 +545,7 @@ export function PromptBar({
         onPointerDown={(e) => {
           if (e.target === e.currentTarget || e.target === inputRef.current) closeMenus();
         }}
-        onClick={focusInput}
+        onClick={() => focusInput()}
       >
         <canvas ref={sparkRef} className="prompt-bar__sparks" aria-hidden="true" />
         {attachments.length > 0 ? (
@@ -571,7 +577,7 @@ export function PromptBar({
             closeMenus();
             setActive(0);
           }}
-          onFocus={closeMenus}
+          onFocus={() => !keepMenus.current && closeMenus()}
           onKeyDown={onKeyDown}
           data-testid={`${testId}-input`}
         />
@@ -590,7 +596,7 @@ export function PromptBar({
                 setEffortOpen(false);
                 setActive(0);
                 setPlusOpen((v) => !v);
-                focusInput();
+                focusInput(true);
               }}
               data-testid={`${testId}-plus`}
             >
@@ -610,7 +616,7 @@ export function PromptBar({
                 setEffortOpen(false);
                 setActive(Math.max(0, model ? models.indexOf(model) : 0));
                 setModelOpen((v) => !v);
-                focusInput();
+                focusInput(true);
               }}
             >
               <span>{model?.name}</span>
@@ -630,7 +636,7 @@ export function PromptBar({
                 setPlusOpen(false);
                 setModelOpen(false);
                 setEffortOpen((v) => !v);
-                focusInput();
+                focusInput(true);
               }}
               data-testid={`${testId}-effort`}
             >
