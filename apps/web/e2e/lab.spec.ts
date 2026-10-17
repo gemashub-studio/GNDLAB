@@ -398,7 +398,15 @@ test.describe('Hapus hasil riset', () => {
     await awal.getByTestId('catat-count').fill('3');
     await expect(awal.locator('[data-testid^="catat-awal-beratAwal-"]')).toHaveCount(3);
     await expect(awal.locator('[data-testid^="catat-awal-tebalAwal-"]')).toHaveCount(3);
-    await awal.getByTestId('catat-awal-beratAwal-1').fill('1.000');
+    // Enter → otomatis pindah ke kolom berikutnya (DEC-091)
+    await awal.getByTestId('catat-count').press('Enter');
+    await expect(awal.getByTestId('catat-awal-beratAwal-1')).toBeFocused();
+    await page.keyboard.type('1.000');
+    await page.keyboard.press('Enter');
+    await expect(awal.getByTestId('catat-awal-volAir-1')).toBeFocused();
+    await expect(awal.getByTestId('catat-awal-beratAwal-1')).toHaveValue('1.000');
+    await awal.getByTestId('catat-awal-tebalAwal-3').press('Enter');
+    await expect(awal.getByTestId('catat-awal-confirm')).toBeFocused();
     await awal.getByTestId('catat-awal-confirm').click();
     await expect(awal).toContainText('Masih kosong');
     const vals: [string, string, string, string][] = [['1.000', '300', '310', '10'], ['1.200', '', '', '12'], ['800', '', '', '9']];
@@ -509,6 +517,8 @@ test.describe('Hapus hasil riset', () => {
     await expect(akhir.getByTestId('catat-tr-count-kopra-0')).toHaveValue('3');
     await expect(akhir.locator('[data-testid^="catat-tr-count-kopra-"]')).toHaveCount(2);
     await expect(akhir.getByTestId('catat-akhir-foto-1-img')).toBeVisible();
+    await akhir.getByTestId('catat-akhir-berat-2').press('Enter');
+    await expect(akhir.getByTestId('catat-akhir-tebal-2')).toBeFocused();
     for (const [no, b, t] of [[1, '900', '8'], [2, '1.140', '11,4'], [3, '600', '9']] as const) {
       await akhir.getByTestId(`catat-akhir-berat-${no}`).fill(b);
       await akhir.getByTestId(`catat-akhir-tebal-${no}`).fill(t);

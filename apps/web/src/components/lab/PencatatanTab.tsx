@@ -272,7 +272,26 @@ export function PencatatanTab({ records, oldRaw, onChanged }: { records: CatatRe
 }
 
 /** Modal di dalam alur halaman (tanpa kunci gulir): tampil penuh, halaman tetap bisa digulir (DEC-071). */
-function PageModal({ title, onClose, children, footer, testId, wide = false }: { title: string; onClose: () => void; children: ReactNode; footer?: ReactNode; testId: string; wide?: boolean }) {
+/**
+ * Enter di kolom isian → pindah ke kolom isian berikutnya (melewati yang hanya-baca/tersembunyi); dari kolom
+ * terakhir → fokus ke tombol konfirmasi (DEC-091). Textarea tetap memakai Enter untuk baris baru.
+ */
+function enterToNext(e: React.KeyboardEvent<HTMLElement>) {
+  if (e.key !== 'Enter' || e.shiftKey || e.altKey || e.ctrlKey || e.metaKey || e.nativeEvent.isComposing) return;
+  const t = e.target;
+  if (!(t instanceof HTMLInputElement) || ['file', 'checkbox', 'radio', 'button', 'submit'].includes(t.type)) return;
+  const all = Array.from(e.currentTarget.querySelectorAll<HTMLInputElement>('input:not([type=file]):not([type=hidden]):not([type=checkbox]):not([readonly]):not([disabled])')).filter((el) => el.getClientRects().length > 0);
+  const i = all.indexOf(t);
+  if (i < 0) return;
+  e.preventDefault();
+  const next = all[i + 1];
+  const target: HTMLElement | null = next ?? e.currentTarget.querySelector<HTMLElement>('[data-testid$="-confirm"]');
+  target?.focus();
+  if (next) next.select();
+  target?.scrollIntoView({ block: 'nearest' });
+}
+
+function PageModal({ title, onClose, children, footer, testId, wide = false, enterNext = false }: { title: string; onClose: () => void; children: ReactNode; footer?: ReactNode; testId: string; wide?: boolean; enterNext?: boolean }) {
   const [top, setTop] = useState(0);
   const card = useRef<HTMLDivElement>(null);
   useLayoutEffect(() => setTop(window.scrollY + 80), []);
@@ -286,7 +305,7 @@ function PageModal({ title, onClose, children, footer, testId, wide = false }: {
     <>
       <div className="fixed inset-0 z-[45] bg-ink/50" onClick={onClose} aria-hidden />
       <div className="absolute inset-x-0 z-50 flex justify-center px-3 pb-10 sm:px-4" style={{ top }}>
-        <div ref={card} role="dialog" aria-modal="true" aria-label={title} className={`w-full ${wide ? 'max-w-4xl' : 'max-w-2xl'} rounded-2xl bg-surface shadow-2xl`} data-testid={testId}>
+        <div ref={card} role="dialog" aria-modal="true" aria-label={title} className={`w-full ${wide ? 'max-w-4xl' : 'max-w-2xl'} rounded-2xl bg-surface shadow-2xl`} data-testid={testId} {...(enterNext && { onKeyDown: enterToNext })}>
           <div className="flex items-center justify-between gap-3 border-b border-paper-grid px-5 py-4">
             <h2 className="text-lg">{title}</h2>
             <button type="button" className="font-mono text-sm underline" onClick={onClose} data-testid={`${testId}-close`}>Tutup</button>
@@ -332,6 +351,7 @@ function AwalModal({ onClose, onConfirm }: { onClose: () => void; onConfirm: (it
       title="Buat catatan awal"
       onClose={onClose}
       testId="catat-awal-modal"
+      enterNext
       footer={
         <>
           <button type="button" className="btn-ghost" onClick={onClose}>Batal</button>
@@ -344,7 +364,7 @@ function AwalModal({ onClose, onConfirm }: { onClose: () => void; onConfirm: (it
           <Dropdown label="Item / barang" required testId="catat-item" value={item} onChange={setItem} options={RAW_ITEMS.map((i) => ({ value: i, label: i }))} />
           <label className="flex flex-col gap-1.5">
             <span className="label-mono">Jumlah total item <span className="text-safety" aria-hidden>*</span></span>
-            <input className="field min-h-[44px] bg-white text-sm" inputMode="numeric" value={countText} onChange={(e) => setCount(e.target.value.replace(/\D/g, ''))} placeholder="mis. 50" data-testid="catat-count" />
+            <input className="field min-h-[44px] bg-white text-sm" inputMode="numeric" enterKeyHint="next" value={countText} onChange={(e) => setCount(e.target.value.replace(/\D/g, ''))} placeholder="mis. 50" data-testid="catat-count" />
             <span className="text-xs text-muted">Maks. {MAX_ROWS}. Kolom isian muncul sebanyak jumlah ini.</span>
           </label>
         </div>
@@ -354,7 +374,7 @@ function AwalModal({ onClose, onConfirm }: { onClose: () => void; onConfirm: (it
             rows={rows}
             render={(r, i) => [
               <RowPhoto key="foto" value={r.fotoAwal} label={`Foto awal nomor ${r.no}`} onChange={(v) => setCell(i, 'fotoAwal', v)} testId={`catat-awal-foto-${r.no}`} />,
-              ...cols.map(([k, l]) => <input key={k} aria-label={`${l} nomor ${r.no}`} className={field} inputMode="decimal" value={r[k]} onChange={(e) => setCell(i, k, e.target.value)} data-testid={`catat-awal-${k}-${r.no}`} />),
+              ...cols.map(([k, l]) => <input key={k} aria-label={`${l} nomor ${r.no}`} className={field} inputMode="decimal" enterKeyHint="next" value={r[k]} onChange={(e) => setCell(i, k, e.target.value)} data-testid={`catat-awal-${k}-${r.no}`} />),
             ]}
           />
         )}
@@ -533,6 +553,7 @@ function AkhirModal({ pending, onClose, onConfirm, onDraft, revision = false }: 
       title={revision ? `Revisi data akhir · ${pending[0]?.id ?? ''}` : 'Pencatatan data akhir'}
       onClose={onClose}
       testId="catat-akhir-modal"
+      enterNext
       footer={
         <>
           <button type="button" className="btn-ghost" onClick={onClose}>Batal</button>
@@ -569,11 +590,11 @@ function AkhirModal({ pending, onClose, onConfirm, onDraft, revision = false }: 
               render={(r) => [
                 <RowPhoto key="fa" value={r.fotoAwal} label={`Foto awal nomor ${r.no}`} readOnly testId={`catat-akhir-fotoawal-${r.no}`} />,
                 <input key="ba" className={ro} value={r.beratAwal} readOnly tabIndex={-1} aria-label={`Berat awal nomor ${r.no}`} />,
-                <input key="bk" className={field} inputMode="decimal" value={r.beratAkhir} onChange={(e) => set(r.no, 'beratAkhir', e.target.value)} aria-label={`Berat akhir nomor ${r.no}`} data-testid={`catat-akhir-berat-${r.no}`} />,
+                <input key="bk" className={field} inputMode="decimal" enterKeyHint="next" value={r.beratAkhir} onChange={(e) => set(r.no, 'beratAkhir', e.target.value)} aria-label={`Berat akhir nomor ${r.no}`} data-testid={`catat-akhir-berat-${r.no}`} />,
                 ...(coco
                   ? [
                       <input key="ta" className={ro} value={r.tebalAwal} readOnly tabIndex={-1} aria-label={`Tebal awal nomor ${r.no}`} />,
-                      <input key="tk" className={field} inputMode="decimal" value={r.tebalAkhir} onChange={(e) => set(r.no, 'tebalAkhir', e.target.value)} aria-label={`Tebal akhir nomor ${r.no}`} data-testid={`catat-akhir-tebal-${r.no}`} />,
+                      <input key="tk" className={field} inputMode="decimal" enterKeyHint="next" value={r.tebalAkhir} onChange={(e) => set(r.no, 'tebalAkhir', e.target.value)} aria-label={`Tebal akhir nomor ${r.no}`} data-testid={`catat-akhir-tebal-${r.no}`} />,
                     ]
                   : []),
                 <RowPhoto key="fk" value={r.fotoAkhir} label={`Foto akhir nomor ${r.no}`} onChange={(v) => set(r.no, 'fotoAkhir', v)} testId={`catat-akhir-foto-${r.no}`} />,
