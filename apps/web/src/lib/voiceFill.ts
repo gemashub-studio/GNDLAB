@@ -27,10 +27,54 @@ export function normalize(text: string): string[] {
     .replace(/(\d)[.](\d{3})(?!\d)/g, '$1$2')
     .replace(/(\d),(\d)/g, '$1 koma $2')
     .replace(/[^\p{L}\p{N}\s]/gu, ' ')
+    .split(/\s+/)
+    .filter(Boolean)
+    .map(fuzzyWord)
+    .join(' ')
     .replace(/\bse(ribu|ratus|puluh|belas)\b/g, 'se $1')
     .replace(/\bsebelas\b/g, 'se belas')
-    .split(/\s+/)
+    .split(' ')
     .filter(Boolean);
+}
+
+/** Kosakata perintah: hasil transkripsi yang sedikit meleset ("ampat", "beratawal", "doa") dicocokkan ke kata terdekat. */
+const VOCAB = [
+  ...Object.keys(DIGIT).filter((w) => w !== 'se'),
+  'sepuluh', 'sebelas', 'seratus', 'seribu', 'belas', 'puluh', 'ratus', 'ribu', 'koma',
+  'berat', 'awal', 'akhir', 'air', 'volume', 'tebal', 'daging', 'nomor', 'baris', 'isi', 'lanjut',
+  'next', 'neks', 'nex',
+];
+/** Gabungan kata yang sering ditulis menyatu oleh mesin transkripsi. */
+const JOINED: Record<string, string> = {
+  beratawal: 'berat awal', beratakhir: 'berat akhir', beratair: 'berat air', volumeair: 'volume air',
+  tebalawal: 'tebal awal', tebalakhir: 'tebal akhir', tebaldaging: 'tebal daging',
+};
+function lev(a: string, b: string): number {
+  const d = Array.from({ length: b.length + 1 }, (_, i) => i);
+  for (let i = 1; i <= a.length; i++) {
+    let prev = d[0]!;
+    d[0] = i;
+    for (let j = 1; j <= b.length; j++) {
+      const tmp = d[j]!;
+      d[j] = Math.min(d[j]! + 1, d[j - 1]! + 1, prev + (a[i - 1] === b[j - 1] ? 0 : 1));
+      prev = tmp;
+    }
+  }
+  return d[b.length]!;
+}
+/** Kata → kata kosakata terdekat (selisih ≤1 huruf; ≥8 huruf ≤2), atau apa adanya bila tidak ada yang mirip. */
+export function fuzzyWord(t: string): string {
+  if (/^\d+$/.test(t) || VOCAB.includes(t) || t === 'se') return t;
+  if (JOINED[t]) return JOINED[t]!;
+  if (t.length < 3) return t;
+  const allow = t.length >= 8 ? 2 : 1;
+  let best: [string, number] | undefined;
+  for (const [w, out] of [...VOCAB.map((v) => [v, v] as const), ...Object.entries(JOINED)]) {
+    if (Math.abs(w.length - t.length) > allow) continue;
+    const dist = lev(t, w);
+    if (dist <= allow && (!best || dist < best[1])) best = [out, dist];
+  }
+  return best ? best[0] : t;
 }
 
 const isNumWord = (t: string) => t in DIGIT || ['ribu', 'ratus', 'puluh', 'belas', 'koma'].includes(t) || /^\d+$/.test(t);

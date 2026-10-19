@@ -10,8 +10,6 @@ export const MAX_AUDIO_BYTES = 3 * 1024 * 1024;
 const POLL_MS = 600;
 const TIMEOUT_MS = 45_000;
 
-/** Kata kunci agar perintah & angka lebih tepat dikenali (maks. 200 untuk Universal-2). */
-export const VOICE_KEYTERMS = ['berat awal', 'berat akhir', 'berat air', 'volume air', 'tebal awal', 'tebal akhir', 'tebal daging', 'nomor', 'next', 'kosong', 'koma', 'seribu', 'ratus', 'puluh', 'belas'];
 
 export class VoiceError extends Error {
   constructor(
@@ -54,7 +52,8 @@ export async function transcribeVoice(audio: ArrayBuffer): Promise<string> {
   const sub = await fetch(`${BASE}/v2/transcript`, {
     method: 'POST',
     headers: { ...headers, 'content-type': 'application/json' },
-    body: JSON.stringify({ audio_url: upload_url, speech_models: ['universal-2'], language_code: 'id', punctuate: false, format_text: false, keyterms_prompt: VOICE_KEYTERMS }),
+    // catatan: keyterms_prompt Universal-2 hanya untuk bahasa Inggris (ditolak untuk 'id') — tidak dipakai
+    body: JSON.stringify({ audio_url: upload_url, speech_models: ['universal-2'], language_code: 'id', punctuate: false, format_text: false }),
   });
   if (!sub.ok) throw new VoiceError(502, `Transkripsi gagal dimulai (${sub.status}): ${(await sub.text().catch(() => '')).slice(0, 160)}`);
   const { id } = (await sub.json()) as { id: string };

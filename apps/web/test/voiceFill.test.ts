@@ -29,6 +29,14 @@ describe('pengisian suara: bilangan (DEC-099)', () => {
   });
 });
 
+describe('pengisian suara: salah dengar ringan', () => {
+  it('kata mirip dicocokkan ke kosakata perintah', () => {
+    expect(parseVoice('doa bharatawal seribu tiga ampat neks', awal)).toEqual([{ kind: 'row', no: 2 }, { kind: 'fill', field: 'beratAwal', value: '1034' }, { kind: 'next' }]);
+    expect(parseVoice('berat awal sembilan ratus lima pulu', awal)).toEqual([{ kind: 'fill', field: 'beratAwal', value: '950' }]);
+    expect(parseVoice('halo apa kabar', awal)[0]!.kind).toBe('unknown');
+  });
+});
+
 describe('pengisian suara: perintah', () => {
   it('nomor urut, isi kolom, next (+ variasi)', () => {
     expect(parseVoice('satu', awal)).toEqual([{ kind: 'row', no: 1 }]);
