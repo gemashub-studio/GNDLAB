@@ -40,13 +40,12 @@ import { MediaPicker } from './MediaPicker';
 import { ProductMark, Section, TextInput } from './ui';
 import { Dropdown } from './Dropdown';
 import { ImagePreview } from './Overlays';
-import { KOPRA_METHODS, listCatat, methodLabel, TREATMENT_GROUPS, TREATMENT_INFO, type CatatRecord } from '@/lib/pencatatan';
+import { jalurGroups, listCatat, methodLabel, TREATMENT_GROUPS, TREATMENT_INFO, type CatatRecord } from '@/lib/pencatatan';
 
 /** Pilihan jalur produk dari daftar perlakuan pencatatan (DEC-101) + keterangannya; tetap bisa diketik manual. */
 const JALUR_OPTIONS = TREATMENT_GROUPS.flatMap((g) =>
   g.methods.map((m) => ({ value: methodLabel(m), label: methodLabel(m), group: g.title.replace('Jumlah perlakuan ', 'Perlakuan '), note: TREATMENT_INFO[g.key].methods[m] ?? '' })),
 );
-const isKopraJalur = (t: string) => KOPRA_METHODS.some((m) => methodLabel(m).toLowerCase() === t.trim().toLowerCase() || m.toLowerCase() === t.trim().toLowerCase());
 const catatStatus = (r: CatatRecord) => (r.closedAt ? 'selesai' : r.finishedAt ? 'lengkap' : 'disimpan (belum lengkap)');
 import { askConfirm as ask } from './Overlays';
 
@@ -619,8 +618,12 @@ function ProtocolForm({ protocols, entries, media, base, draft, onDraftSaved, in
       .catch(() => setCatatList([]));
   }, []);
   const catatRec = catatList.find((r) => r.id === catatId);
-  // perlakuan kopra (Green House / Oven Gas / Oven Briket) → foto data awal & akhir pencatatan terpilih tampil di Komposisi bahan
-  const catatPhotos = catatRec && isKopraJalur(productText) ? catatRec.rows.flatMap((r) => [...(r.fotoAwal ? [{ src: r.fotoAwal, alt: `No ${r.no} · awal` }] : []), ...(r.fotoAkhir ? [{ src: r.fotoAkhir, alt: `No ${r.no} · akhir` }] : [])]) : [];
+  // kolom jalur produk tambahan (＋) & foto yang dihapus (✕), DEC-105
+  const [jalurExtra, setJalurExtra] = useState<string[]>(draft?.jalurExtra ?? base?.jalurExtra ?? []);
+  const [exclude, setExclude] = useState<string[]>(draft?.catatExclude ?? base?.catatExclude ?? []);
+  // tiap kolom jalur = perlakuan di form data awal → foto nomor dalam rentangnya (GH 15 → no 1–15, berikutnya mulai no 16)
+  const groups = catatRec ? jalurGroups(catatRec, [productText, ...jalurExtra], new Set(exclude)) : [];
+  const jalurValue = (t: string) => JALUR_OPTIONS.find((o) => o.value.toLowerCase() === t.trim().toLowerCase())?.value ?? '';
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState('');
   const key = base?.key ?? nextProtocolKey(product, protocols);
@@ -637,7 +640,7 @@ function ProtocolForm({ protocols, entries, media, base, draft, onDraftSaved, in
       };
       await saveDraft({
         id: draftId, ...(base && { baseId: base.id }), ...(draft && { createdAt: draft.createdAt }),
-        product, ...(productName && { productName }), name, author, assistants, startDate, reason, ingredients: ings, tools, steps, coconuts: coco, ...(raw && { raw }), ...(catatId && { catatId }),
+        product, ...(productName && { productName }), name, author, assistants, startDate, reason, ingredients: ings, tools, steps, coconuts: coco, ...(raw && { raw }), ...(catatId && { catatId }), ...(jalurExtra.some((j) => j.trim()) && { jalurExtra: jalurExtra.filter((j) => j.trim()) }), ...(exclude.length && { catatExclude: exclude }),
         pending: { ingredients: await pend(ingFiles), tools: await pend(toolFiles), steps: await pend(stepFiles), coconuts: await pend(cocoFiles) },
       });
       await onDraftSaved();
@@ -678,6 +681,8 @@ function ProtocolForm({ protocols, entries, media, base, draft, onDraftSaved, in
           ...(keepK.length && { coconuts: keepK.map(({ x }) => x) }),
           ...(raw && { raw }),
           ...(catatId && { catatId }),
+          ...(jalurExtra.some((j) => j.trim()) && { jalurExtra: jalurExtra.filter((j) => j.trim()) }),
+          ...(exclude.length && { catatExclude: exclude }),
         },
         { ingredients: iMedia, steps: sMedia, tools: tMedia, coconuts: kMedia, draftId },
       );
@@ -711,7 +716,7 @@ function ProtocolForm({ protocols, entries, media, base, draft, onDraftSaved, in
             <Dropdown
               label="Jalur produk"
               testId="proto-jalur"
-              value={JALUR_OPTIONS.find((o) => o.value.toLowerCase() === productText.trim().toLowerCase())?.value ?? ''}
+              value={jalurValue(productText)}
               onChange={(v) => setProductText(v)}
               placeholder="— pilih perlakuan (atau ketik di bawah) —"
               options={JALUR_OPTIONS}
@@ -726,6 +731,27 @@ function ProtocolForm({ protocols, entries, media, base, draft, onDraftSaved, in
           </datalist>
           <span className="text-xs text-muted" data-testid="proto-product-code">Kode jalur: {product}{productName ? ' (isian manual)' : ''}</span>
           </label>
+          {/* kolom jalur produk tambahan (DEC-105) */}
+          {jalurExtra.map((j, i) => (
+            <div key={i} className="flex items-end gap-2" data-testid={`proto-jalur-extra-row-${i}`}>
+              <div className="min-w-0 flex-1">
+                <Dropdown
+                  label={`Jalur produk ${i + 2}`}
+                  testId={`proto-jalur-extra-${i}`}
+                  value={jalurValue(j)}
+                  onChange={(v) => setJalurExtra((cur) => cur.map((x, k) => (k === i ? v : x)))}
+                  placeholder="— pilih perlakuan —"
+                  options={JALUR_OPTIONS}
+                />
+              </div>
+              <button type="button" className="mb-1 inline-flex h-9 w-9 flex-none items-center justify-center rounded-full text-muted hover:bg-safety hover:text-ink" onClick={() => setJalurExtra((cur) => cur.filter((_, k) => k !== i))} aria-label={`Hapus kolom jalur produk ${i + 2}`} data-testid={`proto-jalur-extra-del-${i}`}>
+                ✕
+              </button>
+            </div>
+          ))}
+          <button type="button" className="inline-flex h-9 items-center gap-1.5 self-start rounded-full border border-ink/20 bg-white px-3 text-sm font-semibold hover:border-acid" onClick={() => setJalurExtra((cur) => [...cur, ''])} aria-label="Tambah kolom jalur produk" data-testid="proto-jalur-add">
+            <span className="text-lg leading-none" aria-hidden>＋</span> Tambah kolom
+          </button>
         </div>
         <TextInput label="Nama resep/proses" value={name} onChange={setName} placeholder="mis. Kopra oven bertahap" testId="proto-name" />
         <label className="flex flex-col gap-1.5">
@@ -740,21 +766,46 @@ function ProtocolForm({ protocols, entries, media, base, draft, onDraftSaved, in
 
       <fieldset className="flex flex-col gap-2">
         <legend className="label-mono mb-2">Komposisi bahan — jumlah persis seperti kamu tentukan</legend>
-        {catatRec && isKopraJalur(productText) && (
-          <div className="flex flex-col gap-2 rounded-xl border-3 border-acid bg-acid/5 p-2" data-testid="proto-catat-photos">
-            <span className="text-sm font-semibold">Foto data awal & akhir · {catatRec.id} ({catatPhotos.length} foto)</span>
-            {catatPhotos.length ? (
-              <div className="grid grid-cols-4 gap-1.5 sm:grid-cols-8">
-                {catatPhotos.map((ph, i) => (
-                  <button key={i} type="button" className="flex flex-col items-center gap-0.5" onClick={() => setZoom(ph)} aria-label={`Lihat foto ${ph.alt}`}>
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={ph.src} alt={ph.alt} className="aspect-[3/4] w-full rounded-lg object-cover" />
-                    <span className="font-mono text-[10px] text-muted">{ph.alt}</span>
-                  </button>
-                ))}
+        {catatRec && groups.length > 0 && (
+          <div className="flex flex-col gap-3 rounded-xl border-3 border-acid bg-acid/5 p-2" data-testid="proto-catat-photos">
+            <span className="text-sm font-semibold">Foto data awal & akhir · {catatRec.id} ({groups.reduce((n, g) => n + g.photos.length, 0)} foto)</span>
+            {groups.map((g, gi) => (
+              <div key={g.jalur} className="flex flex-col gap-1.5" data-testid={`proto-catat-group-${gi}`}>
+                <span className="font-mono text-xs">
+                  {g.jalur}
+                  {g.range ? ` · ${g.range.count} item (no ${g.rows[0]?.no ?? '–'}–${g.rows[g.rows.length - 1]?.no ?? '–'})` : ''} · {g.photos.length} foto
+                </span>
+                {g.photos.length ? (
+                  <div className="grid grid-cols-4 gap-1.5 sm:grid-cols-8">
+                    {g.photos.map((ph) => (
+                      <div key={ph.key} className="relative flex flex-col items-center gap-0.5">
+                        <button type="button" className="w-full" onClick={() => setZoom({ src: ph.src, alt: `No ${ph.no} · ${ph.kind}` })} aria-label={`Lihat foto no ${ph.no} ${ph.kind}`}>
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img src={ph.src} alt={`No ${ph.no} · ${ph.kind}`} className="aspect-[3/4] w-full rounded-lg object-cover" />
+                        </button>
+                        {/* hapus foto dari resep ini (data pencatatan tidak berubah) */}
+                        <button
+                          type="button"
+                          className="absolute right-0.5 top-0.5 inline-flex h-5 w-5 items-center justify-center rounded-full bg-ink/80 text-[11px] leading-none text-paper hover:bg-safety hover:text-ink"
+                          onClick={() => setExclude((cur) => [...cur, ph.key])}
+                          aria-label={`Hapus foto no ${ph.no} ${ph.kind} dari resep`}
+                          data-testid={`proto-catat-del-${ph.no}-${ph.kind}`}
+                        >
+                          ✕
+                        </button>
+                        <span className="font-mono text-[10px] text-muted">No {ph.no} · {ph.kind}</span>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-xs italic text-muted">Belum ada foto untuk nomor ini.</p>
+                )}
               </div>
-            ) : (
-              <p className="text-xs italic text-muted">Pencatatan ini belum punya foto data awal/akhir.</p>
+            ))}
+            {exclude.length > 0 && (
+              <button type="button" className="self-start font-mono text-xs underline" onClick={() => setExclude([])} data-testid="proto-catat-restore">
+                Kembalikan {exclude.length} foto yang dihapus
+              </button>
             )}
           </div>
         )}

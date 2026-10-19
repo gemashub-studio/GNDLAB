@@ -2,7 +2,34 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { getSupabase } from '@/lib/supabase';
-import { applyVoice, parseVoice, type VoiceCursor, type VoiceField } from '@/lib/voiceFill';
+import { applyVoice, matchOption, normalize, parseVoice, type VoiceCursor, type VoiceField } from '@/lib/voiceFill';
+
+/** Kolom lain di form yang bisa diisi "nama kolom + nilai" (atribut data-voice-name, DEC-104). */
+function formFields(root: ParentNode): VoiceField[] {
+  return Array.from(root.querySelectorAll<HTMLElement>('[data-voice-name][data-testid]')).map((el) => {
+    const names = (el.dataset.voiceName ?? '').split('|').filter(Boolean);
+    const kind = (el.dataset.voiceKind as VoiceField['kind']) ?? 'number';
+    let options: VoiceField['options'];
+    try {
+      options = el.dataset.voiceOptions ? (JSON.parse(el.dataset.voiceOptions) as VoiceField['options']) : undefined;
+    } catch {
+      options = undefined;
+    }
+    return { key: `x:${el.dataset.testid}`, label: names[0] ?? '', say: names.map((n) => normalize(n).join(' ')), kind, ...(options && { options }) };
+  });
+}
+
+/** Isi input/textarea yang dikendalikan React (setter asli + event input). */
+function setNativeValue(el: HTMLInputElement | HTMLTextAreaElement, v: string) {
+  const setter = Object.getOwnPropertyDescriptor(Object.getPrototypeOf(el), 'value')?.set;
+  setter?.call(el, v);
+  el.dispatchEvent(new Event('input', { bubbles: true }));
+}
+const flash = (el: Element) => {
+  el.classList.add('voice-field-active');
+  el.scrollIntoView({ block: 'center', behavior: 'smooth' });
+  window.setTimeout(() => el.classList.remove('voice-field-active'), 1600);
+};
 
 /** Kirim satu potongan rekaman ke server → teks (Groq Whisper large-v3, bahasa Indonesia). */
 async function transcribe(blob: Blob): Promise<string> {
@@ -54,13 +81,42 @@ export function VoiceFill({ fields, rowCount, inputId, onFill, testId }: { field
   };
 
   /** Jalankan teks hasil transkripsi (juga dipakai uji). */
+  const box = useRef<HTMLDivElement>(null);
   const run = useCallback(
-    (text: string) => {
+    async (text: string) => {
       const { fields: f, rowCount: n, onFill: fill } = latest.current;
       setHeard(text);
       if (!text.trim()) return;
       const msgs: string[] = [];
-      for (const cmd of parseVoice(text, f)) {
+      const root: ParentNode = box.current?.closest('[role="dialog"]') ?? document;
+      const extra = formFields(root);
+      let moved = false;
+      for (const cmd of parseVoice(text, [...f, ...extra])) {
+        // kolom lain di form: angka / teks / pilihan dropdown (DEC-104)
+        const xf = cmd.kind === 'fill' && cmd.field ? extra.find((x) => x.key === cmd.field) : undefined;
+        if (xf && cmd.kind === 'fill') {
+          const tid = xf.key.slice(2);
+          const el = root.querySelector<HTMLElement>(`[data-testid="${CSS.escape(tid)}"]`);
+          if (!el) continue;
+          if (xf.kind === 'choice') {
+            const opt = matchOption(cmd.value, xf.options ?? []);
+            if (!opt) {
+              msgs.push(`Pilihan “${cmd.value}” tidak ada di ${xf.label}`);
+              continue;
+            }
+            el.click();
+            await new Promise((r) => window.setTimeout(r, 60));
+            root.querySelector<HTMLElement>(`[data-testid="${CSS.escape(`${tid}-opt-${opt.value || 'none'}`)}"]`)?.click();
+            msgs.push(`${xf.label} = ${opt.label}`);
+          } else {
+            const v = xf.kind === 'number' ? cmd.value.replace(/,\d+$/, '') : cmd.value;
+            setNativeValue(el as HTMLInputElement, v);
+            msgs.push(`${xf.label} = ${v}`);
+          }
+          flash(el);
+          continue;
+        }
+        moved = true;
         const r = applyVoice(cmd, cur.current, f, n);
         cur.current = r.cur;
         if (r.fill) {
@@ -71,7 +127,7 @@ export function VoiceFill({ fields, rowCount, inputId, onFill, testId }: { field
         if (r.error) msgs.push(r.error);
       }
       setNote(msgs.join(' · '));
-      highlight(cur.current);
+      if (moved) highlight(cur.current);
     },
     [highlight],
   );
@@ -82,7 +138,7 @@ export function VoiceFill({ fields, rowCount, inputId, onFill, testId }: { field
       queue.current = queue.current
         .then(async () => {
           try {
-            run(await transcribe(blob));
+            await run(await transcribe(blob));
             setErr('');
           } catch (e) {
             setErr(e instanceof Error ? e.message : String(e));
@@ -173,7 +229,7 @@ export function VoiceFill({ fields, rowCount, inputId, onFill, testId }: { field
   useEffect(() => () => stopRef.current?.(), []);
 
   return (
-    <div className={`flex flex-col gap-2 rounded-2xl border p-3 ${on ? 'border-acid bg-acid/10' : 'border-ink/15 bg-white'}`} data-testid={testId}>
+    <div ref={box} className={`flex flex-col gap-2 rounded-2xl border p-3 ${on ? 'border-acid bg-acid/10' : 'border-ink/15 bg-white'}`} data-testid={testId}>
       <div className="flex flex-wrap items-center gap-3">
         <button type="button" onClick={on ? stop : () => void start()} className={on ? 'btn-primary !min-h-[42px]' : 'btn-acid !min-h-[42px]'} aria-pressed={on} data-testid={`${testId}-toggle`}>
           {on ? '■ Berhenti' : '🎙 Isi dengan suara'}
@@ -194,8 +250,9 @@ export function VoiceFill({ fields, rowCount, inputId, onFill, testId }: { field
             if (e.key !== 'Enter') return;
             e.preventDefault();
             e.stopPropagation();
-            run(e.currentTarget.value);
+            const t = e.currentTarget.value;
             e.currentTarget.value = '';
+            void run(t);
           }}
           aria-label="Perintah suara (teks)"
           data-enter-skip

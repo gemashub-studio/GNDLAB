@@ -16,7 +16,7 @@ export interface DropdownOption {
  * bisa dengan keyboard (↑ ↓ Home End Enter Esc), klik di luar menutup. `hint` = tooltip keterangan yang
  * muncul saat kolom diklik / difokus.
  */
-export function Dropdown({ value, onChange, options, placeholder = '— pilih —', testId, label, hint, required = false, optional = false }: {
+export function Dropdown({ value, onChange, options, placeholder = '— pilih —', testId, label, hint, required = false, optional = false, voice }: {
   value: string;
   onChange: (v: string) => void;
   options: DropdownOption[];
@@ -26,6 +26,8 @@ export function Dropdown({ value, onChange, options, placeholder = '— pilih �
   hint?: string;
   required?: boolean;
   optional?: boolean;
+  /** Nama kolom untuk perintah suara (DEC-104), beberapa sebutan dipisah "|", mis. "metode kopra|perlakuan kopra". */
+  voice?: string;
 }) {
   const id = useId();
   const [open, setOpen] = useState(false);
@@ -117,6 +119,7 @@ export function Dropdown({ value, onChange, options, placeholder = '— pilih �
         onFocus={() => setFocus(true)}
         onBlur={() => setFocus(false)}
         data-testid={testId}
+        {...(voice && { 'data-voice-name': voice, 'data-voice-kind': 'choice', 'data-voice-options': JSON.stringify(options.map((o) => ({ value: o.value, label: o.label }))) })}
       >
         <span className={picked ? 'truncate' : 'truncate text-muted'}>{picked ? picked.label : placeholder}</span>
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" aria-hidden className={`flex-none transition-transform ${open ? 'rotate-180' : ''}`}>

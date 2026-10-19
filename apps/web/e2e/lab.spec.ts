@@ -874,9 +874,78 @@ test.describe('Perlakuan di data awal & Resep baru dari data pencatatan (DEC-101
     const ph = f.getByTestId('proto-catat-photos');
     await expect(ph).toContainText(`${id} (2 foto)`);
     await expect(ph.getByRole('img')).toHaveCount(2);
+    await expect(f.getByTestId('proto-catat-group-0')).toContainText('Green House · 2 item (no 1–2)');
+    // ＋ kolom jalur produk: Oven Gas lanjut dari nomor 3 (DEC-105)
+    await f.getByTestId('proto-jalur-add').click();
+    await f.getByTestId('proto-jalur-extra-0').click();
+    await f.getByTestId('proto-jalur-extra-0-opt-Oven Gas').click();
+    await expect(f.getByTestId('proto-catat-group-1')).toContainText('Oven Gas · 1 item (no 3–3)');
+    // ✕ hapus foto dari resep → bisa dikembalikan
+    await f.getByTestId('proto-catat-del-1-awal').click();
+    await expect(f.getByTestId('proto-catat-group-0').getByRole('img')).toHaveCount(1);
+    await expect(f.getByTestId('proto-catat-photos')).toContainText('(1 foto)');
+    await f.getByTestId('proto-catat-restore').click();
+    await expect(f.getByTestId('proto-catat-group-0').getByRole('img')).toHaveCount(2);
+    await f.getByTestId('proto-jalur-extra-del-0').click();
+    await expect(f.getByTestId('proto-catat-group-1')).toHaveCount(0);
     // tetap bisa diisi manual; jalur non-kopra → foto disembunyikan
     await f.getByTestId('proto-product').fill('Minyak Kelapa');
     await expect(f.getByTestId('proto-catat-photos')).toHaveCount(0);
   });
 });
 
+
+test.describe('Suara: nama kolom + nilai di form awal, akhir & revisi (DEC-104)', () => {
+  test('awal: jumlah item, perlakuan, jumlah produksi → akhir: berat/tebal, jumlah/metode/keterangan perlakuan → revisi', async ({ page }) => {
+    test.setTimeout(240_000);
+    await page.goto('/lab?t=bahan');
+    await page.getByTestId('catat-new').click();
+    const m = page.getByTestId('catat-awal-modal');
+    const say = async (box: string, t: string) => {
+      await page.getByTestId(`${box}-text`).fill(t);
+      await page.getByTestId(`${box}-text`).press('Enter');
+    };
+    await say('catat-awal-voice', 'jumlah item dua');
+    await expect(m.getByTestId('catat-count')).toHaveValue('2');
+    await say('catat-awal-voice', 'perlakuan green house');
+    await expect(m.getByTestId('catat-perl-0')).toContainText('Green House');
+    await say('catat-awal-voice', 'jumlah produksi dua');
+    await expect(m.getByTestId('catat-perl-count-0')).toHaveValue('2');
+    await say('catat-awal-voice', 'satu berat awal seribu tebal daging sepuluh');
+    await say('catat-awal-voice', 'dua berat awal sembilan ratus tebal daging sebelas');
+    await expect(m.getByTestId('catat-awal-tebalAwal-2')).toHaveValue('11');
+    await m.getByTestId('catat-awal-confirm').click();
+    await expect(page.getByTestId('catat-toast')).toHaveCount(0, { timeout: 20_000 });
+    const id = (await page.locator('[data-testid^="catat-card-PD-"]').getAttribute('data-testid'))!.replace('catat-card-', '');
+
+    await page.getByTestId('catat-akhir').click();
+    const ak = page.getByTestId('catat-akhir-modal');
+    await expect(ak.getByTestId('catat-akhir-voice')).toBeVisible();
+    await say('catat-akhir-voice', 'satu berat akhir enam ratus tebal akhir delapan');
+    await say('catat-akhir-voice', 'dua berat akhir lima ratus lima puluh gram tebal akhir sembilan');
+    await expect(ak.getByTestId('catat-akhir-berat-1')).toHaveValue('600');
+    await expect(ak.getByTestId('catat-akhir-berat-2')).toHaveValue('550');
+    await expect(ak.getByTestId('catat-akhir-tebal-2')).toHaveValue('9');
+    await say('catat-akhir-voice', 'jumlah cuka tiga');
+    await expect(ak.getByTestId('catat-tr-count-cuka-0')).toHaveValue('3');
+    await say('catat-akhir-voice', 'metode cuka cuka dua');
+    await expect(ak.getByTestId('catat-tr-method-cuka-0')).toContainText('CUKA 2 - GULA 75g');
+    await say('catat-akhir-voice', 'keterangan cuka difermentasi tujuh hari');
+    await expect(ak.getByTestId('catat-tr-note-cuka-0')).toHaveValue('difermentasi tujuh hari');
+    await expect(ak.getByTestId('catat-akhir-voice-note')).toContainText('keterangan cuka = difermentasi tujuh hari');
+    await ak.getByTestId('catat-akhir-confirm').click();
+    await page.getByTestId('catat-done-later').click();
+
+    // revisi: suara juga tersedia
+    await page.getByTestId(`catat-card-${id}`).click();
+    await page.getByTestId('catat-revise').click();
+    const rev = page.getByTestId('catat-akhir-modal');
+    await expect(rev).toContainText(`Revisi data akhir · ${id}`);
+    await say('catat-akhir-voice', 'dua berat akhir lima ratus');
+    await expect(rev.getByTestId('catat-akhir-berat-2')).toHaveValue('500');
+    await say('catat-akhir-voice', 'jumlah kopra dua');
+    await expect(rev.getByTestId('catat-tr-count-kopra-0')).toHaveValue('2');
+    await rev.getByTestId('catat-akhir-confirm').click();
+    await expect(page.getByTestId('catat-revised')).toContainText('Revisi data akhir');
+  });
+});

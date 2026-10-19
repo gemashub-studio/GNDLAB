@@ -194,3 +194,4 @@
 - DEC-098: closedAt (Selesaikan) + MAX_OPEN_CATAT=1 (canStartCatat), FinishDialogs (ketik Selesai, petasan kanvas), catatXlsx (SpreadsheetML via zipStore). E2E pencatatan lama diperbarui (catatan kedua dihapus; blok kamera/ProgressSheet usang diganti alur Selesaikan).
 - DEC-099: pengisian suara (AssemblyAI pre-recorded universal-2, language_code id, keyterms_prompt). Env ASSEMBLYAI_API_KEY (apps/web/.env + Vercel) diisi owner. E2E mic: Chromium --use-fake-device-for-media-stream + route tiruan.
 - DEC-101: Groq Whisper (GROQ_API_KEY) gantikan AssemblyAI; progres UI dihapus; perlakuanRanges (berurutan) + photoPairsOf; catatBlocks di laporan riset (ProtocolVersion.catatId); tanpa batas catatan; petasan tanpa henti.
+- DEC-103..105: suara — angka beberapa kata isi kolom aktif, satuan diabaikan, nama kolom + nilai via data-voice-name (Dropdown prop voice); Resep — jalurExtra (＋), catatExclude (✕), jalurGroups per rentang perlakuan.

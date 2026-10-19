@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { AKHIR_VOICE_FIELDS, applyVoice, AWAL_VOICE_FIELDS, parseNumber, parseVoice, normalize } from '@/lib/voiceFill';
+import { AKHIR_VOICE_FIELDS, applyVoice, AWAL_VOICE_FIELDS, matchOption, parseNumber, parseVoice, normalize, type VoiceField } from '@/lib/voiceFill';
 
 const awal = Object.values(AWAL_VOICE_FIELDS);
 const num = (s: string) => parseNumber(normalize(s));
@@ -106,3 +106,32 @@ describe('satuan ikut terucap (DEC-103)', () => {
   });
 });
 
+
+describe('nama kolom + nilai untuk kolom lain di form (DEC-104)', () => {
+  const extra: VoiceField[] = [
+    { key: 'x:count', label: 'jumlah kopra', say: ['jumlah kopra', 'jumlah perlakuan kopra'], kind: 'number' },
+    { key: 'x:count2', label: 'jumlah kopra kedua', say: ['jumlah kopra kedua'], kind: 'number' },
+    { key: 'x:method', label: 'metode kopra', say: ['metode kopra', 'perlakuan kopra'], kind: 'choice', options: [{ value: '', label: '— pilih —' }, { value: 'GreenHouse', label: 'GreenHouse' }, { value: 'Oven Gas', label: 'Oven Gas' }, { value: 'Oven Briket', label: 'Oven Briket' }] },
+    { key: 'x:note', label: 'keterangan kopra', say: ['keterangan kopra'], kind: 'text' },
+  ];
+  const all = [...AKHIR_VOICE_FIELDS, ...extra];
+  it('angka, teks bebas, pilihan; kolom kedua dengan "kedua"; digabung dengan kolom per nomor', () => {
+    expect(parseVoice('jumlah kopra tiga', all)).toEqual([{ kind: 'fill', field: 'x:count', value: '3' }]);
+    expect(parseVoice('jumlah perlakuan kopra lima belas', all)).toEqual([{ kind: 'fill', field: 'x:count', value: '15' }]);
+    expect(parseVoice('jumlah kopra kedua dua', all)).toEqual([{ kind: 'fill', field: 'x:count2', value: '2' }]);
+    expect(parseVoice('metode kopra oven gas', all)).toEqual([{ kind: 'fill', field: 'x:method', value: 'oven gas' }]);
+    expect(parseVoice('keterangan kopra dibalik tiap dua jam', all)).toEqual([{ kind: 'fill', field: 'x:note', value: 'dibalik tiap dua jam' }]);
+    expect(parseVoice('berat akhir sembilan ratus jumlah kopra tiga', all)).toEqual([{ kind: 'fill', field: 'beratAkhir', value: '900' }, { kind: 'fill', field: 'x:count', value: '3' }]);
+  });
+  it('pilihan dropdown dicocokkan dari ucapan', () => {
+    const kopra = extra[2]!.options!;
+    expect(matchOption('oven gas', kopra)?.value).toBe('Oven Gas');
+    expect(matchOption('green house', kopra)?.value).toBe('GreenHouse');
+    expect(matchOption('briket', kopra)?.value).toBe('Oven Briket');
+    expect(matchOption('mangga', kopra)).toBeUndefined();
+    const cuka = [{ value: 'CUKA 1 - GULA 25g', label: 'CUKA 1 - GULA 25g' }, { value: 'CUKA 2 - GULA 75g', label: 'CUKA 2 - GULA 75g' }, { value: 'CUKA 3 - GULA 50', label: 'CUKA 3 - GULA 50' }];
+    expect(matchOption('cuka dua', cuka)?.value).toBe('CUKA 2 - GULA 75g');
+    expect(matchOption('gula lima puluh', cuka)?.value).toBe('CUKA 3 - GULA 50');
+    expect(matchOption('kelapa tua', [{ value: 'Kelapa tua', label: 'Kelapa tua' }, { value: 'Kelapa muda', label: 'Kelapa muda' }])?.value).toBe('Kelapa tua');
+  });
+});

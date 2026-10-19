@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { blankRows, buildCatatReport, perlakuanRanges, type CatatRecord } from '@/lib/pencatatan';
+import { blankRows, buildCatatReport, jalurGroups, perlakuanRanges, type CatatRecord } from '@/lib/pencatatan';
 import { buildResearchReport, catatBlocks } from '@/lib/researchReport';
 import { buildPptx } from '@/lib/officeExport';
 import type { ProtocolVersion } from '@/lib/labStore';
@@ -42,7 +42,7 @@ describe('perlakuan di data awal & slide per perlakuan (DEC-101)', () => {
   it('resep dengan data pencatatan: jalur = perlakuan → hanya slide perlakuan itu (15 foto Green House)', () => {
     const v: ProtocolVersion = { id: 'GH-P01-v1', key: 'GH-P01', version: 1, product: 'GH', productName: 'Green House', name: 'Kopra rumah kaca', author: 'Owner', reason: 'awal', createdAt: '2026-10-19T11:00:00.000Z', ingredients: [], steps: [], catatId: 'PD-261019-02' };
     const b = catatBlocks(v, [rec()]);
-    expect(b.filter((x) => x.photoPairs).map((x) => [x.heading, x.photoPairs!.length])).toEqual([['Green House · 15 item', 15]]);
+    expect(b.filter((x) => x.photoPairs).map((x) => [x.heading, x.photoPairs!.length])).toEqual([['Green House · 15 item (no 1–15)', 15]]);
     const report = buildResearchReport('GH-P01', [v], [], [], 'x', undefined, [rec()]);
     expect(report.blocks.find((x) => x.heading === 'Data pencatatan')!.lines.join(' ')).toContain('Perlakuan Oven Gas: 10 item (no 16–25)');
     // jalur lain → semua perlakuan
@@ -50,3 +50,29 @@ describe('perlakuan di data awal & slide per perlakuan (DEC-101)', () => {
     expect(catatBlocks({ ...v, catatId: undefined }, [rec()])).toEqual([]);
   });
 });
+
+describe('kolom jalur produk tambahan & hapus foto di Resep baru (DEC-105)', () => {
+  const r40: CatatRecord = { ...rec(40), treatments: { kopra: [{ method: 'GreenHouse', count: '15' }, { method: 'Oven Gas', count: '10' }] } };
+  it('tiap kolom jalur → foto nomor dalam rentang perlakuannya (GH 1–15, Oven Gas lanjut 16–25)', () => {
+    const g = jalurGroups(r40, ['Green House', 'Oven Gas', 'Cuka 1', 'Green House']);
+    expect(g.map((x) => [x.jalur, x.rows[0]!.no, x.rows.at(-1)!.no, x.photos.length])).toEqual([
+      ['Green House', 1, 15, 30],
+      ['Oven Gas', 16, 25, 20],
+    ]);
+  });
+  it('foto yang dihapus (✕) tidak tampil & tidak ikut PPTX; nomor tanpa foto tersisa dihilangkan', () => {
+    const ex = new Set(['1:awal', '1:akhir', '2:akhir']);
+    const g = jalurGroups(r40, ['Green House'], ex);
+    expect(g[0]!.photos.map((p) => p.key).slice(0, 2)).toEqual(['2:awal', '3:awal']);
+    const v: ProtocolVersion = { id: 'GH-P01-v1', key: 'GH-P01', version: 1, product: 'GH', productName: 'Green House', name: 'x', author: 'x', reason: 'x', createdAt: 'x', ingredients: [], steps: [], catatId: r40.id, jalurExtra: ['Oven Gas'], catatExclude: [...ex] };
+    const grids = catatBlocks(v, [r40]).filter((x) => x.photoPairs);
+    expect(grids.map((x) => [x.heading, x.photoPairs!.length])).toEqual([
+      ['Green House · 15 item (no 1–15)', 14],
+      ['Oven Gas · 10 item (no 16–25)', 10],
+    ]);
+    expect(grids[0]!.photoPairs![0]!.no).toBe(2);
+    expect(grids[0]!.photoPairs![0]!.akhir?.image).toBeUndefined();
+    expect(grids[0]!.photoPairs![0]!.awal.image).toBe(jpg);
+  });
+});
+

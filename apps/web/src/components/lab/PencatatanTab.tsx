@@ -67,6 +67,13 @@ function XlsxButton({ rec, testId }: { rec: () => CatatRecord | undefined; testI
   );
 }
 
+/** Sebutan suara kolom ke-2, ke-3, … ("jumlah kopra kedua"), DEC-104. */
+const ORD = ['', ' kedua', ' ketiga', ' keempat', ' kelima', ' keenam'];
+const ord = (i: number) => ORD[i] ?? ` ${i + 1}`;
+/** Sebutan singkat jenis perlakuan untuk perintah suara. */
+const TR_SAY: Record<TreatmentKey, string[]> = { kopra: ['kopra'], bibit: ['bibit', 'bibit bio leather'], cuka: ['cuka'], bio: ['bio leather'] };
+const say = (prefixes: string[], key: TreatmentKey, i: number) => prefixes.flatMap((p) => TR_SAY[key].map((n) => `${p} ${n}${ord(i)}`)).join('|');
+
 /** Loading tampil minimal 4 detik (satu siklus animasi, DEC-079). */
 const SAVE_MS = 4000;
 const field = 'field min-h-[40px] w-full bg-white px-2 text-sm';
@@ -461,6 +468,7 @@ function AwalModal({ onClose, onConfirm }: { onClose: () => void; onConfirm: (it
                 <Dropdown
                   label={`Perlakuan ${perl.length > 1 ? i + 1 : ''}`.trim()}
                   testId={`catat-perl-${i}`}
+                  voice={`perlakuan${ord(i)}`}
                   value={e.method}
                   onChange={(v) => setPerlAt(i, { method: v })}
                   placeholder="— pilih perlakuan —"
@@ -469,7 +477,7 @@ function AwalModal({ onClose, onConfirm }: { onClose: () => void; onConfirm: (it
               </div>
               <label className="flex flex-col gap-1.5 sm:w-48">
                 <span className="label-mono">Jumlah produksi</span>
-                <input className={field} inputMode="numeric" enterKeyHint="next" value={e.count} onChange={(ev) => setPerlAt(i, { count: ev.target.value.replace(/\D/g, '') })} placeholder="mis. 15" data-testid={`catat-perl-count-${i}`} />
+                <input className={field} inputMode="numeric" enterKeyHint="next" value={e.count} onChange={(ev) => setPerlAt(i, { count: ev.target.value.replace(/\D/g, '') })} placeholder="mis. 15" data-testid={`catat-perl-count-${i}`} data-voice-name={`jumlah produksi${ord(i)}`} data-voice-kind="number" />
               </label>
               {perl.length > 1 && (
                 <button type="button" className="inline-flex h-10 w-10 items-center justify-center self-end rounded-full text-xl hover:bg-safety" onClick={() => setPerl((cur) => cur.filter((_, j) => j !== i))} aria-label={`Hapus perlakuan ${i + 1}`} data-testid={`catat-perl-del-${i}`}>
@@ -490,14 +498,13 @@ function AwalModal({ onClose, onConfirm }: { onClose: () => void; onConfirm: (it
           </div>
         </section>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <Dropdown label="Item / barang" required testId="catat-item" value={item} onChange={setItem} options={RAW_ITEMS.map((i) => ({ value: i, label: i }))} />
+          <Dropdown label="Item / barang" required testId="catat-item" voice="item|barang" value={item} onChange={setItem} options={RAW_ITEMS.map((i) => ({ value: i, label: i }))} />
           <label className="flex flex-col gap-1.5">
             <span className="label-mono">Jumlah total item <span className="text-safety" aria-hidden>*</span></span>
-            <input className="field min-h-[44px] bg-white text-sm" inputMode="numeric" enterKeyHint="next" value={countText} onChange={(e) => setCount(e.target.value.replace(/\D/g, ''))} placeholder="mis. 50" data-testid="catat-count" />
+            <input className="field min-h-[44px] bg-white text-sm" inputMode="numeric" enterKeyHint="next" value={countText} onChange={(e) => setCount(e.target.value.replace(/\D/g, ''))} placeholder="mis. 50" data-testid="catat-count" data-voice-name="jumlah item|jumlah total item|jumlah total" data-voice-kind="number" />
             <span className="text-xs text-muted">Maks. {MAX_ROWS}. Kolom isian muncul sebanyak jumlah ini.</span>
           </label>
         </div>
-        {rows.length > 0 && (
           <VoiceFill
             testId="catat-awal-voice"
             fields={cols.map(([k]) => AWAL_VOICE_FIELDS[k]!)}
@@ -505,7 +512,6 @@ function AwalModal({ onClose, onConfirm }: { onClose: () => void; onConfirm: (it
             inputId={(row, k) => `catat-awal-${k}-${row}`}
             onFill={(row, k, v) => setCell(row - 1, k as keyof CatatRow, v)}
           />
-        )}
         {rows.length > 0 && (
           <RowsGrid
             head={['Foto', ...cols.map(([, l]) => l)]}
@@ -793,12 +799,15 @@ function TreatmentFields({ value, onChange }: { value: TreatmentState; onChange:
                   placeholder="mis. 3"
                   aria-label={`${g.title} ${i + 1}`}
                   data-testid={`catat-tr-count-${g.key}-${i}`}
+                  data-voice-name={say(['jumlah', 'jumlah perlakuan'], g.key, i)}
+                  data-voice-kind="number"
                 />
               </label>
               <div className="min-w-0 flex-1">
                 <Dropdown
                   label="Perlakuan/metode"
                   testId={`catat-tr-method-${g.key}-${i}`}
+                  voice={say(['metode', 'perlakuan'], g.key, i)}
                   value={e.method}
                   onChange={(v) => edit(g.key, i, { method: v })}
                   options={[{ value: '', label: '— pilih —' }, ...g.methods.map((m) => ({ value: m, label: m }))]}
@@ -833,6 +842,8 @@ function TreatmentFields({ value, onChange }: { value: TreatmentState; onChange:
                   placeholder="mis. suhu oven 60 °C, dibalik tiap 2 jam"
                   aria-label={`Keterangan ${g.title} ${i + 1}`}
                   data-testid={`catat-tr-note-${g.key}-${i}`}
+                  data-voice-name={say(['keterangan'], g.key, i)}
+                  data-voice-kind="text"
                 />
               </label>
             </div>

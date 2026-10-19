@@ -6,6 +6,8 @@
  *   "berat awal seribu tiga empat"      → 1034 (seribu + 34)
  *   "next" / "neks" / "nex" / "lanjut"  → pindah ke kolom berikutnya (setelah kolom terakhir → nomor berikutnya)
  *   "isi enam koma lima"                → isi kolom yang sedang aktif dengan 6,5
+ *   "<nama kolom> <nilai>"              → kolom lain di form (DEC-104): angka, teks bebas, atau pilihan dropdown,
+ *                                         mis. "jumlah kopra tiga", "keterangan kopra dibalik tiap dua jam", "metode kopra oven gas"
  */
 
 export interface VoiceField {
@@ -13,6 +15,12 @@ export interface VoiceField {
   label: string;
   /** Cara menyebut kolom (huruf kecil), mis. ["berat awal"]. */
   say: string[];
+  /**
+   * Jenis isian: tanpa nilai = kolom per nomor (angka). 'number' / 'text' / 'choice' = kolom lain di form (DEC-104):
+   * angka, teks bebas (sisa ucapan), atau pilihan dropdown (dicocokkan ke `options`).
+   */
+  kind?: 'number' | 'text' | 'choice';
+  options?: { value: string; label: string }[];
 }
 
 export type VoiceCmd =
@@ -54,6 +62,7 @@ const VOCAB = [
   'sepuluh', 'sebelas', 'seratus', 'seribu', 'belas', 'puluh', 'ratus', 'ribu', 'koma',
   'berat', 'awal', 'akhir', 'air', 'volume', 'tebal', 'daging', 'nomor', 'baris', 'isi', 'lanjut',
   'next', 'neks', 'nex',
+  'jumlah', 'produksi', 'item', 'perlakuan', 'metode', 'keterangan', 'kedua', 'ketiga', 'keempat', 'kopra', 'bibit', 'cuka', 'leather', 'total',
 ];
 /** Gabungan kata yang sering ditulis menyatu oleh mesin transkripsi. */
 const JOINED: Record<string, string> = {
@@ -187,6 +196,11 @@ function parseSegment(tokens: string[], fields: readonly VoiceField[]): VoiceCmd
   }
   const f = matchField(t, fields);
   if (f) {
+    const kind = fields.find((x) => x.key === f.key)?.kind;
+    if (kind === 'text' || kind === 'choice') {
+      const rest = t.slice(f.len).join(' ').trim();
+      return rest ? { kind: 'fill', field: f.key, value: rest } : { kind: 'unknown', text: tokens.join(' ') };
+    }
     const v = parseNumber(t.slice(f.len));
     return v !== undefined ? { kind: 'fill', field: f.key, value: v } : { kind: 'unknown', text: tokens.join(' ') };
   }
@@ -198,6 +212,43 @@ function parseSegment(tokens: string[], fields: readonly VoiceField[]): VoiceCmd
   const n = parseNumber(t);
   if (n !== undefined) return { kind: 'num', value: n, words: t.filter((x) => x !== 'se').length };
   return { kind: 'unknown', text: tokens.join(' ') };
+}
+
+/** Deret kata bilangan → satu token angka ("lima puluh" → "50"), kata lain apa adanya. */
+function numTokens(tokens: readonly string[]): string[] {
+  const out: string[] = [];
+  let run: string[] = [];
+  const flush = () => {
+    if (run.length) out.push(parseNumber(run) ?? run.join(''));
+    run = [];
+  };
+  for (const t of tokens) {
+    if (t !== 'koma' && isNumWord(t)) run.push(t);
+    else {
+      flush();
+      out.push(t);
+    }
+  }
+  flush();
+  return out;
+}
+/**
+ * Pilihan dropdown yang paling cocok dengan ucapan (DEC-104): kata ucapan (angka kata → digit) dicari di label pilihan;
+ * menang = paling banyak kata cocok (minimal separuh kata ucapan), seri → label terpendek. "cuka dua" → "CUKA 2 - GULA 75g".
+ */
+export function matchOption(spoken: string, options: readonly { value: string; label: string }[]): { value: string; label: string } | undefined {
+  const words = numTokens(normalize(spoken));
+  if (!words.length) return undefined;
+  let best: { o: { value: string; label: string }; score: number; len: number } | undefined;
+  for (const o of options) {
+    if (!o.value) continue;
+    const lab = numTokens(normalize(`${o.label} ${o.value}`));
+    const joined = lab.join('');
+    const score = words.filter((w) => lab.some((l) => l === w || (w.length >= 3 && l.startsWith(w))) || (w.length >= 4 && joined.includes(w))).length;
+    if (score * 2 < words.length || !score) continue;
+    if (!best || score > best.score || (score === best.score && o.label.length < best.len)) best = { o, score, len: o.label.length };
+  }
+  return best?.o;
 }
 
 export interface VoiceCursor {

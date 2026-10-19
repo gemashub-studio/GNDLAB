@@ -331,6 +331,10 @@ export interface ProtocolDraft {
   raw?: RawMaterial;
   /** Data pencatatan yang dipilih di Resep baru (DEC-101). */
   catatId?: string;
+  /** Kolom jalur produk tambahan (tombol ＋, DEC-105). */
+  jalurExtra?: string[];
+  /** Foto pencatatan yang dihapus dari resep (✕), kunci "no:awal" / "no:akhir" (DEC-105). */
+  catatExclude?: string[];
   /** Foto/video yang sudah dipilih tapi belum jadi versi resmi (per baris). */
   pending: { ingredients: NewMedia[][]; tools: NewMedia[][]; steps: NewMedia[][]; coconuts?: NewMedia[][] };
   createdAt: string;
@@ -363,6 +367,10 @@ export interface ProtocolVersion {
   raw?: RawMaterial;
   /** Data pencatatan yang dipilih di Resep baru (DEC-101) — foto per perlakuan ikut laporan. */
   catatId?: string;
+  /** Kolom jalur produk tambahan (tombol ＋, DEC-105). */
+  jalurExtra?: string[];
+  /** Foto pencatatan yang dihapus dari resep (✕), kunci "no:awal" / "no:akhir" (DEC-105). */
+  catatExclude?: string[];
   reason: string;
   author: string;
   createdAt: string;

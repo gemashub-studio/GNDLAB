@@ -113,6 +113,48 @@ export function perlakuanRanges(rec: Pick<CatatRecord, 'rows' | 'treatments'>): 
   return out;
 }
 
+export interface JalurPhoto {
+  /** "no:awal" / "no:akhir" */
+  key: string;
+  no: number;
+  kind: 'awal' | 'akhir';
+  src: string;
+}
+export interface JalurGroup {
+  jalur: string;
+  range?: PerlakuanRange;
+  rows: CatatRow[];
+  photos: JalurPhoto[];
+}
+
+const sameJalur = (a: string, b: string) => a.trim().toLowerCase() === b.trim().toLowerCase();
+
+/**
+ * Foto per kolom jalur produk di Resep baru (DEC-105): jalur = perlakuan di form data awal → foto nomor dalam rentang
+ * perlakuan itu (berurutan: GH 15 → no 1–15, berikutnya mulai no 16). Pencatatan tanpa perlakuan + jalur kopra → semua nomor.
+ * Jalur lain (tidak ada di pencatatan) dilewati. Foto yang dihapus (✕) tidak ikut.
+ */
+export function jalurGroups(rec: Pick<CatatRecord, 'rows' | 'treatments'>, jalurs: readonly string[], exclude: ReadonlySet<string> = new Set()): JalurGroup[] {
+  const ranges = perlakuanRanges(rec);
+  const out: JalurGroup[] = [];
+  for (const j of jalurs) {
+    if (!j.trim() || out.some((g) => sameJalur(g.jalur, j))) continue;
+    const range = ranges.find((r) => sameJalur(r.label, j) || sameJalur(r.method, j));
+    const kopra = KOPRA_METHODS.some((m) => sameJalur(m, j) || sameJalur(methodLabel(m), j));
+    const rows = range ? range.rows : !ranges.length && kopra ? rec.rows : undefined;
+    if (!rows) continue;
+    const photos = rows.flatMap((r) =>
+      (['awal', 'akhir'] as const).flatMap((kind) => {
+        const src = kind === 'awal' ? r.fotoAwal : r.fotoAkhir;
+        const key = `${r.no}:${kind}`;
+        return src && !exclude.has(key) ? [{ key, no: r.no, kind, src }] : [];
+      }),
+    );
+    out.push({ jalur: j, ...(range && { range }), rows, photos });
+  }
+  return out;
+}
+
 /** Baris tabel perlakuan yang terisi (jumlah atau metode), satu baris per kolom. */
 /** Kolom perlakuan dianggap terisi bila ada jumlah, metode, keterangan, atau foto. */
 const trFilled = (e: TreatmentEntry) => !!(e.count.trim() || e.method || e.note?.trim() || e.photo);
@@ -483,17 +525,19 @@ export async function deleteCatat(ids: readonly string[]): Promise<number> {
 
 /** Foto per nomor untuk galeri laporan. */
 /** Pasangan foto awal (atas) & akhir (bawah) + data singkat per nomor — untuk grid PowerPoint (DEC-077/101). */
-export function photoPairsOf(rec: Pick<CatatRecord, 'item' | 'finishedAt' | 'akhirSavedAt'>, rows: readonly CatatRow[]): PhotoPair[] {
+export function photoPairsOf(rec: Pick<CatatRecord, 'item' | 'finishedAt' | 'akhirSavedAt'>, rows: readonly CatatRow[], exclude: ReadonlySet<string> = new Set()): PhotoPair[] {
   const coco = hasThickness(rec.item);
   const akhirOn = !!(rec.finishedAt || rec.akhirSavedAt);
   const u = (s: string | undefined, unit: string) => (s && s.trim() ? `${s.trim()} ${unit}` : '–');
-  return rows.map((r) => ({
+  // foto yang dihapus dari resep (✕) dibuang; nomor yang kedua fotonya dihapus tidak ditampilkan (DEC-105)
+  const kept = exclude.size ? rows.filter((r) => !((exclude.has(`${r.no}:awal`) || !r.fotoAwal) && (exclude.has(`${r.no}:akhir`) || !r.fotoAkhir) && (exclude.has(`${r.no}:awal`) || exclude.has(`${r.no}:akhir`)))) : rows;
+  return kept.map((r) => ({
     no: r.no,
     awal: {
-      ...(r.fotoAwal && { image: r.fotoAwal }),
+      ...(r.fotoAwal && !exclude.has(`${r.no}:awal`) && { image: r.fotoAwal }),
       lines: coco ? [`Berat ${u(r.beratAwal, 'g')}`, `Vol. air ${u(r.volAir, 'mL')}`, `Berat air ${u(r.beratAir, 'g')}`, `Tebal ${u(r.tebalAwal, 'mm')}`] : [`Berat ${u(r.beratAwal, 'g')}`],
     },
-    ...(akhirOn && { akhir: { ...(r.fotoAkhir && { image: r.fotoAkhir }), lines: coco ? [`Berat ${u(r.beratAkhir, 'g')}`, `Tebal ${u(r.tebalAkhir, 'mm')}`] : [`Berat ${u(r.beratAkhir, 'g')}`] } }),
+    ...(akhirOn && { akhir: { ...(r.fotoAkhir && !exclude.has(`${r.no}:akhir`) && { image: r.fotoAkhir }), lines: coco ? [`Berat ${u(r.beratAkhir, 'g')}`, `Tebal ${u(r.tebalAkhir, 'mm')}`] : [`Berat ${u(r.beratAkhir, 'g')}`] } }),
   }));
 }
 

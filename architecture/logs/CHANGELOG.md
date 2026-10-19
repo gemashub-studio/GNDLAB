@@ -3,6 +3,11 @@
 Format: [Keep a Changelog](https://keepachangelog.com/id/1.1.0/) · Versi dataset mengikuti SemVer (ADR-002).
 Waktu dalam WIB (UTC+7).
 
+## [Suara: nama kolom + nilai; Resep: tambah kolom jalur & hapus foto] — 2026-10-19
+### Ditambahkan
+- Perintah suara "nama kolom + nilai" untuk semua kolom form data awal, akhir, dan revisi (angka, teks, dropdown).
+- Resep baru: tombol ＋ Tambah kolom jalur produk, tombol ✕ hapus foto; foto per jalur mengikuti nomor perlakuan (GH 1–15, berikutnya mulai 16).
+
 ## [Perlakuan di data awal, resep dari pencatatan, Groq Whisper] — 2026-10-19
 ### Ditambahkan
 - Form data awal: Perlakuan (Green House / Oven Gas / Oven Briket) + jumlah produksi.

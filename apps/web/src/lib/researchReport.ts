@@ -4,7 +4,7 @@
  * Hanya dari data tercatat; kosong = "belum dicatat".
  */
 import { fmtNum, researchCharts, type ChartSpec } from './reportCharts';
-import { perlakuanRanges, photoPairsOf, type CatatRecord } from './pencatatan';
+import { jalurGroups, perlakuanRanges, photoPairsOf, type CatatRecord } from './pencatatan';
 import { coconutSummary, dayNumber, protocolProductName, variantLabel, type CoconutRow, type RawMaterial, NOT_RECORDED, researchDates, researchStatus, toolList, type DailyEntry, type MediaItem, type ProtocolVersion } from './labStore';
 
 export interface ReportImage {
@@ -153,13 +153,14 @@ function coconutBlocks(rows: CoconutRow[], pics: (ids?: string[]) => ReportImage
  * berisi foto item sebanyak jumlah produksinya (awal atas, akhir bawah, maks. 10 per slide). Jalur produk = salah satu
  * perlakuan pencatatan → hanya perlakuan itu; selain itu → semua perlakuan. PDF/Word: ringkasan teks.
  */
-export function catatBlocks(v: Pick<ProtocolVersion, 'catatId' | 'product' | 'productName'>, catat: readonly CatatRecord[]): ReportBlock[] {
+export function catatBlocks(v: Pick<ProtocolVersion, 'catatId' | 'product' | 'productName' | 'jalurExtra' | 'catatExclude'>, catat: readonly CatatRecord[]): ReportBlock[] {
   const rec = v.catatId ? catat.find((r) => r.id === v.catatId) : undefined;
   if (!rec) return v.catatId ? [{ heading: 'Data pencatatan', level: 1, lines: [`${v.catatId} (tidak ditemukan di perangkat ini)`], images: [] }] : [];
   const jalur = protocolProductName(v);
   const ranges = perlakuanRanges(rec);
-  const match = ranges.find((r) => [r.label, r.method].some((x) => x.toLowerCase() === jalur.trim().toLowerCase()));
-  const chosen = match ? [match] : ranges;
+  const exclude = new Set(v.catatExclude ?? []);
+  // kolom jalur produk (utama + tambahan ＋, DEC-105) yang cocok dengan perlakuan pencatatan
+  const groups = jalurGroups(rec, [jalur, ...(v.jalurExtra ?? [])], exclude);
   const summary: ReportBlock = {
     heading: 'Data pencatatan',
     level: 1,
@@ -170,9 +171,12 @@ export function catatBlocks(v: Pick<ProtocolVersion, 'catatId' | 'product' | 'pr
     images: [],
     pptxSkip: true,
   };
-  const grids: ReportBlock[] = chosen.length
-    ? chosen.map((r) => ({ heading: match ? `${jalur} · ${r.count} item` : `Perlakuan ${r.label} · ${r.count} item`, level: 1, lines: [], images: [], pptxOnly: true, photoPairs: photoPairsOf(rec, r.rows) }))
-    : [{ heading: `${jalur} · ${rec.id}`, level: 1, lines: [], images: [], pptxOnly: true, photoPairs: photoPairsOf(rec, rec.rows) }];
+  const grid = (heading: string, rows: CatatRecord['rows']): ReportBlock => ({ heading, level: 1, lines: [], images: [], pptxOnly: true, photoPairs: photoPairsOf(rec, rows, exclude) });
+  const grids: ReportBlock[] = groups.length
+    ? groups.map((g) => grid(g.range ? `${g.jalur} · ${g.range.count} item (no ${g.rows[0]?.no ?? '–'}–${g.rows[g.rows.length - 1]?.no ?? '–'})` : `${g.jalur} · ${rec.id}`, g.rows))
+    : ranges.length
+      ? ranges.map((r) => grid(`Perlakuan ${r.label} · ${r.count} item`, r.rows))
+      : [grid(`${jalur} · ${rec.id}`, rec.rows)];
   return [summary, ...grids];
 }
 
