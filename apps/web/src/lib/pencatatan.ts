@@ -127,6 +127,8 @@ export interface CatatRecord {
   progress?: CatatProgress[];
   /** Jumlah perlakuan & metode per jalur (DEC-079). */
   treatments?: Treatments;
+  /** Diselesaikan pengguna (tombol "Selesaikan", DEC-098) — kartu hijau; baru setelah ini catatan baru boleh dibuat. */
+  closedAt?: string;
 }
 
 export type ProgressStage = 'harian' | 'mingguan' | 'bulanan';
@@ -350,8 +352,29 @@ export function nextCatatId(existing: readonly string[], now = new Date(), tag =
   return `${p}${String(Math.max(0, ...n) + 1).padStart(2, '0')}${tag}`;
 }
 
+/** Maks. 1 pencatatan aktif (DEC-098): catatan baru hanya boleh dibuat bila semua catatan sudah diselesaikan. */
+export const MAX_OPEN_CATAT = 1;
+export const openCatat = (records: readonly CatatRecord[]) => records.filter((r) => !r.closedAt);
+export const canStartCatat = (records: readonly CatatRecord[]) => openCatat(records).length < MAX_OPEN_CATAT;
+/** Bisa diselesaikan: data awal & akhir lengkap (semua nomor terisi). */
+export const canCloseCatat = (rec: CatatRecord) => !rec.closedAt && !!rec.finishedAt && !missingAkhir(rec.item, rec.rows).length;
+
+/** Tandai catatan selesai (hijau). Hanya untuk catatan yang data awal & akhirnya lengkap. */
+export async function closeCatat(id: string): Promise<CatatRecord> {
+  const d = await catatDb();
+  const rec = await d.get('records', id);
+  if (!rec) throw new Error(`Catatan ${id} tidak ditemukan`);
+  if (!canCloseCatat(rec)) throw new Error('Catatan baru bisa diselesaikan setelah data awal & akhir lengkap.');
+  const now = new Date().toISOString();
+  const next: CatatRecord = { ...rec, closedAt: now, updatedAt: now };
+  await d.put('records', next);
+  return next;
+}
+
 export async function addCatatAwal(item: string, rows: CatatRow[], treatments?: Treatments): Promise<CatatRecord> {
   const d = await catatDb();
+  const open = openCatat(await d.getAll('records'));
+  if (open.length >= MAX_OPEN_CATAT) throw new Error(`Selesaikan dulu pencatatan ${open.map((r) => r.id).join(', ')} sebelum membuat catatan baru.`);
   const now = new Date().toISOString();
   const rec: CatatRecord = { id: nextCatatId((await d.getAllKeys('records')).map(String)), item, count: rows.length, rows, createdAt: now, updatedAt: now, ...(treatments && treatmentRows(treatments).length && { treatments }) };
   await d.add('records', rec);

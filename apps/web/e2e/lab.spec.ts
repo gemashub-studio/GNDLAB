@@ -440,22 +440,15 @@ test.describe('Hapus hasil riset', () => {
     await expect(pv.getByTestId('catat-preview-dl-docx')).toBeVisible();
     await pv.getByTestId('catat-preview-close').click();
 
-    // catatan awal kedua (sekam) → pilihan "Pilih catatan awal yang tersedia" muncul
-    await page.getByTestId('catat-new').click();
-    await page.getByTestId('catat-item').click();
-    await page.getByTestId('catat-item-opt-Sekam').click();
-    await page.getByTestId('catat-count').fill('1');
-    await expect(page.locator('[data-testid^="catat-awal-tebalAwal-"]')).toHaveCount(0);
-    await page.getByTestId('catat-awal-beratAwal-1').fill('500');
-    await page.getByTestId('catat-awal-confirm').click();
-    await expect(page.locator('[data-testid^="catat-card-PD-"]')).toHaveCount(2);
+    // maks. 1 pencatatan aktif (DEC-098): catatan baru terkunci sampai catatan ini diselesaikan
+    await expect(page.getByTestId('catat-new')).toBeDisabled();
+    await expect(page.getByTestId('catat-new-hint')).toContainText(`selesaikan dulu ${id}`);
+    await expect(page.getByTestId('catat-lihat-progres')).toHaveAttribute('href', '/lab/progres');
 
     await expect(page.getByTestId('catat-select')).toBeDisabled();
     await page.getByTestId('catat-akhir').click();
     const akhir = page.getByTestId('catat-akhir-modal');
     await expect(akhir).toContainText('Pencatatan data akhir');
-    await akhir.getByTestId('catat-pick').click();
-    await akhir.getByTestId(`catat-pick-opt-${id}`).click();
     await expect(akhir.getByTestId('catat-akhir-info')).toContainText('Kelapa tua · 3 item');
     // data awal di samping kolom akhir yang masih kosong
     await expect(akhir.getByLabel('Berat awal nomor 2')).toHaveValue('1.200');
@@ -511,8 +504,6 @@ test.describe('Hapus hasil riset', () => {
     await pv2.getByTestId('catat-preview-close').click();
     // buka lagi: isian sementara & perlakuan terisi kembali
     await page.getByTestId('catat-akhir').click();
-    await akhir.getByTestId('catat-pick').click();
-    await akhir.getByTestId(`catat-pick-opt-${id}`).click();
     await expect(akhir.getByTestId('catat-akhir-berat-1')).toHaveValue('900');
     await expect(akhir.getByTestId('catat-tr-count-kopra-0')).toHaveValue('3');
     await expect(akhir.locator('[data-testid^="catat-tr-count-kopra-"]')).toHaveCount(2);
@@ -523,6 +514,11 @@ test.describe('Hapus hasil riset', () => {
       await akhir.getByTestId(`catat-akhir-berat-${no}`).fill(b);
       await akhir.getByTestId(`catat-akhir-tebal-${no}`).fill(t);
     }
+    // Excel dari form data akhir + tombol Selesaikan muncul saat awal & akhir lengkap (DEC-098)
+    const x1 = page.waitForEvent('download');
+    await akhir.getByTestId('catat-akhir-xlsx').click();
+    expect((await x1).suggestedFilename()).toBe(`${id}-pencatatan-data.xlsx`);
+    await expect(akhir.getByTestId('catat-akhir-finish')).toBeVisible();
     await akhir.getByTestId('catat-akhir-confirm').click();
     await expect(page.getByTestId('catat-toast')).toBeVisible();
     const done = page.getByTestId('catat-done');
@@ -531,9 +527,7 @@ test.describe('Hapus hasil riset', () => {
     await expect(done.getByTestId('catat-done-close')).toBeVisible();
     await expect(page.getByTestId('catat-stat-akhir')).toContainText('1');
     await expect(done.getByTestId('catat-done-card')).toHaveClass(/alert-slide-in/);
-    const order = await page.locator('[data-testid^="catat-card-PD-"]').evaluateAll((els) => els.map((e) => e.textContent ?? ''));
-    expect(order[0]).toContain('Menunggu data akhir');
-    expect(order[1]).toContain('Awal & akhir lengkap');
+    await expect(page.getByTestId(`catat-status-${id}`)).toContainText('belum diselesaikan');
     await done.getByTestId('catat-done-view').click();
 
     // halaman hasil: 3 bagian + kesimpulan + unduh
@@ -566,7 +560,11 @@ test.describe('Hapus hasil riset', () => {
     await expect(page.getByTestId('img-preview')).toHaveCount(0);
 
     // revisi data akhir dari kartu yang sudah lengkap: form terisi data sebelumnya (DEC-083)
-    await page.goto('/lab?t=bahan');
+    // (server dev bisa membatalkan navigasi saat memuat ulang modul → ulangi)
+    await expect(async () => {
+      await page.goto('/lab?t=bahan', { waitUntil: 'domcontentloaded' });
+      await expect(page.getByTestId(`catat-card-${id}`)).toBeVisible({ timeout: 20_000 });
+    }).toPass({ timeout: 120_000 });
     await page.getByTestId(`catat-card-${id}`).click();
     await page.getByTestId('catat-revise').click();
     const rev = page.getByTestId('catat-akhir-modal');
@@ -582,50 +580,32 @@ test.describe('Hapus hasil riset', () => {
     await expect(page.getByTestId('catat-preview').getByTestId('catat-tbl-akhir')).toContainText('650');
     await page.getByTestId('catat-preview-close').click();
 
-    // kamera melayang → kartu detail dari bawah → upload ke progres harian catatan lengkap (DEC-086)
-    await expect(page.getByTestId('float-cam')).toBeVisible();
-    await page.getByTestId('float-cam-input').setInputFiles({ name: 'progres.png', mimeType: 'image/png', buffer: png });
-    const sheet = page.getByTestId('progress-sheet');
-    await expect(sheet.getByTestId('progress-sheet-card')).toHaveClass(/sheet-up/);
-    await expect(sheet.getByTestId('progress-photo')).toHaveAttribute('src', /^data:image\/jpeg/);
-    await expect(sheet.getByTestId('progress-date')).toHaveValue(/^\d{4}-\d{2}-\d{2}$/);
-    // hanya catatan lengkap yang bisa dipilih (satu-satunya → langsung terpilih)
-    await sheet.getByTestId('progress-rec').click();
-    await expect(sheet.getByTestId('progress-rec-list').getByRole('option')).toHaveCount(1);
-    await sheet.getByTestId(`progress-rec-opt-${id}`).click();
-    await sheet.getByTestId('progress-title').fill('Hari ke-1 pengeringan');
-    await sheet.getByTestId('progress-temp').fill('28,5');
-    await sheet.getByTestId('progress-note').fill('warna mulai kecokelatan');
-    await sheet.getByTestId('progress-upload').click();
-    await expect(page.getByTestId('progress-done')).toContainText(`Foto progres masuk ke ${id}`);
-    await page.getByTestId('progress-done-close').click();
-    await expect(page.getByTestId(`catat-progress-${id}`)).toContainText('Progres harian sedang berlangsung');
-    await expect(page.getByTestId(`catat-progress-${id}`)).toContainText('1 foto');
+    // Selesaikan (DEC-098): ketik "Selesai" → petasan → kartu hijau → catatan baru bisa dibuat
     await page.getByTestId(`catat-card-${id}`).click();
-    await expect(page.getByTestId('catat-preview').getByTestId('catat-progress-list')).toContainText('Suhu ruang: 28,5 °C');
-    await expect(page.getByTestId('catat-preview').getByTestId('catat-progress-list')).toContainText('Hari ke-1 pengeringan');
+    const x2 = page.waitForEvent('download');
+    await page.getByTestId('catat-preview-xlsx').click();
+    expect((await x2).suggestedFilename()).toBe(`${id}-pencatatan-data.xlsx`);
+    await page.getByTestId('catat-finish').click();
+    const fc = page.getByTestId('finish-confirm');
+    await expect(fc).toContainText('Ketik Selesai');
+    await fc.getByTestId('finish-input').fill('selesaikan');
+    await expect(fc.getByTestId('finish-ok')).toBeDisabled();
+    await fc.getByTestId('finish-back').click();
+    await expect(fc).toHaveCount(0);
+    // Kembali → tetap di pratinjau
+    await expect(page.getByTestId('catat-preview')).toBeVisible();
+    await page.getByTestId('catat-finish').click();
+    await page.getByTestId('finish-input').fill('Selesai');
+    await page.getByTestId('finish-ok').click();
+    await expect(page.getByTestId('finish-success')).toContainText('Sukses! data berhasil di selesaikan.');
+    await page.getByTestId('finish-success-close').click();
+    await expect(page.getByTestId(`catat-status-${id}`)).toHaveText('✓ Selesai');
+    await expect(page.getByTestId(`catat-card-${id}`)).toHaveClass(/bg-\[#E3F7F1\]/);
+    await expect(page.getByTestId('catat-new')).toBeEnabled();
+    await page.getByTestId(`catat-card-${id}`).click();
+    await expect(page.getByTestId('catat-finish')).toHaveCount(0);
+    await expect(page.getByTestId('catat-revise')).toHaveCount(0);
     await page.getByTestId('catat-preview-close').click();
-
-    // Pilih → pilih salah satu → hanya catatan lengkap → Hapus (permanen)
-    await page.goto('/lab?t=bahan');
-    await expect(page.locator('[data-testid^="catat-card-PD-"]')).toHaveCount(2);
-    await page.getByTestId('catat-select').click();
-    await expect(page.getByTestId('catat-select-menu')).not.toContainText('Hapus');
-    await page.getByTestId('catat-select-one').click();
-    const pendingId = (await page.locator('[data-testid^="catat-card-PD-"]').filter({ hasText: 'Menunggu data akhir' }).getAttribute('data-testid'))!.replace('catat-card-', '');
-    await expect(page.getByTestId(`catat-check-${pendingId}`)).toBeDisabled();
-    await page.getByTestId(`catat-card-${id}`).click();
-    await expect(page.getByTestId(`catat-check-${id}`)).toBeChecked();
-    await page.getByTestId('catat-select').click();
-    await expect(page.getByTestId('catat-select-delete')).toContainText('Hapus (1)');
-    await expect(page.getByTestId('catat-select-delete')).toContainText('tidak dapat dipulihkan');
-    await page.getByTestId('catat-select-delete').click();
-    await expect(page.getByTestId('confirm-dialog')).toContainText('TIDAK dapat dipulihkan');
-    await page.getByTestId('confirm-ok').click();
-    await expect(page.getByTestId('catat-deleted')).toContainText('1 catatan dihapus permanen.');
-    await expect(page.getByTestId(`catat-card-${id}`)).toHaveCount(0);
-    await expect(page.getByTestId(`catat-card-${pendingId}`)).toBeVisible();
-    await expect(page.getByTestId('catat-stat-awal')).toContainText('1');
   });
   test('jalur produk bisa diisi manual → kode otomatis, nama tersimpan', async ({ page }) => {
     await page.goto('/lab?t=protokol');

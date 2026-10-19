@@ -191,4 +191,4 @@
 
 ## 2026-10-19 · Claude — pengingat 2 hari & pesan gambar AI
 - DEC-097: reminderDue (47,5 jam sejak run dengan sent>0); OCR via lib/photoOcr.ts (worker tunggal, errorHandler + timeout 90 s, 'ind'). Akar macet lama: worker.min.js gagal importScripts → createWorker menggantung. E2E OCR memakai gambar kanvas + route mock AI.
-
+- DEC-098: closedAt (Selesaikan) + MAX_OPEN_CATAT=1 (canStartCatat), FinishDialogs (ketik Selesai, petasan kanvas), catatXlsx (SpreadsheetML via zipStore). E2E pencatatan lama diperbarui (catatan kedua dihapus; blok kamera/ProgressSheet usang diganti alur Selesaikan).

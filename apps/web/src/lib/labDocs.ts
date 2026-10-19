@@ -193,8 +193,8 @@ const AKHIR_ROW = ['beratAkhir', 'tebalAkhir', 'fotoAkhir'];
 export function splitCatat(rec: Obj): Pick<RndRow, 'data_awal' | 'data_akhir' | 'perlakuan' | 'progres_harian'> {
   const rows = (Array.isArray(rec.rows) ? rec.rows : []) as Obj[];
   return {
-    data_awal: { ...omit(rec, ['rows', 'finishedAt', 'akhirSavedAt', 'treatments', 'progress']), rows: rows.map((r) => omit(r, AKHIR_ROW)) },
-    data_akhir: defined({ finishedAt: rec.finishedAt, akhirSavedAt: rec.akhirSavedAt, rows: rows.map((r) => defined({ no: r.no, beratAkhir: r.beratAkhir, tebalAkhir: r.tebalAkhir, fotoAkhir: r.fotoAkhir })) }),
+    data_awal: { ...omit(rec, ['rows', 'finishedAt', 'akhirSavedAt', 'closedAt', 'treatments', 'progress']), rows: rows.map((r) => omit(r, AKHIR_ROW)) },
+    data_akhir: defined({ finishedAt: rec.finishedAt, akhirSavedAt: rec.akhirSavedAt, closedAt: rec.closedAt, rows: rows.map((r) => defined({ no: r.no, beratAkhir: r.beratAkhir, tebalAkhir: r.tebalAkhir, fotoAkhir: r.fotoAkhir })) }),
     perlakuan: rec.treatments ?? null,
     progres_harian: rec.progress ?? null,
   };
@@ -207,7 +207,7 @@ export function joinCatat(r: Pick<RndRow, 'data_awal' | 'data_akhir' | 'perlakua
   const akhir = (r.data_akhir ?? {}) as Obj;
   const byNo = new Map(((akhir.rows ?? []) as Obj[]).map((x) => [x.no, x]));
   const rows = ((awal.rows ?? []) as Obj[]).map((x) => ({ ...x, ...omit(byNo.get(x.no) ?? {}, ['no']) }));
-  return defined({ ...awal, rows, finishedAt: akhir.finishedAt, akhirSavedAt: akhir.akhirSavedAt, treatments: r.perlakuan ?? undefined, progress: r.progres_harian ?? undefined });
+  return defined({ ...awal, rows, finishedAt: akhir.finishedAt, akhirSavedAt: akhir.akhirSavedAt, closedAt: akhir.closedAt, treatments: r.perlakuan ?? undefined, progress: r.progres_harian ?? undefined });
 }
 
 /** Dokumen → baris rnd_data. */

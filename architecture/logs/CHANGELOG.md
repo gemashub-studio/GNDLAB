@@ -3,6 +3,12 @@
 Format: [Keep a Changelog](https://keepachangelog.com/id/1.1.0/) · Versi dataset mengikuti SemVer (ADR-002).
 Waktu dalam WIB (UTC+7).
 
+## [Selesaikan pencatatan, batas 1 data, Excel] — 2026-10-19
+### Ditambahkan
+- Tombol Lihat Progres; tombol Selesaikan (ketik "Selesai") dengan alert petasan, kartu hijau; unduh Excel pencatatan (5 sheet).
+### Diubah
+- Maks. 1 pencatatan aktif: catatan baru bisa dibuat setelah catatan sebelumnya diselesaikan.
+
 ## [Pengingat 2 hari & foto ke Lab AI] — 2026-10-19
 ### Diubah
 - Email pengingat pencatatan belum lengkap dikirim tiap 2 hari (sebelumnya tiap jam).
