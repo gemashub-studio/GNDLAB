@@ -772,15 +772,36 @@ test.describe('Upload progres perlakuan, form & foto OCR (DEC-095)', () => {
     await expect(page.getByTestId('catat-awal-modal')).toHaveCount(0);
   });
 
-  test('Tanya Lab AI: ＋ → Foto/kamera → dialog scan teks dengan pemotong foto', async ({ page }) => {
+  test('Tanya Lab AI: ＋ → Foto dari galeri → chip foto → pesan gambar → AI berpikir sambil OCR → teks ikut prompt (DEC-097)', async ({ page }) => {
+    test.setTimeout(180_000);
+    await page.route('https://api.siputzx.my.id/**', (r) => r.fulfill({ json: { status: true, data: `JAWABAN: ${new URL(r.request().url()).searchParams.get('prompt')}` } }));
     await page.goto('/lab?t=ringkasan');
-    await page.getByTestId('lab-ai-bar-plus').click();
+    const b64 = await page.evaluate(() => {
+      const c = document.createElement('canvas');
+      c.width = 900;
+      c.height = 220;
+      const g = c.getContext('2d')!;
+      g.fillStyle = '#fff';
+      g.fillRect(0, 0, 900, 220);
+      g.fillStyle = '#000';
+      g.font = 'bold 56px sans-serif';
+      g.fillText('Kadar air kopra 6 persen', 30, 130);
+      return c.toDataURL('image/png').split(',')[1] ?? '';
+    });
+    await expect(async () => {
+      await page.getByTestId('lab-ai-bar-plus').click();
+      await expect(page.getByTestId('lab-ai-bar-opt-foto')).toBeVisible({ timeout: 2000 });
+    }).toPass({ timeout: 30_000 });
+    await expect(page.getByTestId('lab-ai-bar-opt-kamera')).toBeVisible();
+    const fc = page.waitForEvent('filechooser');
     await page.getByTestId('lab-ai-bar-opt-foto').click();
-    const d = page.getByTestId('ocr-dialog');
-    await expect(d).toContainText('Scan teks dari foto');
-    await d.getByTestId('ocr-file').setInputFiles({ name: 'catatan.png', mimeType: 'image/png', buffer: png });
-    await expect(d.getByTestId('ocr-cropper')).toBeVisible();
-    await expect(d.getByTestId('ocr-scan')).toBeEnabled();
+    await (await fc).setFiles({ name: 'catatan.png', mimeType: 'image/png', buffer: Buffer.from(b64, 'base64') });
+    await expect(page.getByTestId('lab-ai-bar-chip').locator('img')).toBeVisible();
+    await page.getByTestId('lab-ai-bar-input').fill('apa artinya?');
+    await page.getByTestId('lab-ai-bar-send').click();
+    await expect(page.getByTestId('lab-ai-user-photo')).toBeVisible();
+    await expect(page.getByTestId('lab-ai-card')).toContainText(/Kadar air kopra/i, { timeout: 120_000 });
+    await expect(page.getByTestId('lab-ai-card')).toContainText('apa artinya?');
   });
 });
 

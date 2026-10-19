@@ -112,7 +112,7 @@ export interface PendingItem {
   draft: boolean;
 }
 
-/** Email pengingat (DEC-093): daftar pencatatan data yang belum lengkap, dikirim tiap jam selama masih ada. */
+/** Email pengingat (DEC-093): daftar pencatatan data yang belum lengkap, dikirim tiap 2 hari selama masih ada (DEC-097). */
 export function reminderEmail(opts: { username: string; items: PendingItem[]; logoUrl: string; siteUrl: string }): { subject: string; html: string; text: string } {
   const n = opts.items.length;
   const subject = `Pengingat GnD Lab: ${n} pencatatan data belum lengkap`;
@@ -136,11 +136,11 @@ export function reminderEmail(opts: { username: string; items: PendingItem[]; lo
 ${n > 20 ? `<p style="margin:8px 0 0;font-size:12px;color:#5B6B72">…dan ${n - 20} lainnya.</p>` : ''}
 <p style="margin:20px 0 6px;text-align:center"><a href="${esc(opts.siteUrl)}" style="display:inline-block;padding:12px 22px;background:#63E6CF;color:#0E1A1F;border-radius:10px;font-weight:700;text-decoration:none">Buka Pencatatan Data</a></p>
 </td></tr>
-<tr><td style="padding:14px 24px;border-top:1px solid #E2E8EA;font-size:11px;line-height:1.6;color:#8A9AA0">Pengingat otomatis dikirim tiap jam selama masih ada data yang belum lengkap, dan berhenti sendiri bila semua sudah lengkap.</td></tr>
+<tr><td style="padding:14px 24px;border-top:1px solid #E2E8EA;font-size:11px;line-height:1.6;color:#8A9AA0">Pengingat otomatis dikirim tiap 2 hari selama masih ada data yang belum lengkap, dan berhenti sendiri bila semua sudah lengkap.</td></tr>
 </table></td></tr></table></body></html>`;
   const text = `Halo ${opts.username},\n\nMasih ada ${n} pencatatan data GnD Lab yang belum lengkap:\n${opts.items
     .slice(0, 20)
     .map((i) => `- ${i.id} · ${i.item} · ${i.count} item (${i.draft ? 'data akhir sebagian' : 'menunggu data akhir'})`)
-    .join('\n')}\n\nLengkapi di ${opts.siteUrl}\n\nPengingat ini dikirim tiap jam selama masih ada data yang belum lengkap.`;
+    .join('\n')}\n\nLengkapi di ${opts.siteUrl}\n\nPengingat ini dikirim tiap 2 hari selama masih ada data yang belum lengkap.`;
   return { subject, html, text };
 }

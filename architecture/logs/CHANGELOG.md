@@ -3,6 +3,11 @@
 Format: [Keep a Changelog](https://keepachangelog.com/id/1.1.0/) · Versi dataset mengikuti SemVer (ADR-002).
 Waktu dalam WIB (UTC+7).
 
+## [Pengingat 2 hari & foto ke Lab AI] — 2026-10-19
+### Diubah
+- Email pengingat pencatatan belum lengkap dikirim tiap 2 hari (sebelumnya tiap jam).
+- Tanya Lab AI: foto dikirim seperti pesan gambar — OCR berjalan sambil AI berpikir, tanpa modal; bisa ditambah pertanyaan. Perbaikan macet "Membaca teks…".
+
 ## [Gabungkan data, progres perlakuan, scan foto] — 2026-10-17
 ### Ditambahkan
 - Halaman Media dan Data Progres Perlakuan (/lab/progres) + modal Upload Progres Perlakuan; kamera melayang membuka modal ini.

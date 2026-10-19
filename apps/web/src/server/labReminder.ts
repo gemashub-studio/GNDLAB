@@ -1,13 +1,18 @@
 /**
- * Pengingat otomatis (DEC-093): tiap jam cek rnd_data — bila masih ada Pencatatan Data yang belum lengkap
+ * Pengingat otomatis (DEC-093, DEC-097): tiap jam cek rnd_data — bila masih ada Pencatatan Data yang belum lengkap
  * (belum ada data akhir final), kirim email lewat Resend ke semua pengguna terdaftar (tabel users).
- * Bila tidak ada, tidak mengirim apa-apa.
+ * Bila tidak ada, tidak mengirim apa-apa. Email dikirim paling sering sekali per 2 hari (DEC-097).
  */
 import { createClient } from '@supabase/supabase-js';
 import { reminderEmail, type PendingItem } from './labAuthCore';
 import { missingEnv } from './labAuth';
 
 const MIN_GAP_MS = 55 * 60_000;
+/** Jarak antar email pengingat: 2 hari (dikurangi 30 menit agar jadwal per jam yang sedikit maju tidak menunda 1 jam). */
+export const SEND_GAP_MS = 2 * 24 * 3_600_000 - 30 * 60_000;
+
+/** Boleh kirim email sekarang? (email terakhir yang benar-benar terkirim sudah ≥ 2 hari lalu) */
+export const reminderDue = (lastSentAt: number, now = Date.now()) => !lastSentAt || now - lastSentAt >= SEND_GAP_MS;
 
 const admin = () =>
   createClient((process.env.PROJECT_URL ?? process.env.NEXT_PUBLIC_SUPABASE_URL ?? '').replace(/\/+$/, ''), process.env.SUPABASE_SERVICE_ROLE_KEY ?? '', {
@@ -23,6 +28,11 @@ export async function runReminder(origin: string) {
   const { data: last } = await db.from('lab_reminder_runs').select('ran_at').order('ran_at', { ascending: false }).limit(1);
   const lastAt = last?.[0]?.ran_at ? Date.parse(last[0].ran_at as string) : 0;
   if (lastAt && Date.now() - lastAt < MIN_GAP_MS) return { ok: true, skipped: 'baru saja dijalankan', lastRun: new Date(lastAt).toISOString() };
+
+  // 1b) email hanya tiap 2 hari: hitung dari run terakhir yang benar-benar mengirim email
+  const { data: lastSent } = await db.from('lab_reminder_runs').select('ran_at').gt('sent', 0).order('ran_at', { ascending: false }).limit(1);
+  const lastSentAt = lastSent?.[0]?.ran_at ? Date.parse(lastSent[0].ran_at as string) : 0;
+  if (!reminderDue(lastSentAt)) return { ok: true, skipped: 'email terakhir < 2 hari lalu', lastSent: new Date(lastSentAt).toISOString(), next: new Date(lastSentAt + SEND_GAP_MS).toISOString() };
 
   // 2) pencatatan yang belum lengkap (data akhir belum final)
   const { data: rows, error } = await db.from('rnd_data').select('id,data_awal,data_akhir').eq('menu', 'pencatatan_data').eq('deleted', false);

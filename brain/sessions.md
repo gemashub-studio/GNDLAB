@@ -189,3 +189,6 @@
 - DEC-095: skeleton, foto→potong→OCR (tesseract.js 7, react-easy-crop 6) ke prompt AI, klik-luar tutup form, Upload Progres Perlakuan + halaman /lab/progres (rnd_data kolom progres_perlakuan). Bug PromptBar diperbaiki: onFocus kolom menutup menu ＋ (focusInput(keep)).
 - DEC-096: DriftWall di semua halaman kecuali / (punya sendiri) & /lab; model AI dihapus; Mendalam = 4 paragraf/kartu + pertanyaan ramah + emoji; Gabungkan data (gabungData.ts, GabungDataDialog) TXT/PPTX/Word dengan slide Laporan belanja padat (belanjaSlides di officeExport). E2E dev server 3210 lambat saat kompilasi dingin → mulai preview web-e2e & hangatkan rute (curl) sebelum playwright.
 
+## 2026-10-19 · Claude — pengingat 2 hari & pesan gambar AI
+- DEC-097: reminderDue (47,5 jam sejak run dengan sent>0); OCR via lib/photoOcr.ts (worker tunggal, errorHandler + timeout 90 s, 'ind'). Akar macet lama: worker.min.js gagal importScripts → createWorker menggantung. E2E OCR memakai gambar kanvas + route mock AI.
+

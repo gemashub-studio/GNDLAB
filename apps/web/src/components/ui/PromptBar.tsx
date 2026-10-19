@@ -95,7 +95,12 @@ export interface PromptBarProps {
   busy?: boolean;
   onSend?: (text: string, meta: PromptSendMeta) => void;
   onStop?: () => void;
-  onAttach?: () => Promise<string | string[] | undefined> | string | string[] | undefined;
+  /** Lampiran dipilih dari menu ＋ (key = sumber yang dipilih). Kembalikan label lampiran. */
+  onAttach?: (key: string) => Promise<string | string[] | undefined> | string | string[] | undefined;
+  /** Pratinjau gambar untuk chip lampiran (mis. foto) — tanpa ini chip memakai ikon berkas. */
+  attachmentThumb?: (label: string) => string | undefined;
+  /** Dipanggil saat chip lampiran dihapus pengguna. */
+  onRemoveAttachment?: (label: string) => void;
   onDictate?: () => Promise<string | undefined> | string | undefined;
   background?: string;
   color?: string;
@@ -126,6 +131,8 @@ export function PromptBar({
   onSend,
   onStop,
   onAttach,
+  attachmentThumb,
+  onRemoveAttachment,
   onDictate,
   background = '#27272a',
   color = '#f5f5f5',
@@ -370,7 +377,7 @@ export function PromptBar({
     const head = token ? draft.slice(0, token.start) : draft;
     if ((row as PromptSource).attach) {
       setDraft(head);
-      void Promise.resolve(latest.current.onAttach?.()).then((files) => {
+      void Promise.resolve(latest.current.onAttach?.(row.key)).then((files) => {
         if (!files) return;
         setAttachments((a) => [...a, ...(Array.isArray(files) ? files : [files])]);
       });
@@ -551,10 +558,18 @@ export function PromptBar({
         {attachments.length > 0 ? (
           <div className="prompt-bar__chips">
             {attachments.map((file, i) => (
-              <span key={`${file}-${i}`} className="prompt-bar__chip">
-                <HugeiconsIcon icon={File02Icon} size={12} strokeWidth={2} />
+              <span key={`${file}-${i}`} className={`prompt-bar__chip${attachmentThumb?.(file) ? ' prompt-bar__chip--img' : ''}`} data-testid={`${testId}-chip`}>
+                {attachmentThumb?.(file) ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={attachmentThumb(file)} alt="" className="prompt-bar__chip-thumb" />
+                ) : (
+                  <HugeiconsIcon icon={File02Icon} size={12} strokeWidth={2} />
+                )}
                 <span className="prompt-bar__chip-name">{file}</span>
-                <button type="button" className="prompt-bar__chip-x" aria-label={`Hapus ${file}`} onClick={() => setAttachments((a) => a.filter((_, j) => j !== i))}>
+                <button type="button" className="prompt-bar__chip-x" aria-label={`Hapus ${file}`} onClick={() => {
+                    setAttachments((a) => a.filter((_, j) => j !== i));
+                    onRemoveAttachment?.(file);
+                  }}>
                   <HugeiconsIcon icon={Cancel01Icon} size={10} strokeWidth={2.5} />
                 </button>
               </span>

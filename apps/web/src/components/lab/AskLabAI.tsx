@@ -1,9 +1,9 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { DropletIcon, Fire02Icon, ImageUploadIcon, Leaf01Icon, Notebook01Icon, TestTube01Icon } from '@hugeicons/core-free-icons';
+import { Camera01Icon, DropletIcon, Fire02Icon, ImageUploadIcon, Leaf01Icon, Notebook01Icon, TestTube01Icon } from '@hugeicons/core-free-icons';
 import { PromptBar, type PromptSendMeta } from '@/components/ui/PromptBar';
-import { PhotoOcrDialog, type OcrResult } from './PhotoOcrDialog';
+import { ocrPhoto, prepPhoto } from '@/lib/photoOcr';
 import { answerCards, askLabAI, buildLabPrompt, withOcrText, CATAT_HINT, LAB_COMMANDS, LAB_EFFORTS, LAB_TOPICS, labGreeting, MAX_PROMPT } from '@/lib/labAi';
 
 interface Msg {
@@ -14,6 +14,15 @@ interface Msg {
   error?: boolean;
   /** paragraf per kartu jawaban (2, atau 4 untuk mode Mendalam) */
   perCard?: number;
+  /** foto yang dikirim pengguna (pesan gambar) */
+  images?: string[];
+}
+
+interface Photo {
+  dataUrl: string;
+  /** OCR langsung berjalan begitu foto dipilih; teks dipakai saat pesan dikirim */
+  text: Promise<string>;
+  pct: number;
 }
 
 /**
@@ -40,44 +49,92 @@ export function AskLabAI({ tab, username }: { tab: string; username?: string }) 
   }, [msgs, busy]);
 
   const controller = useRef<AbortController | null>(null);
-  // foto → potong → scan teks (OCR) → chip di kolom tanya; teksnya ikut dikirim ke AI (DEC-095)
-  const ocrTexts = useRef(new Map<string, string>());
-  const [ocrOpen, setOcrOpen] = useState(false);
-  const ocrResolve = useRef<((label?: string) => void) | null>(null);
-  const pickPhoto = () =>
+  // pesan gambar (DEC-097): foto dari galeri/kamera → chip berpratinjau di kolom tanya; OCR langsung jalan di latar.
+  // Saat dikirim: gelembung foto (+ pertanyaan bila ada) → "AI sedang berpikir… membaca teks foto" → teks ikut prompt.
+  const photos = useRef(new Map<string, Photo>());
+  const photoN = useRef(0);
+  const gallery = useRef<HTMLInputElement>(null);
+  const camera = useRef<HTMLInputElement>(null);
+  const pickResolve = useRef<((label?: string) => void) | null>(null);
+  const [status, setStatus] = useState('');
+  const [attachErr, setAttachErr] = useState('');
+  const pickPhoto = (key: string) =>
     new Promise<string | undefined>((resolve) => {
-      ocrResolve.current = resolve;
-      setOcrOpen(true);
+      pickResolve.current?.(undefined);
+      pickResolve.current = resolve;
+      (key === 'kamera' ? camera : gallery).current?.click();
     });
-  const finishOcr = (r?: OcrResult) => {
-    setOcrOpen(false);
-    let label: string | undefined;
-    if (r) {
-      label = r.label;
-      for (let n = 2; ocrTexts.current.has(label); n++) label = `${r.label} #${n}`;
-      ocrTexts.current.set(label, r.text);
-    }
-    ocrResolve.current?.(label);
-    ocrResolve.current = null;
-  };
-  const send = async (raw: string, meta: PromptSendMeta) => {
-    const ocr = meta.attachments.map((l) => ocrTexts.current.get(l)).filter((t): t is string => !!t);
-    const typed = raw.trim();
-    const text = (typed || (ocr.length ? 'Jelaskan isi teks dari foto berikut.' : '')).slice(0, MAX_PROMPT);
-    if (!text || busy) return;
-    setMsgs((m) => [...m, { role: 'user', text: meta.attachments.length ? `${text}\n📷 ${meta.attachments.join(', ')}` : text }]);
-    setBusy(true);
-    controller.current = new AbortController();
+  const onPicked = async (f?: File | null) => {
+    const done = pickResolve.current;
+    pickResolve.current = null;
+    if (!f) return done?.(undefined);
     try {
+      const dataUrl = await prepPhoto(f);
+      const label = `Foto ${++photoN.current}`;
+      const ph: Photo = { dataUrl, pct: 0, text: Promise.resolve('') };
+      ph.text = ocrPhoto(dataUrl, (pct) => {
+        ph.pct = pct;
+      });
+      ph.text.catch(() => undefined);
+      photos.current.set(label, ph);
+      setAttachErr('');
+      done?.(label);
+    } catch (e) {
+      setAttachErr(e instanceof Error ? e.message : 'Foto tidak bisa dibaca.');
+      done?.(undefined);
+    }
+  };
+
+  // pemilih file ditutup tanpa memilih → lepaskan janji lampiran (event "cancel", Chrome/Edge/Safari baru)
+  useEffect(() => {
+    const els = [gallery.current, camera.current];
+    const onCancel = () => void onPicked(null);
+    for (const el of els) el?.addEventListener('cancel', onCancel);
+    return () => {
+      for (const el of els) el?.removeEventListener('cancel', onCancel);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const send = async (raw: string, meta: PromptSendMeta) => {
+    const pics = meta.attachments.map((l) => photos.current.get(l)).filter((p): p is Photo => !!p);
+    const typed = raw.trim().slice(0, MAX_PROMPT);
+    if ((!typed && !pics.length) || busy) return;
+    setMsgs((m) => [...m, { role: 'user', text: typed, ...(pics.length && { images: pics.map((p) => p.dataUrl) }) }]);
+    setBusy(true);
+    const ctl = new AbortController();
+    controller.current = ctl;
+    try {
+      let ocr: string[] = [];
+      if (pics.length) {
+        // tunggu OCR sambil menampilkan kemajuan; tombol Stop menghentikan penantian
+        const tick = setInterval(() => {
+          const pct = Math.round(pics.reduce((n, p) => n + p.pct, 0) / pics.length);
+          setStatus(pct < 100 ? `membaca teks foto ${pct}%` : 'menyusun jawaban');
+        }, 300);
+        const stopped = new Promise<never>((_, rej) => ctl.signal.addEventListener('abort', () => rej(new Error('Dihentikan.'))));
+        try {
+          const res = await Promise.race([Promise.allSettled(pics.map((p) => p.text)), stopped]);
+          ocr = res.flatMap((r) => (r.status === 'fulfilled' && r.value ? [r.value] : []));
+          const failed = res.find((r): r is PromiseRejectedResult => r.status === 'rejected');
+          if (!ocr.length && !typed) throw failed?.reason instanceof Error ? failed.reason : new Error('Tidak ada teks yang terbaca di foto. Coba foto yang lebih dekat dan terang, atau tulis pertanyaannya.');
+        } finally {
+          clearInterval(tick);
+        }
+      }
+      setStatus('');
+      const question = typed || 'Jelaskan isi teks dari foto berikut.';
       // @topik, /perintah, dan tingkat jawaban diubah menjadi petunjuk untuk AI (DEC-094)
-      const a = await askLabAI(withOcrText(buildLabPrompt(text, meta.effort), ocr), 45_000, controller.current.signal);
+      const a = await askLabAI(withOcrText(buildLabPrompt(question, meta.effort), ocr), 45_000, ctl.signal);
       // mode Mendalam: maks. 4 paragraf per kartu (lainnya 2)
       setMsgs((m) => [...m, { role: 'ai', text: a, perCard: meta.effort === 'Mendalam' ? 4 : 2 }]);
     } catch (e) {
       setMsgs((m) => [...m, { role: 'ai', text: e instanceof Error ? e.message : String(e), error: true }]);
     } finally {
       setBusy(false);
+      setStatus('');
       controller.current = null;
+      for (const l of meta.attachments) photos.current.delete(l);
     }
   };
   // dikte suara (Web Speech API, bahasa Indonesia) bila browser mendukung
@@ -124,6 +181,14 @@ export function AskLabAI({ tab, username }: { tab: string; username?: string }) 
                 }`}
                 data-testid={m.role === 'user' ? 'lab-ai-user' : m.auto ? 'lab-ai-auto' : 'lab-ai-error'}
               >
+                {m.images?.length ? (
+                  <span className="mb-1 flex flex-wrap justify-end gap-1.5">
+                    {m.images.map((src, k) => (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img key={k} src={src} alt={`Foto ${k + 1}`} className="max-h-40 max-w-[200px] rounded-xl object-cover" data-testid="lab-ai-user-photo" />
+                    ))}
+                  </span>
+                ) : null}
                 {m.text}
               </p>
             )}
@@ -131,7 +196,7 @@ export function AskLabAI({ tab, username }: { tab: string; username?: string }) 
         ))}
         {busy && (
           <p className="self-start rounded-2xl rounded-bl-md bg-white/80 px-3.5 py-2 text-sm text-muted" role="status" data-testid="lab-ai-busy">
-            <span className="prog-pulse">AI sedang berpikir…</span>
+            <span className="prog-pulse">AI sedang berpikir…{status && ` (${status})`}</span>
           </p>
         )}
       </div>
@@ -140,10 +205,13 @@ export function AskLabAI({ tab, username }: { tab: string; username?: string }) 
         testId="lab-ai-bar"
         placeholder="Tanya soal briket, kopra, cuka, bio leather… (ketik @ untuk topik, / untuk perintah)"
         sources={[
-          { key: 'foto', name: 'Foto / kamera', description: 'Scan teks dari foto (OCR)', icon: ImageUploadIcon, attach: true },
+          { key: 'foto', name: 'Foto dari galeri', description: 'Kirim foto — teksnya dibaca otomatis', icon: ImageUploadIcon, attach: true },
+          { key: 'kamera', name: 'Ambil foto', description: 'Pakai kamera — teksnya dibaca otomatis', icon: Camera01Icon, attach: true },
           ...LAB_TOPICS.map((t, i) => ({ key: t.key, name: t.name, description: t.description, icon: [Fire02Icon, Leaf01Icon, DropletIcon, TestTube01Icon, Notebook01Icon][i]! })),
         ]}
         onAttach={pickPhoto}
+        attachmentThumb={(l) => photos.current.get(l)?.dataUrl}
+        onRemoveAttachment={(l) => photos.current.delete(l)}
         commands={LAB_COMMANDS.map((c) => ({ key: c.key, name: c.name, description: c.description }))}
         efforts={LAB_EFFORTS}
         defaultEffort="Sedang"
@@ -164,7 +232,9 @@ export function AskLabAI({ tab, username }: { tab: string; username?: string }) 
         tilt={8}
         pressScale={0.96}
       />
-      {ocrOpen && <PhotoOcrDialog onDone={(r) => finishOcr(r)} onCancel={() => finishOcr()} />}
+      {attachErr && <p className="text-sm" role="alert"><span className="bg-safety px-1">{attachErr}</span></p>}
+      <input ref={gallery} type="file" accept="image/*" className="sr-only" tabIndex={-1} aria-hidden onChange={(e) => { void onPicked(e.target.files?.[0]); e.target.value = ''; }} data-testid="lab-ai-photo-file" />
+      <input ref={camera} type="file" accept="image/*" capture="environment" className="sr-only" tabIndex={-1} aria-hidden onChange={(e) => { void onPicked(e.target.files?.[0]); e.target.value = ''; }} />
     </section>
   );
 }

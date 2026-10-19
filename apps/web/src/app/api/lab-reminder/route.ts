@@ -5,9 +5,9 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 /**
- * Pengingat email tiap jam (DEC-093) — dipanggil penjadwal pg_cron Supabase setiap jam.
- * Aman dipanggil berulang: server sendiri menolak bila sudah dijalankan < 55 menit lalu,
- * jadi tiap pengguna paling banyak menerima 1 email per jam.
+ * Pengingat email tiap 2 hari (DEC-097; dulu tiap jam, DEC-093) — pg_cron Supabase memanggil setiap jam untuk memeriksa.
+ * Aman dipanggil berulang: email hanya dikirim bila email terakhir sudah ≥ 2 hari lalu (dan pemeriksaan maks. sekali per jam),
+ * jadi tiap pengguna paling banyak menerima 1 email per 2 hari.
  */
 async function handle(req: Request) {
   try {
