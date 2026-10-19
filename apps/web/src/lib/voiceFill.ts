@@ -15,7 +15,13 @@ export interface VoiceField {
   say: string[];
 }
 
-export type VoiceCmd = { kind: 'row'; no: number } | { kind: 'fill'; field?: string; value: string } | { kind: 'next' } | { kind: 'unknown'; text: string };
+export type VoiceCmd =
+  | { kind: 'row'; no: number }
+  | { kind: 'fill'; field?: string; value: string }
+  /** Bilangan tanpa nama kolom: 1 kata & nomornya ada → pilih nomor; selain itu → isi kolom aktif (DEC-103). */
+  | { kind: 'num'; value: string; words: number }
+  | { kind: 'next' }
+  | { kind: 'unknown'; text: string };
 
 const DIGIT: Record<string, number> = { kosong: 0, nol: 0, satu: 1, se: 1, dua: 2, tiga: 3, empat: 4, lima: 5, enam: 6, tujuh: 7, delapan: 8, sembilan: 9 };
 const NEXT = new Set(['next', 'neks', 'nex', 'nek', 'nexs', 'nekst', 'lanjut', 'berikutnya']);
@@ -29,6 +35,8 @@ export function normalize(text: string): string[] {
     .replace(/[^\p{L}\p{N}\s]/gu, ' ')
     .split(/\s+/)
     .filter(Boolean)
+    // satuan yang sama dengan satuan kolom diabaikan ("berat air 500 gram", "tebal 9 mm", DEC-103)
+    .filter((t) => !UNIT_WORDS.has(t))
     .map(fuzzyWord)
     .join(' ')
     .replace(/\bse(ribu|ratus|puluh|belas)\b/g, 'se $1')
@@ -36,6 +44,9 @@ export function normalize(text: string): string[] {
     .split(' ')
     .filter(Boolean);
 }
+
+/** Satuan kolom (g, mL, mm) yang boleh ikut terucap; satuan lain (kg, liter, cm) TIDAK diubah otomatis. */
+const UNIT_WORDS = new Set(['gram', 'gr', 'g', 'grm', 'mililiter', 'ml', 'mili', 'milimeter', 'mm']);
 
 /** Kosakata perintah: hasil transkripsi yang sedikit meleset ("ampat", "beratawal", "doa") dicocokkan ke kata terdekat. */
 const VOCAB = [
@@ -183,9 +194,9 @@ function parseSegment(tokens: string[], fields: readonly VoiceField[]): VoiceCmd
     const v = parseNumber(t.slice(1));
     if (v !== undefined) return { kind: 'fill', value: v };
   }
-  // hanya bilangan (tanpa nama kolom) = pilih nomor urut
+  // hanya bilangan (tanpa nama kolom): diputuskan saat diterapkan (jumlah nomor diketahui) — lihat applyVoice
   const n = parseNumber(t);
-  if (n && !n.includes(',') && Number(n) > 0) return { kind: 'row', no: Number(n) };
+  if (n !== undefined) return { kind: 'num', value: n, words: t.filter((x) => x !== 'se').length };
   return { kind: 'unknown', text: tokens.join(' ') };
 }
 
@@ -196,6 +207,12 @@ export interface VoiceCursor {
 
 /** Terapkan satu perintah ke posisi aktif; kembalikan posisi baru + isian (bila ada). */
 export function applyVoice(cmd: VoiceCmd, cur: VoiceCursor, fields: readonly VoiceField[], rowCount: number): { cur: VoiceCursor; fill?: { row: number; field: string; value: string }; error?: string } {
+  if (cmd.kind === 'num') {
+    // "satu" / "tiga" (satu kata, nomornya ada) = pilih nomor; "satu kosong tiga" / "seratus" > jumlah nomor / desimal = isi kolom aktif
+    const no = Number(cmd.value);
+    if (cmd.words === 1 && !cmd.value.includes(',') && Number.isInteger(no) && no >= 1 && no <= rowCount) return { cur: { row: no, field: fields[0]!.key } };
+    return { cur, fill: { row: cur.row, field: cur.field, value: cmd.value } };
+  }
   if (cmd.kind === 'row') {
     if (cmd.no > rowCount) return { cur, error: `Nomor ${cmd.no} tidak ada (hanya ${rowCount}).` };
     return { cur: { row: cmd.no, field: fields[0]!.key } };

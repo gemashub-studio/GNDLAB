@@ -66,7 +66,7 @@ export function VoiceFill({ fields, rowCount, inputId, onFill, testId }: { field
         if (r.fill) {
           fill(r.fill.row, r.fill.field, r.fill.value);
           msgs.push(`#${r.fill.row} ${f.find((x) => x.key === r.fill!.field)?.label ?? r.fill.field} = ${r.fill.value}`);
-        } else if (cmd.kind === 'row' && !r.error) msgs.push(`Nomor ${cmd.no}`);
+        } else if ((cmd.kind === 'row' || cmd.kind === 'num') && !r.error) msgs.push(`Nomor ${r.cur.row}`);
         else if (cmd.kind === 'next' && !r.error) msgs.push(`→ ${f.find((x) => x.key === r.cur.field)?.label} #${r.cur.row}`);
         if (r.error) msgs.push(r.error);
       }
@@ -208,7 +208,7 @@ export function VoiceFill({ fields, rowCount, inputId, onFill, testId }: { field
           <span className="font-semibold">{note}</span>
         </p>
       )}
-      {!heard && !on && <p className="text-xs text-muted">Contoh: “satu” → semua kolom nomor 1 berkedip · “berat awal satu kosong tiga empat” → 1034 · “next” / “neks” → kolom berikutnya · “isi enam koma lima” → kolom aktif 6,5.</p>}
+      {!heard && !on && <p className="text-xs text-muted">Contoh: “satu” → pilih nomor 1 (kolomnya berkedip) · “berat awal satu kosong tiga empat” atau “… 1034 gram” → 1034 · angka saja (“satu kosong tiga”) → mengisi kolom yang aktif · “next” / “neks” → kolom berikutnya · nomor besar: “nomor dua belas”.</p>}
       {err && <p className="text-xs" role="alert"><span className="bg-safety px-1">{err}</span></p>}
     </div>
   );

@@ -800,6 +800,14 @@ test.describe('Pengisian suara pencatatan (DEC-099)', () => {
     await say('tebal daging sepuluh koma lima');
     await expect(m.getByTestId('catat-awal-tebalAwal-1')).toHaveValue('10,5');
     await expect(v.getByTestId('catat-awal-voice-note')).toContainText('Tebal daging = 10,5');
+    // angka saja (beberapa kata) mengisi kolom aktif; satuan diabaikan (DEC-103)
+    await say('satu');
+    await say('next');
+    await expect(m.getByTestId('catat-awal-volAir-1')).toHaveClass(/voice-field-active/);
+    await say('satu kosong tiga');
+    await expect(m.getByTestId('catat-awal-volAir-1')).toHaveValue('103');
+    await say('Berat air 500 gram.');
+    await expect(m.getByTestId('catat-awal-beratAir-1')).toHaveValue('500');
   });
 });
 
