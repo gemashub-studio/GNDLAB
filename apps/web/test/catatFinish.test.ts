@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { canCloseCatat, canStartCatat, openCatat, type CatatRecord } from '@/lib/pencatatan';
+import { canCloseCatat, type CatatRecord } from '@/lib/pencatatan';
 import { buildCatatXlsx, catatSheets } from '@/lib/catatXlsx';
 import { joinCatat, splitCatat } from '@/lib/labDocs';
 import { finishWordOk } from '@/components/lab/FinishDialogs';
@@ -18,14 +18,7 @@ const rec = (o: Partial<CatatRecord> = {}): CatatRecord => ({
   ...o,
 });
 
-describe('Selesaikan & batas 1 pencatatan aktif (DEC-098)', () => {
-  it('catatan baru hanya bila semua catatan sudah diselesaikan', () => {
-    expect(canStartCatat([])).toBe(true);
-    expect(canStartCatat([rec()])).toBe(false);
-    expect(canStartCatat([rec({ finishedAt: undefined })])).toBe(false);
-    expect(canStartCatat([rec({ closedAt: '2026-10-19T11:00:00.000Z' })])).toBe(true);
-    expect(openCatat([rec({ id: 'a', closedAt: 'x' }), rec({ id: 'b' })]).map((r) => r.id)).toEqual(['b']);
-  });
+describe('Selesaikan pencatatan (DEC-098; tanpa batas jumlah catatan, DEC-101)', () => {
   it('bisa diselesaikan hanya bila data awal & akhir lengkap', () => {
     expect(canCloseCatat(rec())).toBe(true);
     expect(canCloseCatat(rec({ finishedAt: undefined }))).toBe(false);

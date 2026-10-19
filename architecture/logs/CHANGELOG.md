@@ -3,6 +3,16 @@
 Format: [Keep a Changelog](https://keepachangelog.com/id/1.1.0/) · Versi dataset mengikuti SemVer (ADR-002).
 Waktu dalam WIB (UTC+7).
 
+## [Perlakuan di data awal, resep dari pencatatan, Groq Whisper] — 2026-10-19
+### Ditambahkan
+- Form data awal: Perlakuan (Green House / Oven Gas / Oven Briket) + jumlah produksi.
+- Resep baru: Pilih Data yang tersedia, dropdown Jalur produk (perlakuan + keterangan), foto pencatatan di Komposisi bahan.
+- PPTX: slide per perlakuan (foto item sebanyak jumlah produksi; awal atas, akhir bawah).
+### Diubah
+- Pengisian suara memakai Groq Whisper (whisper-large-v3); petasan sukses berjalan sampai OK diklik; tanpa batas jumlah catatan.
+### Dihapus
+- Halaman Media dan Data Progres Perlakuan, tombol Lihat Progres & Upload Progres, kamera melayang, Gabungkan data, progres di PPTX.
+
 ## [Pengisian suara pencatatan] — 2026-10-19
 ### Ditambahkan
 - Tombol "Isi dengan suara" di form data awal & akhir (AssemblyAI Universal-2, bahasa Indonesia): sebut nomor → kolom berkedip neon, sebut kolom + angka → terisi, "next" → kolom berikutnya.

@@ -65,3 +65,18 @@ describe('kolom tanya PromptBar (DEC-094)', () => {
     expect(buildLabPrompt('kirim ke a@kopra.id dan path a/langkah')).toBe('kirim ke a@kopra.id dan path a/langkah');
   });
 });
+
+describe('Lab AI mode Mendalam (DEC-096)', () => {
+  it('prompt meminta pertanyaan penutup ramah + emoji acak', async () => {
+    const { buildLabPrompt, FRIENDLY_EMOJI } = await import('@/lib/labAi');
+    const p = buildLabPrompt('kadar air kopra?', 'Mendalam', () => 0);
+    expect(p).toContain('Selalu akhiri jawaban dengan satu pertanyaan lanjutan yang ramah');
+    expect(p).toContain(FRIENDLY_EMOJI[0]!);
+    expect(buildLabPrompt('kadar air kopra?', 'Sedang')).not.toContain('pertanyaan lanjutan');
+  });
+  it('maks. 4 paragraf per kartu', async () => {
+    const { answerCards } = await import('@/lib/labAi');
+    const text = Array.from({ length: 6 }, (_, i) => `Paragraf ${i + 1}.`).join('\n\n');
+    expect(answerCards(text, 4).map((c) => c.length)).toEqual([4, 2]);
+  });
+});

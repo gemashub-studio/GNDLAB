@@ -29,7 +29,7 @@ export function FinishConfirm({ id, onOk, onBack }: { id: string; onOk: () => vo
         }}
       >
         <h2 id="finish-t" className="font-display text-lg font-semibold">Selesaikan pencatatan {id}?</h2>
-        <p className="text-sm text-muted">Setelah diselesaikan, kartu berubah hijau dan catatan baru bisa dibuat. Ketik <b className="text-ink">{FINISH_WORD}</b> untuk melanjutkan.</p>
+        <p className="text-sm text-muted">Setelah diselesaikan, kartu berubah hijau. Ketik <b className="text-ink">{FINISH_WORD}</b> untuk melanjutkan.</p>
         <input ref={input} className="field min-h-[44px] bg-white" value={v} onChange={(e) => setV(e.target.value)} placeholder={FINISH_WORD} autoComplete="off" aria-label={`Ketik ${FINISH_WORD}`} data-testid="finish-input" />
         <div className="flex justify-end gap-2">
           <button type="button" className="btn-ghost" onClick={onBack} data-testid="finish-back">Kembali</button>
@@ -43,7 +43,7 @@ export function FinishConfirm({ id, onOk, onBack }: { id: string; onOk: () => vo
 
 const COLORS = ['#63E6CF', '#1FA88F', '#F5A524', '#FF5D73', '#FFD84D', '#7C9CFF', '#FFFFFF'];
 
-/** Alert sukses dengan animasi petasan meledak (kanvas, ±3,5 detik; dimatikan bila pengguna memilih kurangi gerak). */
+/** Alert sukses dengan animasi petasan meledak terus-menerus sampai tombol OK diklik (DEC-101; dimatikan bila pengguna memilih kurangi gerak). */
 export function FireworksAlert({ message, onClose }: { message: string; onClose: () => void }) {
   const canvas = useRef<HTMLCanvasElement>(null);
   const btn = useRef<HTMLButtonElement>(null);
@@ -88,7 +88,8 @@ export function FireworksAlert({ message, onClose }: { message: string; onClose:
     let raf = 0;
     const tick = () => {
       frame++;
-      if (frame < 160 && frame % 18 === 0) launch();
+      // roket terus diluncurkan selama alert terbuka; jumlah partikel dibatasi agar tetap ringan
+      if (frame % 18 === 0 && parts.length < 1400) launch();
       g.globalCompositeOperation = 'destination-out';
       g.fillStyle = 'rgba(0,0,0,0.22)';
       g.fillRect(0, 0, c.width, c.height);
@@ -122,8 +123,7 @@ export function FireworksAlert({ message, onClose }: { message: string; onClose:
         g.fill();
       }
       g.globalAlpha = 1;
-      if (frame < 240 || parts.length || rockets.length) raf = requestAnimationFrame(tick);
-      else g.clearRect(0, 0, c.width, c.height);
+      raf = requestAnimationFrame(tick);
     };
     raf = requestAnimationFrame(tick);
     return () => {

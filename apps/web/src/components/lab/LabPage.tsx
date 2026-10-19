@@ -9,7 +9,6 @@ import { LightTunnel } from '@/components/ui/LightTunnel';
 import { listEntries, listExperiments, listMedia, listProtocols, type DailyEntry, type Experiment, type LabProductId, type MediaItem, type ProtocolVersion, listDrafts, researchStatus } from '@/lib/labStore';
 import { BackupPanel } from './BackupPanel';
 import { SupabasePanel } from './SupabasePanel';
-import { ProgressCamera } from './ProgressCamera';
 import { AskLabAI } from './AskLabAI';
 import { LoginForm } from '@/components/auth/LoginDialog';
 import { needsLogin, useAuth } from '@/lib/useAuth';
@@ -262,8 +261,6 @@ export function LabPage() {
       <p className="text-xs text-muted">
         Data eksperimen tersimpan di perangkat ini (offline). Rutin unduh cadangan. GnD Lab tidak menyatakan produk aman dikonsumsi atau memenuhi standar.
       </p>
-      {/* navbar bawah melayang: kamera foto progres harian (DEC-086) */}
-      {!locked && auth.ready && <ProgressCamera records={catat} onUploaded={() => void refresh()} />}
     </div>
   );
 }

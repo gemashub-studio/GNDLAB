@@ -4,6 +4,7 @@
  * Hanya dari data tercatat; kosong = "belum dicatat".
  */
 import { fmtNum, researchCharts, type ChartSpec } from './reportCharts';
+import { perlakuanRanges, photoPairsOf, type CatatRecord } from './pencatatan';
 import { coconutSummary, dayNumber, protocolProductName, variantLabel, type CoconutRow, type RawMaterial, NOT_RECORDED, researchDates, researchStatus, toolList, type DailyEntry, type MediaItem, type ProtocolVersion } from './labStore';
 
 export interface ReportImage {
@@ -147,6 +148,34 @@ function coconutBlocks(rows: CoconutRow[], pics: (ids?: string[]) => ReportImage
   ];
 }
 
+/**
+ * Data pencatatan yang dipilih di resep (DEC-101): PowerPoint — satu bagian per perlakuan berjudul perlakuan/jalur produk,
+ * berisi foto item sebanyak jumlah produksinya (awal atas, akhir bawah, maks. 10 per slide). Jalur produk = salah satu
+ * perlakuan pencatatan → hanya perlakuan itu; selain itu → semua perlakuan. PDF/Word: ringkasan teks.
+ */
+export function catatBlocks(v: Pick<ProtocolVersion, 'catatId' | 'product' | 'productName'>, catat: readonly CatatRecord[]): ReportBlock[] {
+  const rec = v.catatId ? catat.find((r) => r.id === v.catatId) : undefined;
+  if (!rec) return v.catatId ? [{ heading: 'Data pencatatan', level: 1, lines: [`${v.catatId} (tidak ditemukan di perangkat ini)`], images: [] }] : [];
+  const jalur = protocolProductName(v);
+  const ranges = perlakuanRanges(rec);
+  const match = ranges.find((r) => [r.label, r.method].some((x) => x.toLowerCase() === jalur.trim().toLowerCase()));
+  const chosen = match ? [match] : ranges;
+  const summary: ReportBlock = {
+    heading: 'Data pencatatan',
+    level: 1,
+    lines: [
+      `Kode: ${rec.id} · ${rec.item} · ${rec.count} item · ${rec.finishedAt ? 'awal & akhir lengkap' : rec.akhirSavedAt ? 'data akhir tersimpan sementara' : 'menunggu data akhir'}`,
+      ...(ranges.length ? ranges.map((r) => `Perlakuan ${r.label}: ${r.count} item (no ${r.rows[0]?.no ?? '–'}–${r.rows[r.rows.length - 1]?.no ?? '–'})`) : ['Perlakuan: belum diisi di data awal']),
+    ],
+    images: [],
+    pptxSkip: true,
+  };
+  const grids: ReportBlock[] = chosen.length
+    ? chosen.map((r) => ({ heading: match ? `${jalur} · ${r.count} item` : `Perlakuan ${r.label} · ${r.count} item`, level: 1, lines: [], images: [], pptxOnly: true, photoPairs: photoPairsOf(rec, r.rows) }))
+    : [{ heading: `${jalur} · ${rec.id}`, level: 1, lines: [], images: [], pptxOnly: true, photoPairs: photoPairsOf(rec, rec.rows) }];
+  return [summary, ...grids];
+}
+
 export function buildResearchReport(
   key: string,
   versions: readonly ProtocolVersion[],
@@ -155,6 +184,8 @@ export function buildResearchReport(
   generatedAt = new Date().toLocaleString('id-ID'),
   /** Versi yang dilaporkan (default: terbaru). Riwayat versi = sampai versi ini. */
   versionId?: string,
+  /** Data pencatatan (untuk resep yang memilih "Pilih Data yang tersedia", DEC-101). */
+  catat: readonly CatatRecord[] = [],
 ): ResearchReport {
   const all = [...versions].filter((v) => v.key === key).sort((a, b) => a.version - b.version);
   const chosen = versionId ? all.find((v) => v.id === versionId) : all[all.length - 1];
@@ -209,6 +240,7 @@ export function buildResearchReport(
       images: latest.ingredients.flatMap((x, i) => pics(x.mediaIds).map((p) => ({ ...p, caption: `Bahan ${i + 1} · ${x.name}${p.caption ? ` — ${p.caption}` : ''}` }))),
     },
     ...(latest.raw ? [rawBlock(latest.raw, versions)] : []),
+    ...catatBlocks(latest, catat),
     ...(latest.coconuts?.length ? coconutBlocks(latest.coconuts, pics) : []),
     {
       heading: 'Alat yang digunakan',
@@ -302,13 +334,14 @@ export function buildDailyResearchReport(
   media: readonly MediaItem[],
   entryId: string,
   generatedAt = new Date().toLocaleString('id-ID'),
+  catat: readonly CatatRecord[] = [],
 ): ResearchReport {
   const entry = entries.find((e) => e.id === entryId && e.experimentId === key);
   if (!entry) throw new RangeError(`Laporan harian ${entryId} tidak ditemukan`);
   const all = [...versions].filter((v) => v.key === key).sort((a, b) => a.version - b.version);
   const ver = (entry.protocolId && all.find((v) => v.id === entry.protocolId)) || all[all.length - 1];
   if (!ver) throw new RangeError(`Riset ${key} tidak ditemukan`);
-  const full = buildResearchReport(key, versions, [entry], media, generatedAt, ver.id);
+  const full = buildResearchReport(key, versions, [entry], media, generatedAt, ver.id, catat);
   const start = ver.startDate ?? all[0]!.startDate;
   const n = dayNumber(start, entry.entryDate);
   const dayLabel = n ? `Hari ke-${n}` : entry.entryDate;

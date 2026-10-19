@@ -9,7 +9,7 @@ import { deviceTag } from './device';
 import { addTomb } from './labSync';
 import { isCoconutItem, NOT_RECORDED, parseMeasure } from './labStore';
 import { fmtNum, type ChartSpec } from './reportCharts';
-import type { ReportBlock, ResearchReport } from './researchReport';
+import type { PhotoPair, ReportBlock, ResearchReport } from './researchReport';
 
 export const MAX_ROWS = 500;
 
@@ -83,6 +83,36 @@ export const treatmentEntries = (t: Treatments | undefined, key: TreatmentKey): 
   return v ? (Array.isArray(v) ? v : [v]) : [];
 };
 
+/** Nama tampil metode (GreenHouse → Green House). */
+export const methodLabel = (m: string) => (m === 'GreenHouse' ? 'Green House' : m);
+/** Metode perlakuan kopra yang dipilih di form data awal (DEC-101). */
+export const KOPRA_METHODS = TREATMENT_GROUPS[0].methods as readonly string[];
+
+export interface PerlakuanRange {
+  method: string;
+  label: string;
+  /** Jumlah produksi (isian). */
+  count: number;
+  /** Nomor item yang masuk perlakuan ini (berurutan sesuai isian, DEC-101). */
+  rows: CatatRow[];
+}
+
+/**
+ * Bagi item ke perlakuan kopra secara berurutan sesuai isian form data awal (owner, DEC-101):
+ * mis. 30 item, Green House 15, Oven Gas 10, Oven Briket 5 → no 1–15, 16–25, 26–30.
+ */
+export function perlakuanRanges(rec: Pick<CatatRecord, 'rows' | 'treatments'>): PerlakuanRange[] {
+  const out: PerlakuanRange[] = [];
+  let i = 0;
+  for (const e of treatmentEntries(rec.treatments, 'kopra')) {
+    const n = Math.max(0, parseInt(e.count, 10) || 0);
+    if (!e.method || !n) continue;
+    out.push({ method: e.method, label: methodLabel(e.method), count: n, rows: rec.rows.slice(i, i + n) });
+    i += n;
+  }
+  return out;
+}
+
 /** Baris tabel perlakuan yang terisi (jumlah atau metode), satu baris per kolom. */
 /** Kolom perlakuan dianggap terisi bila ada jumlah, metode, keterangan, atau foto. */
 const trFilled = (e: TreatmentEntry) => !!(e.count.trim() || e.method || e.note?.trim() || e.photo);
@@ -127,7 +157,7 @@ export interface CatatRecord {
   progress?: CatatProgress[];
   /** Jumlah perlakuan & metode per jalur (DEC-079). */
   treatments?: Treatments;
-  /** Diselesaikan pengguna (tombol "Selesaikan", DEC-098) — kartu hijau; baru setelah ini catatan baru boleh dibuat. */
+  /** Diselesaikan pengguna (tombol "Selesaikan", DEC-098) — kartu hijau. Tanpa batas jumlah catatan (DEC-101). */
   closedAt?: string;
 }
 
@@ -352,10 +382,6 @@ export function nextCatatId(existing: readonly string[], now = new Date(), tag =
   return `${p}${String(Math.max(0, ...n) + 1).padStart(2, '0')}${tag}`;
 }
 
-/** Maks. 1 pencatatan aktif (DEC-098): catatan baru hanya boleh dibuat bila semua catatan sudah diselesaikan. */
-export const MAX_OPEN_CATAT = 1;
-export const openCatat = (records: readonly CatatRecord[]) => records.filter((r) => !r.closedAt);
-export const canStartCatat = (records: readonly CatatRecord[]) => openCatat(records).length < MAX_OPEN_CATAT;
 /** Bisa diselesaikan: data awal & akhir lengkap (semua nomor terisi). */
 export const canCloseCatat = (rec: CatatRecord) => !rec.closedAt && !!rec.finishedAt && !missingAkhir(rec.item, rec.rows).length;
 
@@ -373,8 +399,6 @@ export async function closeCatat(id: string): Promise<CatatRecord> {
 
 export async function addCatatAwal(item: string, rows: CatatRow[], treatments?: Treatments): Promise<CatatRecord> {
   const d = await catatDb();
-  const open = openCatat(await d.getAll('records'));
-  if (open.length >= MAX_OPEN_CATAT) throw new Error(`Selesaikan dulu pencatatan ${open.map((r) => r.id).join(', ')} sebelum membuat catatan baru.`);
   const now = new Date().toISOString();
   const rec: CatatRecord = { id: nextCatatId((await d.getAllKeys('records')).map(String)), item, count: rows.length, rows, createdAt: now, updatedAt: now, ...(treatments && treatmentRows(treatments).length && { treatments }) };
   await d.add('records', rec);
@@ -458,6 +482,21 @@ export async function deleteCatat(ids: readonly string[]): Promise<number> {
 // ------------------------------------------------------------------ laporan (PDF/Word/PowerPoint)
 
 /** Foto per nomor untuk galeri laporan. */
+/** Pasangan foto awal (atas) & akhir (bawah) + data singkat per nomor — untuk grid PowerPoint (DEC-077/101). */
+export function photoPairsOf(rec: Pick<CatatRecord, 'item' | 'finishedAt' | 'akhirSavedAt'>, rows: readonly CatatRow[]): PhotoPair[] {
+  const coco = hasThickness(rec.item);
+  const akhirOn = !!(rec.finishedAt || rec.akhirSavedAt);
+  const u = (s: string | undefined, unit: string) => (s && s.trim() ? `${s.trim()} ${unit}` : '–');
+  return rows.map((r) => ({
+    no: r.no,
+    awal: {
+      ...(r.fotoAwal && { image: r.fotoAwal }),
+      lines: coco ? [`Berat ${u(r.beratAwal, 'g')}`, `Vol. air ${u(r.volAir, 'mL')}`, `Berat air ${u(r.beratAir, 'g')}`, `Tebal ${u(r.tebalAwal, 'mm')}`] : [`Berat ${u(r.beratAwal, 'g')}`],
+    },
+    ...(akhirOn && { akhir: { ...(r.fotoAkhir && { image: r.fotoAkhir }), lines: coco ? [`Berat ${u(r.beratAkhir, 'g')}`, `Tebal ${u(r.tebalAkhir, 'mm')}`] : [`Berat ${u(r.beratAkhir, 'g')}`] } }),
+  }));
+}
+
 const photos = (rec: CatatRecord, k: 'awal' | 'akhir') =>
   rec.rows
     .filter((r) => (k === 'awal' ? r.fotoAwal : r.fotoAkhir))
@@ -548,45 +587,20 @@ export function buildCatatReport(rec: CatatRecord, generatedAt = new Date().toLo
       });
     }
   }
-  // PowerPoint: grid foto + data per nomor (awal atas, akhir bawah; akhir tanpa volume/berat air)
-  if (rec.rows.some((r) => r.fotoAwal || r.fotoAkhir)) {
-    const u = (s: string | undefined, unit: string) => (s && s.trim() ? `${s.trim()} ${unit}` : '–');
-    blocks.splice(akhirOn ? 2 : 1, 0, {
-      heading: akhirOn ? 'Foto data awal & akhir' : 'Foto data awal',
-      level: 1,
-      lines: [],
-      images: [],
-      pptxOnly: true,
-      photoPairs: rec.rows.map((r) => ({
-        no: r.no,
-        awal: {
-          ...(r.fotoAwal && { image: r.fotoAwal }),
-          lines: coco ? [`Berat ${u(r.beratAwal, 'g')}`, `Vol. air ${u(r.volAir, 'mL')}`, `Berat air ${u(r.beratAir, 'g')}`, `Tebal ${u(r.tebalAwal, 'mm')}`] : [`Berat ${u(r.beratAwal, 'g')}`],
-        },
-        ...(akhirOn && { akhir: { ...(r.fotoAkhir && { image: r.fotoAkhir }), lines: coco ? [`Berat ${u(r.beratAkhir, 'g')}`, `Tebal ${u(r.tebalAkhir, 'mm')}`] : [`Berat ${u(r.beratAkhir, 'g')}`] } }),
-      })),
-    });
+  // PowerPoint: grid foto + data per nomor (awal atas, akhir bawah; maks. 10 nomor/slide).
+  // Ada perlakuan di data awal (DEC-101) → satu bagian per perlakuan berisi item sebanyak jumlah produksinya.
+  const ranges = perlakuanRanges(rec);
+  const gridBlocks: ReportBlock[] = [];
+  if (ranges.length) {
+    for (const r of ranges)
+      gridBlocks.push({ heading: `Perlakuan ${r.label} · ${r.count} item`, level: 1, lines: [], images: [], pptxOnly: true, photoPairs: photoPairsOf(rec, r.rows) });
+    const used = ranges.reduce((n, r) => n + r.rows.length, 0);
+    const rest = rec.rows.slice(used);
+    if (rest.some((r) => r.fotoAwal || r.fotoAkhir)) gridBlocks.push({ heading: 'Tanpa perlakuan', level: 1, lines: [], images: [], pptxOnly: true, photoPairs: photoPairsOf(rec, rest) });
+  } else if (rec.rows.some((r) => r.fotoAwal || r.fotoAkhir)) {
+    gridBlocks.push({ heading: akhirOn ? 'Foto data awal & akhir' : 'Foto data awal', level: 1, lines: [], images: [], pptxOnly: true, photoPairs: photoPairsOf(rec, rec.rows) });
   }
-  // progres harian (DEC-086): PDF/Word = tabel + foto; PPTX = 3 kolom tahap (harian | mingguan | bulanan), maks. 10 foto/slide
-  const prog = sortProgress(rec.progress);
-  if (prog.length) {
-    blocks.push({
-      heading: 'Progres harian',
-      level: 1,
-      lines: [`${prog.length} foto progres · ${prog[0]!.date} s.d. ${prog[prog.length - 1]!.date}`],
-      table: { head: ['Tanggal', 'Tahap', 'Judul', 'Suhu ruang (°C)', 'Catatan'], rows: prog.map((p) => [p.date, PROGRESS_STAGES.find((x) => x.key === p.stage)?.label ?? p.stage, p.title || '–', p.temp || '–', p.note || '–']) },
-      images: prog.map((p) => ({ dataUrl: p.photo, name: `${p.date} ${p.title}`.trim(), caption: progressLines(p).join(' · '), video: false })),
-      pptxSkip: true,
-    });
-    blocks.push({
-      heading: 'Progres harian · mingguan · bulanan',
-      level: 1,
-      lines: [],
-      images: [],
-      pptxOnly: true,
-      progressColumns: PROGRESS_STAGES.map((st) => ({ title: st.label, items: prog.filter((p) => p.stage === st.key).map((p) => ({ image: p.photo, lines: progressLines(p) })) })),
-    });
-  }
+  blocks.splice(akhirOn ? 2 : 1, 0, ...gridBlocks);
   // perlakuan: PDF/Word = bagian sendiri; PPTX = disatukan ke slide Kesimpulan (DEC-079)
   if (tRows.length)
     blocks.push({

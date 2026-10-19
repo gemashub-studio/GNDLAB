@@ -38,6 +38,16 @@ import {
 import { DailyLog } from './DailyLog';
 import { MediaPicker } from './MediaPicker';
 import { ProductMark, Section, TextInput } from './ui';
+import { Dropdown } from './Dropdown';
+import { ImagePreview } from './Overlays';
+import { KOPRA_METHODS, listCatat, methodLabel, TREATMENT_GROUPS, TREATMENT_INFO, type CatatRecord } from '@/lib/pencatatan';
+
+/** Pilihan jalur produk dari daftar perlakuan pencatatan (DEC-101) + keterangannya; tetap bisa diketik manual. */
+const JALUR_OPTIONS = TREATMENT_GROUPS.flatMap((g) =>
+  g.methods.map((m) => ({ value: methodLabel(m), label: methodLabel(m), group: g.title.replace('Jumlah perlakuan ', 'Perlakuan '), note: TREATMENT_INFO[g.key].methods[m] ?? '' })),
+);
+const isKopraJalur = (t: string) => KOPRA_METHODS.some((m) => methodLabel(m).toLowerCase() === t.trim().toLowerCase() || m.toLowerCase() === t.trim().toLowerCase());
+const catatStatus = (r: CatatRecord) => (r.closedAt ? 'selesai' : r.finishedAt ? 'lengkap' : 'disimpan (belum lengkap)');
 import { askConfirm as ask } from './Overlays';
 
 type ExportKind = 'pdf' | 'docx' | 'pptx' | 'html';
@@ -45,7 +55,8 @@ type ExportKind = 'pdf' | 'docx' | 'pptx' | 'html';
 /** Unduh laporan SATU hari riset (DEC-072) dalam PDF / Word / PowerPoint — isi & grafik sama seperti laporan gabungan. */
 async function downloadDaily(kind: ExportKind, key: string, entryId: string, protocols: ProtocolVersion[], entries: DailyEntry[], media: MediaItem[]) {
   const { buildDailyResearchReport } = await import('@/lib/researchReport');
-  const report = buildDailyResearchReport(key, protocols, entries, media, entryId);
+  const { listCatat } = await import('@/lib/pencatatan');
+  const report = buildDailyResearchReport(key, protocols, entries, media, entryId, undefined, await listCatat().catch(() => []));
   const name = `${entryId}-laporan-harian.${kind}`;
   if (kind === 'html') return downloadHtml(report, media, name);
   if (kind === 'pdf') {
@@ -85,7 +96,8 @@ async function downloadHtml(report: import('@/lib/researchReport').ResearchRepor
 /** Unduh laporan riset untuk versi tertentu (default terbaru) dalam PDF / Word / PowerPoint. */
 async function downloadResearch(kind: ExportKind, key: string, versionId: string | undefined, protocols: ProtocolVersion[], entries: DailyEntry[], media: MediaItem[]) {
   const { buildResearchReport } = await import('@/lib/researchReport');
-  const report = buildResearchReport(key, protocols, entries, media, undefined, versionId);
+  const { listCatat } = await import('@/lib/pencatatan');
+  const report = buildResearchReport(key, protocols, entries, media, undefined, versionId, await listCatat().catch(() => []));
   const v = versionId ? `-${versionId.slice(key.length + 1)}` : '';
   const name = `${key}${v}-riset-produk.${kind}`;
   if (kind === 'html') return downloadHtml(report, media, name);
@@ -597,6 +609,18 @@ function ProtocolForm({ protocols, entries, media, base, draft, onDraftSaved, in
   const [cocoFiles] = useState<Pending[][]>(() => (draft?.pending.coconuts ? fromDraft(draft.pending.coconuts) : (draft?.coconuts ?? base?.coconuts ?? []).map(() => [])));
   const [stepFiles, setStepFiles] = useState<Pending[][]>(() => (draft ? fromDraft(draft.pending.steps) : base ? base.steps.map(() => []) : [[]]));
   const [raw, setRaw] = useState<RawMaterial | undefined>(draft?.raw ?? (base?.raw ? { ...base.raw } : initialRaw));
+  // "Pilih Data yang tersedia" (DEC-101): pencatatan yang lengkap atau data akhirnya disimpan sementara
+  const [catatList, setCatatList] = useState<CatatRecord[]>([]);
+  const [catatId, setCatatId] = useState(draft?.catatId ?? base?.catatId ?? '');
+  const [zoom, setZoom] = useState<{ src: string; alt: string }>();
+  useEffect(() => {
+    void listCatat()
+      .then((l) => setCatatList(l.filter((r) => r.finishedAt || r.akhirSavedAt).sort((a, b) => b.createdAt.localeCompare(a.createdAt))))
+      .catch(() => setCatatList([]));
+  }, []);
+  const catatRec = catatList.find((r) => r.id === catatId);
+  // perlakuan kopra (Green House / Oven Gas / Oven Briket) → foto data awal & akhir pencatatan terpilih tampil di Komposisi bahan
+  const catatPhotos = catatRec && isKopraJalur(productText) ? catatRec.rows.flatMap((r) => [...(r.fotoAwal ? [{ src: r.fotoAwal, alt: `No ${r.no} · awal` }] : []), ...(r.fotoAkhir ? [{ src: r.fotoAkhir, alt: `No ${r.no} · akhir` }] : [])]) : [];
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState('');
   const key = base?.key ?? nextProtocolKey(product, protocols);
@@ -613,7 +637,7 @@ function ProtocolForm({ protocols, entries, media, base, draft, onDraftSaved, in
       };
       await saveDraft({
         id: draftId, ...(base && { baseId: base.id }), ...(draft && { createdAt: draft.createdAt }),
-        product, ...(productName && { productName }), name, author, assistants, startDate, reason, ingredients: ings, tools, steps, coconuts: coco, ...(raw && { raw }),
+        product, ...(productName && { productName }), name, author, assistants, startDate, reason, ingredients: ings, tools, steps, coconuts: coco, ...(raw && { raw }), ...(catatId && { catatId }),
         pending: { ingredients: await pend(ingFiles), tools: await pend(toolFiles), steps: await pend(stepFiles), coconuts: await pend(cocoFiles) },
       });
       await onDraftSaved();
@@ -653,6 +677,7 @@ function ProtocolForm({ protocols, entries, media, base, draft, onDraftSaved, in
           tools: keepT.map(({ x }) => ({ ...x, name: x.name.trim() })),
           ...(keepK.length && { coconuts: keepK.map(({ x }) => x) }),
           ...(raw && { raw }),
+          ...(catatId && { catatId }),
         },
         { ingredients: iMedia, steps: sMedia, tools: tMedia, coconuts: kMedia, draftId },
       );
@@ -670,17 +695,38 @@ function ProtocolForm({ protocols, entries, media, base, draft, onDraftSaved, in
       aside={<span className="tag-mono" title="Kode ini dipakai saat kamu menekan Selesai" data-testid="proto-id">{id}</span>}
       testId="proto-form"
     >
+      <Dropdown
+        label="Pilih Data yang tersedia"
+        optional
+        testId="proto-catat"
+        value={catatId}
+        onChange={setCatatId}
+        placeholder={catatList.length ? '— pilih data pencatatan —' : 'Belum ada pencatatan lengkap / tersimpan'}
+        options={[{ value: '', label: '— tanpa data pencatatan —' }, ...catatList.map((r) => ({ value: r.id, label: `${r.id} · ${r.item} · ${r.count} item`, note: catatStatus(r) }))]}
+      />
       {raw && <RawFieldset raw={raw} setRaw={setRaw} protocols={protocols} entries={entries} />}
       <div className="grid gap-3 sm:grid-cols-2">
-        <label className="flex flex-col gap-1.5">
-          <span className="label-mono">Jalur produk</span>
+        <div className="flex flex-col gap-1.5">
+          {!base && (
+            <Dropdown
+              label="Jalur produk"
+              testId="proto-jalur"
+              value={JALUR_OPTIONS.find((o) => o.value.toLowerCase() === productText.trim().toLowerCase())?.value ?? ''}
+              onChange={(v) => setProductText(v)}
+              placeholder="— pilih perlakuan (atau ketik di bawah) —"
+              options={JALUR_OPTIONS}
+            />
+          )}
+          <label className="flex flex-col gap-1.5">
+          <span className={base ? 'label-mono' : 'text-xs text-muted'}>{base ? 'Jalur produk' : 'atau isi manual'}</span>
           <input className="field" list="proto-product-list" value={productText} disabled={!!base} onChange={(e) => setProductText(e.target.value)} placeholder="pilih atau ketik, mis. Minyak Kelapa" data-testid="proto-product" />
           <datalist id="proto-product-list">
             {LAB_PRODUCTS.map((p) => <option key={p.id} value={p.name} />)}
             {(['Cuka', 'Bioleather', 'Kopra'] as const).flatMap((l) => Array.from({ length: VARIANT_MAX }, (_, i) => <option key={`${l}${i + 1}`} value={`${l}${i + 1}`} />))}
           </datalist>
           <span className="text-xs text-muted" data-testid="proto-product-code">Kode jalur: {product}{productName ? ' (isian manual)' : ''}</span>
-        </label>
+          </label>
+        </div>
         <TextInput label="Nama resep/proses" value={name} onChange={setName} placeholder="mis. Kopra oven bertahap" testId="proto-name" />
         <label className="flex flex-col gap-1.5">
           <span className="label-mono">Tanggal mulai</span>
@@ -694,6 +740,24 @@ function ProtocolForm({ protocols, entries, media, base, draft, onDraftSaved, in
 
       <fieldset className="flex flex-col gap-2">
         <legend className="label-mono mb-2">Komposisi bahan — jumlah persis seperti kamu tentukan</legend>
+        {catatRec && isKopraJalur(productText) && (
+          <div className="flex flex-col gap-2 rounded-xl border-3 border-acid bg-acid/5 p-2" data-testid="proto-catat-photos">
+            <span className="text-sm font-semibold">Foto data awal & akhir · {catatRec.id} ({catatPhotos.length} foto)</span>
+            {catatPhotos.length ? (
+              <div className="grid grid-cols-4 gap-1.5 sm:grid-cols-8">
+                {catatPhotos.map((ph, i) => (
+                  <button key={i} type="button" className="flex flex-col items-center gap-0.5" onClick={() => setZoom(ph)} aria-label={`Lihat foto ${ph.alt}`}>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={ph.src} alt={ph.alt} className="aspect-[3/4] w-full rounded-lg object-cover" />
+                    <span className="font-mono text-[10px] text-muted">{ph.alt}</span>
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <p className="text-xs italic text-muted">Pencatatan ini belum punya foto data awal/akhir.</p>
+            )}
+          </div>
+        )}
         {ings.map((it, i) => (
           <div key={i} className="flex flex-col gap-2 rounded-xl border-3 border-ink p-2">
             <div className="grid grid-cols-[1fr_6rem_5rem_auto] items-center gap-2">
@@ -711,6 +775,7 @@ function ProtocolForm({ protocols, entries, media, base, draft, onDraftSaved, in
 
       {/* Penghitungan per butir (DEC-064) diganti menu Bahan Baku (DEC-068); data lama tetap ikut tersimpan. */}
 
+      {zoom && <ImagePreview src={zoom.src} alt={zoom.alt} onClose={() => setZoom(undefined)} />}
       <fieldset className="flex flex-col gap-2" data-testid="proto-tools">
         <legend className="label-mono mb-2">Alat yang digunakan — sama seperti bahan: nama, jumlah, satuan, foto/video</legend>
         {tools.map((t, i) => (

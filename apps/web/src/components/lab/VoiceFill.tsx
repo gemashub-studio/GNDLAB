@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { getSupabase } from '@/lib/supabase';
 import { applyVoice, parseVoice, type VoiceCursor, type VoiceField } from '@/lib/voiceFill';
 
-/** Kirim satu potongan rekaman ke server → teks (AssemblyAI Universal-2, bahasa Indonesia). */
+/** Kirim satu potongan rekaman ke server → teks (Groq Whisper large-v3, bahasa Indonesia). */
 async function transcribe(blob: Blob): Promise<string> {
   const token = (await getSupabase()?.auth.getSession())?.data.session?.access_token;
   const res = await fetch('/api/voice-transcribe', { method: 'POST', body: blob, headers: { 'content-type': blob.type || 'application/octet-stream', ...(token && { authorization: `Bearer ${token}` }) } });
@@ -198,6 +198,7 @@ export function VoiceFill({ fields, rowCount, inputId, onFill, testId }: { field
             e.currentTarget.value = '';
           }}
           aria-label="Perintah suara (teks)"
+          data-enter-skip
           data-testid={`${testId}-text`}
         />
       </div>

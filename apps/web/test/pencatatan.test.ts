@@ -174,23 +174,10 @@ describe('progres harian & PPTX padat (DEC-086)', () => {
     expect(suggestStage(first, '2026-10-31')).toBe('bulanan');
   });
 
-  it('laporan: tabel progres di PDF/Word; PPTX 3 kolom tahap, maks. 10 foto per slide', () => {
+  it('laporan tidak lagi memuat progres harian/mingguan/bulanan (DEC-101)', () => {
     const r = buildCatatReport({ ...withAir(), progress: [...prog(6, 'harian'), ...prog(2, 'mingguan', 10), ...prog(1, 'bulanan', 20)] }, 'x');
-    const tbl = r.blocks.find((b) => b.heading === 'Progres harian')!;
-    expect(tbl.pptxSkip).toBe(true);
-    expect(tbl.table!.head).toEqual(['Tanggal', 'Tahap', 'Judul', 'Suhu ruang (°C)', 'Catatan']);
-    expect(tbl.table!.rows[0]).toEqual(['2026-10-01', 'Harian', 'Foto harian 1', '28', 'mulai kering']);
-    expect(new TextDecoder().decode(buildDocx(r))).toContain('Suhu ruang (°C)');
-    const slides = new TextDecoder().decode(buildPptx(r)).split('<p:sld ').slice(1);
-    const progSlides = slides.filter((x) => x.includes('HARIAN · '));
-    // 6 harian (4 per slide) → 2 slide; tiap slide memuat ketiga tahap & ≤ 10 foto
-    expect(progSlides).toHaveLength(2);
-    for (const sl of progSlides) {
-      expect(sl).toContain('MINGGUAN · 2 FOTO');
-      expect(sl).toContain('BULANAN · 1 FOTO');
-      expect((sl.match(/<p:pic>/g) ?? []).length).toBeLessThanOrEqual(10);
-    }
-    expect(progSlides[0]).toContain('Suhu ruang: 28 °C');
+    expect(r.blocks.some((b) => /progres/i.test(b.heading) || b.progressColumns)).toBe(false);
+    expect(new TextDecoder().decode(buildPptx(r))).not.toContain('MINGGUAN · ');
   });
 
   it('PPTX: tabel perbandingan tebal daging satu slide dengan grafiknya (di bawah grafik)', () => {

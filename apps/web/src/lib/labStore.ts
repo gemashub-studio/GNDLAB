@@ -329,6 +329,8 @@ export interface ProtocolDraft {
   coconuts?: CoconutRow[];
   /** Bahan baku dari menu Bahan Baku (DEC-068). */
   raw?: RawMaterial;
+  /** Data pencatatan yang dipilih di Resep baru (DEC-101). */
+  catatId?: string;
   /** Foto/video yang sudah dipilih tapi belum jadi versi resmi (per baris). */
   pending: { ingredients: NewMedia[][]; tools: NewMedia[][]; steps: NewMedia[][]; coconuts?: NewMedia[][] };
   createdAt: string;
@@ -359,6 +361,8 @@ export interface ProtocolVersion {
   coconuts?: CoconutRow[];
   /** Bahan baku dari menu Bahan Baku (DEC-068). */
   raw?: RawMaterial;
+  /** Data pencatatan yang dipilih di Resep baru (DEC-101) — foto per perlakuan ikut laporan. */
+  catatId?: string;
   reason: string;
   author: string;
   createdAt: string;

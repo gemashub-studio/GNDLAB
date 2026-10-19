@@ -7,9 +7,9 @@ import { RAW_ITEMS } from '@/lib/labStore';
 import {
   addCatatAwal,
   canCloseCatat,
-  canStartCatat,
+  KOPRA_METHODS,
+  methodLabel,
   closeCatat,
-  openCatat,
   deleteCatat,
   awalColumns,
   blankRows,
@@ -20,6 +20,7 @@ import {
   saveCatatAkhir,
   type AkhirInput,
   TREATMENT_GROUPS,
+  TREATMENT_INFO,
   treatmentRows,
   treatmentEntries,
   akhirFilled,
@@ -34,7 +35,6 @@ import { photoDataUrl } from '@/lib/photo';
 import { CatatResult, DownloadButtons } from './CatatResult';
 import { Dropdown } from './Dropdown';
 import { askConfirm, ImagePreview, LoadingOverlay, SuccessAlert, useConfirm } from './Overlays';
-import { UploadProgresModal } from './UploadProgresModal';
 import { FinishConfirm, FireworksAlert } from './FinishDialogs';
 import { VoiceFill } from './VoiceFill';
 import { AKHIR_VOICE_FIELDS, AWAL_VOICE_FIELDS } from '@/lib/voiceFill';
@@ -81,7 +81,6 @@ export function PencatatanTab({ records, oldRaw, onChanged }: { records: CatatRe
   const [toast, setToast] = useState<'' | 'saving' | 'finishing'>('');
   const [done, setDone] = useState<CatatRecord>();
   const [drafted, setDrafted] = useState<CatatRecord>();
-  const [uploadOpen, setUploadOpen] = useState(false);
   // revisi data akhir catatan yang sudah lengkap (DEC-083)
   const [revise, setRevise] = useState<CatatRecord>();
   const [revised, setRevised] = useState<CatatRecord>();
@@ -119,9 +118,6 @@ export function PencatatanTab({ records, oldRaw, onChanged }: { records: CatatRe
   // kartu: yang menunggu data akhir di atas, yang lengkap di bawah (DEC-079)
   const ordered = [...pending, ...live.filter((r) => r.finishedAt)];
   const complete = live.filter((r) => r.finishedAt);
-  // maks. 1 pencatatan aktif: catatan baru setelah yang ada diselesaikan
-  const canNew = canStartCatat(live);
-  const blocking = openCatat(live);
 
   const finish = async (f: { rec: CatatRecord; akhir?: AkhirInput[]; tr?: Treatments }) => {
     setFinishing(undefined);
@@ -144,11 +140,11 @@ export function PencatatanTab({ records, oldRaw, onChanged }: { records: CatatRe
     }
   };
 
-  const saveAwal = async (item: string, rows: CatatRow[]) => {
+  const saveAwal = async (item: string, rows: CatatRow[], treatments?: Treatments) => {
     setMode('');
     setToast('saving');
     const started = Date.now();
-    await addCatatAwal(item, rows);
+    await addCatatAwal(item, rows, treatments);
     await onChanged();
     window.setTimeout(() => setToast(''), Math.max(0, SAVE_MS - (Date.now() - started)));
   };
@@ -194,16 +190,7 @@ export function PencatatanTab({ records, oldRaw, onChanged }: { records: CatatRe
       </dl>
 
       <div className="flex flex-wrap items-center gap-2">
-        <button
-          type="button"
-          className="btn-primary"
-          disabled={!canNew}
-          title={canNew ? '' : `Selesaikan dulu ${blocking.map((r) => r.id).join(', ')} untuk membuat catatan baru`}
-          onClick={() => setMode('awal')}
-          data-testid="catat-new"
-        >
-          + Buat catatan baru
-        </button>
+        <button type="button" className="btn-primary" onClick={() => setMode('awal')} data-testid="catat-new">+ Buat catatan baru</button>
         <button
           type="button"
           className="btn-ghost"
@@ -213,12 +200,6 @@ export function PencatatanTab({ records, oldRaw, onChanged }: { records: CatatRe
           data-testid="catat-akhir"
         >
           Buat pencatatan data akhir
-        </button>
-        <a href="/lab/progres" className="btn-ghost no-underline" data-testid="catat-lihat-progres">
-          Lihat Progres
-        </a>
-        <button type="button" className="btn-acid" onClick={() => setUploadOpen(true)} data-testid="catat-upload-progres">
-          Upload Progres
         </button>
         <SelectMenu
           selecting={selecting}
@@ -235,11 +216,6 @@ export function PencatatanTab({ records, oldRaw, onChanged }: { records: CatatRe
             setPicked(new Set());
           }}
         />
-        {!canNew && (
-          <span className="w-full text-xs text-muted" data-testid="catat-new-hint">
-            Maks. 1 pencatatan aktif — selesaikan dulu {blocking.map((r) => r.id).join(', ')} (lengkapi data akhir, lalu tekan “Selesaikan”) untuk membuat catatan baru.
-          </span>
-        )}
         {!pending.length && <span className="text-xs text-muted" data-testid="catat-akhir-hint">{live.length ? 'Semua catatan awal sudah punya data akhir.' : 'Pencatatan data akhir bisa dibuka setelah ada catatan awal tersimpan.'}</span>}
       </div>
 
@@ -313,7 +289,7 @@ export function PencatatanTab({ records, oldRaw, onChanged }: { records: CatatRe
         </details>
       )}
 
-      {mode === 'awal' && <AwalModal onClose={() => setMode('')} onConfirm={(item, rows) => void saveAwal(item, rows)} />}
+      {mode === 'awal' && <AwalModal onClose={() => setMode('')} onConfirm={(item, rows, t) => void saveAwal(item, rows, t)} />}
       {mode === 'akhir' && <AkhirModal pending={pending} onClose={() => setMode('')} onConfirm={(id, a, t) => void saveAkhir(id, a, t)} onDraft={(id, a, t) => void saveDraft(id, a, t)} onFinish={(rec, akhir, tr) => setFinishing({ rec, akhir, tr })} />}
       {revise && <AkhirModal key={revise.id} pending={[revise]} revision onClose={() => setRevise(undefined)} onConfirm={(id, a, t) => void saveAkhir(id, a, t, true)} onDraft={() => undefined} onFinish={(rec, akhir, tr) => setFinishing({ rec, akhir, tr })} />}
       {preview && (
@@ -360,7 +336,6 @@ export function PencatatanTab({ records, oldRaw, onChanged }: { records: CatatRe
       {dialog}
       {finishing && <FinishConfirm id={finishing.rec.id} onBack={() => setFinishing(undefined)} onOk={() => void finish(finishing)} />}
       {success && <FireworksAlert message="Sukses! data berhasil di selesaikan." onClose={() => setSuccess(false)} />}
-      {uploadOpen && <UploadProgresModal onClose={() => setUploadOpen(false)} />}
       {deleted > 0 && <SuccessAlert testId="catat-deleted" message={`${deleted} catatan dihapus permanen.`} onClose={() => setDeleted(0)} />}
     </div>
   );
@@ -375,7 +350,7 @@ function enterToNext(e: React.KeyboardEvent<HTMLElement>) {
   if (e.key !== 'Enter' || e.shiftKey || e.altKey || e.ctrlKey || e.metaKey || e.nativeEvent.isComposing) return;
   const t = e.target;
   if (!(t instanceof HTMLInputElement) || ['file', 'checkbox', 'radio', 'button', 'submit'].includes(t.type)) return;
-  const all = Array.from(e.currentTarget.querySelectorAll<HTMLInputElement>('input:not([type=file]):not([type=hidden]):not([type=checkbox]):not([readonly]):not([disabled])')).filter((el) => el.getClientRects().length > 0);
+  const all = Array.from(e.currentTarget.querySelectorAll<HTMLInputElement>('input:not([type=file]):not([type=hidden]):not([type=checkbox]):not([readonly]):not([disabled]):not([data-enter-skip])')).filter((el) => el.getClientRects().length > 0);
   const i = all.indexOf(t);
   if (i < 0) return;
   e.preventDefault();
@@ -426,8 +401,16 @@ function PageModal({ title, onClose, children, footer, testId, wide = false, ent
 }
 
 /** Form catatan awal: item + jumlah → baris bernomor sebanyak jumlah. */
-function AwalModal({ onClose, onConfirm }: { onClose: () => void; onConfirm: (item: string, rows: CatatRow[]) => void }) {
+function AwalModal({ onClose, onConfirm }: { onClose: () => void; onConfirm: (item: string, rows: CatatRow[], treatments?: Treatments) => void }) {
   const [item, setItem] = useState<string>(RAW_ITEMS[0]);
+  // perlakuan (DEC-101): Green House / Oven Gas / Oven Briket + jumlah produksi; item dibagi berurutan ke tiap perlakuan
+  const [perl, setPerl] = useState<TreatmentEntry[]>([{ method: '', count: '' }]);
+  const setPerlAt = (i: number, patch: Partial<TreatmentEntry>) => {
+    setPerl((cur) => cur.map((e, j) => (j === i ? { ...e, ...patch } : e)));
+    setErr('');
+  };
+  const perlFilled = perl.filter((e) => e.method && e.count.trim());
+  const perlTotal = perlFilled.reduce((n, e) => n + (parseInt(e.count, 10) || 0), 0);
   const [countText, setCountText] = useState('');
   const [rows, setRows] = useState<CatatRow[]>([]);
   const [err, setErr] = useState('');
@@ -446,10 +429,13 @@ function AwalModal({ onClose, onConfirm }: { onClose: () => void; onConfirm: (it
   };
   const confirm = () => {
     if (!rows.length) return setErr('Isi jumlah total item dulu (minimal 1).');
+    if (perl.some((e) => (e.method && !e.count.trim()) || (!e.method && e.count.trim()))) return setErr('Lengkapi perlakuan: pilih perlakuan dan isi jumlah produksinya (atau kosongkan keduanya).');
+    if (perlTotal > rows.length) return setErr(`Total jumlah produksi perlakuan (${perlTotal}) melebihi jumlah item (${rows.length}).`);
     const miss = missingAwal(item, rows);
     if (miss.length) return setErr(`Masih kosong (${hasThickness(item) ? 'berat awal / tebal daging' : 'berat awal'}) di nomor: ${miss.slice(0, 12).join(', ')}${miss.length > 12 ? `, … (${miss.length} nomor)` : ''}.`);
     const keep = new Set(cols.map(([k]) => k as string));
-    onConfirm(item, rows.map((r) => ({ no: r.no, beratAwal: r.beratAwal.trim(), volAir: keep.has('volAir') ? r.volAir.trim() : '', beratAir: keep.has('beratAir') ? r.beratAir.trim() : '', tebalAwal: keep.has('tebalAwal') ? r.tebalAwal.trim() : '', ...(r.fotoAwal && { fotoAwal: r.fotoAwal }) })));
+    const treatments: Treatments | undefined = perlFilled.length ? { kopra: perlFilled.map((e) => ({ method: e.method, count: e.count.trim() })) } : undefined;
+    onConfirm(item, rows.map((r) => ({ no: r.no, beratAwal: r.beratAwal.trim(), volAir: keep.has('volAir') ? r.volAir.trim() : '', beratAir: keep.has('beratAir') ? r.beratAir.trim() : '', tebalAwal: keep.has('tebalAwal') ? r.tebalAwal.trim() : '', ...(r.fotoAwal && { fotoAwal: r.fotoAwal }) })), treatments);
   };
 
   return (
@@ -458,7 +444,7 @@ function AwalModal({ onClose, onConfirm }: { onClose: () => void; onConfirm: (it
       onClose={onClose}
       testId="catat-awal-modal"
       enterNext
-      dirty={!!countText || rows.some((r) => !!(r.beratAwal || r.volAir || r.beratAir || r.tebalAwal || r.fotoAwal))}
+      dirty={!!countText || perl.some((e) => !!(e.method || e.count)) || rows.some((r) => !!(r.beratAwal || r.volAir || r.beratAir || r.tebalAwal || r.fotoAwal))}
       footer={
         <>
           <button type="button" className="btn-ghost" onClick={onClose}>Batal</button>
@@ -467,6 +453,42 @@ function AwalModal({ onClose, onConfirm }: { onClose: () => void; onConfirm: (it
       }
     >
       <div className="flex flex-col gap-4">
+        <section className="flex flex-col gap-3 rounded-2xl border border-acid/50 bg-acid/5 p-3" data-testid="catat-awal-perlakuan">
+          <span className="label-mono">Perlakuan</span>
+          {perl.map((e, i) => (
+            <div key={i} className="flex flex-col gap-2 rounded-xl bg-white p-2.5 sm:flex-row sm:items-end">
+              <div className="min-w-0 flex-1">
+                <Dropdown
+                  label={`Perlakuan ${perl.length > 1 ? i + 1 : ''}`.trim()}
+                  testId={`catat-perl-${i}`}
+                  value={e.method}
+                  onChange={(v) => setPerlAt(i, { method: v })}
+                  placeholder="— pilih perlakuan —"
+                  options={KOPRA_METHODS.filter((m) => m === e.method || !perl.some((x) => x.method === m)).map((m) => ({ value: m, label: methodLabel(m), note: TREATMENT_INFO.kopra.methods[m] ?? '' }))}
+                />
+              </div>
+              <label className="flex flex-col gap-1.5 sm:w-48">
+                <span className="label-mono">Jumlah produksi</span>
+                <input className={field} inputMode="numeric" enterKeyHint="next" value={e.count} onChange={(ev) => setPerlAt(i, { count: ev.target.value.replace(/\D/g, '') })} placeholder="mis. 15" data-testid={`catat-perl-count-${i}`} />
+              </label>
+              {perl.length > 1 && (
+                <button type="button" className="inline-flex h-10 w-10 items-center justify-center self-end rounded-full text-xl hover:bg-safety" onClick={() => setPerl((cur) => cur.filter((_, j) => j !== i))} aria-label={`Hapus perlakuan ${i + 1}`} data-testid={`catat-perl-del-${i}`}>
+                  ✕
+                </button>
+              )}
+            </div>
+          ))}
+          <div className="flex flex-wrap items-center gap-3">
+            {perl.length < KOPRA_METHODS.length && (
+              <button type="button" className="btn-ghost !min-h-[36px] text-sm" onClick={() => setPerl((cur) => [...cur, { method: '', count: '' }])} data-testid="catat-perl-add">
+                + Tambah perlakuan
+              </button>
+            )}
+            <span className="text-xs text-muted" data-testid="catat-perl-total">
+              {perlTotal ? `Total jumlah produksi ${perlTotal}${rows.length ? ` dari ${rows.length} item` : ''} — item dibagi berurutan (perlakuan pertama = nomor awal).` : 'Opsional. Jumlah produksi = banyak item untuk perlakuan itu.'}
+            </span>
+          </div>
+        </section>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <Dropdown label="Item / barang" required testId="catat-item" value={item} onChange={setItem} options={RAW_ITEMS.map((i) => ({ value: i, label: i }))} />
           <label className="flex flex-col gap-1.5">

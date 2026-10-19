@@ -9,7 +9,7 @@ export const maxDuration = 60;
 export async function POST(req: Request) {
   try {
     await requireLabUser(req.headers.get('authorization'));
-    const text = await transcribeVoice(await req.arrayBuffer());
+    const text = await transcribeVoice(await req.arrayBuffer(), req.headers.get('content-type') ?? 'audio/webm');
     return NextResponse.json({ ok: true, text });
   } catch (e) {
     if (e instanceof VoiceError) return NextResponse.json({ ok: false, error: e.message }, { status: e.status });
