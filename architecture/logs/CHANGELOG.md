@@ -3,6 +3,10 @@
 Format: [Keep a Changelog](https://keepachangelog.com/id/1.1.0/) · Versi dataset mengikuti SemVer (ADR-002).
 Waktu dalam WIB (UTC+7).
 
+## [Pengisian suara pencatatan] — 2026-10-19
+### Ditambahkan
+- Tombol "Isi dengan suara" di form data awal & akhir (AssemblyAI Universal-2, bahasa Indonesia): sebut nomor → kolom berkedip neon, sebut kolom + angka → terisi, "next" → kolom berikutnya.
+
 ## [Selesaikan pencatatan, batas 1 data, Excel] — 2026-10-19
 ### Ditambahkan
 - Tombol Lihat Progres; tombol Selesaikan (ketik "Selesai") dengan alert petasan, kartu hijau; unduh Excel pencatatan (5 sheet).

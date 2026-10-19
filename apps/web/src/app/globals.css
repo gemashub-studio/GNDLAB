@@ -123,9 +123,18 @@
   50% { box-shadow: 0 0 0 transparent; color: inherit; }
 }
 .neon-blink { outline: 1px solid #63e6cf; animation: neonBlink 1.2s ease-in-out infinite; }
+/* pengisian suara (DEC-099): semua kolom nomor yang disebut berkedip neon; kolom aktif bercincin tebal */
+@keyframes voiceNeon {
+  0%, 100% { box-shadow: 0 0 0 1px #63e6cf, 0 0 6px rgba(99, 230, 207, 0.55); border-color: #63e6cf; }
+  50% { box-shadow: 0 0 0 2px #63e6cf, 0 0 18px rgba(99, 230, 207, 0.95); border-color: #1fa88f; }
+}
+.voice-row-neon input:not([type=file]), .voice-row-neon img { animation: voiceNeon 0.9s ease-in-out infinite; }
+.voice-row-neon { background: rgba(99, 230, 207, 0.12) !important; }
+.voice-field-active { outline: 3px solid #1fa88f; outline-offset: 1px; }
 .neon-dot { box-shadow: 0 0 6px #63e6cf, 0 0 14px #63e6cf; animation: progPulse 1.2s ease-in-out infinite; }
 @media (prefers-reduced-motion: reduce) {
   .neon-blink { animation: none; box-shadow: 0 0 8px #63e6cf; }
+  .voice-row-neon input:not([type=file]), .voice-row-neon img { animation: none; box-shadow: 0 0 0 2px #63e6cf; }
 }
 
 /* kamera tersembunyi bergerak naik-turun pelan (DEC-093) — hanya puncak ikon yang mengintip */

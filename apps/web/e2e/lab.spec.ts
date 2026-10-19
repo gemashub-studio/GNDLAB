@@ -810,3 +810,36 @@ test.describe('Latar DriftWall & Gabungkan data (DEC-096)', () => {
     await expect(d).toHaveCount(0);
   });
 });
+
+test.describe('Pengisian suara pencatatan (DEC-099)', () => {
+  test('perintah: nomor → kolom berkedip neon, "berat awal seribu tiga empat" → 1034, "next" → kolom berikutnya', async ({ page }) => {
+    test.setTimeout(180_000);
+    await page.goto('/lab?t=bahan');
+    await page.getByTestId('catat-new').click();
+    const m = page.getByTestId('catat-awal-modal');
+    await m.getByTestId('catat-count').fill('3');
+    const v = m.getByTestId('catat-awal-voice');
+    await expect(v.getByTestId('catat-awal-voice-toggle')).toContainText('Isi dengan suara');
+    const say = async (t: string) => {
+      await v.getByTestId('catat-awal-voice-text').fill(t);
+      await v.getByTestId('catat-awal-voice-text').press('Enter');
+    };
+    await say('dua');
+    await expect(m.locator('[data-voice-row="2"]')).toHaveClass(/voice-row-neon/);
+    await expect(m.locator('[data-voice-row="1"]')).not.toHaveClass(/voice-row-neon/);
+    await say('berat awal seribu tiga empat');
+    await expect(m.getByTestId('catat-awal-beratAwal-2')).toHaveValue('1034');
+    await say('neks');
+    await expect(m.getByTestId('catat-awal-volAir-2')).toHaveClass(/voice-field-active/);
+    await say('isi tiga ratus next berat air tiga ratus sepuluh');
+    await expect(m.getByTestId('catat-awal-volAir-2')).toHaveValue('300');
+    await expect(m.getByTestId('catat-awal-beratAir-2')).toHaveValue('310');
+    await say('satu');
+    await say('berat awal satu kosong tiga empat');
+    await expect(m.getByTestId('catat-awal-beratAwal-1')).toHaveValue('1034');
+    await say('tebal daging sepuluh koma lima');
+    await expect(m.getByTestId('catat-awal-tebalAwal-1')).toHaveValue('10,5');
+    await expect(v.getByTestId('catat-awal-voice-note')).toContainText('Tebal daging = 10,5');
+  });
+});
+

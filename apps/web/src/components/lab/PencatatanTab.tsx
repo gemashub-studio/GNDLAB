@@ -36,6 +36,8 @@ import { Dropdown } from './Dropdown';
 import { askConfirm, ImagePreview, LoadingOverlay, SuccessAlert, useConfirm } from './Overlays';
 import { UploadProgresModal } from './UploadProgresModal';
 import { FinishConfirm, FireworksAlert } from './FinishDialogs';
+import { VoiceFill } from './VoiceFill';
+import { AKHIR_VOICE_FIELDS, AWAL_VOICE_FIELDS } from '@/lib/voiceFill';
 import { downloadBlob } from '@/lib/labMedia';
 
 /** Unduh Excel pencatatan (DEC-098): data awal & akhir, perbandingan, tebal daging, perlakuan, kesimpulan. */
@@ -474,6 +476,15 @@ function AwalModal({ onClose, onConfirm }: { onClose: () => void; onConfirm: (it
           </label>
         </div>
         {rows.length > 0 && (
+          <VoiceFill
+            testId="catat-awal-voice"
+            fields={cols.map(([k]) => AWAL_VOICE_FIELDS[k]!)}
+            rowCount={rows.length}
+            inputId={(row, k) => `catat-awal-${k}-${row}`}
+            onFill={(row, k, v) => setCell(row - 1, k as keyof CatatRow, v)}
+          />
+        )}
+        {rows.length > 0 && (
           <RowsGrid
             head={['Foto', ...cols.map(([, l]) => l)]}
             rows={rows}
@@ -603,7 +614,7 @@ function RowsGrid({ head, rows, render }: { head: string[]; rows: CatatRow[]; re
         {head.map((h) => <span key={h}>{h}</span>)}
       </div>
       {rows.map((r, i) => (
-        <div key={r.no} className="grid grid-cols-2 items-center gap-2 rounded-xl bg-paper p-2 sm:[grid-template-columns:var(--cols)]" style={{ ['--cols' as string]: `3rem repeat(${head.length}, minmax(0,1fr))` }}>
+        <div key={r.no} data-voice-row={r.no} className="grid grid-cols-2 items-center gap-2 rounded-xl bg-paper p-2 sm:[grid-template-columns:var(--cols)]" style={{ ['--cols' as string]: `3rem repeat(${head.length}, minmax(0,1fr))` }}>
           <span className="col-span-2 font-mono text-sm font-semibold sm:col-span-1">#{r.no}</span>
           {render(r, i).map((node, j) => (
             <label key={j} className="flex flex-col gap-0.5">
@@ -701,6 +712,13 @@ function AkhirModal({ pending, onClose, onConfirm, onDraft, onFinish, revision =
             <p className="text-sm text-muted" data-testid="catat-akhir-info">
               {rec.id} · {rec.item} · {rec.count} item. Kolom kiri = data awal (tidak bisa diubah), kolom kanan = data akhir (isi semua).
             </p>
+            <VoiceFill
+              testId="catat-akhir-voice"
+              fields={coco ? AKHIR_VOICE_FIELDS : AKHIR_VOICE_FIELDS.slice(0, 1)}
+              rowCount={rec.rows.length}
+              inputId={(row, k) => `catat-akhir-${k === 'beratAkhir' ? 'berat' : 'tebal'}-${row}`}
+              onFill={(row, k, v) => set(row, k as 'beratAkhir' | 'tebalAkhir', v)}
+            />
             <RowsGrid
               head={['Foto awal', 'Berat awal (g)', 'Berat akhir (g)', ...(coco ? ['Tebal awal (mm)', 'Tebal akhir (mm)'] : []), 'Foto akhir']}
               rows={merged}
