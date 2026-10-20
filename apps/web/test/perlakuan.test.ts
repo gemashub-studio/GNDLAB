@@ -116,3 +116,17 @@ describe('jalur perlakuan non-kopra → foto kolom "Perlakuan lainnya (Non Kopra
     expect(x).toContain('CUKA 1 - GULA 25g · Perlakuan cuka');
   });
 });
+
+describe('perlakuan bio leather baru (DEC-110)', () => {
+  it('Rumput, Bunga, Kunyit ada di pilihan perlakuan non-kopra beserta keterangannya', async () => {
+    const { TREATMENT_GROUPS, TREATMENT_INFO } = await import('@/lib/pencatatan');
+    const bio = TREATMENT_GROUPS.find((g) => g.key === 'bio')!;
+    expect(bio.methods).toEqual(expect.arrayContaining(['Bio Leather Rumput', 'Bio Leather Bunga', 'Bio Leather Kunyit']));
+    expect(TREATMENT_INFO.bio.methods['Bio Leather Rumput']).toBe('rumput 132 gram, air kelapa 500 ml');
+    expect(TREATMENT_INFO.bio.methods['Bio Leather Bunga']).toBe('bunga 74 gram, air kelapa 500 ml');
+    expect(TREATMENT_INFO.bio.methods['Bio Leather Kunyit']).toBe('kunyit 212 gram, air kelapa 500 ml');
+    const r: CatatRecord = { ...rec(2), treatments: { bio: [{ method: 'Bio Leather Kunyit', count: '1', photo: jpg }] } };
+    expect(jalurGroups(r, ['Bio Leather Kunyit'])[0]!.photos[0]!.label).toBe('Bio Leather Kunyit · jumlah 1');
+  });
+});
+

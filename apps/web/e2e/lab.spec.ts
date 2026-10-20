@@ -871,6 +871,10 @@ test.describe('Perlakuan di data awal & Resep baru dari data pencatatan (DEC-101
     await ak.getByTestId('catat-akhir-berat-1').fill('600');
     await ak.getByTestId('catat-akhir-foto-1').setInputFiles({ name: 'k1.png', mimeType: 'image/png', buffer: png });
     await expect(ak.getByTestId('catat-akhir-foto-1-img')).toBeVisible();
+    // perlakuan bio leather baru (DEC-110)
+    await ak.getByTestId('catat-tr-method-bio-0').click();
+    for (const m of ['Bio Leather Rumput', 'Bio Leather Bunga', 'Bio Leather Kunyit']) await expect(ak.getByTestId('catat-tr-method-bio-0-list')).toContainText(m);
+    await ak.getByTestId('catat-tr-method-bio-0-opt-none').click();
     // perlakuan non-kopra (cuka) + foto → tampil di Resep per jenis (DEC-109)
     await ak.getByTestId('catat-tr-count-cuka-0').fill('2');
     await ak.getByTestId('catat-tr-method-cuka-0').click();
@@ -890,6 +894,8 @@ test.describe('Perlakuan di data awal & Resep baru dari data pencatatan (DEC-101
     await expect(f.getByTestId('proto-jalur-list')).toContainText('CUKA 2 - GULA 75g');
     await expect(f.getByTestId('proto-jalur-list')).toContainText('Bio Leather A - Gula 25g');
     await expect(f.getByTestId('proto-jalur-list')).toContainText('dijemur dengan panas matahari');
+    await expect(f.getByTestId('proto-jalur-list')).toContainText('kunyit 212 gram, air kelapa 500 ml');
+    await expect(f.getByTestId('proto-jalur-list')).toContainText('Bio Leather Rumput');
     await f.getByTestId('proto-jalur-opt-Green House').click();
     await expect(f.getByTestId('proto-jalur')).toContainText('Green House');
     const ph = f.getByTestId('proto-catat-photos');

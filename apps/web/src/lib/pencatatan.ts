@@ -38,7 +38,7 @@ export const TREATMENT_GROUPS = [
   { key: 'kopra', title: 'Jumlah perlakuan kopra', methods: ['GreenHouse', 'Oven Gas', 'Oven Briket'] },
   { key: 'bibit', title: 'Jumlah perlakuan bibit bio leather', methods: ['A - PH 40', 'B - PH 40'] },
   { key: 'cuka', title: 'Jumlah perlakuan cuka', methods: ['CUKA 1 - GULA 25g', 'CUKA 2 - GULA 75g', 'CUKA 3 - GULA 50'] },
-  { key: 'bio', title: 'Jumlah perlakuan bio leather', methods: ['Bio Leather A - Gula 25g', 'Bio Leather B - Gula 50g'] },
+  { key: 'bio', title: 'Jumlah perlakuan bio leather', methods: ['Bio Leather A - Gula 25g', 'Bio Leather B - Gula 50g', 'Bio Leather Rumput', 'Bio Leather Bunga', 'Bio Leather Kunyit'] },
 ] as const;
 export type TreatmentKey = (typeof TREATMENT_GROUPS)[number]['key'];
 
@@ -61,7 +61,14 @@ export const TREATMENT_INFO: Record<TreatmentKey, { about: string; methods: Reco
   },
   bio: {
     about: 'Lembaran bio leather (selulosa hasil fermentasi). Perlakuan dibedakan dari jumlah gula (sesuai label).',
-    methods: { 'Bio Leather A - Gula 25g': 'varian A, gula 25 g', 'Bio Leather B - Gula 50g': 'varian B, gula 50 g' },
+    methods: {
+      'Bio Leather A - Gula 25g': 'varian A, gula 25 g',
+      'Bio Leather B - Gula 50g': 'varian B, gula 50 g',
+      // tambahan owner (DEC-110) — takaran sesuai isian owner
+      'Bio Leather Rumput': 'rumput 132 gram, air kelapa 500 ml',
+      'Bio Leather Bunga': 'bunga 74 gram, air kelapa 500 ml',
+      'Bio Leather Kunyit': 'kunyit 212 gram, air kelapa 500 ml',
+    },
   },
 };
 export interface TreatmentEntry {

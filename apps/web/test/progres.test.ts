@@ -9,7 +9,7 @@ describe('Upload Progres Perlakuan (DEC-095)', () => {
   it('pilihan nama perlakuan = semua metode di form data akhir (+ Green House) dengan keterangan', () => {
     const labels = TREATMENT_OPTIONS.map((o) => o.label);
     expect(labels).toContain('Green House');
-    for (const m of ['Oven Gas', 'Oven Briket', 'A - PH 40', 'B - PH 40', 'CUKA 1 - GULA 25g', 'CUKA 2 - GULA 75g', 'CUKA 3 - GULA 50', 'Bio Leather A - Gula 25g', 'Bio Leather B - Gula 50g']) expect(labels).toContain(m);
+    for (const m of ['Oven Gas', 'Oven Briket', 'A - PH 40', 'B - PH 40', 'CUKA 1 - GULA 25g', 'CUKA 2 - GULA 75g', 'CUKA 3 - GULA 50', 'Bio Leather A - Gula 25g', 'Bio Leather B - Gula 50g', 'Bio Leather Rumput', 'Bio Leather Bunga', 'Bio Leather Kunyit']) expect(labels).toContain(m);
     expect(TREATMENT_OPTIONS.find((o) => o.value === 'CUKA 2 - GULA 75g')!.note).toBe('tambahan gula 75 g');
   });
   it('validasi: foto, perlakuan, kategori, jumlah hanya angka, tanggal', () => {
