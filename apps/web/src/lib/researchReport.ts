@@ -4,7 +4,7 @@
  * Hanya dari data tercatat; kosong = "belum dicatat".
  */
 import { fmtNum, researchCharts, type ChartSpec } from './reportCharts';
-import { jalurGroups, perlakuanRanges, photoPairsOf, type CatatRecord } from './pencatatan';
+import { jalurGroups, methodLabel, perlakuanRanges, photoPairsOf, type CatatRecord } from './pencatatan';
 import { coconutSummary, dayNumber, protocolProductName, variantLabel, type CoconutRow, type RawMaterial, NOT_RECORDED, researchDates, researchStatus, toolList, type DailyEntry, type MediaItem, type ProtocolVersion } from './labStore';
 
 export interface ReportImage {
@@ -167,13 +167,23 @@ export function catatBlocks(v: Pick<ProtocolVersion, 'catatId' | 'product' | 'pr
     lines: [
       `Kode: ${rec.id} · ${rec.item} · ${rec.count} item · ${rec.finishedAt ? 'awal & akhir lengkap' : rec.akhirSavedAt ? 'data akhir tersimpan sementara' : 'menunggu data akhir'}`,
       ...(ranges.length ? ranges.map((r) => `Perlakuan ${r.label}: ${r.count} item (no ${r.rows[0]?.no ?? '–'}–${r.rows[r.rows.length - 1]?.no ?? '–'})`) : ['Perlakuan: belum diisi di data awal']),
+      ...groups.filter((g) => g.treatment).flatMap((g) => g.treatment!.entries.map((e) => `${g.treatment!.title}: ${methodLabel(e.method)}${e.count.trim() ? ` · jumlah ${e.count.trim()}` : ''}${e.note?.trim() ? ` · ${e.note.trim()}` : ''}`)),
     ],
     images: [],
     pptxSkip: true,
   };
   const grid = (heading: string, rows: CatatRecord['rows']): ReportBlock => ({ heading, level: 1, lines: [], images: [], pptxOnly: true, photoPairs: photoPairsOf(rec, rows, exclude) });
+  // perlakuan non-kopra: foto potret berjajar + data (jenis, jumlah, keterangan) per jenis perlakuan (DEC-109)
+  const card = (g: (typeof groups)[number]): ReportBlock => ({
+    heading: `${g.jalur} · ${g.treatment!.title}`,
+    level: 1,
+    lines: [],
+    images: [],
+    pptxOnly: true,
+    photoCards: g.photos.map((p) => ({ image: p.src, lines: [p.label ?? g.jalur, ...(p.note ? [p.note] : [])] })),
+  });
   const grids: ReportBlock[] = groups.length
-    ? groups.map((g) => grid(g.range ? `${g.jalur} · ${g.range.count} item (no ${g.rows[0]?.no ?? '–'}–${g.rows[g.rows.length - 1]?.no ?? '–'})` : `${g.jalur} · ${rec.id}`, g.rows))
+    ? groups.map((g) => (g.treatment ? card(g) : grid(g.range ? `${g.jalur} · ${g.range.count} item (no ${g.rows[0]?.no ?? '–'}–${g.rows[g.rows.length - 1]?.no ?? '–'})` : `${g.jalur} · ${rec.id}`, g.rows)))
     : ranges.length
       ? ranges.map((r) => grid(`Perlakuan ${r.label} · ${r.count} item`, r.rows))
       : [grid(`${jalur} · ${rec.id}`, rec.rows)];

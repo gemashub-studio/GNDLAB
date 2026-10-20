@@ -114,17 +114,23 @@ export function perlakuanRanges(rec: Pick<CatatRecord, 'rows' | 'treatments'>): 
 }
 
 export interface JalurPhoto {
-  /** "no:awal" / "no:akhir" */
+  /** "no:awal" / "no:akhir"; perlakuan non-kopra: "tr:<jenis>:<kolom>" */
   key: string;
+  /** Nomor item (0 untuk foto perlakuan non-kopra — tidak memakai nomor urut). */
   no: number;
-  kind: 'awal' | 'akhir';
+  kind: 'awal' | 'akhir' | 'perlakuan';
   src: string;
+  /** Label foto perlakuan, mis. "CUKA 2 - GULA 75g · jumlah 2". */
+  label?: string;
+  note?: string;
 }
 export interface JalurGroup {
   jalur: string;
   range?: PerlakuanRange;
   rows: CatatRow[];
   photos: JalurPhoto[];
+  /** Jalur = perlakuan non-kopra (DEC-109): kolom "Perlakuan lainnya (Non Kopra)" dengan metode ini. */
+  treatment?: { title: string; entries: TreatmentEntry[] };
 }
 
 const sameJalur = (a: string, b: string) => a.trim().toLowerCase() === b.trim().toLowerCase();
@@ -132,6 +138,7 @@ const sameJalur = (a: string, b: string) => a.trim().toLowerCase() === b.trim().
 /**
  * Foto per kolom jalur produk di Resep baru (DEC-105): jalur = perlakuan di form data awal → foto nomor dalam rentang
  * perlakuan itu (berurutan: GH 15 → no 1–15, berikutnya mulai no 16). Pencatatan tanpa perlakuan + jalur kopra → semua nomor.
+ * Jalur perlakuan non-kopra → foto kolom "Perlakuan lainnya (Non Kopra)" berjenis sama (tanpa nomor urut, DEC-109).
  * Jalur lain (tidak ada di pencatatan) dilewati. Foto yang dihapus (✕) tidak ikut.
  */
 export function jalurGroups(rec: Pick<CatatRecord, 'rows' | 'treatments'>, jalurs: readonly string[], exclude: ReadonlySet<string> = new Set()): JalurGroup[] {
@@ -139,6 +146,20 @@ export function jalurGroups(rec: Pick<CatatRecord, 'rows' | 'treatments'>, jalur
   const out: JalurGroup[] = [];
   for (const j of jalurs) {
     if (!j.trim() || out.some((g) => sameJalur(g.jalur, j))) continue;
+    // perlakuan non-kopra (bibit / cuka / bio leather): foto dari kolom perlakuan dengan jenis yang sama — tanpa nomor urut (DEC-109)
+    const tg = TREATMENT_GROUPS.find((g) => g.key !== 'kopra' && (g.methods as readonly string[]).some((m) => sameJalur(m, j)));
+    if (tg) {
+      const entries = treatmentEntries(rec.treatments, tg.key)
+        .map((e, i) => ({ e, i }))
+        .filter(({ e }) => sameJalur(e.method, j));
+      if (!entries.length) continue;
+      const photos = entries.flatMap(({ e, i }): JalurPhoto[] => {
+        const key = `tr:${tg.key}:${i}`;
+        return e.photo && !exclude.has(key) ? [{ key, no: 0, kind: 'perlakuan', src: e.photo, label: `${methodLabel(e.method)}${e.count.trim() ? ` · jumlah ${e.count.trim()}` : ''}`, ...(e.note?.trim() && { note: e.note.trim() }) }] : [];
+      });
+      out.push({ jalur: j, rows: [], photos, treatment: { title: tg.title.replace('Jumlah perlakuan ', 'Perlakuan '), entries: entries.map(({ e }) => e) } });
+      continue;
+    }
     const range = ranges.find((r) => sameJalur(r.label, j) || sameJalur(r.method, j));
     const kopra = KOPRA_METHODS.some((m) => sameJalur(m, j) || sameJalur(methodLabel(m), j));
     const rows = range ? range.rows : !ranges.length && kopra ? rec.rows : undefined;

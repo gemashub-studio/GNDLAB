@@ -196,3 +196,4 @@
 - DEC-101: Groq Whisper (GROQ_API_KEY) gantikan AssemblyAI; progres UI dihapus; perlakuanRanges (berurutan) + photoPairsOf; catatBlocks di laporan riset (ProtocolVersion.catatId); tanpa batas catatan; petasan tanpa henti.
 - DEC-103..105: suara — angka beberapa kata isi kolom aktif, satuan diabaikan, nama kolom + nilai via data-voice-name (Dropdown prop voice); Resep — jalurExtra (＋), catatExclude (✕), jalurGroups per rentang perlakuan.
 - DEC-106: PerlakuanFields bersama (form awal + revisi), sinkron treatments.kopra; blok kopra lama disembunyikan di revisi.
+- DEC-108/109: Resep tanpa isi manual (LAB_PRODUCTS masuk dropdown); jalurGroups non-kopra → foto treatments per jenis (kunci tr:<jenis>:<i>), PPTX photoCards.

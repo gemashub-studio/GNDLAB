@@ -76,3 +76,43 @@ describe('kolom jalur produk tambahan & hapus foto di Resep baru (DEC-105)', () 
   });
 });
 
+
+describe('jalur perlakuan non-kopra → foto kolom "Perlakuan lainnya (Non Kopra)" per jenis (DEC-109)', () => {
+  const png2 = 'data:image/jpeg;base64,/9j/BB';
+  const r: CatatRecord = {
+    ...rec(4),
+    treatments: {
+      kopra: [{ method: 'GreenHouse', count: '4' }],
+      cuka: [
+        { method: 'CUKA 1 - GULA 25g', count: '2', photo: jpg, note: 'botol A' },
+        { method: 'CUKA 2 - GULA 75g', count: '1', photo: png2 },
+        { method: 'CUKA 1 - GULA 25g', count: '1', photo: png2, note: 'botol C' },
+      ],
+      bio: [{ method: 'Bio Leather A - Gula 25g', count: '1' }],
+    },
+  };
+  it('dikelompokkan per jenis, tanpa nomor urut; foto bisa dihapus (✕)', () => {
+    const g = jalurGroups(r, ['CUKA 1 - GULA 25g', 'CUKA 2 - GULA 75g', 'Bio Leather A - Gula 25g', 'Bio Leather B - Gula 50g']);
+    expect(g.map((x) => [x.jalur, x.treatment?.title, x.photos.map((p) => p.label)])).toEqual([
+      ['CUKA 1 - GULA 25g', 'Perlakuan cuka', ['CUKA 1 - GULA 25g · jumlah 2', 'CUKA 1 - GULA 25g · jumlah 1']],
+      ['CUKA 2 - GULA 75g', 'Perlakuan cuka', ['CUKA 2 - GULA 75g · jumlah 1']],
+      ['Bio Leather A - Gula 25g', 'Perlakuan bio leather', []],
+    ]);
+    expect(g[0]!.photos.map((p) => [p.key, p.no, p.kind, p.note])).toEqual([
+      ['tr:cuka:0', 0, 'perlakuan', 'botol A'],
+      ['tr:cuka:2', 0, 'perlakuan', 'botol C'],
+    ]);
+    expect(jalurGroups(r, ['CUKA 1 - GULA 25g'], new Set(['tr:cuka:0']))[0]!.photos.map((p) => p.key)).toEqual(['tr:cuka:2']);
+  });
+  it('PPTX riset: kartu foto per jenis perlakuan; ringkasan data pencatatan memuat jenis & keterangan', () => {
+    const v: ProtocolVersion = { id: 'C1-P01-v1', key: 'C1-P01', version: 1, product: 'CG', productName: 'CUKA 1 - GULA 25g', name: 'Cuka', author: 'x', reason: 'x', createdAt: 'x', ingredients: [], steps: [], catatId: r.id, jalurExtra: ['Green House'] };
+    const b = catatBlocks(v, [r]);
+    const cards = b.find((x) => x.photoCards)!;
+    expect(cards.heading).toBe('CUKA 1 - GULA 25g · Perlakuan cuka');
+    expect(cards.photoCards!.map((c) => c.lines)).toEqual([['CUKA 1 - GULA 25g · jumlah 2', 'botol A'], ['CUKA 1 - GULA 25g · jumlah 1', 'botol C']]);
+    expect(b.find((x) => x.photoPairs)!.heading).toBe('Green House · 4 item (no 1–4)');
+    expect(b.find((x) => x.heading === 'Data pencatatan')!.lines.join(' | ')).toContain('Perlakuan cuka: CUKA 1 - GULA 25g · jumlah 2 · botol A');
+    const x = new TextDecoder().decode(buildPptx(buildResearchReport('C1-P01', [v], [], [], 'x', undefined, [r])));
+    expect(x).toContain('CUKA 1 - GULA 25g · Perlakuan cuka');
+  });
+});

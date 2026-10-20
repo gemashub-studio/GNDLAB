@@ -871,6 +871,12 @@ test.describe('Perlakuan di data awal & Resep baru dari data pencatatan (DEC-101
     await ak.getByTestId('catat-akhir-berat-1').fill('600');
     await ak.getByTestId('catat-akhir-foto-1').setInputFiles({ name: 'k1.png', mimeType: 'image/png', buffer: png });
     await expect(ak.getByTestId('catat-akhir-foto-1-img')).toBeVisible();
+    // perlakuan non-kopra (cuka) + foto → tampil di Resep per jenis (DEC-109)
+    await ak.getByTestId('catat-tr-count-cuka-0').fill('2');
+    await ak.getByTestId('catat-tr-method-cuka-0').click();
+    await ak.getByTestId('catat-tr-method-cuka-0-opt-CUKA 2 - GULA 75g').click();
+    await ak.getByTestId('catat-tr-photo-cuka-0').setInputFiles({ name: 'cuka.png', mimeType: 'image/png', buffer: png });
+    await expect(ak.getByTestId('catat-tr-photo-cuka-0-img')).toBeVisible();
     await ak.getByTestId('catat-akhir-draft').click();
     await page.getByTestId('catat-drafted-close').click();
 
@@ -901,6 +907,19 @@ test.describe('Perlakuan di data awal & Resep baru dari data pencatatan (DEC-101
     await expect(f.getByTestId('proto-catat-photos')).toContainText('(1 foto)');
     await f.getByTestId('proto-catat-restore').click();
     await expect(f.getByTestId('proto-catat-group-0').getByRole('img')).toHaveCount(2);
+    // jalur non-kopra (cuka) → foto perlakuan cuka sesuai jenis, tanpa nomor urut (DEC-109)
+    await f.getByTestId('proto-jalur-add').click();
+    await f.getByTestId('proto-jalur-extra-1').click();
+    await f.getByTestId('proto-jalur-extra-1-opt-CUKA 2 - GULA 75g').click();
+    const cg = f.getByTestId('proto-catat-group-2');
+    await expect(cg).toContainText('CUKA 2 - GULA 75g · Perlakuan cuka · 1 kolom · 1 foto');
+    await expect(cg).toContainText('CUKA 2 - GULA 75g · jumlah 2');
+    await expect(cg).not.toContainText('No ');
+    await cg.getByTestId('proto-catat-del-tr-cuka-0').click();
+    await expect(f.getByTestId('proto-catat-group-2').getByRole('img')).toHaveCount(0);
+    await f.getByTestId('proto-catat-restore').click();
+    await expect(f.getByTestId('proto-catat-group-2').getByRole('img')).toHaveCount(1);
+    await f.getByTestId('proto-jalur-extra-del-1').click();
     await f.getByTestId('proto-jalur-extra-del-0').click();
     await expect(f.getByTestId('proto-catat-group-1')).toHaveCount(0);
     // jalur non-kopra → foto disembunyikan

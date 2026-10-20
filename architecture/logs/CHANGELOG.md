@@ -3,6 +3,11 @@
 Format: [Keep a Changelog](https://keepachangelog.com/id/1.1.0/) · Versi dataset mengikuti SemVer (ADR-002).
 Waktu dalam WIB (UTC+7).
 
+## [Resep: tanpa isi manual; foto perlakuan non-kopra] — 2026-10-20
+### Diubah
+- Resep/proses baru: kolom isi manual jalur produk dihapus (jalur umum pindah ke dropdown).
+- Jalur produk non-kopra menampilkan foto dari "Perlakuan lainnya (Non Kopra)" per jenis (mis. CUKA 1 / CUKA 2), ikut PPTX.
+
 ## [Perlakuan di modal revisi] — 2026-10-20
 ### Diubah
 - Revisi data akhir: bagian Perlakuan sama & sinkron dengan form data awal (Green House / Oven Gas / Oven Briket + jumlah produksi, foto & keterangan).

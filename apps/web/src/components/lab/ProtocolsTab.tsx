@@ -776,32 +776,37 @@ function ProtocolForm({ protocols, entries, media, base, draft, onDraftSaved, in
               <div key={g.jalur} className="flex flex-col gap-1.5" data-testid={`proto-catat-group-${gi}`}>
                 <span className="font-mono text-xs">
                   {g.jalur}
-                  {g.range ? ` · ${g.range.count} item (no ${g.rows[0]?.no ?? '–'}–${g.rows[g.rows.length - 1]?.no ?? '–'})` : ''} · {g.photos.length} foto
+                  {g.treatment ? ` · ${g.treatment.title} · ${g.treatment.entries.length} kolom` : g.range ? ` · ${g.range.count} item (no ${g.rows[0]?.no ?? '–'}–${g.rows[g.rows.length - 1]?.no ?? '–'})` : ''} · {g.photos.length} foto
                 </span>
                 {g.photos.length ? (
                   <div className="grid grid-cols-4 gap-1.5 sm:grid-cols-8">
                     {g.photos.map((ph) => (
                       <div key={ph.key} className="relative flex flex-col items-center gap-0.5">
-                        <button type="button" className="w-full" onClick={() => setZoom({ src: ph.src, alt: `No ${ph.no} · ${ph.kind}` })} aria-label={`Lihat foto no ${ph.no} ${ph.kind}`}>
+                        <button type="button" className="w-full" onClick={() => setZoom({ src: ph.src, alt: ph.label ?? `No ${ph.no} · ${ph.kind}` })} aria-label={`Lihat foto ${ph.label ?? `no ${ph.no} ${ph.kind}`}`}>
                           {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img src={ph.src} alt={`No ${ph.no} · ${ph.kind}`} className="aspect-[3/4] w-full rounded-lg object-cover" />
+                          <img src={ph.src} alt={ph.label ?? `No ${ph.no} · ${ph.kind}`} className="aspect-[3/4] w-full rounded-lg object-cover" />
                         </button>
                         {/* hapus foto dari resep ini (data pencatatan tidak berubah) */}
                         <button
                           type="button"
                           className="absolute right-0.5 top-0.5 inline-flex h-5 w-5 items-center justify-center rounded-full bg-ink/80 text-[11px] leading-none text-paper hover:bg-safety hover:text-ink"
                           onClick={() => setExclude((cur) => [...cur, ph.key])}
-                          aria-label={`Hapus foto no ${ph.no} ${ph.kind} dari resep`}
-                          data-testid={`proto-catat-del-${ph.no}-${ph.kind}`}
+                          aria-label={`Hapus foto ${ph.label ?? `no ${ph.no} ${ph.kind}`} dari resep`}
+                          data-testid={ph.kind === 'perlakuan' ? `proto-catat-del-${ph.key.replace(/:/g, '-')}` : `proto-catat-del-${ph.no}-${ph.kind}`}
                         >
                           ✕
                         </button>
-                        <span className="font-mono text-[10px] text-muted">No {ph.no} · {ph.kind}</span>
+                        <span className="text-center font-mono text-[10px] leading-tight text-muted">{ph.kind === 'perlakuan' ? ph.label : `No ${ph.no} · ${ph.kind}`}</span>
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <p className="text-xs italic text-muted">Belum ada foto untuk nomor ini.</p>
+                  <p className="text-xs italic text-muted">{g.treatment ? 'Belum ada foto untuk perlakuan ini (isi foto di Perlakuan lainnya (Non Kopra) pada data akhir / revisi).' : 'Belum ada foto untuk nomor ini.'}</p>
+                )}
+                {g.treatment && g.photos.some((p) => p.note) && (
+                  <ul className="text-xs text-muted">
+                    {g.photos.filter((p) => p.note).map((p) => <li key={p.key}>{p.label}: {p.note}</li>)}
+                  </ul>
                 )}
               </div>
             ))}
