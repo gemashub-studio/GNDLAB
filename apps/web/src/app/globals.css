@@ -123,6 +123,26 @@
   50% { box-shadow: 0 0 0 transparent; color: inherit; }
 }
 .neon-blink { outline: 1px solid #63e6cf; animation: neonBlink 1.2s ease-in-out infinite; }
+/* maskot kelapa asisten suara (DEC-111) */
+.coco-mascot { overflow: visible; }
+.coco-body { transform-origin: 50px 90px; animation: cocoBob 2.6s ease-in-out infinite; }
+.coco-eye { transform-box: fill-box; transform-origin: center; animation: cocoBlink 4.2s infinite; }
+.coco-open { opacity: 0; transform-box: fill-box; transform-origin: center; }
+.coco-listening .coco-smile, .coco-talking .coco-smile { opacity: 0; }
+.coco-listening .coco-open { opacity: 1; transform: scale(0.55, 0.7); }
+.coco-talking .coco-open { opacity: 1; animation: cocoTalk 0.32s ease-in-out infinite alternate; }
+.coco-thinking .coco-body { animation: cocoWobble 0.9s ease-in-out infinite; }
+.coco-thinking .coco-pupil { transform: translate(2px, -2.5px); }
+.coco-listening .coco-body { animation: cocoBob 1.2s ease-in-out infinite; }
+.coco-shadow { transform-box: fill-box; transform-origin: center; }
+@keyframes cocoBob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
+@keyframes cocoWobble { 0%, 100% { transform: rotate(-5deg); } 50% { transform: rotate(5deg); } }
+@keyframes cocoBlink { 0%, 92%, 100% { transform: scaleY(1); } 95% { transform: scaleY(0.08); } }
+@keyframes cocoTalk { from { transform: scale(0.9, 0.35); } to { transform: scale(1, 1.05); } }
+@media (prefers-reduced-motion: reduce) {
+  .coco-body, .coco-eye, .coco-talking .coco-open { animation: none !important; }
+}
+
 /* pengisian suara (DEC-099): semua kolom nomor yang disebut berkedip neon; kolom aktif bercincin tebal */
 @keyframes voiceNeon {
   0%, 100% { box-shadow: 0 0 0 1px #63e6cf, 0 0 6px rgba(99, 230, 207, 0.55); border-color: #63e6cf; }

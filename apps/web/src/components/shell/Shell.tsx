@@ -7,6 +7,7 @@ import { Icon, type IconName } from './icons';
 import { LogoMark, Wordmark } from './Logo';
 import { ProfileMenu } from '@/components/auth/ProfileMenu';
 import { HomeDriftBg } from '@/components/home/HomeDriftBg';
+import { VoiceAssistant } from './VoiceAssistant';
 import { useAuth } from '@/lib/useAuth';
 
 interface NavItem {
@@ -94,7 +95,17 @@ function usePendingCatat(path: string): number {
 export function Shell({ children, datasetVersion, profile }: { children: ReactNode; datasetVersion: string; profile: string }) {
   const path = usePathname() ?? '/';
   const pendingCatat = usePendingCatat(path);
-  const signedIn = !!useAuth().email;
+  const auth = useAuth();
+  const signedIn = !!auth.email;
+  // asisten suara kelapa (DEC-111): untuk pengguna yang masuk; "gnd-va-force" = paksa tampil (uji tanpa Supabase)
+  const [vaForce, setVaForce] = useState(false);
+  useEffect(() => {
+    try {
+      setVaForce(window.localStorage.getItem('gnd-va-force') === '1');
+    } catch {
+      setVaForce(false);
+    }
+  }, []);
   const neon = (href: string) => (href === '/lab' && pendingCatat > 0 ? ' neon-blink' : '');
   const online = useOnline();
   const [open, setOpen] = useState(false);
@@ -264,6 +275,7 @@ export function Shell({ children, datasetVersion, profile }: { children: ReactNo
           {children}
         </div>
       </main>
+      <VoiceAssistant show={signedIn || vaForce} userKey={auth.email ?? 'local'} pages={NAV.map((n) => ({ href: n.href, label: n.label }))} />
     </div>
   );
 }

@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { getSupabase } from '@/lib/supabase';
+import { startSegmenter, transcribe, VOICE_FORM_EVENT } from '@/lib/voiceClient';
 import { applyVoice, matchOption, normalize, parseVoice, type VoiceCursor, type VoiceField } from '@/lib/voiceFill';
 
 /** Kolom lain di form yang bisa diisi "nama kolom + nilai" (atribut data-voice-name, DEC-104). */
@@ -30,19 +30,6 @@ const flash = (el: Element) => {
   el.scrollIntoView({ block: 'center', behavior: 'smooth' });
   window.setTimeout(() => el.classList.remove('voice-field-active'), 1600);
 };
-
-/** Kirim satu potongan rekaman ke server → teks (Groq Whisper large-v3, bahasa Indonesia). */
-async function transcribe(blob: Blob): Promise<string> {
-  const token = (await getSupabase()?.auth.getSession())?.data.session?.access_token;
-  const res = await fetch('/api/voice-transcribe', { method: 'POST', body: blob, headers: { 'content-type': blob.type || 'application/octet-stream', ...(token && { authorization: `Bearer ${token}` }) } });
-  const j = (await res.json().catch(() => ({}))) as { text?: string; error?: string };
-  if (!res.ok) throw new Error(j.error ?? `Transkripsi gagal (${res.status}).`);
-  return j.text ?? '';
-}
-
-const SILENCE_MS = 850;
-const IDLE_RESTART_MS = 8000;
-const MAX_SEG_MS = 25_000;
 
 /**
  * Pengisian suara pencatatan (DEC-099). Tombol mikrofon → mendengarkan terus; tiap ucapan dipotong otomatis saat
@@ -151,74 +138,25 @@ export function VoiceFill({ fields, rowCount, inputId, onFill, testId }: { field
 
   const start = async () => {
     setErr('');
-    if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === 'undefined') return setErr('Browser ini tidak mendukung rekam suara.');
-    let stream: MediaStream;
     try {
-      stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } });
-    } catch {
-      return setErr('Izin mikrofon ditolak. Izinkan mikrofon di pengaturan browser lalu coba lagi.');
+      stopRef.current = await startSegmenter({ onSegment: send, onLevel: setLevel });
+    } catch (e) {
+      return setErr(e instanceof Error ? e.message : String(e));
     }
-    const ctx = new AudioContext();
-    const an = ctx.createAnalyser();
-    an.fftSize = 1024;
-    ctx.createMediaStreamSource(stream).connect(an);
-    const buf = new Float32Array(an.fftSize);
-    const mime = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4', 'audio/ogg'].find((m) => MediaRecorder.isTypeSupported?.(m));
-    let rec: MediaRecorder | null = null;
-    let chunks: Blob[] = [];
-    let speech = false;
-    let lastVoice = 0;
-    let segStart = 0;
-    let noise = 0.01;
-    let alive = true;
-    const newSeg = () => {
-      chunks = [];
-      speech = false;
-      segStart = performance.now();
-      rec = new MediaRecorder(stream, mime ? { mimeType: mime } : undefined);
-      const mine = chunks;
-      rec.ondataavailable = (e) => e.data.size && mine.push(e.data);
-      rec.start();
-    };
-    const endSeg = (keep: boolean) => {
-      const r = rec;
-      const mine = chunks;
-      if (!r) return;
-      r.onstop = () => {
-        if (keep && mine.length) send(new Blob(mine, { type: r.mimeType || mime || 'audio/webm' }));
-      };
-      r.stop();
-      rec = null;
-      if (alive) newSeg();
-    };
-    newSeg();
-    const timer = window.setInterval(() => {
-      an.getFloatTimeDomainData(buf);
-      let sum = 0;
-      for (const v of buf) sum += v * v;
-      const rms = Math.sqrt(sum / buf.length);
-      const thr = Math.max(0.015, noise * 3);
-      const now = performance.now();
-      setLevel(Math.min(1, rms / 0.12));
-      if (rms > thr) {
-        speech = true;
-        lastVoice = now;
-      } else if (!speech) noise = noise * 0.95 + rms * 0.05;
-      if (speech && (now - lastVoice > SILENCE_MS || now - segStart > MAX_SEG_MS)) endSeg(true);
-      else if (!speech && now - segStart > IDLE_RESTART_MS) endSeg(false);
-    }, 50);
-    stopRef.current = () => {
-      alive = false;
-      window.clearInterval(timer);
-      endSeg(speech);
-      stream.getTracks().forEach((t) => t.stop());
-      void ctx.close();
-      setLevel(0);
-    };
     setOn(true);
     setNote('Ucapkan nomor (mis. “satu”), lalu “berat awal seribu tiga empat”, lalu “next”.');
     highlight(cur.current);
   };
+
+  // perintah pengisian dari asisten suara kelapa (DEC-111) → dijalankan di form yang sedang terbuka
+  useEffect(() => {
+    const onCmd = (e: Event) => {
+      const text = (e as CustomEvent<{ text: string }>).detail?.text;
+      if (text) void run(text);
+    };
+    window.addEventListener(VOICE_FORM_EVENT, onCmd);
+    return () => window.removeEventListener(VOICE_FORM_EVENT, onCmd);
+  }, [run]);
 
   const stop = () => {
     stopRef.current?.();

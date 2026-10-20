@@ -197,3 +197,4 @@
 - DEC-103..105: suara — angka beberapa kata isi kolom aktif, satuan diabaikan, nama kolom + nilai via data-voice-name (Dropdown prop voice); Resep — jalurExtra (＋), catatExclude (✕), jalurGroups per rentang perlakuan.
 - DEC-106: PerlakuanFields bersama (form awal + revisi), sinkron treatments.kopra; blok kopra lama disembunyikan di revisi.
 - DEC-108/109: Resep tanpa isi manual (LAB_PRODUCTS masuk dropdown); jalurGroups non-kopra → foto treatments per jenis (kunci tr:<jenis>:<i>), PPTX photoCards.
+- DEC-110/111: bio leather Rumput/Bunga/Kunyit; asisten suara kelapa (VoiceAssistant di Shell, /api/voice-assistant gpt-oss-20b JSON, sanitizePlan). E2E: localStorage gnd-va-force=1 + route tiruan. Navigasi tab lab: push /lab lalu klik lab-tab (LabPage membaca ?t= saat mount sebelum URL router diperbarui).

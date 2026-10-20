@@ -3,6 +3,11 @@
 Format: [Keep a Changelog](https://keepachangelog.com/id/1.1.0/) · Versi dataset mengikuti SemVer (ADR-002).
 Waktu dalam WIB (UTC+7).
 
+## [Asisten suara kelapa] — 2026-10-20
+### Ditambahkan
+- Asisten suara (Groq): kartu sambutan maskot kelapa beranimasi saat pertama masuk; perintah suara untuk membuka halaman/menu, membuka form, dan mengisi data.
+- Perlakuan bio leather baru: Rumput, Bunga, Kunyit.
+
 ## [Resep: tanpa isi manual; foto perlakuan non-kopra] — 2026-10-20
 ### Diubah
 - Resep/proses baru: kolom isi manual jalur produk dihapus (jalur umum pindah ke dropdown).
