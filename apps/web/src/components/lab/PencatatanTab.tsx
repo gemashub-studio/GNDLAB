@@ -348,6 +348,92 @@ export function PencatatanTab({ records, oldRaw, onChanged }: { records: CatatRe
   );
 }
 
+/** Perlakuan terisi & total jumlah produksinya. */
+const perlFilledOf = (list: readonly TreatmentEntry[]) => list.filter((e) => e.method && e.count.trim());
+const perlTotalOf = (list: readonly TreatmentEntry[]) => perlFilledOf(list).reduce((n, e) => n + (parseInt(e.count, 10) || 0), 0);
+/** Pesan galat perlakuan (pasangan tidak lengkap / total melebihi jumlah item), atau '' bila valid. */
+const perlError = (list: readonly TreatmentEntry[], itemCount: number) =>
+  list.some((e) => (e.method && !e.count.trim()) || (!e.method && e.count.trim()))
+    ? 'Lengkapi perlakuan: pilih perlakuan dan isi jumlah produksinya (atau kosongkan keduanya).'
+    : perlTotalOf(list) > itemCount
+      ? `Total jumlah produksi perlakuan (${perlTotalOf(list)}) melebihi jumlah item (${itemCount}).`
+      : '';
+
+/**
+ * Bagian "Perlakuan" (DEC-101) — dipakai form data awal DAN modal revisi data akhir (DEC-106), keduanya menulis ke
+ * data yang sama (treatments.kopra) sehingga selalu sinkron: dropdown Green House / Oven Gas / Oven Briket + jumlah
+ * produksi; item dibagi berurutan. `withNotes` = sekalian foto & keterangan per perlakuan (di revisi).
+ */
+function PerlakuanFields({ value, onChange, itemCount, testId, withNotes = false }: { value: TreatmentEntry[]; onChange: (fn: (cur: TreatmentEntry[]) => TreatmentEntry[]) => void; itemCount: number; testId: string; withNotes?: boolean }) {
+  const list = value.length ? value : [{ method: '', count: '' }];
+  const setAt = (i: number, patch: Partial<TreatmentEntry>) => onChange((cur) => (cur.length ? cur : [{ method: '', count: '' }]).map((e, j) => (j === i ? { ...e, ...patch } : e)));
+  const total = perlTotalOf(list);
+  return (
+    <section className="flex flex-col gap-3 rounded-2xl border border-acid/50 bg-acid/5 p-3" data-testid={testId}>
+      <span className="label-mono">Perlakuan</span>
+      {list.map((e, i) => (
+        <div key={i} className="flex flex-col gap-2 rounded-xl bg-white p-2.5">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
+            <div className="min-w-0 flex-1">
+              <Dropdown
+                label={`Perlakuan ${list.length > 1 ? i + 1 : ''}`.trim()}
+                testId={`catat-perl-${i}`}
+                voice={`perlakuan${ord(i)}`}
+                value={e.method}
+                onChange={(v) => setAt(i, { method: v })}
+                placeholder="— pilih perlakuan —"
+                options={KOPRA_METHODS.filter((m) => m === e.method || !list.some((x) => x.method === m)).map((m) => ({ value: m, label: methodLabel(m), note: TREATMENT_INFO.kopra.methods[m] ?? '' }))}
+              />
+            </div>
+            <label className="flex flex-col gap-1.5 sm:w-48">
+              <span className="label-mono">Jumlah produksi</span>
+              <input className={field} inputMode="numeric" enterKeyHint="next" value={e.count} onChange={(ev) => setAt(i, { count: ev.target.value.replace(/\D/g, '') })} placeholder="mis. 15" data-testid={`catat-perl-count-${i}`} data-voice-name={`jumlah produksi${ord(i)}|jumlah kopra${ord(i)}`} data-voice-kind="number" />
+            </label>
+            {list.length > 1 && (
+              <button type="button" className="inline-flex h-10 w-10 items-center justify-center self-end rounded-full text-xl hover:bg-safety" onClick={() => onChange((cur) => cur.filter((_, j) => j !== i))} aria-label={`Hapus perlakuan ${i + 1}`} data-testid={`catat-perl-del-${i}`}>
+                ✕
+              </button>
+            )}
+          </div>
+          {withNotes && (
+            <div className="flex items-start gap-2">
+              <div className="flex flex-none flex-col gap-1">
+                <span className="text-xs text-muted">Foto</span>
+                <RowPhoto value={e.photo} label={`Foto perlakuan ${i + 1}`} onChange={(v) => setAt(i, { photo: v })} testId={`catat-tr-photo-kopra-${i}`} />
+              </div>
+              <label className="flex min-w-0 flex-1 flex-col gap-1">
+                <span className="text-xs text-muted">Keterangan</span>
+                <textarea
+                  className="field min-h-[44px] w-full resize-y bg-white text-sm"
+                  rows={2}
+                  value={e.note ?? ''}
+                  maxLength={500}
+                  onChange={(ev) => setAt(i, { note: ev.target.value })}
+                  placeholder="mis. suhu oven 60 °C, dibalik tiap 2 jam"
+                  aria-label={`Keterangan perlakuan ${i + 1}`}
+                  data-testid={`catat-tr-note-kopra-${i}`}
+                  data-voice-name={`keterangan perlakuan${ord(i)}|keterangan kopra${ord(i)}`}
+                  data-voice-kind="text"
+                />
+              </label>
+            </div>
+          )}
+        </div>
+      ))}
+      <div className="flex flex-wrap items-center gap-3">
+        {list.length < KOPRA_METHODS.length && (
+          <button type="button" className="btn-ghost !min-h-[36px] text-sm" onClick={() => onChange((cur) => [...(cur.length ? cur : [{ method: '', count: '' }]), { method: '', count: '' }])} data-testid="catat-perl-add">
+            + Tambah perlakuan
+          </button>
+        )}
+        <span className={`text-xs ${itemCount && total > itemCount ? 'font-semibold text-[#B4532A]' : 'text-muted'}`} data-testid="catat-perl-total">
+          {itemCount && total > itemCount ? `⚠ Total jumlah produksi ${total} melebihi ${itemCount} item — nomor di atas ${itemCount} tidak punya foto.` : total ? `Total jumlah produksi ${total}${itemCount ? ` dari ${itemCount} item` : ''} — item dibagi berurutan (perlakuan pertama = nomor awal).` : 'Opsional. Jumlah produksi = banyak item untuk perlakuan itu.'}
+        </span>
+      </div>
+    </section>
+  );
+}
+
 /** Modal di dalam alur halaman (tanpa kunci gulir): tampil penuh, halaman tetap bisa digulir (DEC-071). */
 /**
  * Enter di kolom isian → pindah ke kolom isian berikutnya (melewati yang hanya-baca/tersembunyi); dari kolom
@@ -412,12 +498,7 @@ function AwalModal({ onClose, onConfirm }: { onClose: () => void; onConfirm: (it
   const [item, setItem] = useState<string>(RAW_ITEMS[0]);
   // perlakuan (DEC-101): Green House / Oven Gas / Oven Briket + jumlah produksi; item dibagi berurutan ke tiap perlakuan
   const [perl, setPerl] = useState<TreatmentEntry[]>([{ method: '', count: '' }]);
-  const setPerlAt = (i: number, patch: Partial<TreatmentEntry>) => {
-    setPerl((cur) => cur.map((e, j) => (j === i ? { ...e, ...patch } : e)));
-    setErr('');
-  };
-  const perlFilled = perl.filter((e) => e.method && e.count.trim());
-  const perlTotal = perlFilled.reduce((n, e) => n + (parseInt(e.count, 10) || 0), 0);
+  const perlFilled = perlFilledOf(perl);
   const [countText, setCountText] = useState('');
   const [rows, setRows] = useState<CatatRow[]>([]);
   const [err, setErr] = useState('');
@@ -436,8 +517,8 @@ function AwalModal({ onClose, onConfirm }: { onClose: () => void; onConfirm: (it
   };
   const confirm = () => {
     if (!rows.length) return setErr('Isi jumlah total item dulu (minimal 1).');
-    if (perl.some((e) => (e.method && !e.count.trim()) || (!e.method && e.count.trim()))) return setErr('Lengkapi perlakuan: pilih perlakuan dan isi jumlah produksinya (atau kosongkan keduanya).');
-    if (perlTotal > rows.length) return setErr(`Total jumlah produksi perlakuan (${perlTotal}) melebihi jumlah item (${rows.length}).`);
+    const pe = perlError(perl, rows.length);
+    if (pe) return setErr(pe);
     const miss = missingAwal(item, rows);
     if (miss.length) return setErr(`Masih kosong (${hasThickness(item) ? 'berat awal / tebal daging' : 'berat awal'}) di nomor: ${miss.slice(0, 12).join(', ')}${miss.length > 12 ? `, … (${miss.length} nomor)` : ''}.`);
     const keep = new Set(cols.map(([k]) => k as string));
@@ -460,43 +541,15 @@ function AwalModal({ onClose, onConfirm }: { onClose: () => void; onConfirm: (it
       }
     >
       <div className="flex flex-col gap-4">
-        <section className="flex flex-col gap-3 rounded-2xl border border-acid/50 bg-acid/5 p-3" data-testid="catat-awal-perlakuan">
-          <span className="label-mono">Perlakuan</span>
-          {perl.map((e, i) => (
-            <div key={i} className="flex flex-col gap-2 rounded-xl bg-white p-2.5 sm:flex-row sm:items-end">
-              <div className="min-w-0 flex-1">
-                <Dropdown
-                  label={`Perlakuan ${perl.length > 1 ? i + 1 : ''}`.trim()}
-                  testId={`catat-perl-${i}`}
-                  voice={`perlakuan${ord(i)}`}
-                  value={e.method}
-                  onChange={(v) => setPerlAt(i, { method: v })}
-                  placeholder="— pilih perlakuan —"
-                  options={KOPRA_METHODS.filter((m) => m === e.method || !perl.some((x) => x.method === m)).map((m) => ({ value: m, label: methodLabel(m), note: TREATMENT_INFO.kopra.methods[m] ?? '' }))}
-                />
-              </div>
-              <label className="flex flex-col gap-1.5 sm:w-48">
-                <span className="label-mono">Jumlah produksi</span>
-                <input className={field} inputMode="numeric" enterKeyHint="next" value={e.count} onChange={(ev) => setPerlAt(i, { count: ev.target.value.replace(/\D/g, '') })} placeholder="mis. 15" data-testid={`catat-perl-count-${i}`} data-voice-name={`jumlah produksi${ord(i)}`} data-voice-kind="number" />
-              </label>
-              {perl.length > 1 && (
-                <button type="button" className="inline-flex h-10 w-10 items-center justify-center self-end rounded-full text-xl hover:bg-safety" onClick={() => setPerl((cur) => cur.filter((_, j) => j !== i))} aria-label={`Hapus perlakuan ${i + 1}`} data-testid={`catat-perl-del-${i}`}>
-                  ✕
-                </button>
-              )}
-            </div>
-          ))}
-          <div className="flex flex-wrap items-center gap-3">
-            {perl.length < KOPRA_METHODS.length && (
-              <button type="button" className="btn-ghost !min-h-[36px] text-sm" onClick={() => setPerl((cur) => [...cur, { method: '', count: '' }])} data-testid="catat-perl-add">
-                + Tambah perlakuan
-              </button>
-            )}
-            <span className="text-xs text-muted" data-testid="catat-perl-total">
-              {perlTotal ? `Total jumlah produksi ${perlTotal}${rows.length ? ` dari ${rows.length} item` : ''} — item dibagi berurutan (perlakuan pertama = nomor awal).` : 'Opsional. Jumlah produksi = banyak item untuk perlakuan itu.'}
-            </span>
-          </div>
-        </section>
+        <PerlakuanFields
+          testId="catat-awal-perlakuan"
+          value={perl}
+          onChange={(fn) => {
+            setPerl(fn);
+            setErr('');
+          }}
+          itemCount={rows.length}
+        />
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <Dropdown label="Item / barang" required testId="catat-item" voice="item|barang" value={item} onChange={setItem} options={RAW_ITEMS.map((i) => ({ value: i, label: i }))} />
           <label className="flex flex-col gap-1.5">
@@ -683,6 +736,8 @@ function AkhirModal({ pending, onClose, onConfirm, onDraft, onFinish, revision =
   };
   const confirm = () => {
     if (!rec) return setErr('Pilih catatan awal dulu.');
+    // revisi: pasangan perlakuan harus lengkap; total > jumlah item hanya diperingatkan (catatan lama bisa memakai arti lain)
+    if (revision && tr.kopra.some((e) => (e.method && !e.count.trim()) || (!e.method && e.count.trim()))) return setErr(perlError(tr.kopra, rec.count));
     const miss = missingAkhir(rec.item, merged);
     if (miss.length) return setErr(`Data akhir masih kosong di nomor: ${miss.slice(0, 12).join(', ')}${miss.length > 12 ? `, … (${miss.length} nomor)` : ''}.`);
     onConfirm(rec.id, akhirOut(), tr);
@@ -763,7 +818,20 @@ function AkhirModal({ pending, onClose, onConfirm, onDraft, onFinish, revision =
                 <RowPhoto key="fk" value={r.fotoAkhir} label={`Foto akhir nomor ${r.no}`} onChange={(v) => set(r.no, 'fotoAkhir', v)} testId={`catat-akhir-foto-${r.no}`} />,
               ]}
             />
-            <TreatmentFields value={tr} onChange={(fn) => { setTouched(true); setTr(fn); }} />
+            {revision && (
+              <PerlakuanFields
+                testId="catat-revisi-perlakuan"
+                value={tr.kopra}
+                onChange={(fn) => {
+                  setTouched(true);
+                  setErr('');
+                  setTr((x) => ({ ...x, kopra: fn(x.kopra) }));
+                }}
+                itemCount={rec.count}
+                withNotes
+              />
+            )}
+            <TreatmentFields value={tr} onChange={(fn) => { setTouched(true); setTr(fn); }} {...(revision && { hide: ['kopra' as TreatmentKey] })} />
           </>
         )}
         {err && <p className="text-sm" role="alert"><span className="bg-safety px-1">{err}</span></p>}
@@ -778,12 +846,12 @@ type TreatmentState = Record<TreatmentKey, TreatmentEntry[]>;
  * Perlakuan (opsional) di form data akhir (DEC-081): tiap jenis berisi kolom "jumlah perlakuan" + dropdown
  * "Perlakuan/metode"; tombol + menambah pasangan kolom baru di bawahnya, ✕ menghapus kolom tambahan.
  */
-function TreatmentFields({ value, onChange }: { value: TreatmentState; onChange: (fn: (x: TreatmentState) => TreatmentState) => void }) {
+function TreatmentFields({ value, onChange, hide = [] }: { value: TreatmentState; onChange: (fn: (x: TreatmentState) => TreatmentState) => void; hide?: TreatmentKey[] }) {
   const edit = (key: TreatmentKey, i: number, patch: Partial<TreatmentEntry>) => onChange((x) => ({ ...x, [key]: x[key].map((e, j) => (j === i ? { ...e, ...patch } : e)) }));
   return (
     <fieldset className="grid grid-cols-1 gap-3 rounded-xl bg-paper p-3 sm:grid-cols-2" data-testid="catat-treatments">
       <legend className="label-mono px-1">Perlakuan (opsional)</legend>
-      {TREATMENT_GROUPS.map((g) => (
+      {TREATMENT_GROUPS.filter((g) => !hide.includes(g.key)).map((g) => (
         <div key={g.key} className="flex flex-col gap-2 rounded-xl bg-white p-3" data-testid={`catat-tr-${g.key}`}>
           <span className="label-mono">{g.title}</span>
           {value[g.key].map((e, i) => (

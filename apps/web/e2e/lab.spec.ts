@@ -570,7 +570,13 @@ test.describe('Hapus hasil riset', () => {
     const rev = page.getByTestId('catat-akhir-modal');
     await expect(rev).toContainText(`Revisi data akhir · ${id}`);
     await expect(rev.getByTestId('catat-akhir-berat-3')).toHaveValue('600');
-    await expect(rev.getByTestId('catat-tr-count-kopra-0')).toHaveValue('3');
+    // revisi: bagian Perlakuan sama seperti form data awal (DEC-106), terisi dari data yang sama
+    await expect(rev.getByTestId('catat-revisi-perlakuan')).toBeVisible();
+    await expect(rev.getByTestId('catat-perl-0')).toContainText('Oven Gas');
+    await expect(rev.getByTestId('catat-perl-count-0')).toHaveValue('3');
+    await expect(rev.getByTestId('catat-tr-note-kopra-0')).toHaveValue('suhu oven 60 C, dibalik tiap 2 jam');
+    await expect(rev.getByTestId('catat-tr-kopra')).toHaveCount(0);
+    await expect(rev.getByTestId('catat-perl-total')).toContainText('melebihi 3 item');
     await expect(rev.getByTestId('catat-akhir-draft')).toHaveCount(0);
     await rev.getByTestId('catat-akhir-berat-3').fill('650');
     await rev.getByTestId('catat-akhir-confirm').click();
@@ -943,9 +949,25 @@ test.describe('Suara: nama kolom + nilai di form awal, akhir & revisi (DEC-104)'
     await expect(rev).toContainText(`Revisi data akhir · ${id}`);
     await say('catat-akhir-voice', 'dua berat akhir lima ratus');
     await expect(rev.getByTestId('catat-akhir-berat-2')).toHaveValue('500');
-    await say('catat-akhir-voice', 'jumlah kopra dua');
-    await expect(rev.getByTestId('catat-tr-count-kopra-0')).toHaveValue('2');
+    // perlakuan di revisi = sama & sinkron dengan form data awal (DEC-106)
+    await expect(rev.getByTestId('catat-perl-0')).toContainText('Green House');
+    await expect(rev.getByTestId('catat-perl-count-0')).toHaveValue('2');
+    await say('catat-akhir-voice', 'jumlah produksi satu');
+    await expect(rev.getByTestId('catat-perl-count-0')).toHaveValue('1');
+    await rev.getByTestId('catat-perl-add').click();
+    await rev.getByTestId('catat-perl-1').click();
+    await expect(rev.getByTestId('catat-perl-1-list')).not.toContainText('Green House');
+    await rev.getByTestId('catat-perl-1-opt-Oven Briket').click();
+    await rev.getByTestId('catat-akhir-confirm').click();
+    await expect(rev).toContainText('Lengkapi perlakuan');
+    await rev.getByTestId('catat-perl-count-1').fill('1');
     await rev.getByTestId('catat-akhir-confirm').click();
     await expect(page.getByTestId('catat-revised')).toContainText('Revisi data akhir');
+    await page.getByTestId('catat-revised-close').click();
+    await expect(page.getByTestId(`catat-card-${id}`)).toContainText('kopra: 1 × GreenHouse · kopra: 1 × Oven Briket');
+    await page.getByTestId(`catat-card-${id}`).click();
+    await page.getByTestId('catat-revise').click();
+    await expect(page.getByTestId('catat-perl-1')).toContainText('Oven Briket');
+    await expect(page.getByTestId('catat-perl-count-1')).toHaveValue('1');
   });
 });

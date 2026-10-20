@@ -3,6 +3,10 @@
 Format: [Keep a Changelog](https://keepachangelog.com/id/1.1.0/) · Versi dataset mengikuti SemVer (ADR-002).
 Waktu dalam WIB (UTC+7).
 
+## [Perlakuan di modal revisi] — 2026-10-20
+### Diubah
+- Revisi data akhir: bagian Perlakuan sama & sinkron dengan form data awal (Green House / Oven Gas / Oven Briket + jumlah produksi, foto & keterangan).
+
 ## [Suara: nama kolom + nilai; Resep: tambah kolom jalur & hapus foto] — 2026-10-19
 ### Ditambahkan
 - Perintah suara "nama kolom + nilai" untuk semua kolom form data awal, akhir, dan revisi (angka, teks, dropdown).
