@@ -43,9 +43,13 @@ import { ImagePreview } from './Overlays';
 import { jalurGroups, listCatat, methodLabel, TREATMENT_GROUPS, TREATMENT_INFO, type CatatRecord } from '@/lib/pencatatan';
 
 /** Pilihan jalur produk dari daftar perlakuan pencatatan (DEC-101) + keterangannya; tetap bisa diketik manual. */
-const JALUR_OPTIONS = TREATMENT_GROUPS.flatMap((g) =>
-  g.methods.map((m) => ({ value: methodLabel(m), label: methodLabel(m), group: g.title.replace('Jumlah perlakuan ', 'Perlakuan '), note: TREATMENT_INFO[g.key].methods[m] ?? '' })),
-);
+const JALUR_OPTIONS = [
+  ...TREATMENT_GROUPS.flatMap((g) =>
+    g.methods.map((m) => ({ value: methodLabel(m), label: methodLabel(m), group: g.title.replace('Jumlah perlakuan ', 'Perlakuan '), note: TREATMENT_INFO[g.key].methods[m] ?? '' })),
+  ),
+  // jalur produk umum (dulu bisa diketik manual; kolom manual dihapus, DEC-108)
+  ...LAB_PRODUCTS.map((p) => ({ value: p.name, label: p.name, group: 'Jalur produk lain', note: `kode ${p.id}` })),
+];
 const catatStatus = (r: CatatRecord) => (r.closedAt ? 'selesai' : r.finishedAt ? 'lengkap' : 'disimpan (belum lengkap)');
 import { askConfirm as ask } from './Overlays';
 
@@ -722,15 +726,14 @@ function ProtocolForm({ protocols, entries, media, base, draft, onDraftSaved, in
               options={JALUR_OPTIONS}
             />
           )}
-          <label className="flex flex-col gap-1.5">
-          <span className={base ? 'label-mono' : 'text-xs text-muted'}>{base ? 'Jalur produk' : 'atau isi manual'}</span>
-          <input className="field" list="proto-product-list" value={productText} disabled={!!base} onChange={(e) => setProductText(e.target.value)} placeholder="pilih atau ketik, mis. Minyak Kelapa" data-testid="proto-product" />
-          <datalist id="proto-product-list">
-            {LAB_PRODUCTS.map((p) => <option key={p.id} value={p.name} />)}
-            {(['Cuka', 'Bioleather', 'Kopra'] as const).flatMap((l) => Array.from({ length: VARIANT_MAX }, (_, i) => <option key={`${l}${i + 1}`} value={`${l}${i + 1}`} />))}
-          </datalist>
-          <span className="text-xs text-muted" data-testid="proto-product-code">Kode jalur: {product}{productName ? ' (isian manual)' : ''}</span>
-          </label>
+          {/* versi baru: jalur produk tetap (hanya ditampilkan); resep baru: hanya dropdown — kolom isi manual dihapus (DEC-108) */}
+          {base && (
+            <label className="flex flex-col gap-1.5">
+              <span className="label-mono">Jalur produk</span>
+              <input className="field" value={productText} disabled data-testid="proto-product" />
+            </label>
+          )}
+          <span className="text-xs text-muted" data-testid="proto-product-code">Kode jalur: {product}</span>
           {/* kolom jalur produk tambahan (DEC-105) */}
           {jalurExtra.map((j, i) => (
             <div key={i} className="flex items-end gap-2" data-testid={`proto-jalur-extra-row-${i}`}>

@@ -57,7 +57,8 @@ test.describe('GEMA RnD Lab', () => {
 
     await page.goto('/lab?t=protokol');
     await page.getByTestId('proto-new').click();
-    await page.getByTestId('proto-product').fill('Cuka Air Kelapa');
+    await page.getByTestId('proto-jalur').click();
+    await page.getByTestId('proto-jalur-opt-Cuka Air Kelapa').click();
     const pid = (await page.getByTestId('proto-id').textContent())!;
     expect(pid).toMatch(/^CK-P\d{2}-v1$/);
     await page.getByTestId('proto-name').fill('Cuka E2E');
@@ -207,7 +208,8 @@ test.describe('GEMA RnD Lab', () => {
     await page.goto('/lab?t=protokol');
     await expect(page.getByTestId('lab-tab-protokol')).toHaveText('Riset Produk');
     await page.getByTestId('proto-new').click();
-    await page.getByTestId('proto-product').fill('Kopra Edibel');
+    await page.getByTestId('proto-jalur').click();
+    await page.getByTestId('proto-jalur-opt-Kopra Edibel').click();
     const pid = (await page.getByTestId('proto-id').textContent())!;
     const key = pid.replace(/-v1$/, '');
     await page.getByTestId('proto-name').fill('Kopra oven E2E');
@@ -293,7 +295,8 @@ test.describe('GEMA RnD Lab', () => {
     const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==', 'base64');
     await page.goto('/lab?t=protokol');
     await page.getByTestId('proto-new').click();
-    await page.getByTestId('proto-product').fill('Arang');
+    await page.getByTestId('proto-jalur').click();
+    await page.getByTestId('proto-jalur-opt-Arang').click();
     await page.getByTestId('proto-name').fill('Arang draf E2E');
     await page.getByTestId('proto-ing-name-0').fill('Batok kelapa');
     await page.getByTestId('proto-ing-files-0').setInputFiles({ name: 'batok.png', mimeType: 'image/png', buffer: png });
@@ -350,7 +353,8 @@ test.describe('GEMA RnD Lab', () => {
     await page.goto('/lab?t=protokol');
     await expect(page.getByTestId('proto-filter')).toHaveCount(0);
     await page.getByTestId('proto-new').click();
-    await page.getByTestId('proto-product').fill('Briket');
+    await page.getByTestId('proto-jalur').click();
+    await page.getByTestId('proto-jalur-opt-Briket').click();
     const key = (await page.getByTestId('proto-id').textContent())!.replace(/-v1$/, '');
     await page.getByTestId('proto-name').fill('Briket versi E2E');
     await page.getByTestId('proto-finish').click();
@@ -614,17 +618,21 @@ test.describe('Hapus hasil riset', () => {
     await expect(page.getByTestId('catat-revise')).toHaveCount(0);
     await page.getByTestId('catat-preview-close').click();
   });
-  test('jalur produk bisa diisi manual → kode otomatis, nama tersimpan', async ({ page }) => {
+  test('jalur produk hanya lewat dropdown (tanpa isi manual, DEC-108) → kode otomatis, nama tersimpan', async ({ page }) => {
     await page.goto('/lab?t=protokol');
     await page.getByTestId('proto-new').click();
-    await page.getByTestId('proto-product').fill('Minyak Kelapa Murni');
-    await expect(page.getByTestId('proto-product-code')).toContainText('Kode jalur: MK (isian manual)');
-    await expect(page.getByTestId('proto-id')).toHaveText(/^MK-P\d{2}-v1$/);
-    await page.getByTestId('proto-name').fill('VCO fermentasi E2E');
+    await expect(page.getByTestId('proto-product')).toHaveCount(0);
+    await expect(page.getByTestId('proto-form')).not.toContainText('atau isi manual');
+    await page.getByTestId('proto-jalur').click();
+    await expect(page.getByTestId('proto-jalur-list')).toContainText('Briket');
+    await page.getByTestId('proto-jalur-opt-Oven Briket').click();
+    await expect(page.getByTestId('proto-product-code')).toContainText('Kode jalur: OB');
+    await expect(page.getByTestId('proto-id')).toHaveText(/^OB-P\d{2}-v1$/);
+    await page.getByTestId('proto-name').fill('Kopra oven briket E2E');
     await page.getByTestId('proto-save').click();
     await page.getByRole('button', { name: 'Tutup' }).click();
     await page.getByTestId('proto-ongoing').click();
-    await expect(page.getByTestId('ongoing-list')).toContainText('Minyak Kelapa Murni');
+    await expect(page.getByTestId('ongoing-list')).toContainText('Oven Briket');
   });
   test('hapus butuh ketik kode; kode salah tidak menghapus', async ({ page }) => {
     await page.goto('/lab?t=protokol');
@@ -877,7 +885,7 @@ test.describe('Perlakuan di data awal & Resep baru dari data pencatatan (DEC-101
     await expect(f.getByTestId('proto-jalur-list')).toContainText('Bio Leather A - Gula 25g');
     await expect(f.getByTestId('proto-jalur-list')).toContainText('dijemur dengan panas matahari');
     await f.getByTestId('proto-jalur-opt-Green House').click();
-    await expect(f.getByTestId('proto-product')).toHaveValue('Green House');
+    await expect(f.getByTestId('proto-jalur')).toContainText('Green House');
     const ph = f.getByTestId('proto-catat-photos');
     await expect(ph).toContainText(`${id} (2 foto)`);
     await expect(ph.getByRole('img')).toHaveCount(2);
@@ -895,8 +903,9 @@ test.describe('Perlakuan di data awal & Resep baru dari data pencatatan (DEC-101
     await expect(f.getByTestId('proto-catat-group-0').getByRole('img')).toHaveCount(2);
     await f.getByTestId('proto-jalur-extra-del-0').click();
     await expect(f.getByTestId('proto-catat-group-1')).toHaveCount(0);
-    // tetap bisa diisi manual; jalur non-kopra → foto disembunyikan
-    await f.getByTestId('proto-product').fill('Minyak Kelapa');
+    // jalur non-kopra → foto disembunyikan
+    await f.getByTestId('proto-jalur').click();
+    await f.getByTestId('proto-jalur-opt-CUKA 1 - GULA 25g').click();
     await expect(f.getByTestId('proto-catat-photos')).toHaveCount(0);
   });
 });
