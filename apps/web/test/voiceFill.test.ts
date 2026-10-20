@@ -135,3 +135,22 @@ describe('nama kolom + nilai untuk kolom lain di form (DEC-104)', () => {
     expect(matchOption('kelapa tua', [{ value: 'Kelapa tua', label: 'Kelapa tua' }, { value: 'Kelapa muda', label: 'Kelapa muda' }])?.value).toBe('Kelapa tua');
   });
 });
+
+describe('"isi kolom <nama kolom> dengan <nilai>" (DEC-113)', () => {
+  const extra: VoiceField[] = [
+    { key: 'x:perl', label: 'perlakuan', say: ['perlakuan'], kind: 'choice', options: [{ value: 'GreenHouse', label: 'Green House' }, { value: 'Oven Gas', label: 'Oven Gas' }] },
+    { key: 'x:jp', label: 'jumlah produksi', say: ['jumlah produksi'], kind: 'number' },
+    { key: 'x:note', label: 'keterangan kopra', say: ['keterangan kopra'], kind: 'text' },
+  ];
+  const all = [...Object.values(AWAL_VOICE_FIELDS), ...extra];
+  it('kolom angka, dropdown, teks; "isi <angka>" tetap kolom aktif', () => {
+    expect(parseVoice('isi kolom berat awal dengan seribu tiga empat', all)).toEqual([{ kind: 'fill', field: 'beratAwal', value: '1034' }]);
+    expect(parseVoice('Isi kolom perlakuan dengan oven gas.', all)).toEqual([{ kind: 'fill', field: 'x:perl', value: 'oven gas' }]);
+    expect(parseVoice('isi jumlah produksi jadi lima belas', all)).toEqual([{ kind: 'fill', field: 'x:jp', value: '15' }]);
+    expect(parseVoice('isi kolom keterangan kopra dengan dicampur dengan gula', all)).toEqual([{ kind: 'fill', field: 'x:note', value: 'dicampur dengan gula' }]);
+    expect(parseVoice('pilih perlakuan green house', all)).toEqual([{ kind: 'fill', field: 'x:perl', value: 'green house' }]);
+    expect(parseVoice('isi tiga ratus', all)).toEqual([{ kind: 'fill', value: '300' }]);
+    expect(parseVoice('nomor dua isi kolom tebal daging dengan sepuluh', all)).toEqual([{ kind: 'row', no: 2 }, { kind: 'fill', field: 'tebalAwal', value: '10' }]);
+  });
+});
+

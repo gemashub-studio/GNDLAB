@@ -32,6 +32,7 @@ test('Ayo → "buka pencatatan data lalu buat catatan baru" → form terbuka →
     { actions: [{ type: 'navigate', target: '/lab?t=bahan' }, { type: 'click', target: 'catat-new' }], reply: 'Buka pencatatan data dan membuat catatan baru.' },
     { actions: [{ type: 'fill', text: 'jumlah item dua perlakuan green house jumlah produksi dua' }], reply: 'Mengisi jumlah item dan perlakuan.' },
     { actions: [{ type: 'fill', text: 'nomor dua berat awal seribu tiga puluh empat tebal daging sepuluh' }], reply: 'Mengisi nomor dua.' },
+    { actions: [{ type: 'fill', text: 'isi kolom perlakuan dengan oven gas' }], reply: 'Memilih Oven Gas.' },
   ];
   const sent: { text: string; ctx: { path: string; form?: string; buttons: { id: string }[] } }[] = [];
   await page.route('**/api/voice-assistant', async (r) => {
@@ -50,6 +51,15 @@ test('Ayo → "buka pencatatan data lalu buat catatan baru" → form terbuka →
   await expect(page).toHaveURL(/\/lab\?t=bahan/, { timeout: 120_000 });
   const m = page.getByTestId('catat-awal-modal');
   await expect(m).toBeVisible({ timeout: 60_000 });
+  // dibuka lewat suara: bingkai listrik + bagian paling atas form tampil (DEC-113)
+  await expect(page.getByTestId('va-spark')).toBeVisible();
+  await expect(page.getByTestId('va-spark').locator('canvas')).toHaveCount(1);
+  await expect(async () => {
+    const box = await m.boundingBox();
+    expect(box!.y).toBeGreaterThanOrEqual(0);
+    expect(box!.y).toBeLessThan(220);
+  }).toPass({ timeout: 5000 });
+  await expect(page.getByTestId('va-spark')).toHaveCount(0, { timeout: 8000 });
   await expect(panel.getByTestId('va-status')).toContainText('Buka pencatatan data');
   expect(sent[0]!.ctx.path).toBe('/');
   await say('jumlah itemnya dua, perlakuannya green house sebanyak dua');
@@ -60,6 +70,9 @@ test('Ayo → "buka pencatatan data lalu buat catatan baru" → form terbuka →
   await say('nomor dua berat awalnya seribu tiga puluh empat, tebalnya sepuluh');
   await expect(m.getByTestId('catat-awal-beratAwal-2')).toHaveValue('1034');
   await expect(m.getByTestId('catat-awal-tebalAwal-2')).toHaveValue('10');
+  // "isi kolom <nama kolom> dengan <nilai>" — dropdown dipilih otomatis (DEC-113)
+  await say('isi kolom perlakuan dengan oven gas');
+  await expect(m.getByTestId('catat-perl-0')).toContainText('Oven Gas');
   // tombol berbahaya tidak pernah dikirim ke perencana
   expect(sent.flatMap((s) => s.ctx.buttons.map((b) => b.id)).some((id) => /delete|hapus|logout/i.test(id))).toBe(false);
   await panel.getByTestId('va-stop').click();

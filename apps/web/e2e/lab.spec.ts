@@ -2,59 +2,7 @@ import { expect, test } from '@playwright/test';
 
 /** GEMA RnD Lab (DEC-044/045): buku catatan eksperimen lokal + library sumber. */
 test.describe('GEMA RnD Lab', () => {
-  test('kartu jalur → eksperimen baru dengan ID otomatis → lengkapi hasil & langkah → riwayat versi', async ({ page }) => {
-    await page.goto('/lab');
-    await expect(page.getByTestId('lab-heading').getByRole('img', { name: 'GnD Lab' })).toBeVisible();
-    await expect(page).toHaveTitle(/GnD Lab/);
-    await page.getByTestId('lab-product-BR').click();
-    await expect(page.getByTestId('lab-filter-product')).toHaveValue('BR');
-    await page.getByTestId('lab-new').click();
-    await page.getByTestId('lab-date').fill('2026-10-11');
-    await expect(page.getByTestId('lab-id')).toHaveText(/^BR-2610-\d{3}$/);
-    const id = (await page.getByTestId('lab-id').textContent())!;
-    await page.getByTestId('lab-title').fill('E2E uji perekat');
-    await page.getByTestId('wiz-next').click();
-    await page.getByTestId('wiz-free').check();
-    await page.getByTestId('wiz-next').click();
-    await page.getByTestId('lab-save').click();
-
-    await expect(page.getByTestId('lab-detail-id')).toHaveText(id);
-    await expect(page).toHaveURL(new RegExp(`e=${id}`));
-    await expect(page.getByTestId('lab-detail')).toContainText('belum dicatat');
-
-    await page.getByTestId('lab-edit-open').click();
-    await page.getByTestId('lab-edit-result').fill('Briket retak saat kering');
-    await page.getByTestId('lab-edit-status').selectOption('gagal');
-    await page.getByTestId('lab-edit-save').click();
-    await expect(page.getByTestId('lab-detail')).toContainText('Briket retak saat kering');
-    await expect(page.getByTestId('lab-detail')).toContainText('1 versi lama tersimpan');
-
-    await page.getByTestId('lab-step-input').fill('Naikkan perekat, 3 ulangan');
-    await page.getByTestId('lab-step-add').click();
-    await expect(page.getByTestId('lab-steps')).toContainText('Naikkan perekat');
-
-    await page.getByTestId('lab-back').click();
-    await page.getByTestId('lab-search').fill('retak');
-    await expect(page.getByTestId('lab-list')).toContainText(id);
-    await page.getByTestId('lab-tab-ringkasan').click();
-    await expect(page.getByTestId('lab-next')).toContainText('Naikkan perekat');
-  });
-
-  test('library menampilkan status pemeriksaan & standar per jalur', async ({ page }) => {
-    await page.goto('/lab?t=library');
-    await page.getByTestId('lib-filter-status').selectOption('dilaporkan');
-    await expect(page.getByTestId('lib-list')).toContainText('SNI 01-6235-2000');
-    await expect(page.getByTestId('lib-list')).not.toContainText('SNI 01-3946-1995');
-    await page.getByTestId('lab-tab-standar').click();
-    await page.getByTestId('std-tab-BL').click();
-    await expect(page.getByTestId('std-detail')).toContainText('ISO 3376:2020');
-    await expect(page.getByTestId('std-detail')).toContainText('Belum boleh disimpulkan');
-  });
-
-  test('protokol berversi → catatan harian (append-only) dengan hasil ukur & foto → PDF harian/kompilasi → cadangan & pulihkan', async ({ page }) => {
-    // PNG 1×1 untuk lampiran.
-    const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==', 'base64');
-
+  test('protokol berversi: versi baru wajib alasan perubahan', async ({ page }) => {
     await page.goto('/lab?t=protokol');
     await page.getByTestId('proto-new').click();
     await page.getByTestId('proto-jalur').click();
@@ -78,129 +26,6 @@ test.describe('GEMA RnD Lab', () => {
     await page.getByTestId('proto-reason').fill('naikkan volume');
     await page.getByTestId('proto-finish').click();
     await expect(page.getByTestId(`proto-${key}`)).toContainText('2 versi');
-
-    await page.getByTestId('lab-tab-eksperimen').click();
-    await page.getByTestId('lab-new').click();
-    await page.getByTestId('lab-product').selectOption('CK');
-    await page.getByTestId('lab-title').fill('E2E cuka harian');
-    await page.getByTestId('wiz-next').click();
-    await page.getByTestId('wiz-free').check();
-    await page.getByTestId('wiz-next').click();
-    await page.getByTestId('lab-save').click();
-    const id = (await page.getByTestId('lab-detail-id').textContent())!;
-
-    await page.getByTestId('day-new').click();
-    await expect(page.getByTestId('day-id')).toHaveText(`${id}-H01`);
-    await page.getByTestId('day-protocol').selectOption(`${key}-v2`);
-    await page.getByTestId('day-plan').fill('Fermentasi 2 L');
-    await page.getByTestId('day-actual').fill('Fermentasi 1,8 L karena tumpah');
-    await page.getByTestId('day-mat-name-0').fill('Air kelapa');
-    await page.getByTestId('day-mat-amount-0').fill('1,8');
-    await page.getByTestId('day-mat-unit-0').fill('L');
-    await page.getByTestId('day-meas-name-0').fill('pH');
-    await page.getByTestId('day-meas-value-0').fill('4,6');
-    await page.getByTestId('day-meas-at-0').fill('2026-10-11T08:00');
-    await page.getByTestId('day-meas-add').click();
-    await page.getByTestId('day-meas-name-1').fill('pH');
-    await page.getByTestId('day-meas-value-1').fill('4,1');
-    await page.getByTestId('day-meas-at-1').fill('2026-10-11T16:00');
-    await page.getByTestId('day-deviation').fill('Tumpah 0,2 L');
-    await page.getByTestId('day-files').setInputFiles({ name: 'botol.png', mimeType: 'image/png', buffer: png });
-    await page.getByTestId('day-save').click();
-    await expect(page.getByTestId('day-msg')).toContainText(`${id}-H01`);
-    await expect(page.getByTestId(`day-meas-table-${id}-H01`)).toContainText('4,6');
-    await expect(page.getByTestId(`day-media-${id}-H01`)).toContainText('botol.png');
-
-    const daily = page.waitForEvent('download');
-    await page.getByTestId(`day-pdf-${id}-H01`).click();
-    expect((await daily).suggestedFilename()).toBe(`${id}-H01-harian.pdf`);
-    const compiled = page.waitForEvent('download');
-    await page.getByTestId('lab-compile-pdf').click();
-    const pdfPath = await (await compiled).path();
-    const { readFileSync } = await import('node:fs');
-    expect(readFileSync(pdfPath!).subarray(0, 5).toString()).toBe('%PDF-');
-
-    // Cadangan lengkap lalu pulihkan: semua sudah ada → dilewati, tidak ditimpa.
-    await page.getByTestId('lab-tab-ringkasan').click();
-    const dl = page.waitForEvent('download');
-    await page.getByTestId('lab-backup').click();
-    const backupPath = (await (await dl).path())!;
-    const backup = JSON.parse(readFileSync(backupPath, 'utf8'));
-    expect(backup.version).toBe(2);
-    expect(backup.entries.some((e: { id: string }) => e.id === `${id}-H01`)).toBe(true);
-    expect(backup.media.some((m: { name: string; data: string }) => m.name === 'botol.png' && m.data.length > 0)).toBe(true);
-    await page.getByTestId('lab-restore-file').setInputFiles(backupPath);
-    await expect(page.getByTestId('lab-restore-plan')).toContainText('Akan ditambahkan: 0 eksperimen, 0 catatan harian');
-    await expect(page.getByTestId('lab-restore-apply')).toBeDisabled();
-  });
-  test('peneliti: wizard desain (faktor × ulangan) → lembar data → ringkasan per perlakuan → laporan PDF lengkap', async ({ page }) => {
-    await page.goto('/lab?t=eksperimen');
-    await page.getByTestId('lab-new').click();
-    await page.getByTestId('lab-product').selectOption('KE');
-    await page.getByTestId('lab-title').fill('E2E suhu oven');
-    await page.getByTestId('lab-hypothesis').fill('70 °C lebih cepat kering');
-    await page.getByTestId('wiz-next').click();
-    await page.getByTestId('wiz-next').click();
-    await expect(page.getByTestId('lab-msg')).toContainText('faktor');
-    await page.getByTestId('wiz-f0-name').fill('Suhu oven');
-    await page.getByTestId('wiz-f0-unit').fill('°C');
-    await page.getByTestId('wiz-f0-levels').fill('60, 70');
-    await page.getByTestId('wiz-reps').fill('2');
-    await page.getByTestId('wiz-control').selectOption({ index: 1 });
-    await page.getByTestId('wiz-next').click();
-    await expect(page.getByTestId('lab-msg')).toContainText('diukur');
-    await page.getByTestId('wiz-sug-ka_akhir_pct').click();
-    await page.getByTestId('wiz-resp-name').fill('Warna');
-    await page.getByTestId('wiz-resp-unit').fill('skor');
-    await page.getByTestId('wiz-resp-add').click();
-    await expect(page.getByTestId('wiz-responses')).toContainText('Kadar air akhir');
-    await page.getByTestId('wiz-next').click();
-    await expect(page.getByTestId('wiz-run-count')).toContainText('2 × 2 = 4 unit');
-    await expect(page.getByTestId('wiz-runs')).toContainText('P2-U2');
-    await page.getByTestId('lab-save').click();
-
-    const id = (await page.getByTestId('lab-detail-id').textContent())!;
-    await expect(page.getByTestId('lab-design')).toContainText('Suhu oven: 60 / 70 °C');
-    const vals: Record<string, string> = { 'P1-U1': '6,0', 'P1-U2': '7,0', 'P2-U1': '5,0', 'P2-U2': '5,5' };
-    for (const [code, v] of Object.entries(vals)) await page.getByTestId(`cell-${code}-0`).fill(v);
-    await page.getByTestId('sheet-save').click();
-    await expect(page.getByTestId('sheet-msg')).toContainText(`${id}-H01`);
-    const sum = page.getByTestId('sum-Kadar air akhir');
-    await expect(sum).toContainText('6,50');
-    await expect(sum).toContainText('5,25');
-    await expect(page.getByTestId(`cell-P1-U1-0`)).toHaveAttribute('placeholder', '6,0');
-
-    const dl = page.waitForEvent('download');
-    await page.getByTestId('lab-compile-pdf').click();
-    const path = await (await dl).path();
-    const { readFileSync } = await import('node:fs');
-    const pdf = readFileSync(path!);
-    expect(pdf.subarray(0, 5).toString()).toBe('%PDF-');
-    expect(pdf.length).toBeGreaterThan(5000);
-  });
-  test('eksperimen lama tanpa desain → Tambah desain (riwayat versi tetap) → lembar data muncul', async ({ page }) => {
-    await page.goto('/lab?t=eksperimen');
-    await page.getByTestId('lab-new').click();
-    await page.getByTestId('lab-title').fill('E2E tanpa desain');
-    await page.getByTestId('wiz-next').click();
-    await page.getByTestId('wiz-free').check();
-    await page.getByTestId('wiz-next').click();
-    await page.getByTestId('lab-save').click();
-    await expect(page.getByTestId('lab-no-design')).toBeVisible();
-    await expect(page.getByTestId('lab-sheet')).toHaveCount(0);
-    await page.getByTestId('lab-add-design').click();
-    await page.getByTestId('wiz-f0-name').fill('Lama jemur');
-    await page.getByTestId('wiz-f0-unit').fill('hari');
-    await page.getByTestId('wiz-f0-levels').fill('3, 5');
-    await page.getByTestId('wiz-resp-name').fill('Berat akhir');
-    await page.getByTestId('wiz-resp-unit').fill('kg');
-    await page.getByTestId('wiz-resp-add').click();
-    await page.getByTestId('wiz-next').click();
-    await expect(page.getByTestId('wiz-run-count')).toContainText('2 × 3 = 6 unit');
-    await page.getByTestId('lab-save').click();
-    await expect(page.getByTestId('lab-design')).toContainText('Lama jemur: 3 / 5 hari');
-    await expect(page.getByTestId('lab-sheet')).toBeVisible();
-    await expect(page.getByTestId('lab-detail')).toContainText('1 versi lama tersimpan');
   });
   test('riset produk: foto bahan & langkah + alat → laporan harian sampai SELESAI → laporan PDF, Word, PowerPoint', async ({ page }) => {
     test.setTimeout(180_000); // 8 unduhan (laporan gabungan + harian, 4 format)
@@ -384,8 +209,8 @@ test.describe('Hapus hasil riset', () => {
     test.setTimeout(480_000);
     const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==', 'base64');
     await page.goto('/lab?t=bahan');
-    // urutan menu: Ringkasan → Pencatatan Data → Riset Produk → …
-    await expect(page.getByRole('tab')).toHaveText(['Ringkasan', 'Pencatatan Data', 'Riset Produk', 'Eksperimen', 'Laporan Belanja', 'Library', 'Standar']);
+    // urutan menu (DEC-112): Pencatatan Data → Riset Produk → Laporan Belanja
+    await expect(page.getByRole('tab')).toHaveText(['Pencatatan Data', 'Riset Produk', 'Laporan Belanja']);
     await expect(page.getByTestId('lab-tab-bahan')).toHaveText('Pencatatan Data');
     // Tanya Lab AI: sambutan + pesan otomatis saat membuka Pencatatan Data (DEC-087)
     await expect(page.getByTestId('lab-ai').getByTestId('lab-ai-auto').first()).toContainText('Selamat datang di GnD Lab');
@@ -705,11 +530,10 @@ test.describe('Laporan belanja (LPJ)', () => {
 });
 
 test.describe('GEMA RnD Lab — HP 360 px', () => {
-  for (const t of ['ringkasan', 'eksperimen', 'bahan', 'protokol', 'belanja', 'library', 'standar']) {
+  for (const t of ['bahan', 'protokol', 'belanja']) {
     test(`@mobile /lab?t=${t} tanpa geser horizontal`, async ({ page }) => {
       await page.goto(`/lab?t=${t}`);
       await expect(page.getByTestId('lab-hero')).toBeVisible();
-      if (t === 'eksperimen') await page.getByTestId('lab-new').click();
       if (t === 'protokol') await page.getByTestId('proto-new').click();
       if (t === 'belanja') await page.getByTestId('lpj-new').click();
       if (t === 'bahan') await page.getByTestId('catat-new').click();
@@ -739,7 +563,7 @@ test.describe('Upload progres perlakuan, form & foto OCR (DEC-095)', () => {
   test('Tanya Lab AI: ＋ → Foto dari galeri → chip foto → pesan gambar → AI berpikir sambil OCR → teks ikut prompt (DEC-097)', async ({ page }) => {
     test.setTimeout(180_000);
     await page.route('https://api.siputzx.my.id/**', (r) => r.fulfill({ json: { status: true, data: `JAWABAN: ${new URL(r.request().url()).searchParams.get('prompt')}` } }));
-    await page.goto('/lab?t=ringkasan');
+    await page.goto('/lab?t=bahan');
     const b64 = await page.evaluate(() => {
       const c = document.createElement('canvas');
       c.width = 900;
@@ -772,7 +596,7 @@ test.describe('Upload progres perlakuan, form & foto OCR (DEC-095)', () => {
 test.describe('Latar DriftWall & Gabungkan data (DEC-096)', () => {
   test.setTimeout(240_000);
   test('latar animasi tampil di halaman lain, tidak di GnD Lab; Lab AI tanpa pilihan model', async ({ page }) => {
-    await page.goto('/lab?t=ringkasan', { waitUntil: 'commit', timeout: 180_000 });
+    await page.goto('/lab?t=bahan', { waitUntil: 'commit', timeout: 180_000 });
     await expect(page.getByTestId('lab-ai-bar-input')).toBeVisible({ timeout: 120_000 });
     await expect(page.getByTestId('page-drift')).toHaveCount(0);
     await expect(page.getByLabel('Pilih model')).toHaveCount(0);
@@ -815,6 +639,11 @@ test.describe('Pengisian suara pencatatan (DEC-099)', () => {
     await say('tebal daging sepuluh koma lima');
     await expect(m.getByTestId('catat-awal-tebalAwal-1')).toHaveValue('10,5');
     await expect(v.getByTestId('catat-awal-voice-note')).toContainText('Tebal daging = 10,5');
+    // "isi kolom <nama kolom> dengan <nilai>" (DEC-113), termasuk dropdown
+    await say('isi kolom berat air dengan tiga ratus dua puluh');
+    await expect(m.getByTestId('catat-awal-beratAir-1')).toHaveValue('320');
+    await say('isi kolom perlakuan dengan oven briket');
+    await expect(m.getByTestId('catat-perl-0')).toContainText('Oven Briket');
     // angka saja (beberapa kata) mengisi kolom aktif; satuan diabaikan (DEC-103)
     await say('satu');
     await say('next');
@@ -1006,3 +835,15 @@ test.describe('Suara: nama kolom + nilai di form awal, akhir & revisi (DEC-104)'
     await expect(page.getByTestId('catat-perl-count-1')).toHaveValue('1');
   });
 });
+
+test.describe('Menu GnD Lab (DEC-112)', () => {
+  test('hanya Pencatatan Data, Riset Produk, Laporan Belanja; tautan lama → Pencatatan Data', async ({ page }) => {
+    await page.goto('/lab?t=eksperimen');
+    const tabs = page.getByRole('tablist', { name: 'Bagian lab' }).getByRole('tab');
+    await expect(tabs).toHaveText(['Pencatatan Data', 'Riset Produk', 'Laporan Belanja']);
+    await expect(page.getByTestId('lab-tab-bahan')).toHaveAttribute('aria-selected', 'true');
+    await expect(page).toHaveURL(/t=bahan/);
+    for (const gone of ['ringkasan', 'eksperimen', 'library', 'standar']) await expect(page.getByTestId(`lab-tab-${gone}`)).toHaveCount(0);
+  });
+});
+

@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8" />
+<title>Flowchart GnD Lab</title>
+<style>
+  @page { size: A4 landscape; margin: 10mm; }
+  :root { --ink: #0E1A1F; --mint: #63E6CF; --mintd: #1FA88F; --paper: #F3F6F7; --grid: #E2E8EA; --muted: #5B6B72; --amber: #F5A524; --red: #E2574C; }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: "Segoe UI", Arial, sans-serif; color: var(--ink); background: #fff; font-size: 10.5px; }
+  .page { page-break-after: always; display: flex; flex-direction: column; gap: 8px; min-height: 186mm; }
+  .page:last-child { page-break-after: auto; }
+  header { display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 3px solid var(--mint); padding-bottom: 6px; }
+  header h1 { margin: 0; font-size: 22px; letter-spacing: -0.5px; }
+  header .tag { font-family: Consolas, monospace; font-size: 9px; letter-spacing: 1.5px; color: var(--mintd); text-transform: uppercase; }
+  header .meta { text-align: right; font-family: Consolas, monospace; font-size: 9px; color: var(--muted); }
+  .lane { border: 1.5px solid var(--grid); border-radius: 12px; padding: 8px 10px; background: #fff; }
+  .lane > h2 { margin: 0 0 6px; font-size: 12px; display: flex; align-items: center; gap: 8px; }
+  .lane > h2 .no { background: var(--ink); color: var(--mint); font-family: Consolas, monospace; border-radius: 6px; padding: 1px 6px; font-size: 10px; }
+  .row { display: flex; align-items: stretch; gap: 0; flex-wrap: nowrap; }
+  .node { flex: 1 1 0; border-radius: 9px; padding: 6px 7px; background: var(--paper); border: 1.5px solid var(--grid); line-height: 1.3; min-width: 0; }
+  .node b { display: block; font-size: 10.5px; margin-bottom: 2px; }
+  .node.start { background: var(--ink); color: #fff; border-color: var(--ink); }
+  .node.start b { color: var(--mint); }
+  .node.act { background: #fff; border-color: var(--mint); }
+  .node.dec { background: #FFF6E5; border-color: var(--amber); }
+  .node.end { background: #E3F7F1; border-color: var(--mintd); }
+  .node.out { background: #EEF3FF; border-color: #7C9CFF; }
+  .node ul { margin: 2px 0 0; padding-left: 12px; }
+  .node li { margin: 0; }
+  .arrow { flex: 0 0 16px; display: flex; align-items: center; justify-content: center; color: var(--mintd); font-size: 14px; font-weight: 700; }
+  .down { text-align: center; color: var(--mintd); font-weight: 700; font-size: 13px; line-height: 1; margin: 2px 0; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .legend { display: flex; gap: 10px; font-size: 9px; color: var(--muted); }
+  .legend span { display: inline-flex; align-items: center; gap: 4px; }
+  .legend i { width: 12px; height: 10px; border-radius: 3px; display: inline-block; border: 1.5px solid; }
+  .note { font-size: 9px; color: var(--muted); }
+  .mono { font-family: Consolas, monospace; }
+  .branch { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+</style>
+</head>
+<body>
+
+<!-- HALAMAN 1: gambaran umum & Pencatatan Data -->
+<section class="page">
+  <header>
+    <div>
+      <div class="tag">gemasSTUDIO · R&amp;D · flowchart</div>
+      <h1>GnD Lab — alur halaman</h1>
+    </div>
+    <div class="meta">Versi aplikasi 2026-10-20 · gemasstudio.vercel.app/lab<br />Menu: Pencatatan Data · Riset Produk · Laporan Belanja</div>
+  </header>
+  <div class="legend">
+    <span><i style="background:#0E1A1F;border-color:#0E1A1F"></i>mulai / masuk</span>
+    <span><i style="background:#fff;border-color:#63E6CF"></i>aksi pengguna</span>
+    <span><i style="background:#FFF6E5;border-color:#F5A524"></i>keputusan / cek</span>
+    <span><i style="background:#EEF3FF;border-color:#7C9CFF"></i>keluaran (unduhan, email)</span>
+    <span><i style="background:#E3F7F1;border-color:#1FA88F"></i>selesai</span>
+  </div>
+
+  <div class="lane">
+    <h2><span class="no">00</span>Masuk ke GnD Lab</h2>
+    <div class="row">
+      <div class="node start"><b>Buka /lab</b>Halaman GnD Lab (judul animasi, statistik).</div>
+      <div class="arrow">→</div>
+      <div class="node dec"><b>Sudah login?</b>Belum → form masuk: username &amp; password, kode OTP dikirim ke email (Resend). Daftar baru: username, email, password + OTP.</div>
+      <div class="arrow">→</div>
+      <div class="node act"><b>Tanya Lab AI</b>Kolom tanya (topik @, perintah /, tingkat jawaban, foto → baca teks/OCR, dikte).</div>
+      <div class="arrow">→</div>
+      <div class="node act"><b>Asisten suara kelapa</b>Login pertama: kartu “Mau mulai bersama ku?” → Ayo: perintah suara buka menu, buka form, isi data (Groq Whisper + Groq).</div>
+      <div class="arrow">→</div>
+      <div class="node act"><b>Pilih menu</b>Pencatatan Data (awal) · Riset Produk · Laporan Belanja. Semua data tersinkron ke Supabase (rnd_data).</div>
+    </div>
+  </div>
+
+  <div class="lane">
+    <h2><span class="no">01</span>Pencatatan Data</h2>
+    <div class="row">
+      <div class="node act"><b>+ Buat catatan baru</b>
+        <ul>
+          <li><b style="display:inline">Perlakuan kopra</b>: Green House / Oven Gas / Oven Briket + jumlah produksi (+ tambah)</li>
+          <li>Item &amp; jumlah total item</li>
+          <li>Per nomor: berat awal (kelapa: volume air, berat air, tebal daging) + foto</li>
+          <li>Isi dengan suara (🎙) bisa dipakai</li>
+        </ul>
+      </div>
+      <div class="arrow">→</div>
+      <div class="node dec"><b>Valid?</b>Kolom wajib terisi; total jumlah produksi ≤ jumlah item; perlakuan &amp; jumlah berpasangan.</div>
+      <div class="arrow">→</div>
+      <div class="node act"><b>Simpan</b>Kartu “Menunggu data akhir”. Item dibagi berurutan ke perlakuan (mis. GH 15 → no 1–15, Oven Gas 10 → no 16–25).</div>
+      <div class="arrow">→</div>
+      <div class="node out"><b>Email pengingat</b>Tiap 2 hari selama masih ada pencatatan belum lengkap (pg_cron → Resend).</div>
+    </div>
+    <div class="down">↓</div>
+    <div class="row">
+      <div class="node act"><b>Buat pencatatan data akhir</b>
+        <ul>
+          <li>Kiri data awal (baca saja), kanan berat akhir (+ tebal akhir) &amp; foto akhir</li>
+          <li>Perlakuan lainnya (Non Kopra): bibit bio leather, cuka 1–3, bio leather (A, B, Rumput, Bunga, Kunyit) + jumlah, foto, keterangan</li>
+          <li>Unduh Excel kapan saja · suara 🎙</li>
+        </ul>
+      </div>
+      <div class="arrow">→</div>
+      <div class="node dec"><b>Semua nomor terisi?</b>
+        <div class="branch">
+          <div>Belum → <b style="display:inline">Simpan dulu</b> (sementara, bisa dilanjut).</div>
+          <div>Ya → <b style="display:inline">Konfirmasi data akhir</b> → “Awal &amp; akhir lengkap”.</div>
+        </div>
+      </div>
+      <div class="arrow">→</div>
+      <div class="node out"><b>Hasil &amp; unduhan</b>Perbandingan awal–akhir (berat awal − air − akhir; tebal), grafik, kesimpulan. Unduh PDF · Word · PPTX · Excel. PPTX: slide per perlakuan (foto awal atas, akhir bawah, maks. 10 nomor/slide).</div>
+    </div>
+    <div class="down">↓</div>
+    <div class="row">
+      <div class="node act"><b>Revisi data akhir</b>Dari pratinjau kartu: <i>Perlakuan kopra</i> (sama &amp; sinkron dengan form awal) + <i>Perlakuan lainnya (Non Kopra)</i>; ubah angka/foto.</div>
+      <div class="arrow">→</div>
+      <div class="node dec"><b>Selesaikan?</b>Tombol Selesaikan (form akhir lengkap / pratinjau) → ketik kata <b style="display:inline">Selesai</b> → OK / Kembali.</div>
+      <div class="arrow">→</div>
+      <div class="node end"><b>Selesai</b>Alert “Sukses!” dengan petasan (berjalan sampai OK diklik) → kartu hijau “✓ Selesai”. Tidak ada batas jumlah catatan.</div>
+    </div>
+  </div>
+  <p class="note">Hapus: menu Pilih → hanya catatan lengkap → konfirmasi (tidak dapat dipulihkan). Asisten suara tidak pernah bisa menghapus data.</p>
+</section>
+
+<!-- HALAMAN 2: Riset Produk, Laporan Belanja, suara -->
+<section class="page">
+  <header>
+    <div>
+      <div class="tag">gemasSTUDIO · R&amp;D · flowchart</div>
+      <h1>GnD Lab — Riset Produk, Laporan Belanja &amp; suara</h1>
+    </div>
+    <div class="meta">Halaman 2 / 2</div>
+  </header>
+
+  <div class="lane">
+    <h2><span class="no">02</span>Riset Produk (Resep / proses)</h2>
+    <div class="row">
+      <div class="node act"><b>+ Resep baru</b>
+        <ul>
+          <li><b style="display:inline">Pilih Data yang tersedia</b>: pencatatan lengkap / tersimpan sementara</li>
+          <li><b style="display:inline">Jalur produk</b>: dropdown perlakuan (kopra &amp; non-kopra, berketerangan) + jalur umum; ＋ Tambah kolom</li>
+        </ul>
+      </div>
+      <div class="arrow">→</div>
+      <div class="node act"><b>Foto otomatis di Komposisi bahan</b>
+        <ul>
+          <li>Jalur kopra → foto awal &amp; akhir nomor dalam rentang perlakuannya</li>
+          <li>Jalur non-kopra → foto perlakuan per jenis (mis. CUKA 1 vs CUKA 2), tanpa nomor urut</li>
+          <li>✕ hapus foto dari resep (bisa dikembalikan)</li>
+        </ul>
+      </div>
+      <div class="arrow">→</div>
+      <div class="node act"><b>Isi resep</b>Nama, tanggal mulai, pembuat, asisten, komposisi bahan (+ foto/video), alat, langkah per hari.</div>
+      <div class="arrow">→</div>
+      <div class="node dec"><b>Simpan / Selesai?</b>Simpan = draf (On going proses, bisa dibuka lagi). Selesai = versi resmi (tidak bisa diubah; perubahan = versi baru + alasan).</div>
+    </div>
+    <div class="down">↓</div>
+    <div class="row">
+      <div class="node act"><b>Laporan harian</b>Hari ke-N mengikuti langkah resep: catatan, hasil ukur, foto/video, rencana berikutnya; laporan penutup = SELESAI.</div>
+      <div class="arrow">→</div>
+      <div class="node out"><b>Laporan riset</b>Per versi: PDF · Word · PowerPoint · HTML+video; laporan harian per hari. PPTX memuat slide per kolom jalur produk dari data pencatatan.</div>
+      <div class="arrow">→</div>
+      <div class="node end"><b>Riwayat versi</b>Semua versi tersimpan; hapus riset butuh ketik kode riset.</div>
+    </div>
+  </div>
+
+  <div class="grid2">
+    <div class="lane">
+      <h2><span class="no">03</span>Laporan Belanja</h2>
+      <div class="row">
+        <div class="node act"><b>+ Laporan baru</b>Tujuan, rincian alokasi (harga dasar + batas atas).</div>
+        <div class="arrow">→</div>
+        <div class="node act"><b>Bukti alokasi</b>Per toko: total, foto nota, foto barang + nama barang.</div>
+        <div class="arrow">→</div>
+        <div class="node out"><b>Simpan ▾</b>Simpan saja · PPTX (nota bercabang ke barang) · Word · PDF.</div>
+      </div>
+    </div>
+    <div class="lane">
+      <h2><span class="no">04</span>Perintah suara</h2>
+      <div class="row">
+        <div class="node act"><b>Ucapkan</b>Rekaman dipotong saat diam → Groq Whisper (whisper-large-v3).</div>
+        <div class="arrow">→</div>
+        <div class="node dec"><b>Jenis perintah</b>Asisten: buka halaman / tombol / isi form (Groq gpt-oss-20b). Form: “satu”, “berat awal seribu tiga empat”, “next”, “jumlah kopra tiga”.</div>
+        <div class="arrow">→</div>
+        <div class="node end"><b>Dijalankan</b>Kolom terisi &amp; berkedip neon; tombol hapus/keluar diblokir.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="lane">
+    <h2><span class="no">05</span>Data &amp; penyimpanan</h2>
+    <div class="row">
+      <div class="node act"><b>Perangkat (IndexedDB)</b>gemas-catat · gemas-lab · gemas-belanja · gemas-bahan — tetap bisa dipakai offline.</div>
+      <div class="arrow">⇄</div>
+      <div class="node act"><b>Sinkron otomatis</b>Saat online &amp; login: dokumen &amp; foto ke Supabase (tabel rnd_data, bucket lab-blobs), data bersama semua pengguna.</div>
+      <div class="arrow">→</div>
+      <div class="node out"><b>Server (Vercel)</b>/api/lab-auth (login+OTP) · /api/voice-transcribe · /api/voice-assistant · /api/lab-reminder.</div>
+    </div>
+  </div>
+  <p class="note">Catatan: kesimpulan &amp; perbandingan bersifat deskriptif dari angka isian; GnD Lab tidak menyatakan produk aman dikonsumsi atau memenuhi standar.</p>
+</section>
+</body>
+</html>

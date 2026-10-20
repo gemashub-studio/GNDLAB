@@ -123,6 +123,11 @@
   50% { box-shadow: 0 0 0 transparent; color: inherit; }
 }
 .neon-blink { outline: 1px solid #63e6cf; animation: neonBlink 1.2s ease-in-out infinite; }
+/* bingkai listrik React Bits ElectricBorder (DEC-113) — dipakai saat modal/kartu dibuka lewat perintah suara */
+.electric-border { position: relative; isolation: isolate; }
+.electric-border__canvas { position: absolute; z-index: 1; display: block; pointer-events: none; }
+.voice-spark { position: absolute; pointer-events: none; z-index: 95; transition: opacity 0.5s ease; }
+
 /* maskot kelapa asisten suara (DEC-111) */
 .coco-mascot { overflow: visible; }
 .coco-body { transform-origin: 50px 90px; animation: cocoBob 2.6s ease-in-out infinite; }

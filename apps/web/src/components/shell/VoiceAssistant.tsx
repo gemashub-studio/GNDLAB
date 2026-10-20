@@ -2,6 +2,8 @@
 
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
+import { ElectricBorder } from '@/components/ui/ElectricBorder';
 import { authHeader, startSegmenter, transcribe, VOICE_FORM_EVENT } from '@/lib/voiceClient';
 import { CoconutMascot, type MascotMood } from './CoconutMascot';
 
@@ -11,13 +13,9 @@ interface Plan {
 }
 
 const LAB_TABS = [
-  ['ringkasan', 'GnD Lab · Ringkasan'],
   ['bahan', 'GnD Lab · Pencatatan Data'],
   ['protokol', 'GnD Lab · Riset Produk'],
-  ['eksperimen', 'GnD Lab · Eksperimen'],
   ['belanja', 'GnD Lab · Laporan Belanja'],
-  ['library', 'GnD Lab · Library'],
-  ['standar', 'GnD Lab · Standar'],
 ] as const;
 /** Tombol yang tidak boleh ditekan asisten (hapus data, keluar akun, konfirmasi berbahaya). */
 const DANGER = /hapus|delete|del-|logout|keluar|sign-?out|remove|finish-ok|confirm-ok|va-/i;
@@ -60,6 +58,57 @@ function screenContext(pages: { href: string; label: string }[]) {
   };
 }
 
+/** Modal / kartu yang terbuka (bukan panel asisten sendiri), paling akhir di dokumen = paling baru. */
+function openDialog(): HTMLElement | undefined {
+  const list = Array.from(document.querySelectorAll<HTMLElement>('[role="dialog"], [role="alertdialog"]')).filter((d) => !d.dataset.testid?.startsWith('va-') && visible(d));
+  return list[list.length - 1];
+}
+
+/** Bawa bagian PALING ATAS modal form ke layar (bukan tengah/bagian lain), DEC-113. */
+function showTop(el: HTMLElement) {
+  // wadah modal yang bisa digulir (overlay overflow-y-auto) → mulai dari atas
+  for (let p: HTMLElement | null = el.parentElement; p && p !== document.body; p = p.parentElement) {
+    const o = getComputedStyle(p).overflowY;
+    if ((o === 'auto' || o === 'scroll') && p.scrollHeight > p.clientHeight) p.scrollTop = 0;
+  }
+  el.scrollTop = 0;
+  const top = el.getBoundingClientRect().top + window.scrollY - 76;
+  window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
+}
+
+/** Bingkai listrik (React Bits ElectricBorder) mengikuti posisi modal/kartu yang dibuka lewat suara, ±4,5 detik. */
+function VoiceSpark({ target, onDone }: { target: HTMLElement; onDone: () => void }) {
+  const box = useRef<HTMLDivElement>(null);
+  const [fade, setFade] = useState(false);
+  const radius = Math.min(32, parseFloat(getComputedStyle(target).borderTopLeftRadius) || 16);
+  useEffect(() => {
+    let raf = 0;
+    const follow = () => {
+      const r = target.getBoundingClientRect();
+      const b = box.current;
+      if (b) Object.assign(b.style, { left: `${r.left}px`, top: `${r.top}px`, width: `${r.width}px`, height: `${r.height}px` });
+      if (!document.body.contains(target)) return onDone();
+      raf = requestAnimationFrame(follow);
+    };
+    follow();
+    const t1 = window.setTimeout(() => setFade(true), 4000);
+    const t2 = window.setTimeout(onDone, 4600);
+    return () => {
+      cancelAnimationFrame(raf);
+      window.clearTimeout(t1);
+      window.clearTimeout(t2);
+    };
+  }, [target, onDone]);
+  return createPortal(
+    <div ref={box} className="voice-spark" style={{ position: 'fixed', opacity: fade ? 0 : 1 }} aria-hidden data-testid="va-spark">
+      <ElectricBorder color="#63E6CF" speed={1} chaos={1.5} spread={0.6} strands={3} thickness={1.5} borderRadius={radius} interactive={false} style={{ width: '100%', height: '100%' }}>
+        <div style={{ width: '100%', height: '100%' }} />
+      </ElectricBorder>
+    </div>,
+    document.body,
+  );
+}
+
 /**
  * Asisten suara kelapa (DEC-111). Saat pertama masuk: kartu melayang "Mau mulai bersama ku?" (Ayo / Gak dulu deh).
  * Ayo → mikrofon mendengarkan; tiap perintah ditunggu sampai selesai diucapkan (jeda diam ±1,3 detik), ditranskripsi
@@ -78,6 +127,8 @@ export function VoiceAssistant({ show, userKey, pages }: { show: boolean; userKe
   const [busy, setBusy] = useState(0);
   const stopRef = useRef<(() => void) | null>(null);
   const queue = useRef<Promise<void>>(Promise.resolve());
+  const [spark, setSpark] = useState<HTMLElement>();
+  const endSpark = useCallback(() => setSpark(undefined), []);
   const allPages = [...pages, ...LAB_TABS.map(([t, label]) => ({ href: `/lab?t=${t}`, label }))];
   const pagesRef = useRef(allPages);
   pagesRef.current = allPages;
@@ -103,7 +154,10 @@ export function VoiceAssistant({ show, userKey, pages }: { show: boolean; userKe
 
   const execute = useCallback(
     async (plan: Plan) => {
+      const before = openDialog();
+      let navigated = false;
       for (const a of plan.actions) {
+        if (a.type === 'navigate') navigated = true;
         if (a.type === 'navigate') {
           setStatus(`${plan.reply} (membuka halaman…)`);
           const tab = /^\/lab\?t=(\w+)$/.exec(a.target)?.[1];
@@ -138,6 +192,12 @@ export function VoiceAssistant({ show, userKey, pages }: { show: boolean; userKe
           await sleep(250);
         }
       }
+      // modal / kartu yang baru terbuka lewat suara → tampil dari bagian paling atas + bingkai listrik (DEC-113)
+      const opened = plan.actions.some((a) => a.type === 'click') ? await waitFor(() => { const d = openDialog(); return d && d !== before ? d : null; }, 2500) : undefined;
+      if (opened) {
+        showTop(opened);
+        setSpark(opened);
+      } else if (navigated) window.scrollTo({ top: 0, behavior: 'smooth' });
     },
     [router],
   );
@@ -210,6 +270,7 @@ export function VoiceAssistant({ show, userKey, pages }: { show: boolean; userKe
   useEffect(() => () => stopRef.current?.(), []);
 
   if (!show) return null;
+  const sparkEl = spark ? <VoiceSpark target={spark} onDone={endSpark} /> : null;
 
   if (intro)
     return (
@@ -249,12 +310,17 @@ export function VoiceAssistant({ show, userKey, pages }: { show: boolean; userKe
 
   if (!on)
     return (
+      <>
+      {sparkEl}
       <button type="button" className="fixed bottom-5 right-4 z-[70] rounded-full bg-surface p-1.5 shadow-xl ring-1 ring-ink/10 transition hover:scale-105" onClick={() => void start()} aria-label="Mulai asisten suara" title="Asisten suara" data-testid="va-fab">
         <CoconutMascot size={dismissed ? 46 : 52} mood="idle" />
       </button>
+      </>
     );
 
   return (
+    <>
+    {sparkEl}
     <div className="fixed bottom-5 right-4 z-[75] flex w-[min(340px,calc(100vw-2rem))] flex-col gap-2 rounded-3xl border border-acid/50 bg-surface p-3 shadow-2xl" role="status" aria-live="polite" data-testid="va-panel">
       <div className="flex items-start gap-3">
         <CoconutMascot size={60} mood={mood} />
@@ -283,5 +349,6 @@ export function VoiceAssistant({ show, userKey, pages }: { show: boolean; userKe
       />
       {err && <p className="text-xs" role="alert"><span className="bg-safety px-1">{err}</span></p>}
     </div>
+    </>
   );
 }

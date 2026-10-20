@@ -3,6 +3,13 @@
 Format: [Keep a Changelog](https://keepachangelog.com/id/1.1.0/) · Versi dataset mengikuti SemVer (ADR-002).
 Waktu dalam WIB (UTC+7).
 
+## [Menu GnD Lab ringkas, flowchart, perintah "isi kolom", bingkai listrik] — 2026-10-20
+### Dihapus
+- Menu GnD Lab: Ringkasan, Eksperimen, Library, Standar.
+### Ditambahkan
+- Flowchart PDF halaman GnD Lab (docs/gnd-lab).
+- Perintah suara "isi kolom <nama kolom> dengan <nilai>" (termasuk dropdown); modal yang dibuka lewat suara tampil dari atas dengan animasi ElectricBorder.
+
 ## [Asisten suara kelapa] — 2026-10-20
 ### Ditambahkan
 - Asisten suara (Groq): kartu sambutan maskot kelapa beranimasi saat pertama masuk; perintah suara untuk membuka halaman/menu, membuka form, dan mengisi data.

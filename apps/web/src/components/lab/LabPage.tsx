@@ -6,35 +6,26 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { GEMA_SOURCES, sourceCounts } from '@/lib/gemaSources';
 import { StrokeText } from '@/components/ui/StrokeText';
 import { LightTunnel } from '@/components/ui/LightTunnel';
-import { listEntries, listExperiments, listMedia, listProtocols, type DailyEntry, type Experiment, type LabProductId, type MediaItem, type ProtocolVersion, listDrafts, researchStatus } from '@/lib/labStore';
-import { BackupPanel } from './BackupPanel';
-import { SupabasePanel } from './SupabasePanel';
+import { listEntries, listExperiments, listMedia, listProtocols, type DailyEntry, type Experiment, type MediaItem, type ProtocolVersion, listDrafts, researchStatus } from '@/lib/labStore';
 import { AskLabAI } from './AskLabAI';
 import { LoginForm } from '@/components/auth/LoginDialog';
 import { needsLogin, useAuth } from '@/lib/useAuth';
 import { onSyncStatus, requestSync, startAutoSync } from '@/lib/supabaseSync';
 import { LabSkeleton } from './LabSkeleton';
-import { ExperimentsTab } from './ExperimentsTab';
-import { LabOverview } from './LabOverview';
-import { LibraryTab } from './LibraryTab';
 import { ProtocolsTab } from './ProtocolsTab';
 import { PencatatanTab } from './PencatatanTab';
 import { listCatat, type CatatRecord } from '@/lib/pencatatan';
 import { listRaw, type RawRecord } from '@/lib/bahanBaku';
-import { StandardsTab } from './StandardsTab';
 
+// menu Ringkasan, Eksperimen, Library, dan Standar dihapus (DEC-112) — datanya tetap tersimpan & tersinkron
 const TABS = [
-  { id: 'ringkasan', label: 'Ringkasan' },
   { id: 'bahan', label: 'Pencatatan Data' },
   { id: 'protokol', label: 'Riset Produk' },
-  { id: 'eksperimen', label: 'Eksperimen' },
   { id: 'belanja', label: 'Laporan Belanja' },
-  { id: 'library', label: 'Library' },
-  { id: 'standar', label: 'Standar' },
 ] as const;
 type TabId = (typeof TABS)[number]['id'];
 /** Menu yang perlu mengambil data dulu → pakai skeleton saat pertama dimuat. */
-const DATA_TABS = new Set<string>(['ringkasan', 'bahan', 'protokol', 'eksperimen', 'belanja']);
+const DATA_TABS = new Set<string>(['bahan', 'protokol', 'belanja']);
 const isTab = (s: string | null): s is TabId => TABS.some((t) => t.id === s);
 
 export function LabPage() {
@@ -45,10 +36,7 @@ export function LabPage() {
   const [rawRecs, setRawRecs] = useState<RawRecord[]>([]);
   const [catat, setCatat] = useState<CatatRecord[]>([]);
   const [draftCount, setDraftCount] = useState(0);
-  const [tab, setTab] = useState<TabId>('ringkasan');
-  const [product, setProduct] = useState<LabProductId | 'all'>('all');
-  const [stdProduct, setStdProduct] = useState<LabProductId>('KE');
-  const [openId, setOpenId] = useState<string>();
+  const [tab, setTab] = useState<TabId>('bahan');
   const auth = useAuth();
   // semua pendataan butuh login bila Supabase aktif (DEC-087); tanpa Supabase (offline) tetap terbuka
   const locked = needsLogin(auth);
@@ -104,25 +92,16 @@ export function LabPage() {
     void refresh();
     const p = new URLSearchParams(window.location.search);
     const t = p.get('t');
+    // tautan lama (?t=ringkasan / eksperimen / library / standar) → Pencatatan Data
     if (isTab(t)) setTab(t);
-    const e = p.get('e');
-    if (e) {
-      setTab('eksperimen');
-      setOpenId(e);
-    }
   }, [refresh]);
   useEffect(() => {
     const url = new URL(window.location.href);
     url.searchParams.set('t', tab);
-    if (tab === 'eksperimen' && openId) url.searchParams.set('e', openId);
-    else url.searchParams.delete('e');
+    url.searchParams.delete('e');
     window.history.replaceState(null, '', url);
-  }, [tab, openId]);
+  }, [tab]);
 
-  const openExperiment = (id: string) => {
-    setOpenId(id);
-    setTab('eksperimen');
-  };
   // Statistik nyata (DEC-071): Bahan baku = catatan menu Bahan Baku; Berjalan = riset produk belum selesai + draf on going.
   const researchKeys = [...new Set(protocols.map((p) => p.key))];
   const running = researchKeys.filter((k) => researchStatus(entries.filter((e) => e.experimentId === k)) !== 'selesai').length + draftCount;
@@ -210,10 +189,7 @@ export function LabPage() {
             type="button"
             role="tab"
             aria-selected={tab === t.id}
-            onClick={() => {
-              setTab(t.id);
-              if (t.id !== 'eksperimen') setOpenId(undefined);
-            }}
+            onClick={() => setTab(t.id)}
             className={`min-h-touch flex-1 whitespace-nowrap rounded-xl px-4 text-sm font-semibold transition ${tab === t.id ? 'bg-ink text-acid' : 'text-muted hover:text-ink'}`}
             data-testid={`lab-tab-${t.id}`}
           >
@@ -227,39 +203,17 @@ export function LabPage() {
         <LabSkeleton kind={tab} />
       ) : (
         <>
-      {tab === 'ringkasan' && (
-        <LabOverview
-          items={items}
-          onOpen={openExperiment}
-          onProduct={(p) => {
-            setProduct(p);
-            setOpenId(undefined);
-            setTab('eksperimen');
-          }}
-        />
-      )}
-      {tab === 'ringkasan' && <BackupPanel onRestored={refresh} />}
-      {tab === 'ringkasan' && (
-        <div className="card">
-          <SupabasePanel />
-        </div>
-      )}
-      {tab === 'eksperimen' && (
-        <ExperimentsTab items={items} entries={entries} media={media} protocols={protocols} product={product} setProduct={setProduct} openId={openId} setOpenId={setOpenId} refresh={refresh} />
-      )}
       {tab === 'bahan' && <PencatatanTab records={catat} oldRaw={rawRecs} onChanged={refresh} />}
       {tab === 'protokol' && <ProtocolsTab protocols={protocols} entries={entries} media={media} refresh={refresh} />}
       {tab === 'belanja' && <BelanjaTab />}
         </>
       )}
-      {tab === 'library' && <LibraryTab />}
-      {tab === 'standar' && <StandardsTab product={stdProduct} setProduct={setStdProduct} />}
 
         </>
       )}
 
       <p className="text-xs text-muted">
-        Data eksperimen tersimpan di perangkat ini (offline). Rutin unduh cadangan. GnD Lab tidak menyatakan produk aman dikonsumsi atau memenuhi standar.
+        Data tersimpan di perangkat ini dan tersinkron ke database saat online. GnD Lab tidak menyatakan produk aman dikonsumsi atau memenuhi standar.
       </p>
     </div>
   );

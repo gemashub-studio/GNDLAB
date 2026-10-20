@@ -156,6 +156,33 @@ function matchField(tokens: readonly string[], fields: readonly VoiceField[]): {
 }
 
 /** Satu ucapan → daftar perintah (dipecah di kata "next"). */
+/**
+ * "isi kolom <nama kolom> dengan <nilai>" (DEC-113) → "<nama kolom> <nilai>": kata "kolom" dibuang, "isi" dibuang bila
+ * diikuti nama kolom (tetap dipakai untuk "isi <angka>" = kolom aktif), dan "dengan / jadi / menjadi / sama dengan"
+ * tepat setelah nama kolom dibuang. Kata "dengan" di dalam isian teks bebas (keterangan) tetap utuh.
+ */
+export function stripFillWords(tokens: readonly string[], fields: readonly VoiceField[]): string[] {
+  const out: string[] = [];
+  for (let i = 0; i < tokens.length; i++) {
+    const t = tokens[i]!;
+    if (t === 'kolom') continue;
+    if (t === 'isi' || t === 'isikan' || t === 'masukkan' || t === 'pilih') {
+      const rest = tokens.slice(i + 1).filter((x) => x !== 'kolom');
+      if (matchField(rest, fields)) continue;
+      if (t !== 'isi') continue;
+    }
+    out.push(t);
+    const f = matchField(tokens.slice(i), fields);
+    if (f) {
+      out.push(...tokens.slice(i + 1, i + f.len));
+      i += f.len - 1;
+      // kata penghubung setelah nama kolom
+      while (['dengan', 'jadi', 'menjadi', 'yaitu', 'adalah', 'sama'].includes(tokens[i + 1] ?? '')) i++;
+    }
+  }
+  return out;
+}
+
 export function parseVoice(text: string, fields: readonly VoiceField[]): VoiceCmd[] {
   const out: VoiceCmd[] = [];
   let seg: string[] = [];
@@ -175,7 +202,7 @@ export function parseVoice(text: string, fields: readonly VoiceField[]): VoiceCm
     if (part.length) out.push(parseSegment(part, fields));
     seg = [];
   };
-  for (const t of normalize(text)) {
+  for (const t of stripFillWords(normalize(text), fields)) {
     if (NEXT.has(t)) {
       flush();
       out.push({ kind: 'next' });

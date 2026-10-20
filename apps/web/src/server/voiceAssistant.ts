@@ -43,11 +43,12 @@ export function systemPrompt(ctx: AssistantContext): string {
     '- {"type":"navigate","target":"<href dari DAFTAR HALAMAN>"} untuk membuka halaman/menu.',
     '- {"type":"click","target":"<id dari DAFTAR TOMBOL>"} untuk menekan tombol / membuka form. Hanya id yang ada di daftar.',
     '- {"type":"fill","text":"<perintah isian>"} untuk mengisi form yang SEDANG TERBUKA. Format: "nomor <angka dalam kata>" untuk memilih nomor item (JANGAN pakai kata "item"), lalu "<nama kolom> <nilai>"; "next" untuk kolom berikutnya.',
-    'Boleh beberapa aksi berurutan (mis. buka halaman lalu klik tombol). Bila halaman tujuan belum terbuka, navigate dulu lalu click; tombol di halaman tujuan biasanya: catat-new (+ Buat catatan baru), catat-akhir (Buat pencatatan data akhir), proto-new (+ Resep baru), lpj-new (laporan belanja baru), lab-new (eksperimen baru).',
+    'Boleh beberapa aksi berurutan (mis. buka halaman lalu klik tombol). Bila halaman tujuan belum terbuka, navigate dulu lalu click; tombol di halaman tujuan biasanya: catat-new (+ Buat catatan baru), catat-akhir (Buat pencatatan data akhir), proto-new (+ Resep baru), lpj-new (laporan belanja baru).',
     'Untuk fill: masukkan SEMUA nilai yang diucapkan, satu pasangan "<nama kolom> <nilai>" per kolom, nama kolom persis dari daftar kolom form. Contoh:',
     '  "jumlah itemnya lima, perlakuannya green house sebanyak lima" → {"type":"fill","text":"jumlah item lima perlakuan green house jumlah produksi lima"} (kata "sebanyak/jumlahnya" setelah perlakuan = jumlah produksi)',
     '  "nomor dua berat awalnya seribu tiga puluh empat, tebalnya sepuluh" → {"type":"fill","text":"nomor dua berat awal seribu tiga puluh empat tebal daging sepuluh"}',
     '  "lanjut ke kolom berikutnya" → {"type":"fill","text":"next"}',
+    '  "isi kolom perlakuan dengan oven gas" → {"type":"fill","text":"isi kolom perlakuan dengan oven gas"} (dropdown dipilih otomatis)',
     'Jangan pernah menghapus data atau keluar akun. Bila permintaan tidak jelas / tidak bisa, actions = [] dan jelaskan singkat di reply.',
     'reply = satu kalimat pendek ramah dalam bahasa Indonesia tentang apa yang dilakukan.',
     `HALAMAN SAAT INI: ${ctx.path}`,
@@ -62,7 +63,7 @@ export function sanitizePlan(raw: unknown, ctx: AssistantContext): AssistantPlan
   const o = (raw && typeof raw === 'object' ? raw : {}) as { actions?: unknown; reply?: unknown };
   const pages = new Set(ctx.pages.map((p) => p.href));
   const buttons = new Set(ctx.buttons.map((b) => b.id));
-  const KNOWN = new Set(['catat-new', 'catat-akhir', 'proto-new', 'lpj-new', 'lab-new']);
+  const KNOWN = new Set(['catat-new', 'catat-akhir', 'proto-new', 'lpj-new']);
   const DANGER = /hapus|delete|del-|logout|keluar|sign-?out|remove|finish-ok|confirm-ok/i;
   const actions: AssistantAction[] = [];
   let navigated = false;
