@@ -571,7 +571,8 @@ test.describe('Hapus hasil riset', () => {
     await expect(rev).toContainText(`Revisi data akhir · ${id}`);
     await expect(rev.getByTestId('catat-akhir-berat-3')).toHaveValue('600');
     // revisi: bagian Perlakuan sama seperti form data awal (DEC-106), terisi dari data yang sama
-    await expect(rev.getByTestId('catat-revisi-perlakuan')).toBeVisible();
+    await expect(rev.getByTestId('catat-revisi-perlakuan-title')).toHaveText('Perlakuan kopra');
+    await expect(rev.getByTestId('catat-treatments-legend')).toHaveText('Perlakuan lainnya (Non Kopra)');
     await expect(rev.getByTestId('catat-perl-0')).toContainText('Oven Gas');
     await expect(rev.getByTestId('catat-perl-count-0')).toHaveValue('3');
     await expect(rev.getByTestId('catat-tr-note-kopra-0')).toHaveValue('suhu oven 60 C, dibalik tiap 2 jam');

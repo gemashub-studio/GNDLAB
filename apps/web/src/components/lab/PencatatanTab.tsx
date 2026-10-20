@@ -364,13 +364,13 @@ const perlError = (list: readonly TreatmentEntry[], itemCount: number) =>
  * data yang sama (treatments.kopra) sehingga selalu sinkron: dropdown Green House / Oven Gas / Oven Briket + jumlah
  * produksi; item dibagi berurutan. `withNotes` = sekalian foto & keterangan per perlakuan (di revisi).
  */
-function PerlakuanFields({ value, onChange, itemCount, testId, withNotes = false }: { value: TreatmentEntry[]; onChange: (fn: (cur: TreatmentEntry[]) => TreatmentEntry[]) => void; itemCount: number; testId: string; withNotes?: boolean }) {
+function PerlakuanFields({ value, onChange, itemCount, testId, withNotes = false, title = 'Perlakuan' }: { value: TreatmentEntry[]; onChange: (fn: (cur: TreatmentEntry[]) => TreatmentEntry[]) => void; itemCount: number; testId: string; withNotes?: boolean; title?: string }) {
   const list = value.length ? value : [{ method: '', count: '' }];
   const setAt = (i: number, patch: Partial<TreatmentEntry>) => onChange((cur) => (cur.length ? cur : [{ method: '', count: '' }]).map((e, j) => (j === i ? { ...e, ...patch } : e)));
   const total = perlTotalOf(list);
   return (
     <section className="flex flex-col gap-3 rounded-2xl border border-acid/50 bg-acid/5 p-3" data-testid={testId}>
-      <span className="label-mono">Perlakuan</span>
+      <span className="label-mono" data-testid={`${testId}-title`}>{title}</span>
       {list.map((e, i) => (
         <div key={i} className="flex flex-col gap-2 rounded-xl bg-white p-2.5">
           <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
@@ -829,9 +829,10 @@ function AkhirModal({ pending, onClose, onConfirm, onDraft, onFinish, revision =
                 }}
                 itemCount={rec.count}
                 withNotes
+                title="Perlakuan kopra"
               />
             )}
-            <TreatmentFields value={tr} onChange={(fn) => { setTouched(true); setTr(fn); }} {...(revision && { hide: ['kopra' as TreatmentKey] })} />
+            <TreatmentFields value={tr} onChange={(fn) => { setTouched(true); setTr(fn); }} {...(revision && { hide: ['kopra' as TreatmentKey], legend: 'Perlakuan lainnya (Non Kopra)' })} />
           </>
         )}
         {err && <p className="text-sm" role="alert"><span className="bg-safety px-1">{err}</span></p>}
@@ -846,11 +847,11 @@ type TreatmentState = Record<TreatmentKey, TreatmentEntry[]>;
  * Perlakuan (opsional) di form data akhir (DEC-081): tiap jenis berisi kolom "jumlah perlakuan" + dropdown
  * "Perlakuan/metode"; tombol + menambah pasangan kolom baru di bawahnya, ✕ menghapus kolom tambahan.
  */
-function TreatmentFields({ value, onChange, hide = [] }: { value: TreatmentState; onChange: (fn: (x: TreatmentState) => TreatmentState) => void; hide?: TreatmentKey[] }) {
+function TreatmentFields({ value, onChange, hide = [], legend = 'Perlakuan (opsional)' }: { value: TreatmentState; onChange: (fn: (x: TreatmentState) => TreatmentState) => void; hide?: TreatmentKey[]; legend?: string }) {
   const edit = (key: TreatmentKey, i: number, patch: Partial<TreatmentEntry>) => onChange((x) => ({ ...x, [key]: x[key].map((e, j) => (j === i ? { ...e, ...patch } : e)) }));
   return (
     <fieldset className="grid grid-cols-1 gap-3 rounded-xl bg-paper p-3 sm:grid-cols-2" data-testid="catat-treatments">
-      <legend className="label-mono px-1">Perlakuan (opsional)</legend>
+      <legend className="label-mono px-1" data-testid="catat-treatments-legend">{legend}</legend>
       {TREATMENT_GROUPS.filter((g) => !hide.includes(g.key)).map((g) => (
         <div key={g.key} className="flex flex-col gap-2 rounded-xl bg-white p-3" data-testid={`catat-tr-${g.key}`}>
           <span className="label-mono">{g.title}</span>
