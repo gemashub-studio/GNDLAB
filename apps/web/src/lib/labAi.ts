@@ -1,34 +1,34 @@
 /**
- * Tanya Lab AI (DEC-087): GET ke api.siputzx.my.id (GLM-4.7 Flash) sesuai permintaan owner.
- * Yang dikirim HANYA teks yang diketik pengguna + system prompt di bawah. Jawaban = keluaran AI (belum diverifikasi).
+ * Tanya Lab AI (DEC-087 → DEC-123): pertanyaan dikirim ke /api/lab-ai (OpenRouter, model gratis; kunci di server).
+ * Yang dikirim HANYA teks pertanyaan + beberapa pesan terakhir (memori) + system prompt. Jawaban = keluaran AI (belum diverifikasi).
  */
-export const LAB_AI_ENDPOINT = 'https://api.siputzx.my.id/api/ai/glm47flash';
-export const LAB_AI_SYSTEM = 'kamu adalah peneliti laboratorium dan ahli dengan produk briket dan olahan kelapa lainnya.';
+export const LAB_AI_SYSTEM =
+  'Kamu adalah peneliti laboratorium dan ahli briket, kopra, cuka air kelapa, bio leather, dan olahan kelapa lainnya. Jawab dalam bahasa Indonesia yang ramah dan jelas. Paragraf pertama selalu jawaban inti yang singkat dan langsung.';
 export const MAX_PROMPT = 2000;
 
-export function labAiUrl(prompt: string): string {
-  const u = new URL(LAB_AI_ENDPOINT);
-  u.searchParams.set('prompt', prompt.slice(0, MAX_PROMPT));
-  u.searchParams.set('system', LAB_AI_SYSTEM);
-  u.searchParams.set('temperature', '0.7');
-  return u.toString();
+/** Memori percakapan (DEC-123): pesan-pesan terakhir disimpan di perangkat dan ikut dikirim pada pertanyaan berikutnya, juga di percakapan baru. */
+export const MEMORY_KEY = 'gnd-labai:memory';
+export const MEMORY_MAX = 8;
+export type LabTurn = { role: 'user' | 'assistant'; content: string };
+
+export function loadMemory(): LabTurn[] {
+  try {
+    const v = JSON.parse(localStorage.getItem(MEMORY_KEY) ?? '[]') as unknown;
+    return Array.isArray(v) ? (v as LabTurn[]).filter((m) => (m?.role === 'user' || m?.role === 'assistant') && typeof m.content === 'string').slice(-MEMORY_MAX) : [];
+  } catch {
+    return [];
+  }
 }
 
-/** Ambil teks jawaban dari berbagai bentuk respons ({data:"…"}, {data:{response|content|message|text}}, {result}, {response}, …). */
-export function aiText(j: unknown): string | undefined {
-  const pick = (v: unknown, depth = 0): string | undefined => {
-    if (typeof v === 'string') return v.trim() || undefined;
-    if (!v || typeof v !== 'object' || depth > 3) return undefined;
-    const o = v as Record<string, unknown>;
-    for (const k of ['response', 'content', 'message', 'text', 'answer', 'result', 'output', 'data', 'reply']) {
-      const hit = pick(o[k], depth + 1);
-      if (hit) return hit;
-    }
-    if (Array.isArray(o.choices)) return pick((o.choices[0] as Record<string, unknown> | undefined)?.message, depth + 1) ?? pick(o.choices[0], depth + 1);
-    return undefined;
-  };
-  if (j && typeof j === 'object' && (j as { status?: unknown }).status === false) return undefined;
-  return pick(j);
+/** Tambahkan satu tanya-jawab ke memori (teks dipotong agar ringkas), simpan maks. MEMORY_MAX pesan terakhir. */
+export function remember(memory: readonly LabTurn[], question: string, answer: string): LabTurn[] {
+  const next = [...memory, { role: 'user' as const, content: question.slice(0, 800) }, { role: 'assistant' as const, content: answer.slice(0, 1500) }].slice(-MEMORY_MAX);
+  try {
+    localStorage.setItem(MEMORY_KEY, JSON.stringify(next));
+  } catch {
+    // penyimpanan diblokir → memori hanya untuk sesi ini
+  }
+  return next;
 }
 
 /** Topik (@) dan perintah (/) di kolom tanya, serta tingkat jawaban (DEC-094). */
@@ -94,7 +94,7 @@ export function withOcrText(prompt: string, texts: readonly string[]): string {
   return `${prompt}\n\nTeks hasil scan foto:\n${joined}`;
 }
 
-export async function askLabAI(prompt: string, timeoutMs = 45_000, signal?: AbortSignal): Promise<string> {
+export async function askLabAI(prompt: string, timeoutMs = 60_000, signal?: AbortSignal, o: { memory?: boolean } = {}): Promise<string> {
   const q = prompt.trim();
   if (!q) throw new Error('Tulis pertanyaan dulu.');
   const ctl = new AbortController();
@@ -102,14 +102,15 @@ export async function askLabAI(prompt: string, timeoutMs = 45_000, signal?: Abor
   // tombol Stop di kolom tanya membatalkan permintaan
   const onStop = () => ctl.abort();
   signal?.addEventListener('abort', onStop);
+  const useMemory = o.memory !== false;
+  const history = useMemory ? loadMemory() : [];
   try {
-    const res = await fetch(labAiUrl(q), { method: 'GET', signal: ctl.signal, cache: 'no-store' });
-    const body: unknown = await res.json().catch(() => undefined);
-    const text = aiText(body);
-    if (!res.ok || !text) {
-      const msg = body && typeof body === 'object' ? String((body as { error?: unknown; message?: unknown }).error ?? (body as { message?: unknown }).message ?? '') : '';
-      throw new Error(res.status >= 500 ? `Layanan AI sedang tidak tersedia (${res.status}${msg ? `: ${msg}` : ''}). Coba lagi sebentar lagi.` : `AI tidak memberi jawaban (${res.status}${msg ? `: ${msg}` : ''}).`);
-    }
+    const { authHeader } = await import('./voiceClient');
+    const res = await fetch('/api/lab-ai', { method: 'POST', signal: ctl.signal, cache: 'no-store', headers: { 'content-type': 'application/json', ...(await authHeader()) }, body: JSON.stringify({ prompt: q.slice(0, MAX_PROMPT), history }) });
+    const j = (await res.json().catch(() => ({}))) as { text?: string; error?: string };
+    const text = j.text?.trim();
+    if (!res.ok || !text) throw new Error(j.error ?? (res.status >= 500 ? `Layanan AI sedang tidak tersedia (${res.status}). Coba lagi sebentar lagi.` : `AI tidak memberi jawaban (${res.status}).`));
+    if (useMemory) remember(history, q, text);
     return text;
   } catch (e) {
     if (signal?.aborted) throw new Error('Dihentikan.');

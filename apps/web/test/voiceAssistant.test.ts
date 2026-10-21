@@ -35,6 +35,11 @@ describe('asisten suara kelapa: penyaring rencana (DEC-111)', () => {
     expect(sanitizePlan('bukan json', ctx).actions).toEqual([]);
     expect(sanitizePlan({ actions: Array.from({ length: 10 }, () => ({ type: 'navigate', target: '/gudang' })) }, ctx).actions).toHaveLength(6);
   });
+  it('pertanyaan pengetahuan → satu aksi ask (DEC-123)', () => {
+    expect(sanitizePlan({ actions: [{ type: 'ask', text: 'apa itu kopra?' }, { type: 'navigate', target: '/gudang' }], reply: 'Aku carikan.' }, ctx)).toEqual({ actions: [{ type: 'ask', text: 'apa itu kopra?' }], reply: 'Aku carikan.' });
+    expect(sanitizePlan({ actions: [{ type: 'ask', text: '  ' }] }, ctx).actions).toEqual([]);
+    expect(systemPrompt(ctx)).toContain('"type":"ask"');
+  });
   it('instruksi memuat daftar halaman/tombol, form terbuka & larangan hapus', () => {
     const s = systemPrompt({ ...ctx, form: 'Buat catatan awal', formFields: ['berat awal', 'jumlah produksi'] });
     expect(s).toContain('"href":"/gudang"');

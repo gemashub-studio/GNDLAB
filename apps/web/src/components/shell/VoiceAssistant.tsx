@@ -7,9 +7,11 @@ import { ElectricBorder } from '@/components/ui/ElectricBorder';
 import { authHeader, speak, startSegmenter, stopSpeaking, transcribe, VOICE_FORM_EVENT, type FilledField } from '@/lib/voiceClient';
 import { CoconutMascot, type MascotMood } from './CoconutMascot';
 import { ttsText } from '@/lib/ttsText';
+import { askLabAI } from '@/lib/labAi';
+import { answerTts, looksLikeQuestion, VOICE_ASK_HINT, voiceAnswer } from '@/lib/voiceAnswer';
 
 interface Plan {
-  actions: ({ type: 'navigate'; target: string } | { type: 'click'; target: string } | { type: 'fill'; text: string })[];
+  actions: ({ type: 'navigate'; target: string } | { type: 'click'; target: string } | { type: 'fill'; text: string } | { type: 'ask'; text: string })[];
   reply: string;
 }
 
@@ -154,9 +156,10 @@ export function VoiceAssistant({ show, userKey, pages }: { show: boolean; userKe
   // suara jawaban (TTS Groq Orpheus "autumn", DEC-115): mikrofon dibisukan selama & sesaat setelah asisten berbicara
   const talking = useRef(0);
   const mutedUntil = useRef(0);
-  const say = useCallback((text: string) => {
-    // teks khusus suara: tanda baca untuk intonasi, "maaf" → "ma ap" (layar tetap memakai teks asli), DEC-116
-    const t = ttsText(text);
+  const say = useCallback((text: string, raw = false) => {
+    // teks khusus suara: tanda baca untuk intonasi, "maaf" → "ma ap" (layar tetap memakai teks asli), DEC-116;
+    // raw = teks sudah disiapkan untuk TTS (jawaban Lab AI, DEC-123)
+    const t = raw ? text.trim() : ttsText(text);
     if (!t) return Promise.resolve();
     talking.current++;
     setMood('talking');
@@ -171,6 +174,7 @@ export function VoiceAssistant({ show, userKey, pages }: { show: boolean; userKe
   const endSpark = useCallback(() => setSpark(undefined), []);
   const okTurn = useRef(0);
   const failTurn = useRef(0);
+  const askTurn = useRef(0);
   const filled = useRef<FilledField[]>([]);
   const lastCmd = useRef(Date.now());
   // tooltip "Harap tutup fitur ini…" (✕ menyembunyikannya sampai halaman dimuat ulang), DEC-118
@@ -278,7 +282,16 @@ export function VoiceAssistant({ show, userKey, pages }: { show: boolean; userKe
         const j = (await res.json().catch(() => ({}))) as Partial<Plan> & { error?: string };
         if (!res.ok) throw new Error(j.error ?? `Asisten gagal (${res.status}).`);
         const plan: Plan = { actions: j.actions ?? [], reply: j.reply ?? '' };
-        if (!plan.actions.length) {
+        // pertanyaan pengetahuan (mis. "apa itu kopra?") → Lab AI → paragraf pertama + pertanyaan lanjutan (DEC-123)
+        const ask = plan.actions[0]?.type === 'ask' ? plan.actions[0].text : !plan.actions.length && looksLikeQuestion(t) ? t : undefined;
+        if (ask) {
+          setStatus('Sebentar, aku cari jawabannya…');
+          const ans = voiceAnswer(await askLabAI(`${ask}
+
+${VOICE_ASK_HINT}`), askTurn.current++);
+          setStatus(ans.text);
+          void say(answerTts(ans.first, ans.question), true);
+        } else if (!plan.actions.length) {
           // tidak dikenali / menu tidak ada: kalimat owner (DEC-122) + penjelasan perencana di layar
           const msg = failText(failTurn.current++, plan.reply);
           setStatus(/belum paham/i.test(plan.reply) ? msg : `${msg} ${plan.reply}`);

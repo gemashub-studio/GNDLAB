@@ -18,7 +18,7 @@ export interface AssistantContext {
   formFields?: string[];
 }
 
-export type AssistantAction = { type: 'navigate'; target: string } | { type: 'click'; target: string } | { type: 'fill'; text: string };
+export type AssistantAction = { type: 'navigate'; target: string } | { type: 'click'; target: string } | { type: 'fill'; text: string } | { type: 'ask'; text: string };
 
 export interface AssistantPlan {
   actions: AssistantAction[];
@@ -44,6 +44,7 @@ export function systemPrompt(ctx: AssistantContext): string {
     '- {"type":"navigate","target":"<href dari DAFTAR HALAMAN>"} untuk membuka halaman/menu.',
     '- {"type":"click","target":"<id dari DAFTAR TOMBOL>"} untuk menekan tombol / membuka form. Hanya id yang ada di daftar.',
     '- {"type":"fill","text":"<perintah isian>"} untuk mengisi form yang SEDANG TERBUKA. Format: "nomor <angka dalam kata>" untuk memilih nomor item (JANGAN pakai kata "item"), lalu "<nama kolom> <nilai>"; "next" untuk kolom berikutnya.',
+    '- {"type":"ask","text":"<pertanyaan pengguna>"} bila pengguna BERTANYA pengetahuan (mis. "apa itu kopra?", "kenapa briket retak?", "bagaimana cara membuat cuka kelapa?") — jawabannya dicari Lab AI. Pakai ask hanya untuk pertanyaan, bukan perintah membuka/isi; ask selalu aksi tunggal.',
     'Boleh beberapa aksi berurutan (mis. buka halaman lalu klik tombol). Bila halaman tujuan belum terbuka, navigate dulu lalu click; tombol di halaman tujuan biasanya: catat-new (+ Buat catatan baru), catat-akhir (Buat pencatatan data akhir), proto-new (+ Resep baru), lpj-new (laporan belanja baru).',
     'Untuk fill: masukkan SEMUA nilai yang diucapkan, satu pasangan "<nama kolom> <nilai>" per kolom, nama kolom persis dari daftar kolom form. Contoh:',
     '  "jumlah itemnya lima, perlakuannya green house sebanyak lima" → {"type":"fill","text":"jumlah item lima perlakuan green house jumlah produksi lima"} (kata "sebanyak/jumlahnya" setelah perlakuan = jumlah produksi)',
@@ -77,6 +78,9 @@ export function sanitizePlan(raw: unknown, ctx: AssistantContext): AssistantPlan
       actions.push({ type: 'click', target: x.target });
     } else if (x.type === 'fill' && typeof x.text === 'string' && x.text.trim()) {
       actions.push({ type: 'fill', text: clip(x.text.trim(), 300) });
+    } else if (x.type === 'ask' && typeof x.text === 'string' && x.text.trim()) {
+      // pertanyaan pengetahuan → dijawab Lab AI (DEC-123); selalu aksi tunggal
+      return { actions: [{ type: 'ask', text: clip(x.text.trim(), 500) }], reply: typeof o.reply === 'string' && o.reply.trim() ? clip(o.reply.trim(), 200) : 'Aku carikan jawabannya.' };
     }
   }
   const reply = typeof o.reply === 'string' && o.reply.trim() ? clip(o.reply.trim(), 200) : actions.length ? 'Siap, aku kerjakan.' : 'Maaf, aku belum paham. Coba ucapkan lagi ya.';

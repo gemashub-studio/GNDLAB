@@ -1,22 +1,43 @@
 import { describe, expect, it } from 'vitest';
-import { aiText, CATAT_HINT, LAB_AI_SYSTEM, labAiUrl, labGreeting } from '@/lib/labAi';
+import { CATAT_HINT, LAB_AI_SYSTEM, labGreeting, loadMemory, remember } from '@/lib/labAi';
 import { emailSlug } from '@/lib/useAuth';
 
 describe('Tanya Lab AI & username (DEC-087)', () => {
-  it('URL GET: prompt = ketikan pengguna, system = peneliti lab briket & olahan kelapa, temperature 0.7', () => {
-    const u = new URL(labAiUrl('Berapa kadar air kopra ideal?'));
-    expect(u.origin + u.pathname).toBe('https://api.siputzx.my.id/api/ai/glm47flash');
-    expect(u.searchParams.get('prompt')).toBe('Berapa kadar air kopra ideal?');
-    expect(u.searchParams.get('system')).toBe('kamu adalah peneliti laboratorium dan ahli dengan produk briket dan olahan kelapa lainnya.');
+  it('OpenRouter (DEC-123): model gratis + cadangan, OPEN_ROUTER_MODEL dicoba dulu; pesan = system + riwayat + pertanyaan', async () => {
+    const { askOpenRouter, cleanHistory, labMessages, orModels, OR_FREE_MODELS } = await import('@/server/labAi');
     expect(LAB_AI_SYSTEM).toContain('briket');
-    expect(u.searchParams.get('temperature')).toBe('0.7');
+    expect(OR_FREE_MODELS.every((m) => m.endsWith(':free'))).toBe(true);
+    expect(orModels({})).toEqual(OR_FREE_MODELS);
+    expect(orModels({ OPEN_ROUTER_MODEL: 'x/y' })[0]).toBe('x/y');
+    const hist = cleanHistory([{ role: 'system', content: 'jahat' }, ...Array.from({ length: 12 }, (_, i) => ({ role: i % 2 ? 'assistant' : 'user', content: `m${i}` })), { role: 'user', content: '  ' }]);
+    expect(hist).toHaveLength(8);
+    expect(hist.map((m) => m.content)).toEqual(['m4', 'm5', 'm6', 'm7', 'm8', 'm9', 'm10', 'm11']);
+    expect(labMessages('apa itu kopra?', hist.slice(-2)).map((m) => m.role)).toEqual(['system', 'user', 'assistant', 'user']);
+    let sent: { url: string; body: { model: string; models: string[]; messages: { role: string; content: string }[] }; auth: string } | undefined;
+    const fetcher = (async (url: string, init: RequestInit) => {
+      sent = { url, body: JSON.parse(String(init.body)), auth: (init.headers as Record<string, string>).authorization! };
+      return new Response(JSON.stringify({ model: 'google/gemma-4-31b-it:free', choices: [{ message: { content: ' Kopra adalah daging kelapa kering. ' } }] }), { status: 200 });
+    }) as unknown as typeof fetch;
+    const out = await askOpenRouter('apa itu kopra?', [{ role: 'user', content: 'halo' }, { role: 'assistant', content: 'hai' }], { env: { OPEN_ROUTER_APIKEY: 'k' }, fetcher });
+    expect(out.text).toBe('Kopra adalah daging kelapa kering.');
+    expect(sent!.url).toBe('https://openrouter.ai/api/v1/chat/completions');
+    expect(sent!.auth).toBe('Bearer k');
+    expect(sent!.body.models).toEqual(OR_FREE_MODELS);
+    expect(sent!.body.messages.map((m) => m.content)).toEqual([LAB_AI_SYSTEM, 'halo', 'hai', 'apa itu kopra?']);
+    await expect(askOpenRouter('x', [], { env: {} })).rejects.toThrow(/OPEN_ROUTER_APIKEY/);
+    const limit = (async () => new Response(JSON.stringify({ error: { message: 'rate' } }), { status: 429 })) as unknown as typeof fetch;
+    await expect(askOpenRouter('x', [], { env: { OPEN_ROUTER_APIKEY: 'k' }, fetcher: limit })).rejects.toThrow(/Kuota AI gratis/);
   });
-  it('jawaban dibaca dari berbagai bentuk respons; status false = tidak ada jawaban', () => {
-    expect(aiText({ status: true, data: 'Halo!' })).toBe('Halo!');
-    expect(aiText({ status: true, data: { response: 'Saya peneliti.' } })).toBe('Saya peneliti.');
-    expect(aiText({ result: { content: 'isi' } })).toBe('isi');
-    expect(aiText({ choices: [{ message: { content: 'x' } }] })).toBe('x');
-    expect(aiText({ code: 503, error: 'All nodes failed', status: false })).toBeUndefined();
+  it('memori: maks. 8 pesan terakhir disimpan di perangkat', () => {
+    const store = new Map<string, string>();
+    (globalThis as { localStorage?: unknown }).localStorage = { getItem: (k: string) => store.get(k) ?? null, setItem: (k: string, v: string) => store.set(k, v) };
+    let m = loadMemory();
+    expect(m).toEqual([]);
+    for (let i = 0; i < 6; i++) m = remember(m, `q${i}`, `a${i}`);
+    expect(loadMemory()).toHaveLength(8);
+    expect(loadMemory()[0]).toEqual({ role: 'user', content: 'q2' });
+    expect(loadMemory().at(-1)).toEqual({ role: 'assistant', content: 'a5' });
+    delete (globalThis as { localStorage?: unknown }).localStorage;
   });
   it('sambutan & pesan otomatis pencatatan', () => {
     expect(labGreeting('masciosa', new Date(2026, 9, 16, 8))).toMatch(/^Selamat pagi, masciosa! Selamat datang di GnD Lab/);

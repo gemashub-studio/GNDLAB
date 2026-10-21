@@ -116,17 +116,19 @@ export function jpegSize(b: Uint8Array): { w: number; h: number } {
 const EMU_PER_PX = 9525;
 const EMU_PER_IN = 914400;
 const CT_HEAD = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>';
-// palet infografik koran sains (DEC-121): kertas krem, cokelat tanah, hijau zaitun, terakota, oker
-const INK = '2B2118';
-const MINT = 'B85A33';
-const MINT_D = '56703A';
-const PAPER = 'EFE5CF';
-const GRID = 'D6C7A6';
-const MUTED = '7A6650';
-const AMBER = 'C98F2A';
-/** Warna kertas slide & teks isi kedua. */
-const BG = 'F7F1E2';
-const BODY2 = '4A3B2C';
+// palet template infografik Canva owner (DEC-121 → DEC-123): kertas putih, cokelat tua, karat, zaitun, marun, taupe
+const INK = '2B2320';
+const MINT = 'A64B2A';
+const MINT_D = '5E7B3A';
+const PAPER = 'F1EDE8';
+const GRID = 'DCD4CC';
+const MUTED = '7D6E66';
+const AMBER = '7B3B34';
+/** Warna kertas slide, teks isi kedua, angka tipis besar, bilah abu kepala. */
+const BG = 'FBFAF7';
+const BODY2 = '4A3F3A';
+const TAUPE = 'A58E83';
+const BAR = 'ECE8E3';
 
 /** Gambar grafik (PNG) per `ChartSpec.id`, dibuat di browser dari SVG yang sama dengan PDF (DEC-058). */
 export interface ChartPng {
@@ -310,6 +312,24 @@ function pTextBox(id: number, x: number, y: number, w: number, h: number, paras:
 const pRect = (id: number, x: number, y: number, w: number, h: number, fill: string, geom = 'rect') =>
   `<p:sp><p:nvSpPr><p:cNvPr id="${id}" name="Bentuk ${id}"/><p:cNvSpPr/><p:nvPr/></p:nvSpPr><p:spPr><a:xfrm><a:off x="${Math.round(x)}" y="${Math.round(y)}"/><a:ext cx="${Math.round(w)}" cy="${Math.round(h)}"/></a:xfrm><a:prstGeom prst="${geom}"><a:avLst/></a:prstGeom><a:solidFill><a:srgbClr val="${fill}"/></a:solidFill><a:ln><a:noFill/></a:ln></p:spPr></p:sp>`;
 
+/** Kepala ala template Canva (DEC-123): "GnD Lab" serif besar + bilah abu berisi rubrik (seperti "Ciencia"). */
+function masthead(id: number, x: number, rubric: string, big = false): string {
+  const k = big ? 1.45 : 1;
+  const w = 1900000 * k;
+  const y = big ? 220000 : 110000;
+  const h = 520000 * k;
+  const barY = y + h / 2 - 140000 * k;
+  return (
+    pTextBox(id, x, y, w, h, [{ t: 'GnD Lab', sz: Math.round(2800 * k), serif: true }], { anchor: 'ctr', autofit: false }) +
+    pRect(id + 1, x + w + 50000, barY, 3400000 * k, 280000 * k, BAR) +
+    pTextBox(id + 2, x + w + 130000, barY, 3250000 * k, 280000 * k, [{ t: rubric, sz: 900, b: true, color: MUTED, caps: true }], { anchor: 'ctr', autofit: false })
+  );
+}
+
+/** Label tegak di tepi kanan slide (seperti "Contenidos" di template). */
+const sideLabel = (id: number, t: string) =>
+  `<p:sp><p:nvSpPr><p:cNvPr id="${id}" name="Label ${id}"/><p:cNvSpPr txBox="1"/><p:nvPr/></p:nvSpPr><p:spPr><a:xfrm><a:off x="${SW - 420000}" y="1500000"/><a:ext cx="300000" cy="3600000"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom><a:noFill/></p:spPr><p:txBody><a:bodyPr vert="vert270" wrap="square" lIns="0" tIns="0" rIns="0" bIns="0" anchor="ctr"/><a:lstStyle/><a:p><a:pPr algn="ctr"/>${aRun({ t, sz: 1000, color: TAUPE, serif: true })}</a:p></p:txBody></p:sp>`;
+
 /** Video tertanam (PowerPoint 2010+): poster = gambar pratinjau; a:videoFile + p14:media menunjuk berkas video. */
 function pVideo(id: number, posterRid: string, rid: string, mrid: string, x: number, y: number, w: number, h: number, name: string): string {
   return `<p:pic><p:nvPicPr><p:cNvPr id="${id}" name="${xml(name)}"><a:hlinkClick r:id="" action="ppaction://media"/></p:cNvPr><p:cNvPicPr><a:picLocks noChangeAspect="1"/></p:cNvPicPr><p:nvPr><a:videoFile r:link="${rid}"/><p:extLst><p:ext uri="{DAA4B4D4-6D71-4841-9C94-3DE7FCFB9230}"><p14:media xmlns:p14="http://schemas.microsoft.com/office/powerpoint/2010/main" r:embed="${mrid}"/></p:ext></p:extLst></p:nvPr></p:nvPicPr><p:blipFill><a:blip r:embed="${posterRid}"/><a:stretch><a:fillRect/></a:stretch></p:blipFill><p:spPr><a:xfrm><a:off x="${Math.round(x)}" y="${Math.round(y)}"/><a:ext cx="${Math.round(w)}" cy="${Math.round(h)}"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></p:spPr></p:pic>`;
@@ -350,7 +370,7 @@ function pTable(id: number, x: number, y: number, w: number, head: string[], row
   const rowH = opt.rowH ?? 370000;
   const sz = opt.sz ?? 1100;
   const cell = (t: string, h: boolean, zebra: boolean) =>
-    `<a:tc><a:txBody><a:bodyPr/><a:lstStyle/><a:p>${aRun({ t: t || '–', sz: h ? sz - 100 : sz, b: h, color: h ? BG : INK, mono: h })}</a:p></a:txBody><a:tcPr marL="76200" marR="76200" marT="${rowH < 340000 ? 27432 : 45720}" marB="${rowH < 340000 ? 27432 : 45720}"><a:lnL w="0"><a:noFill/></a:lnL><a:lnR w="0"><a:noFill/></a:lnR><a:lnT w="6350"><a:solidFill><a:srgbClr val="${GRID}"/></a:solidFill></a:lnT><a:lnB w="6350"><a:solidFill><a:srgbClr val="${GRID}"/></a:solidFill></a:lnB><a:solidFill><a:srgbClr val="${h ? INK : zebra ? PAPER : BG}"/></a:solidFill></a:tcPr></a:tc>`;
+    `<a:tc><a:txBody><a:bodyPr/><a:lstStyle/><a:p>${aRun({ t: t || '–', sz: h ? sz - 100 : sz, b: h, color: h ? BG : INK, mono: h })}</a:p></a:txBody><a:tcPr marL="76200" marR="76200" marT="${rowH < 340000 ? 27432 : 45720}" marB="${rowH < 340000 ? 27432 : 45720}"><a:lnL w="0"><a:noFill/></a:lnL><a:lnR w="0"><a:noFill/></a:lnR><a:lnT w="6350"><a:solidFill><a:srgbClr val="${GRID}"/></a:solidFill></a:lnT><a:lnB w="6350"><a:solidFill><a:srgbClr val="${GRID}"/></a:solidFill></a:lnB><a:solidFill><a:srgbClr val="${h ? AMBER : zebra ? PAPER : BG}"/></a:solidFill></a:tcPr></a:tc>`;
   return `<p:graphicFrame><p:nvGraphicFramePr><p:cNvPr id="${id}" name="Tabel ${id}"/><p:cNvGraphicFramePr><a:graphicFrameLocks noGrp="1"/></p:cNvGraphicFramePr><p:nvPr/></p:nvGraphicFramePr><p:xfrm><a:off x="${x}" y="${y}"/><a:ext cx="${colW * head.length}" cy="${rowH * (rows.length + 1)}"/></p:xfrm><a:graphic><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/table"><a:tbl><a:tblPr firstRow="1"/><a:tblGrid>${head.map(() => `<a:gridCol w="${colW}"/>`).join('')}</a:tblGrid>${[head, ...rows]
     .map((r, i) => `<a:tr h="${rowH}">${r.map((c) => cell(c, i === 0, i % 2 === 0)).join('')}</a:tr>`)
     .join('')}</a:tbl></a:graphicData></a:graphic></p:graphicFrame>`;
@@ -384,13 +404,12 @@ export function buildPptx(r: ResearchReport, charts: ChartPngs = new Map(), vide
   const CW = SW - 2 * M;
   let picN = 0;
   let sec = 0;
-  // judul slide gaya koran (DEC-121): rubrik terakota, judul serif, garis ganda, nomor bagian besar di kanan
+  // judul slide ala template Canva (DEC-123): kepala "GnD Lab" + bilah abu, judul serif di tengah, nomor tipis taupe di kanan
   const title = (t: string, num?: number) =>
-    pTextBox(6, M, 150000, CW - 1100000, 260000, [{ t: 'GnD LAB · SAINS & CATATAN LAB', sz: 900, b: true, color: MINT, caps: true }], { autofit: false }) +
-    (num ? pTextBox(3, SW - M - 1100000, 160000, 1100000, 760000, [{ t: pad2(num), sz: 4000, b: true, color: MINT, serif: true }], { anchor: 'b', autofit: false, align: 'r' }) : '') +
-    pTextBox(2, M, 380000, CW - (num ? 1200000 : 0), 520000, [{ t, sz: 2600, b: true, serif: true }], { anchor: 'ctr' }) +
-    pRect(4, M, 940000, CW, 28000, INK) +
-    pRect(7, M, 995000, CW, 7000, INK);
+    masthead(6, M, 'Sains & catatan lab') +
+    (num ? pTextBox(3, SW - M - 1300000, 60000, 1300000, 640000, [{ t: pad2(num), sz: 4400, color: TAUPE, serif: true }], { anchor: 'b', autofit: false, align: 'r' }) : '') +
+    pTextBox(2, M, 640000, CW, 400000, [{ t, sz: 2200, b: true, serif: true }], { anchor: 'ctr', align: 'ctr', autofit: false }) +
+    pRect(4, M, 1060000, CW, 7000, GRID);
   const pic = (bytes: Uint8Array, ext: 'jpeg' | 'png', w: number, h: number, caption: string, s: Slide['pics']) => {
     picN++;
     const p = { rid: `rIdP${s.length + 2}`, file: `image${picN}.${ext}`, bytes, w, h, caption, ext };
@@ -406,32 +425,40 @@ export function buildPptx(r: ResearchReport, charts: ChartPngs = new Map(), vide
     return label ? [{ t: `${label}  `, sz: 1200, b: true, color: MUTED }, { t: val, sz: 1500 }] : { t, sz: 1500 };
   };
 
-  // sampul — kepala surat kabar (DEC-121)
+  // sampul ala template Canva (DEC-123): kepala besar, foto bulat bercincin marun + lingkaran kecil bersambung, judul di tengah
   {
     const pics: Slide['pics'] = [];
-    let shapes = pTextBox(7, M, 260000, CW / 2, 300000, [{ t: 'GnD LAB · LAPORAN LAB', sz: 1100, b: true, color: MINT, caps: true }], { autofit: false });
-    shapes += pTextBox(13, SW - M - CW / 2, 260000, CW / 2, 300000, [{ t: `Edisi ${r.generatedAt}`, sz: 1000, i: true, color: MUTED, serif: true }], { autofit: false, align: 'r' });
-    shapes += pRect(5, M, 620000, CW, 36000, INK) + pRect(6, M, 690000, CW, 9000, INK);
+    let shapes = masthead(5, M, 'Laporan lab', true);
+    shapes += pTextBox(13, SW - M - 3000000, 330000, 3000000, 300000, [{ t: `Edisi ${r.generatedAt}`, sz: 1000, i: true, color: MUTED, serif: true }], { autofit: false, align: 'r' });
     const img = r.cover.image?.dataUrl ? dataUrlBytes(r.cover.image.dataUrl) : undefined;
-    const textW = img ? CW * 0.58 : CW;
-    shapes += pTextBox(8, M, 850000, textW, 1750000, [{ t: r.title, sz: 4000, b: true, serif: true }], { autofit: true, anchor: 'b' });
-    if (r.subtitle) shapes += pTextBox(14, M, 2620000, textW, 520000, [{ t: r.subtitle, sz: 1500, i: true, color: BODY2, serif: true }], { autofit: true });
-    shapes += pTextBox(9, M, 3200000, 2400000, 360000, [{ t: r.cover.status, sz: 1100, b: true, color: BG, caps: true }], { fill: r.cover.done ? MINT_D : AMBER, anchor: 'ctr', autofit: false, align: 'ctr' });
-    shapes += pRect(15, M, 3720000, textW, 7000, GRID);
-    shapes += pTextBox(10, M, 3780000, textW, 2300000, r.cover.meta.map(([k, v]) => [{ t: `${k}   `, sz: 1000, b: true, color: MUTED, caps: true }, { t: v, sz: 1300 }]), {});
+    const d = 3500000;
+    const colX = img ? M + d + 600000 : M;
+    const colW = SW - M - colX;
     if (img) {
-      // foto sampul bulat dengan cincin terakota (seperti foto lingkaran di infografik)
       const sz = jpegSize(img);
       const p = pic(img, 'jpeg', sz.w, sz.h, 'sampul', pics);
-      const d = Math.min(CW * 0.36, 3900000);
-      const cx = SW - M - d;
-      const cy = 950000;
-      shapes += pRect(16, cx - 70000, cy - 70000, d + 140000, d + 140000, MINT, 'ellipse');
-      shapes += pRect(17, cx - 30000, cy - 30000, d + 60000, d + 60000, BG, 'ellipse');
-      shapes += pPicCover(11, p.rid, cx, cy, d, d, p.file, sz.w, sz.h, 'ellipse');
+      const cy = 1350000;
+      shapes += pRect(16, M - 60000, cy - 60000, d + 120000, d + 120000, AMBER, 'ellipse');
+      shapes += pRect(17, M - 25000, cy - 25000, d + 50000, d + 50000, BG, 'ellipse');
+      shapes += pPicCover(11, p.rid, M, cy, d, d, p.file, sz.w, sz.h, 'ellipse');
     }
-    shapes += pRect(18, M, SH - 640000, CW, 7000, INK);
-    shapes += pTextBox(12, M, SH - 600000, CW, 360000, [{ t: 'Isi = catatan pengguna; bukan klaim produk aman/memenuhi standar', sz: 900, i: true, color: MUTED, serif: true }]);
+    // lingkaran kecil bersambung (seperti linimasa foto bulat di template)
+    const dots: [number, number, number, string][] = img
+      ? [[M + 250000, 5150000, 380000, AMBER], [M + 1250000, 5450000, 300000, MINT_D], [M + 2250000, 5250000, 340000, TAUPE], [M + 3150000, 4900000, 260000, MINT]]
+      : [[M, 5500000, 300000, AMBER], [M + 700000, 5600000, 240000, MINT_D], [M + 1300000, 5500000, 280000, TAUPE]];
+    dots.forEach(([x, y, r0, c], k) => {
+      const nx = dots[k + 1];
+      if (nx) shapes += pSeg(30 + k, x + r0 / 2, y + r0 / 2, nx[0] + nx[2] / 2, nx[1] + nx[2] / 2, TAUPE, 15875);
+    });
+    dots.forEach(([x, y, r0, c], k) => (shapes += pRect(40 + k, x, y, r0, r0, c, 'ellipse')));
+    shapes += pTextBox(8, colX, 1150000, colW, 1700000, [{ t: r.title, sz: 3600, b: true, serif: true }], { autofit: true, anchor: 'b', align: 'ctr' });
+    shapes += pTextBox(14, colX, 2880000, colW, 330000, [[{ t: 'Dibuat ', sz: 1100, color: MUTED }, { t: r.generatedAt, sz: 1100, b: true }, { t: '  |  oleh ', sz: 1100, color: MUTED }, { t: 'GnD Lab', sz: 1100, b: true }]], { autofit: false, align: 'ctr' });
+    if (r.subtitle) shapes += pTextBox(15, colX, 3230000, colW, 480000, [{ t: r.subtitle, sz: 1400, i: true, color: BODY2, serif: true }], { autofit: true, align: 'ctr' });
+    shapes += pTextBox(9, colX + (colW - 2400000) / 2, 3780000, 2400000, 340000, [{ t: r.cover.status, sz: 1000, b: true, color: BG, caps: true }], { fill: r.cover.done ? MINT_D : AMBER, anchor: 'ctr', autofit: false, align: 'ctr' });
+    shapes += pRect(18, colX, 4270000, colW, 7000, GRID);
+    shapes += pTextBox(10, colX, 4320000, colW, 1700000, r.cover.meta.map(([k, v]) => [{ t: `${k}   `, sz: 1000, b: true, color: MINT, caps: true }, { t: v, sz: 1200 }]), {});
+    shapes += pTextBox(12, colX, SH - 520000, colW, 320000, [{ t: 'Isi = catatan pengguna; bukan klaim produk aman/memenuhi standar', sz: 850, i: true, color: MUTED, serif: true }], { align: 'ctr' });
+    shapes += sideLabel(19, 'Isi laporan');
     slides.push({ shapes, pics, dark: true });
   }
 
@@ -445,9 +472,9 @@ export function buildPptx(r: ResearchReport, charts: ChartPngs = new Map(), vide
     r.kpis.forEach((k, i) => {
       const x = M + (i % cols) * (cw + gap);
       const y = 1300000 + Math.floor(i / cols) * (ch + gap);
-      // angka besar ala infografik: garis atas tebal, pemisah tipis antar kolom
-      shapes += pRect(20 + i * 3, x, y, cw, 22000, INK) + (i % cols ? pRect(21 + i * 3, x - gap / 2, y + 150000, 7000, ch - 300000, GRID) : '');
-      shapes += pTextBox(22 + i * 3, x, y + 120000, cw, ch - 200000, [{ t: k.value, sz: 5400, b: true, serif: true, color: [MINT, MINT_D, AMBER][i % 3] }, { t: k.label, sz: 1100, b: true, color: MUTED, caps: true }], { anchor: 't' });
+      // angka besar tipis ala template ("22", "70"): bulatan warna kecil, garis tipis, pemisah antar kolom
+      shapes += pRect(20 + i * 3, x, y + 60000, 160000, 160000, [AMBER, MINT_D, MINT][i % 3]!, 'ellipse') + (i % cols ? pRect(21 + i * 3, x - gap / 2, y + 150000, 7000, ch - 300000, GRID) : '');
+      shapes += pTextBox(22 + i * 3, x + 240000, y, cw - 240000, ch - 200000, [{ t: k.value, sz: 6000, serif: true, color: TAUPE }, { t: k.label, sz: 1100, b: true, color: MINT, caps: true }], { anchor: 't' });
     });
     slides.push({ shapes, pics: [] });
   }
@@ -549,7 +576,7 @@ export function buildPptx(r: ResearchReport, charts: ChartPngs = new Map(), vide
       cols.forEach((c, k) => {
         const cap = caps[k] ?? 3;
         const x = M + k * (colW + gap);
-        shapes += pTextBox(id++, x, BODY_TOP, colW, 300000, [{ t: `${c.title.toUpperCase()} · ${c.items.length} FOTO`, sz: 1000, b: true, color: k === 0 ? BG : INK, mono: true }], { fill: k === 0 ? MINT_D : k === 1 ? 'DCE3C4' : 'F2DDB0', geom: 'rect', anchor: 'ctr', autofit: false });
+        shapes += pTextBox(id++, x, BODY_TOP, colW, 300000, [{ t: `${c.title.toUpperCase()} · ${c.items.length} FOTO`, sz: 1000, b: true, color: k === 0 ? BG : INK, mono: true }], { fill: k === 0 ? MINT_D : k === 1 ? 'E3E8D8' : 'EFE1DC', geom: 'rect', anchor: 'ctr', autofit: false });
         const items = c.items.slice(pg * cap, pg * cap + cap);
         const top = BODY_TOP + 380000;
         const rowH = (BODY_BOTTOM - top) / 4;
@@ -968,9 +995,9 @@ export function buildPptx(r: ResearchReport, charts: ChartPngs = new Map(), vide
   slides.forEach((s, i) => {
     if (i === 0) return;
     // folio gaya koran: garis tipis, keterangan miring, nomor halaman serif terakota (DEC-121)
-    s.shapes += pRect(89, M, SH - 500000, CW, 6000, GRID);
+    s.shapes += pRect(89, M, SH - 500000, CW, 6000, GRID) + sideLabel(92, 'Catatan lab');
     s.shapes += pTextBox(90, M, SH - 470000, CW * 0.8, 320000, [{ t: `${r.cover.code} · ${r.footer}`, sz: 800, i: true, color: MUTED, serif: true }]);
-    s.shapes += pTextBox(91, SW - M - 1200000, SH - 480000, 1200000, 320000, [[{ t: `${i + 1}`, sz: 1100, b: true, color: MINT, serif: true }, { t: ` / ${slides.length}`, sz: 900, color: MUTED, serif: true }]], { align: 'r' });
+    s.shapes += pTextBox(91, SW - M - 1200000, SH - 480000, 1200000, 320000, [[{ t: `${i + 1}`, sz: 1100, b: true, color: AMBER, serif: true }, { t: ` / ${slides.length}`, sz: 900, color: MUTED, serif: true }]], { align: 'r' });
   });
 
   return packPptx(slides, vidExts);
@@ -990,7 +1017,7 @@ function packPptx(slides: Slide[], vidExts: ReadonlyMap<string, string> = new Ma
     for (const v of s.vids ?? []) files.push({ name: `ppt/media/${v.file}`, data: v.bytes });
   });
 
-  const theme = `${CT_HEAD}<a:theme xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" name="GEMA"><a:themeElements><a:clrScheme name="GEMA"><a:dk1><a:srgbClr val="2B2118"/></a:dk1><a:lt1><a:srgbClr val="F7F1E2"/></a:lt1><a:dk2><a:srgbClr val="4A3B2C"/></a:dk2><a:lt2><a:srgbClr val="EFE5CF"/></a:lt2><a:accent1><a:srgbClr val="B85A33"/></a:accent1><a:accent2><a:srgbClr val="C98F2A"/></a:accent2><a:accent3><a:srgbClr val="56703A"/></a:accent3><a:accent4><a:srgbClr val="7A6650"/></a:accent4><a:accent5><a:srgbClr val="A8946F"/></a:accent5><a:accent6><a:srgbClr val="D6C7A6"/></a:accent6><a:hlink><a:srgbClr val="56703A"/></a:hlink><a:folHlink><a:srgbClr val="7A6650"/></a:folHlink></a:clrScheme><a:fontScheme name="GEMA"><a:majorFont><a:latin typeface="Georgia"/><a:ea typeface=""/><a:cs typeface=""/></a:majorFont><a:minorFont><a:latin typeface="Calibri"/><a:ea typeface=""/><a:cs typeface=""/></a:minorFont></a:fontScheme><a:fmtScheme name="GEMA"><a:fillStyleLst><a:solidFill><a:schemeClr val="phClr"/></a:solidFill><a:solidFill><a:schemeClr val="phClr"/></a:solidFill><a:solidFill><a:schemeClr val="phClr"/></a:solidFill></a:fillStyleLst><a:lnStyleLst><a:ln w="6350"><a:solidFill><a:schemeClr val="phClr"/></a:solidFill></a:ln><a:ln w="12700"><a:solidFill><a:schemeClr val="phClr"/></a:solidFill></a:ln><a:ln w="19050"><a:solidFill><a:schemeClr val="phClr"/></a:solidFill></a:ln></a:lnStyleLst><a:effectStyleLst><a:effectStyle><a:effectLst/></a:effectStyle><a:effectStyle><a:effectLst/></a:effectStyle><a:effectStyle><a:effectLst/></a:effectStyle></a:effectStyleLst><a:bgFillStyleLst><a:solidFill><a:schemeClr val="phClr"/></a:solidFill><a:solidFill><a:schemeClr val="phClr"/></a:solidFill><a:solidFill><a:schemeClr val="phClr"/></a:solidFill></a:bgFillStyleLst></a:fmtScheme></a:themeElements></a:theme>`;
+  const theme = `${CT_HEAD}<a:theme xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" name="GEMA"><a:themeElements><a:clrScheme name="GEMA"><a:dk1><a:srgbClr val="2B2320"/></a:dk1><a:lt1><a:srgbClr val="FBFAF7"/></a:lt1><a:dk2><a:srgbClr val="4A3F3A"/></a:dk2><a:lt2><a:srgbClr val="F1EDE8"/></a:lt2><a:accent1><a:srgbClr val="A64B2A"/></a:accent1><a:accent2><a:srgbClr val="7B3B34"/></a:accent2><a:accent3><a:srgbClr val="5E7B3A"/></a:accent3><a:accent4><a:srgbClr val="A58E83"/></a:accent4><a:accent5><a:srgbClr val="7D6E66"/></a:accent5><a:accent6><a:srgbClr val="DCD4CC"/></a:accent6><a:hlink><a:srgbClr val="5E7B3A"/></a:hlink><a:folHlink><a:srgbClr val="7D6E66"/></a:folHlink></a:clrScheme><a:fontScheme name="GEMA"><a:majorFont><a:latin typeface="Georgia"/><a:ea typeface=""/><a:cs typeface=""/></a:majorFont><a:minorFont><a:latin typeface="Calibri"/><a:ea typeface=""/><a:cs typeface=""/></a:minorFont></a:fontScheme><a:fmtScheme name="GEMA"><a:fillStyleLst><a:solidFill><a:schemeClr val="phClr"/></a:solidFill><a:solidFill><a:schemeClr val="phClr"/></a:solidFill><a:solidFill><a:schemeClr val="phClr"/></a:solidFill></a:fillStyleLst><a:lnStyleLst><a:ln w="6350"><a:solidFill><a:schemeClr val="phClr"/></a:solidFill></a:ln><a:ln w="12700"><a:solidFill><a:schemeClr val="phClr"/></a:solidFill></a:ln><a:ln w="19050"><a:solidFill><a:schemeClr val="phClr"/></a:solidFill></a:ln></a:lnStyleLst><a:effectStyleLst><a:effectStyle><a:effectLst/></a:effectStyle><a:effectStyle><a:effectLst/></a:effectStyle><a:effectStyle><a:effectLst/></a:effectStyle></a:effectStyleLst><a:bgFillStyleLst><a:solidFill><a:schemeClr val="phClr"/></a:solidFill><a:solidFill><a:schemeClr val="phClr"/></a:solidFill><a:solidFill><a:schemeClr val="phClr"/></a:solidFill></a:bgFillStyleLst></a:fmtScheme></a:themeElements></a:theme>`;
   const master = `${CT_HEAD}<p:sldMaster ${P_NS}><p:cSld><p:bg><p:bgPr><a:solidFill><a:srgbClr val="${BG}"/></a:solidFill><a:effectLst/></p:bgPr></p:bg><p:spTree>${emptyTree}</p:spTree></p:cSld><p:clrMap bg1="lt1" tx1="dk1" bg2="lt2" tx2="dk2" accent1="accent1" accent2="accent2" accent3="accent3" accent4="accent4" accent5="accent5" accent6="accent6" hlink="hlink" folHlink="folHlink"/><p:sldLayoutIdLst><p:sldLayoutId id="2147483649" r:id="rId1"/></p:sldLayoutIdLst><p:txStyles><p:titleStyle><a:lvl1pPr><a:defRPr sz="3200"/></a:lvl1pPr></p:titleStyle><p:bodyStyle><a:lvl1pPr><a:defRPr sz="1800"/></a:lvl1pPr></p:bodyStyle><p:otherStyle><a:lvl1pPr><a:defRPr sz="1800"/></a:lvl1pPr></p:otherStyle></p:txStyles></p:sldMaster>`;
   const layout = `${CT_HEAD}<p:sldLayout ${P_NS} type="blank" preserve="1"><p:cSld name="Kosong"><p:spTree>${emptyTree}</p:spTree></p:cSld><p:clrMapOvr><a:masterClrMapping/></p:clrMapOvr></p:sldLayout>`;
   const pres = `${CT_HEAD}<p:presentation ${P_NS} saveSubsetFonts="1"><p:sldMasterIdLst><p:sldMasterId id="2147483648" r:id="rId1"/></p:sldMasterIdLst><p:sldIdLst>${slides.map((_, i) => `<p:sldId id="${256 + i}" r:id="rId${i + 3}"/>`).join('')}</p:sldIdLst><p:sldSz cx="${SW}" cy="${SH}"/><p:notesSz cx="6858000" cy="9144000"/></p:presentation>`;
@@ -1144,12 +1171,14 @@ export function buildTreePptx(items: TreeSlide[]): Uint8Array {
     chunks.forEach((leaves, ci) => {
       const pics: Slide['pics'] = [];
       let id = 10;
-      let shapes = pTextBox(id++, M, 110000, CW, 250000, [{ t: 'GnD LAB · LAPORAN BELANJA', sz: 900, b: true, color: MINT, caps: true }], { autofit: false });
-      shapes += pTextBox(id++, M, 300000, CW, 480000, [{ t: it.title + (ci ? ' (lanjutan)' : ''), sz: 2600, b: true, serif: true }], { anchor: 'ctr', autofit: false });
-      shapes += pTextBox(id++, M, 760000, CW, 300000, [{ t: it.subtitle, sz: 1200, i: true, color: BODY2, serif: true }], { autofit: false });
-      shapes += pRect(id++, M, 1050000, CW, 22000, INK) + pRect(id++, M, 1095000, CW, 6000, INK);
+      // kepala ala template Canva (DEC-123)
+      let shapes = masthead(id, M, 'Laporan belanja') + sideLabel(id + 3, 'Laporan belanja');
+      id += 4;
+      shapes += pTextBox(id++, M, 600000, CW, 330000, [{ t: it.title + (ci ? ' (lanjutan)' : ''), sz: 2000, b: true, serif: true }], { anchor: 'ctr', autofit: false, align: 'ctr' });
+      shapes += pTextBox(id++, M, 860000, CW, 260000, [{ t: it.subtitle, sz: 1100, i: true, color: BODY2, serif: true }], { autofit: false, align: 'ctr' });
+      shapes += pRect(id++, M, 1110000, CW, 7000, GRID);
       // label akar di atas, lalu foto nota (bingkai rapat mengikuti foto)
-      shapes += pTextBox(id++, M, 1130000, CW, 300000, [{ t: it.rootLabel, sz: 1000, b: true, color: MINT_D, caps: true }], { autofit: false, align: 'ctr' });
+      shapes += pTextBox(id++, M, 1140000, CW, 280000, [{ t: it.rootLabel, sz: 1000, b: true, color: MINT, caps: true }], { autofit: false, align: 'ctr' });
       const roots = it.roots.length ? it.roots.slice(0, 3) : [{ label: 'tanpa foto nota' }];
       const rootBoxW = 2300000;
       const rootBoxH = 1650000;

@@ -562,7 +562,7 @@ test.describe('Upload progres perlakuan, form & foto OCR (DEC-095)', () => {
 
   test('Tanya Lab AI: ＋ → Foto dari galeri → chip foto → pesan gambar → AI berpikir sambil OCR → teks ikut prompt (DEC-097)', async ({ page }) => {
     test.setTimeout(180_000);
-    await page.route('https://api.siputzx.my.id/**', (r) => r.fulfill({ json: { status: true, data: `JAWABAN: ${new URL(r.request().url()).searchParams.get('prompt')}` } }));
+    await page.route('**/api/lab-ai', (r) => r.fulfill({ json: { ok: true, text: `JAWABAN: ${(r.request().postDataJSON() as { prompt: string }).prompt}` } }));
     await page.goto('/lab?t=bahan');
     const b64 = await page.evaluate(() => {
       const c = document.createElement('canvas');
