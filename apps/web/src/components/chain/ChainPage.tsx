@@ -54,7 +54,6 @@ export function ChainPage() {
           </p>
         </div>
         <div className="flex flex-col items-end gap-2">
-          <span className="tag-mono -rotate-[1.5deg]">EXP-RANTAI // DATA RANTAI v{c.version}</span>
           <button type="button" className="btn-ghost" aria-expanded={guide} onClick={() => setGuide((g) => !g)} data-testid="chain-guide-toggle">
             {guide ? 'Tutup panduan' : 'Cara pakai ?'}
           </button>

@@ -60,7 +60,6 @@ export function ProductionPlanner() {
             Berapa yang bisa dibuat satu shift, tahap mana yang paling lambat, dan butuh berapa orang/mesin untuk mengejar target.
           </p>
         </div>
-        <span className="tag-mono -rotate-[1.5deg]">EXP-SHIFT // DATA FORMULA v{f.version}</span>
       </header>
 
       <ChoiceGroup legend="Lini produksi" columns={3} value={lineId} onChange={setLineId} options={LINES.map((l) => ({ value: l.id, label: l.label, testId: `line-${l.id}` }))} />
@@ -97,7 +96,7 @@ export function ProductionPlanner() {
       <section aria-label="Stasiun" className="flex flex-col gap-3">
         <h2 className="text-2xl">Stasiun di lini {line.nameId}</h2>
         {line.stations.map((s) => (
-          <div key={s.id} className={`card grid gap-3 p-[16px] sm:grid-cols-[1.4fr_repeat(3,1fr)] ${s.missing ? 'border-safety' : ''}`} data-testid={`station-${s.id}`}>
+          <div key={s.id} className={`card card-data grid gap-3 p-[16px] sm:grid-cols-[1.4fr_repeat(3,1fr)] ${s.missing ? 'border-safety' : ''}`} data-testid={`station-${s.id}`}>
             <div className="flex flex-col gap-1">
               <span className="label-mono">{s.kind === 'manual' ? 'MANUAL' : s.kind === 'machine' ? 'MESIN' : 'BATCH'}</span>
               <h3 className="text-lg">{s.nameId}</h3>

@@ -27,7 +27,6 @@ export default async function Shared({ params }: { params: Promise<{ slug: strin
     <>
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div className="flex flex-col gap-2.5">
-          <span className="tag-mono self-start">DIBAGIKAN · DATASET v{s.datasetVersion}</span>
           <h1 className="text-[36px] sm:text-[48px]">{s.name}</h1>
           <span className="font-mono text-xs">Disimpan {s.createdAt.toLocaleString('id-ID')} · dihitung ulang dengan versi datasetnya sendiri</span>
         </div>

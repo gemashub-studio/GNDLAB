@@ -172,12 +172,8 @@ export function Shell({ children, datasetVersion, profile }: { children: ReactNo
             })}
           </nav>
 
-          <span
-            className={`ml-auto hidden rounded-full border px-2.5 py-1 font-mono text-[11px] font-semibold sm:inline lg:ml-2 ${online ? 'border-acid text-acid' : 'border-safety text-safety'}`}
-            data-testid="online-pill"
-          >
-            {online ? 'ONLINE' : 'OFFLINE'} · v{datasetVersion}
-          </span>
+          {/* label versi/ONLINE dihapus (DEC-119); status offline tetap lewat banner */}
+          <span className="ml-auto lg:ml-2" aria-hidden />
 
           <ProfileMenu />
 
@@ -199,7 +195,7 @@ export function Shell({ children, datasetVersion, profile }: { children: ReactNo
 
       {!online && (
         <div role="status" className="border-b border-ink bg-safety px-4 py-2 text-center text-sm font-extrabold uppercase">
-          Lagi offline — kalkulator tetap jalan (data v{datasetVersion}). Simpan dulu di perangkat, nanti dikirim.
+          Lagi offline — kalkulator tetap jalan. Simpan dulu di perangkat, nanti dikirim.
         </div>
       )}
 
@@ -259,17 +255,11 @@ export function Shell({ children, datasetVersion, profile }: { children: ReactNo
               </section>
             ))}
           </div>
-          <div className="flex-none border-t border-line-ink px-5 py-4 font-mono text-xs">
-            <span className="text-muted-ink">DATASET </span>
-            <span className="font-bold">v{datasetVersion}</span>
-            <span className="block text-muted-ink">{profile}</span>
-            <span className={`mt-1 block font-bold ${online ? 'text-acid' : 'text-safety'}`}>{online ? '● ONLINE' : '● OFFLINE'}</span>
-          </div>
         </nav>
       </div>
 
       <main id="konten" className="min-w-0 flex-1 px-4 pb-14 pt-6 sm:px-6 lg:px-10 lg:pt-8">
-        <div className="relative isolate mx-auto flex max-w-[1180px] flex-col gap-7">
+        <div className="relative isolate mx-auto flex max-w-[1180px] flex-col gap-5">
           {/* latar animasi DriftWall seperti Ringkasan di semua halaman, kecuali Ringkasan (punya sendiri) & GnD Lab (DEC-096) */}
           {path !== '/' && path !== '/lab' && <HomeDriftBg page />}
           {children}

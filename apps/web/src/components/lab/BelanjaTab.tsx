@@ -126,7 +126,7 @@ export function BelanjaTab() {
       {list.length ? (
         <ul className="flex flex-col gap-3" data-testid="lpj-list">
           {list.map((r) => (
-            <li key={r.id} className="card flex flex-wrap items-center justify-between gap-3">
+            <li key={r.id} className="card card-data flex flex-wrap items-center justify-between gap-3">
               <div className="min-w-0">
                 <p className="font-mono text-xs text-muted">{r.id} · diubah {r.updatedAt.slice(0, 10)}</p>
                 <p className="font-semibold">{r.purpose.trim() || 'Bukti alokasi'}</p>

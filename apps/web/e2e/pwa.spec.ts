@@ -38,7 +38,7 @@ test.fixme('@pwa kalkulator jalan saat dibuka tanpa sinyal setelah kunjungan per
     // Interaksi tetap menghitung (engine + dataset ter-bundle di client).
     await page.getByTestId('commodity-arang_batok_belah2').click();
     near(await primary(page), 12.62);
-    await expect(page.getByText(/OFFLINE/).first()).toBeVisible();
+    await expect(page.getByText(/offline/i).first()).toBeVisible();
     // Tautan bagikan dibuka saat offline → state dipulihkan dari `?s=` di client.
     const s = { kind: 'CONTAINER', commodityId: 'kopra_edible', formCode: 'bagged', containerId: '40HC', mode: 'PACKAGE' };
     const token = Buffer.from(JSON.stringify(s)).toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');

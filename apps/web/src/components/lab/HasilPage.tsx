@@ -37,7 +37,7 @@ export function HasilPage() {
       {rec === null && <p className="text-sm">Catatan tidak ditemukan di perangkat ini. Data tersimpan per perangkat — buka dari perangkat yang mencatatnya.</p>}
       {rec && (
         <>
-          <div className="card">
+          <div className="card card-data">
             <CatatResult rec={rec} />
           </div>
           <div className="card flex flex-col gap-2">

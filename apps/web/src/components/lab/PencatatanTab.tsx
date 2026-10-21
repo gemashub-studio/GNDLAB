@@ -189,7 +189,7 @@ export function PencatatanTab({ records, oldRaw, onChanged }: { records: CatatRe
           ['Catatan data akhir', finished, 'catat-stat-akhir'],
           ['Menunggu data akhir', pending.length, 'catat-stat-pending'],
         ].map(([k, v, id]) => (
-          <div key={id as string} className="card flex flex-col gap-1" data-testid={id as string}>
+          <div key={id as string} className="card card-data flex flex-col gap-1" data-testid={id as string}>
             <dt className="label-mono">{k}</dt>
             <dd className="font-mono text-3xl font-semibold">{v}</dd>
           </div>
@@ -240,7 +240,7 @@ export function PencatatanTab({ records, oldRaw, onChanged }: { records: CatatRe
                 aria-pressed={selecting ? on : undefined}
                 onClick={open}
                 onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), open())}
-                className={`card flex cursor-pointer flex-col gap-3 transition sm:flex-row sm:items-center sm:justify-between ${r.closedAt ? 'border-[#1FA88F] bg-[#E3F7F1]' : ''} ${on ? 'border-acid ring-2 ring-acid/50' : 'hover:border-acid'} ${selecting && !r.finishedAt ? 'cursor-not-allowed opacity-50' : ''}`}
+                className={`card card-data flex cursor-pointer flex-col gap-3 transition sm:flex-row sm:items-center sm:justify-between ${r.closedAt ? 'border-[#1FA88F] bg-[#E3F7F1]' : ''} ${on ? 'border-acid ring-2 ring-acid/50' : 'hover:border-acid'} ${selecting && !r.finishedAt ? 'cursor-not-allowed opacity-50' : ''}`}
                 data-testid={`catat-card-${r.id}`}
               >
                 {selecting && (

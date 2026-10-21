@@ -121,7 +121,7 @@ function Priority({ ds, stats, onPick, canWrite }: { ds: DatasetSI; stats: Param
           if (!p) return null;
           const du = displayUnit(p.unit, p.typ);
           return (
-            <article key={pr.key} className="card flex flex-col gap-3" data-testid={`prio-${pr.asm}`}>
+            <article key={pr.key} className="card card-data flex flex-col gap-3" data-testid={`prio-${pr.asm}`}>
               <div className="flex items-center justify-between gap-2">
                 <span className="tag-mono">{pr.asm}</span>
                 <ConfidenceBadge c={p.confidence as Confidence} withText />
@@ -691,7 +691,7 @@ export function SamplingWorkbench({ role, stats, dbOk }: { role: Role | null; st
         )}
       </section>
 
-      <section aria-labelledby="stats-h" className="card flex flex-col gap-4">
+      <section aria-labelledby="stats-h" className="card card-data flex flex-col gap-4">
         <h2 id="stats-h" className="text-2xl">
           Statistik sampel
         </h2>

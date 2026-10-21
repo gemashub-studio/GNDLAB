@@ -51,7 +51,6 @@ export function FormulaPage() {
           </p>
         </div>
         <div className="flex flex-col items-end gap-2">
-          <span className="tag-mono -rotate-[1.5deg]">EXP-FORMULA // DATA FORMULA v{f.version}</span>
           <button type="button" className="btn-ghost" aria-expanded={guide} onClick={() => setGuide((g) => !g)} data-testid="formula-guide-toggle">
             {guide ? 'Tutup panduan' : 'Cara pakai ?'}
           </button>

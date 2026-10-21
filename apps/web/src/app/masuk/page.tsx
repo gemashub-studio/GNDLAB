@@ -17,7 +17,6 @@ export default async function Masuk({ searchParams }: { searchParams: Promise<Re
   return (
     <>
       <header className="flex flex-col gap-2.5">
-        <span className="tag-mono self-start">AKUN</span>
         <h1 className="text-[40px] sm:text-[52px]">Masuk</h1>
       </header>
       <section className="card flex max-w-lg flex-col gap-4">

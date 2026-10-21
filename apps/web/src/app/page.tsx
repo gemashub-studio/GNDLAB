@@ -62,7 +62,6 @@ export default async function Home() {
       <header className="flex flex-wrap items-end justify-between gap-[18px] pb-16 pt-10 sm:pb-20 sm:pt-14">
         <div className="flex flex-col gap-2.5">
           <HomeWelcome />
-          <span className="tag-mono self-start">DATASET v{ds.version} // ENGINE V1</span>
           <h1 className="text-[40px] sm:text-[52px]">
             Ringkasan
             <br />
@@ -83,7 +82,7 @@ export default async function Home() {
           { href: '/gudang', n: '03', t: 'Gudangnya cukup nggak?', d: 'Isi jumlah stok & tinggi tumpukan, keluar luas lantai yang dibutuhkan.' },
           { href: '/konversi', n: '04', t: 'Butir ↔ kg ↔ karung?', d: 'Ubah satuan bolak-balik, lengkap dengan rentangnya.' },
         ].map((x) => (
-          <Link key={x.href} href={x.href} className="card group flex flex-col gap-2 p-[18px] no-underline hover:bg-acid">
+          <Link key={x.href} href={x.href} className="card card-data group flex flex-col gap-2 p-[18px] no-underline hover:bg-acid">
             <span className="font-mono text-xs font-bold">{x.n}</span>
             <span className="text-lg font-extrabold uppercase leading-tight">{x.t}</span>
             <span className="text-[13px]">{x.d}</span>
@@ -100,7 +99,7 @@ export default async function Home() {
           const piece = row.mode === 'PIECE';
           const ui = COMMODITY_UI[c.id]!;
           return (
-            <article key={c.id} className="card flex flex-col gap-3.5 p-[18px]">
+            <article key={c.id} className="card card-data flex flex-col gap-3.5 p-[18px]">
               <div className="flex items-start justify-between gap-2">
                 <span className="text-[15px] font-extrabold uppercase tracking-[0.03em]">{ui.short}</span>
                 <ConfidenceBadge c={o20.confidence} tilt />
@@ -133,7 +132,7 @@ export default async function Home() {
             <h2 id="cap-h" className="text-2xl">
               Kapasitas Container
             </h2>
-            <span className="font-mono text-xs font-semibold">ENGINE V1 · NILAI TIPIKAL</span>
+            <span className="font-mono text-xs font-semibold">NILAI TIPIKAL</span>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full min-w-[520px] border-collapse text-sm" data-testid="capacity-table">

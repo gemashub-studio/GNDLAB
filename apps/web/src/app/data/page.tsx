@@ -38,10 +38,9 @@ export default async function DataPage() {
     <>
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div className="flex flex-col gap-2.5">
-          <span className="tag-mono self-start">DATASET v{ds.version} · DISUSUN {ds.compiled}</span>
           <h1 className="text-[40px] sm:text-[52px]">Data &amp;<br />Sumber</h1>
         </div>
-        <div className="card flex items-center gap-4 p-4 font-mono text-sm font-bold">
+        <div className="card card-data flex items-center gap-4 p-4 font-mono text-sm font-bold">
           <span>{p.A + p.B + p.C} parameter</span>
           <span className="flex items-center gap-1"><ConfidenceBadge c="A" /> {p.A}</span>
           <span className="flex items-center gap-1"><ConfidenceBadge c="B" /> {p.B}</span>
@@ -81,7 +80,7 @@ export default async function DataPage() {
       </section>
 
       {ds.commodities.map((c) => (
-        <section key={c.id} aria-labelledby={`h-${c.id}`} className="card flex flex-col gap-4">
+        <section key={c.id} aria-labelledby={`h-${c.id}`} className="card card-data flex flex-col gap-4">
           <div className="flex flex-col gap-1">
             <h2 id={`h-${c.id}`} className="text-2xl">{COMMODITY_UI[c.id]?.short ?? c.nameId}</h2>
             <span className="text-sm">{c.nameId}{c.nameEn ? ` — ${c.nameEn}` : ''}</span>

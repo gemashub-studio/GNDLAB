@@ -98,12 +98,12 @@ export function ContainerResultView({
 
       {!compact && (
         <div className="grid gap-5 sm:grid-cols-2">
-          <div className="card flex flex-col gap-3 p-[18px] font-mono text-xs font-bold">
+          <div className="card card-data flex flex-col gap-3 p-[18px] font-mono text-xs font-bold">
             <span className="tracking-[0.08em]">ISI CONTAINER</span>
             <FillBar label="VOLUME" fraction={t.volumeFill} tone="ink" />
             <FillBar label="BERAT" fraction={t.weightFill} tone="safety" />
           </div>
-          <div className="card flex flex-col gap-2 p-[18px]" data-testid="benchmark">
+          <div className="card card-data flex flex-col gap-2 p-[18px]" data-testid="benchmark">
             <span className="flex items-center gap-2 font-mono text-xs font-bold tracking-[0.08em]">
               BENCHMARK PASAR <Hint k="benchmark" />
             </span>

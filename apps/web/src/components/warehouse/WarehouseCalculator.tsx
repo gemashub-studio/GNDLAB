@@ -117,7 +117,6 @@ export function WarehouseCalculator({ initial }: { initial?: WarehouseState }) {
           <Link href="/" className="font-mono text-xs font-bold no-underline">← gemasSTUDIO / RINGKASAN</Link>
           <h1 className="text-[40px] sm:text-[52px]">Hitung<br />Gudang</h1>
         </div>
-        <span className="tag-mono -rotate-[1.5deg]">EXP-WH // DATASET v{ds.version}</span>
       </header>
 
       <div className="flex flex-wrap items-start gap-6">
@@ -273,7 +272,7 @@ export function WarehouseCalculator({ initial }: { initial?: WarehouseState }) {
         <section aria-label="Hasil gudang" aria-live="polite" className="flex min-w-0 flex-[2_1_480px] flex-col gap-6" data-testid="warehouse-result">
           {r ? (
             <>
-              <div className="card flex flex-col gap-3 p-[18px]">
+              <div className="card card-data flex flex-col gap-3 p-[18px]">
                 <span className="label-mono">LUAS LANTAI DIBUTUHKAN</span>
                 <div className="flex flex-wrap items-baseline gap-2">
                   <span className="font-display text-[56px] leading-none" data-testid="floor-area">{fmt(r.typ.floorAreaM2, 2)}</span>

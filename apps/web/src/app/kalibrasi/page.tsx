@@ -25,7 +25,6 @@ export default async function Page() {
     <>
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div className="flex flex-col gap-2.5">
-          <span className="tag-mono self-start">REVIEW DATA{version ? ` · AKTIF v${version}` : ''}</span>
           <h1 className="text-[40px] sm:text-[52px]">
             Usulan
             <br />

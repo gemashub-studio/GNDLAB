@@ -82,7 +82,6 @@ export function ChecklistPage() {
             Ceklis R&amp;D, QC, dan rilis produk dari SOP & form KORA. Isi di HP saat kerja — tersimpan di perangkat walau tanpa sinyal, bisa diunduh CSV atau dicetak.
           </p>
         </div>
-        <span className="tag-mono -rotate-[1.5deg]">EXP-CEKLIS // {f.checklists.length} CEKLIS</span>
       </header>
 
       {!fill && (
@@ -110,7 +109,7 @@ export function ChecklistPage() {
           <div className="grid gap-4 md:grid-cols-2" data-testid="checklist-list">
             {list.length === 0 && <p className="text-sm">Belum ada ceklis {TYPE_UI[type].label.toLowerCase()} untuk produk ini.</p>}
             {list.map((c) => (
-              <article key={c.id} className="card flex flex-col gap-3" data-testid={`cl-${c.id}`}>
+              <article key={c.id} className="card card-data flex flex-col gap-3" data-testid={`cl-${c.id}`}>
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <span className="tag-mono">{PRODUCT_UI[c.product].toUpperCase()}</span>
                   <span className="font-mono text-xs">{c.form_ref}</span>

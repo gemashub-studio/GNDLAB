@@ -13,7 +13,10 @@
 }
 
 @layer components {
-  .card        { @apply rounded-2xl bg-surface/90 border-3 border-ink shadow-hard p-[22px] backdrop-blur-sm; }
+  /* kartu putih → transparan (kaca tipis agar teks tetap terbaca) & lebih padat (DEC-119);
+     kartu data / menu memakai .card-data (tetap putih). Kartu berwarna (bg-…) & .card-ink tidak terpengaruh. */
+  .card        { @apply rounded-2xl bg-white/25 border-3 border-ink shadow-hard p-4 sm:p-[18px] backdrop-blur-[6px]; }
+  .card-data   { @apply bg-surface/95; }
   .card-ink    { @apply rounded-2xl bg-ink text-paper border-3 border-ink shadow-hard-safety p-[22px]; }
   .btn         { @apply inline-flex items-center justify-center gap-2 min-h-touch rounded-xl px-5 border-3 border-ink text-sm font-bold tracking-wide transition; }
   .btn-primary { @apply btn bg-safety text-ink shadow-hard-sm hover:brightness-105 active:translate-y-px; }

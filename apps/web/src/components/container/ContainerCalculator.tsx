@@ -205,7 +205,7 @@ export function ContainerCalculator({ initial, startWizard }: { initial?: Contai
 
   const paramBox = (
     <div className="flex flex-col gap-2 border-2 border-dashed border-ink p-3 font-mono text-xs" data-testid="param-box">
-      <span className="font-bold tracking-[0.08em]">05 / PARAMETER (DATASET v{ds.version})</span>
+      <span className="font-bold tracking-[0.08em]">05 / PARAMETER</span>
       <span className="flex items-center gap-2">
         ρ efektif: {fmt(rho.typ)} kg/m³ ({fmt(rho.min)}–{fmt(rho.max)}) <ConfidenceBadge c={rho.confidence} />
       </span>
@@ -319,7 +319,6 @@ export function ContainerCalculator({ initial, startWizard }: { initial?: Contai
           </h1>
         </div>
         <div className="flex flex-col items-end gap-3">
-          <span className="tag-mono -rotate-[1.5deg]">EXP-CALC // DATASET v{ds.version}</span>
           <div role="group" aria-label="Tampilan" className="flex border-3 border-ink bg-surface">
             <button type="button" aria-pressed={wizard} data-testid="toggle-wizard"
               onClick={() => { setWizard(true); setStep(0); }}

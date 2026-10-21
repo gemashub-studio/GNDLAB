@@ -77,7 +77,6 @@ export function Converter({ initial }: { initial?: ConvertState }) {
           <Link href="/" className="font-mono text-xs font-bold no-underline">← gemasSTUDIO / RINGKASAN</Link>
           <h1 className="text-[40px] sm:text-[52px]">Konversi<br />Satuan</h1>
         </div>
-        <span className="tag-mono -rotate-[1.5deg]">EXP-CONV // DATASET v{ds.version}</span>
       </header>
 
       <div className="flex flex-wrap items-start gap-6">

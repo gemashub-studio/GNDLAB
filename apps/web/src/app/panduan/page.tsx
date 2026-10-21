@@ -59,7 +59,6 @@ export default function Panduan() {
     <>
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div className="flex flex-col gap-2.5">
-          <span className="tag-mono self-start">LAB MANUAL // v1</span>
           <h1 className="text-[40px] sm:text-[52px]">Panduan</h1>
         </div>
         <ReopenTour />

@@ -234,7 +234,7 @@ export function ProtocolsTab({ protocols, entries, media, refresh, incomingRaw, 
             const latest = versions[0]!;
             const st = researchStatus(entries.filter((e) => e.experimentId === k));
             return (
-              <li key={k} className="card flex flex-col gap-3" data-testid={`proto-${k}`}>
+              <li key={k} className="card card-data flex flex-col gap-3" data-testid={`proto-${k}`}>
                 <div className="flex flex-wrap items-center gap-3">
                   <ProductMark id={latest.product} />
                   <div className="flex flex-1 flex-col">

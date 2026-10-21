@@ -91,13 +91,12 @@ export function ProcessCalculator() {
             Dari kelapa bulat masuk gudang sampai jadi kopra & arang. Isi jumlah kelapanya, sisanya biar aplikasi yang hitung.
           </p>
         </div>
-        <span className="tag-mono -rotate-[1.5deg]">EXP-PROSES // DATA PROSES v{p.version}</span>
       </header>
 
       {/* Kelapa masuk per asal */}
       <section aria-label="Kelapa masuk per asal" className="grid gap-5 md:grid-cols-2">
         {p.origins.map((o) => (
-          <div key={o.id} className="card flex flex-col gap-3 p-[18px]" data-testid={`lot-${o.id}`}>
+          <div key={o.id} className="card card-data flex flex-col gap-3 p-[18px]" data-testid={`lot-${o.id}`}>
             <div className="flex items-start justify-between gap-2">
               <div>
                 <span className="tag-mono">{o.altitude.max ? `≤ ${fmt(o.altitude.max)} M DPL` : `> ${fmt(o.altitude.min ?? 0)} M DPL`}</span>
