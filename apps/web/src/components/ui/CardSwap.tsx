@@ -101,6 +101,8 @@ export interface CardSwapProps {
   theme?: 'dark' | 'light';
   /** Tumpukan dicerminkan: kartu belakang bergeser ke KIRI (untuk tumpukan sisi kiri), DEC-120. */
   mirror?: boolean;
+  /** Posisi tumpukan di dalam wadah: tengah (bawaan), rata kiri, atau rata kanan (DEC-121). */
+  align?: 'center' | 'start' | 'end';
   onCardClick?: (index: number) => void;
   onChange?: (frontIndex: number) => void;
   className?: string;
@@ -148,6 +150,7 @@ const CardSwap = forwardRef<CardSwapHandle, CardSwapProps>(
       intro = true,
       theme = 'light',
       mirror = false,
+      align = 'center',
       onCardClick,
       onChange,
       className = '',
@@ -195,6 +198,7 @@ const CardSwap = forwardRef<CardSwapHandle, CardSwapProps>(
       hoverSpread: Math.max(0, hoverSpread),
       dim: clamp(dim, 0, 1),
       bounds,
+      align,
       onCardClick,
       onChange,
     };
@@ -452,13 +456,18 @@ const CardSwap = forwardRef<CardSwapHandle, CardSwapProps>(
         const gap = 110 / settingsRef.current.speed;
         for (let i = 0; i < position; i++) state.queue.push(window.setTimeout(() => shift(1), i * gap));
       };
+      let lastAlign = s0.align;
       const fit = () => {
         const s = settingsRef.current;
         const w = root.clientWidth;
         const h = root.clientHeight;
         const scale = Math.min(1, w / s.bounds.width, h > 0 ? h / s.bounds.height : 1);
         state.scale = scale > 0 ? scale : 1;
-        stage.style.transform = `translate(-50%, -50%) scale(${state.scale.toFixed(4)})`;
+        // rata kiri / kanan / tengah (DEC-121)
+        const sc = state.scale.toFixed(4);
+        if (s.align === 'start') Object.assign(stage.style, { left: '0px', right: 'auto', transformOrigin: 'left center', transform: `translate(0, -50%) scale(${sc})` });
+        else if (s.align === 'end') Object.assign(stage.style, { left: 'auto', right: '0px', transformOrigin: 'right center', transform: `translate(0, -50%) scale(${sc})` });
+        else Object.assign(stage.style, { left: '50%', right: 'auto', transformOrigin: 'center center', transform: `translate(-50%, -50%) scale(${sc})` });
       };
       const local = (event: PointerEvent) => {
         const box = root.getBoundingClientRect();
@@ -599,7 +608,8 @@ const CardSwap = forwardRef<CardSwapHandle, CardSwapProps>(
             card.shade = shade;
             write(card, s);
           });
-          if (s.autoplay !== state.autoplay || s.delay !== state.delay) {
+          if (s.autoplay !== state.autoplay || s.delay !== state.delay || s.align !== lastAlign) {
+            lastAlign = s.align;
             state.autoplay = s.autoplay;
             state.delay = s.delay;
             schedule();

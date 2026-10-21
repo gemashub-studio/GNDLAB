@@ -199,3 +199,12 @@
 - DEC-108/109: Resep tanpa isi manual (LAB_PRODUCTS masuk dropdown); jalurGroups non-kopra → foto treatments per jenis (kunci tr:<jenis>:<i>), PPTX photoCards.
 - DEC-110/111: bio leather Rumput/Bunga/Kunyit; asisten suara kelapa (VoiceAssistant di Shell, /api/voice-assistant gpt-oss-20b JSON, sanitizePlan). E2E: localStorage gnd-va-force=1 + route tiruan. Navigasi tab lab: push /lab lalu klik lab-tab (LabPage membaca ?t= saat mount sebelum URL router diperbarui).
 - DEC-112/113: tab lab tinggal bahan/protokol/belanja; docs/gnd-lab (flowchart PDF via Edge headless --print-to-pdf lewat PowerShell Start-Process); stripFillWords; VoiceSpark + ElectricBorder (port TS).
+
+## 2026-10-20 · Claude — cek SOP kopra/arang + SOP pekerja v1.1
+- Audit SOP KORA Rev 03 vs app: angka cocok; Rantai → Arang "Drum pirolisis" berisi langkah bakar langsung (salah), Kombi & pengasapan kopra belum ada di Rantai (belum diperbaiki, menunggu owner).
+- SOP pekerja v1.1 (FND-037): isi kolom kosong, KA kopra < 5%, lembar tambahan hal 4 per SOP.
+- PPTX bisa diedit (v1.0 & v1.1) di Downloads/SOP-KORA-v1.1/ppt via sumber/ke_pptx.py: latar = render tanpa teks (background slide), teks = kotak teks Nunito/Fredoka (font TTF di ppt/font, owner harus install).
+
+## 2026-10-21 · Claude — CardSwap tepi desktop + PPTX gaya koran sains
+- DEC-121: CardSwap prop align (start/end) + section lg:-ml-11/-mr-11 (tumpukan pas tepi konten 130/1310 px pada 1440). officeExport: palet tanah (INK 2B2118, MINT=terakota B85A33, MINT_D=zaitun 56703A, BG krem F7F1E2), PRun serif/caps/i, title() rubrik+serif+garis ganda, sampul kepala koran + foto bulat (pPicCover geom), KPI angka besar, warna seri grafik native dipetakan via earth(). Render cek: PowerPoint COM Export PNG (scratchpad cek*.ps1).
+- E2E home-swap bisa gagal saat /proses belum terkompilasi → curl dulu.

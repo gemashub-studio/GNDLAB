@@ -128,3 +128,11 @@ Parameter A/B yang hanya bersumber SOP KORA (F01–F06), atau jurnal yang hanya 
 - DOCX/PPTX bisa dibuat tanpa dependensi (zip store + OOXML) dan divalidasi dengan Word/PowerPoint via COM.
 - Webcam di halaman butuh konteks aman (https/localhost); HP via http LAN → pakai input `capture`.
 - Form React yang dipakai ulang harus diberi `key` unik per "buat baru", kalau tidak state lama (termasuk ID draf) terbawa.
+
+### FND-037 · 2026-10-20 · SOP pekerja KORA v1.0 → v1.1
+- Owner memberi 3 SOP poster pekerja (Downloads/SOP-KORA-01-kopra, -02-arang, -03-aman-weathering .pdf, 3 hal, buatan Chromium). Hasil v1.1 di `Downloads/SOP-KORA-v1.1/` (+ `sumber/`: HTML lembar tambahan, `lembar_tambahan.py`, `bangun_v11.py`). Tidak masuk repo karena repo GNDLAB publik & SOP = dokumen internal.
+- **Keputusan owner: kadar air kopra harus < 5%** (Edible; diterapkan juga ke Asalan — minta konfirmasi). Dataset app masih Edible ≤ 6% (ICC) / Asalan ≤ 13,9% — belum diubah.
+- Kekurangan utama v1.0: aturan 4 jam, alarm KA 24/48 jam, moisture meter, rantai dingin air kelapa, profil & batas suhu Koven, batok KA ≤ 15%, tanda asap Comba, suhu reaktor Pirol + termokopel, bongkar aman, ICC FC/fines, UN1361/UN1363, oli bekas B3.
+- Keputusan owner: belah kelapa harus 50:50 (dua belahan sama besar) — masuk SOP-01 langkah 6.
+- Konflik dibiarkan untuk owner: jemur v1.0 "daging menghadap atas" vs SOP Rev 03 telungkup 1–2 hari.
+- SOP-KORA-04 (riset QC pasar, 6 hal) → v1.1 (7 hal) + PPTX. Temuan: pembanding P1/P2 di rapor lab = basis basah (abu+FC+ZT ≈ 94,4) sementara sampel Kora basis kering; arang mentah ZT 16,16% > SNI/APCC/usulan ≤ 15%; usulan arang SOP-04 (KA ≤ 8%, abu ≤ 2%) beda dengan SOP-02 (≤ 6%, ≤ 3%); tabel grade hal 4 kalori Premium "≤ 7.500" & Grade C "≥ 7.100" kemungkinan salah ketik. Hitungan "turun … poin" hal 5 dicek: cocok. Isian v1.1 semua SOP kini satu sumber: sumber/isian.py.
