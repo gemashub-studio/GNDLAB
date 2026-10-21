@@ -95,7 +95,8 @@ test('Ayo → "buka pencatatan data lalu buat catatan baru" → form terbuka →
   await expect(panel.getByTestId('va-status')).toContainText('belum paham');
   // teks TTS diberi tanda baca intonasi & "ma ap" (DEC-116); layar tetap teks asli
   await expect.poll(() => spoken).toContain('ma ap, aku masih belum paham, coba ucapkan lagi ya!');
-  expect(spoken).toContain('Sebentar, aku proses ya!');
+  // "sebentar aku proses" hanya di layar, tidak diucapkan (DEC-117)
+  expect(spoken.some((t) => /sebentar/i.test(t))).toBe(false);
   expect(spoken).toContain('Buka pencatatan data dan membuat catatan baru!');
   // tombol berbahaya tidak pernah dikirim ke perencana
   expect(sent.flatMap((s) => s.ctx.buttons.map((b) => b.id)).some((id) => /delete|hapus|logout/i.test(id))).toBe(false);

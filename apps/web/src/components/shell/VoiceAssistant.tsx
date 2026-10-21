@@ -225,8 +225,8 @@ export function VoiceAssistant({ show, userKey, pages }: { show: boolean; userKe
       }
       setHeard(t);
       setMood('thinking');
+      // tampil di layar saja — tidak diucapkan; TTS hanya untuk respons berhasil / gagal (DEC-117)
       setStatus('Sebentar, aku proses…');
-      void say('Sebentar, aku proses ya.');
       try {
         const res = await fetch('/api/voice-assistant', { method: 'POST', headers: { 'content-type': 'application/json', ...(await authHeader()) }, body: JSON.stringify({ text: t, ctx: screenContext(pagesRef.current) }) });
         const j = (await res.json().catch(() => ({}))) as Partial<Plan> & { error?: string };

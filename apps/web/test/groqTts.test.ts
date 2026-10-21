@@ -46,6 +46,9 @@ describe('teks khusus TTS: tanda baca & "ma ap" (DEC-116)', () => {
   it('"maaf" → "ma ap", koma antar-kalimat, akhir "!" / "?"', () => {
     expect(ttsText('Maaf, saya tidak dapat menghapus data.')).toBe('ma ap, saya tidak dapat menghapus data!');
     expect(ttsText('Maaf saya tidak bisa')).toBe('ma ap, saya tidak bisa!');
+    // selalu "ma ap, " (spasi & koma) apa pun tanda bacanya (DEC-117)
+    expect(ttsText('Maaf. Data tidak ditemukan.')).toBe('ma ap, Data tidak ditemukan!');
+    expect(ttsText('maaf! gagal menyimpan')).toBe('ma ap, gagal menyimpan!');
     expect(ttsText('Sebentar aku proses ya.')).toBe('Sebentar, aku proses ya!');
     expect(ttsText('Buka pencatatan data dan membuat catatan baru.')).toBe('Buka pencatatan data dan membuat catatan baru!');
     expect(ttsText('Siap. Formnya sudah terbuka.')).toBe('Siap, Formnya sudah terbuka!');
@@ -55,3 +58,18 @@ describe('teks khusus TTS: tanda baca & "ma ap" (DEC-116)', () => {
     expect(ttsText('   ')).toBe('');
   });
 });
+
+describe('saring halusinasi Whisper (DEC-117)', () => {
+  it('"Terima kasih telah menonton!" & sejenisnya dibuang; perintah asli tetap', async () => {
+    const { stripHallucinations, isHallucination } = await import('@/server/voiceTranscribe');
+    expect(stripHallucinations('Terima kasih telah menonton!')).toBe('');
+    expect(stripHallucinations(' Terima kasih.')).toBe('');
+    expect(stripHallucinations('Thanks for watching!')).toBe('');
+    expect(stripHallucinations('Jangan lupa like dan subscribe ya.')).toBe('');
+    expect(stripHallucinations('Sampai jumpa di video berikutnya.')).toBe('');
+    expect(stripHallucinations('Buka halaman gudang. Terima kasih sudah menonton!')).toBe('Buka halaman gudang.');
+    expect(stripHallucinations('nomor satu berat awal seribu')).toBe('nomor satu berat awal seribu');
+    expect(isHallucination('terima kasih atas bantuannya, buka gudang')).toBe(false);
+  });
+});
+

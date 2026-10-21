@@ -38,6 +38,36 @@ export async function requireLabUser(authHeader: string | null): Promise<void> {
   if (error || !data.user) throw new VoiceError(401, 'Sesi masuk tidak valid. Masuk ulang lalu coba lagi.');
 }
 
+/**
+ * Kalimat "halusinasi" Whisper (DEC-117): muncul saat rekaman hanya berisi hening/derau (bawaan data latih video),
+ * mis. "Terima kasih telah menonton!". Kalimat seperti ini dibuang dari hasil transkripsi — bukan ucapan pengguna.
+ */
+const HALLUCINATIONS = [
+  /^terima ?kasih( banyak)?$/,
+  /^terima ?kasih (telah|sudah|udah|untuk|karena|atas)( telah| sudah)? (menonton|menyaksikan|mendengarkan|perhatian(nya)?|waktunya|kunjungan(nya)?)( video ini)?( semuanya)?$/,
+  /^(thank you|thanks)( so much| very much)?( for watching| for listening)?$/,
+  /^(jangan lupa )?(like|subscribe|like dan subscribe|like share (and|dan) subscribe)\b/,
+  /^sampai (jumpa|bertemu)( lagi)?( di (video|episode|kesempatan) (berikutnya|selanjutnya))?$/,
+  /^(subtitle|subtitles|teks|terjemahan|diterjemahkan|disadur)( oleh| by)\b/,
+  /^(selamat menonton|nantikan video (berikutnya|selanjutnya)|see you( next time)?|bye)$/,
+];
+const norm = (s: string) => s.toLowerCase().replace(/[^\p{L}\p{N}\s]/gu, ' ').replace(/\s+/g, ' ').trim();
+export const isHallucination = (sentence: string) => {
+  const n = norm(sentence);
+  return !!n && HALLUCINATIONS.some((re) => re.test(n));
+};
+/** Buang kalimat halusinasi (utuh atau yang menempel di akhir/awal perintah asli). */
+export function stripHallucinations(text: string): string {
+  const parts = text.match(/[^.!?]+[.!?]*/g) ?? [];
+  return parts
+    .filter((p) => !isHallucination(p))
+    .join('')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+/** Segmen yang hampir pasti tanpa ucapan (peluang "tanpa suara" tinggi) tidak dipakai. */
+export const NO_SPEECH_MAX = 0.6;
+
 /** Ekstensi berkas dari tipe MIME rekaman browser (Groq menebak format dari nama berkas). */
 export const audioExt = (mime: string) => (/mp4|m4a|aac/.test(mime) ? 'mp4' : /ogg/.test(mime) ? 'ogg' : /wav/.test(mime) ? 'wav' : /mpeg|mp3/.test(mime) ? 'mp3' : 'webm');
 
@@ -51,16 +81,18 @@ export async function transcribeVoice(audio: ArrayBuffer, mime = 'audio/webm'): 
   form.append('model', VOICE_MODEL);
   form.append('language', 'id');
   form.append('prompt', VOICE_PROMPT);
-  form.append('response_format', 'json');
+  form.append('response_format', 'verbose_json');
   form.append('temperature', '0');
   const ctl = new AbortController();
   const t = setTimeout(() => ctl.abort(), TIMEOUT_MS);
   try {
     const res = await groqFetch(ENDPOINT, { method: 'POST', body: form, signal: ctl.signal });
-    const body = (await res.json().catch(() => ({}))) as { text?: string; error?: { message?: string } };
+    const body = (await res.json().catch(() => ({}))) as { text?: string; segments?: { text?: string; no_speech_prob?: number }[]; error?: { message?: string } };
     if (res.status === 429) throw new VoiceError(429, 'Batas pemakaian Groq tercapai (kunci utama & cadangan). Tunggu sebentar lalu coba lagi.');
     if (!res.ok) throw new VoiceError(502, `Transkripsi gagal (${res.status})${body.error?.message ? `: ${body.error.message.slice(0, 160)}` : ''}.`);
-    return (body.text ?? '').trim();
+    // segmen tanpa ucapan dibuang, lalu kalimat halusinasi Whisper disaring (DEC-117)
+    const raw = body.segments?.length ? body.segments.filter((g) => (g.no_speech_prob ?? 0) <= NO_SPEECH_MAX).map((g) => g.text ?? '').join(' ') : (body.text ?? '');
+    return stripHallucinations(raw.trim());
   } catch (e) {
     if (e instanceof VoiceError) throw e;
     if (e instanceof DOMException && e.name === 'AbortError') throw new VoiceError(504, 'Transkripsi terlalu lama. Coba lagi.');

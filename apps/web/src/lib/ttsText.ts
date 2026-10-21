@@ -13,8 +13,8 @@ export function ttsText(text: string): string {
   if (!t) return '';
   // jawaban "belum paham / belum mengerti / tidak dikenali" → kalimat baku
   if (/belum (paham|mengerti)|tidak (dikenali|paham|mengerti)/i.test(t)) return NOT_UNDERSTOOD_TTS;
-  // "maaf" → "ma ap" (diikuti koma bila belum ada tanda baca)
-  t = t.replace(/\bmaaf\b(?!\s*[,.!?])/gi, 'ma ap,').replace(/\bmaaf\b/gi, 'ma ap');
+  // "maaf" → selalu "ma ap, " (spasi & koma); tanda baca lama sesudahnya dibuang (DEC-117)
+  t = t.replace(/\bmaaf\b[\s,.!?;:]*/gi, 'ma ap, ').trim();
   // kata seru / sapaan di awal → beri koma
   t = t.replace(INTERJECTION, (m) => `${m},`);
   const question = QUESTION_START.test(t) || /\?\s*$/.test(t) || /\b(ya|kan|bukan)\s*\?/.test(t);
