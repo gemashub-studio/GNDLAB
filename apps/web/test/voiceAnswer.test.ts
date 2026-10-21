@@ -38,3 +38,22 @@ describe('pertanyaan lewat asisten kelapa → Lab AI → TTS (DEC-123)', () => {
     expect(looksLikeQuestion('bagaimana cara membuat cuka')).toBe(true);
   });
 });
+
+describe('suara jawaban: Austin & potongan TTS (DEC-125)', () => {
+  it('teks panjang dipecah per kalimat ≤ 280 karakter tanpa kehilangan isi', async () => {
+    const { splitTts } = await import('@/lib/voiceClient');
+    const long = Array.from({ length: 9 }, (_, i) => `Kalimat ke ${i} menjelaskan proses pengeringan kopra dengan rinci!, sampai kering.`).join(' ') + ' Mau tahu lebih lanjut?';
+    const parts = splitTts(long);
+    expect(parts.length).toBeGreaterThan(1);
+    expect(parts.every((p) => p.length <= 280)).toBe(true);
+    expect(parts.join(' ')).toBe(long);
+    expect(parts.at(-1)!.endsWith('Mau tahu lebih lanjut?')).toBe(true);
+    expect(splitTts('')).toEqual([]);
+  });
+  it('server hanya menerima suara autumn / austin', async () => {
+    const { pickVoice } = await import('@/server/voiceTts');
+    expect(pickVoice('austin')).toBe('austin');
+    expect(pickVoice('troy')).toBe('autumn');
+    expect(pickVoice(undefined)).toBe('autumn');
+  });
+});

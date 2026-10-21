@@ -123,27 +123,29 @@ export interface FilledField {
 
 /** Suara jawaban asisten (DEC-115): teks → WAV dari server (Groq Orpheus, suara Autumn; hening awal dipotong). */
 const ttsCache = new Map<string, Promise<Blob>>();
-export function ttsAudio(text: string): Promise<Blob> {
+export type TtsVoice = 'autumn' | 'austin';
+export function ttsAudio(text: string, voice: TtsVoice = 'autumn'): Promise<Blob> {
   const key = text.trim();
-  let p = ttsCache.get(key);
+  const ck = `${voice}|${key}`;
+  let p = ttsCache.get(ck);
   if (!p) {
     p = (async () => {
-      const res = await fetch('/api/voice-tts', { method: 'POST', headers: { 'content-type': 'application/json', ...(await authHeader()) }, body: JSON.stringify({ text: key }) });
+      const res = await fetch('/api/voice-tts', { method: 'POST', headers: { 'content-type': 'application/json', ...(await authHeader()) }, body: JSON.stringify({ text: key, voice }) });
       if (!res.ok) throw new Error(((await res.json().catch(() => ({}))) as { error?: string }).error ?? `Suara gagal (${res.status}).`);
       return res.blob();
     })();
-    p.catch(() => ttsCache.delete(key));
+    p.catch(() => ttsCache.delete(ck));
     // simpan hanya frasa pendek yang sering diulang
-    if (key.length <= 60) ttsCache.set(key, p);
+    if (key.length <= 60) ttsCache.set(ck, p);
   }
   return p;
 }
 
 let current: HTMLAudioElement | null = null;
 /** Putar suara teks; selesai saat audio selesai / dihentikan. Satu suara pada satu waktu (yang lama dihentikan). */
-export async function speak(text: string, onStart?: () => void): Promise<void> {
+export async function speak(text: string, onStart?: () => void, voice?: TtsVoice): Promise<void> {
   if (!text.trim()) return;
-  const blob = await ttsAudio(text);
+  const blob = await ttsAudio(text, voice);
   current?.pause();
   const url = URL.createObjectURL(blob);
   const audio = new Audio(url);
@@ -161,5 +163,63 @@ export async function speak(text: string, onStart?: () => void): Promise<void> {
     URL.revokeObjectURL(url);
   }
 }
-export const stopSpeaking = () => current?.pause();
+let speakGen = 0;
+export const stopSpeaking = () => {
+  speakGen++;
+  current?.pause();
+};
+
+/**
+ * Teks panjang (jawaban Lab AI, DEC-125): dipecah per kalimat (≤ 280 karakter, batas TTS 300) lalu diputar berurutan;
+ * potongan berikutnya sudah dibuat selagi potongan sekarang diputar. Berhenti bila stopSpeaking dipanggil.
+ */
+export async function speakLong(text: string, voice?: TtsVoice): Promise<void> {
+  const parts = splitTts(text);
+  const gen = ++speakGen;
+  let next = parts[0] ? ttsAudio(parts[0], voice) : undefined;
+  for (let i = 0; i < parts.length && gen === speakGen; i++) {
+    const cur = next!;
+    next = parts[i + 1] ? ttsAudio(parts[i + 1]!, voice) : undefined;
+    next?.catch(() => undefined);
+    const blob = await cur;
+    if (gen !== speakGen) return;
+    current?.pause();
+    const url = URL.createObjectURL(blob);
+    const audio = new Audio(url);
+    current = audio;
+    try {
+      await new Promise<void>((resolve) => {
+        audio.onended = () => resolve();
+        audio.onerror = () => resolve();
+        audio.onpause = () => resolve();
+        audio.play().catch(() => resolve());
+      });
+    } finally {
+      if (current === audio) current = null;
+      URL.revokeObjectURL(url);
+    }
+  }
+}
+
+/** Pecah teks per kalimat menjadi potongan ≤ max karakter; kalimat yang terlalu panjang dipecah di koma/spasi. */
+export function splitTts(text: string, max = 280): string[] {
+  const t = text.replace(/\s+/g, ' ').trim();
+  if (!t) return [];
+  const sentences = t.match(/[^.!?]+(?:[.!?]+|$)\s*/g) ?? [t];
+  const out: string[] = [];
+  let cur = '';
+  const push = (s: string) => {
+    if ((cur + s).trim().length <= max) cur += s;
+    else {
+      if (cur.trim()) out.push(cur.trim());
+      cur = s;
+    }
+  };
+  for (const s of sentences) {
+    if (s.trim().length <= max) push(s);
+    else for (const piece of s.split(/(?<=,)\s+/)) push(`${piece} `.length > max ? piece.slice(0, max) : `${piece} `);
+  }
+  if (cur.trim()) out.push(cur.trim());
+  return out;
+}
 

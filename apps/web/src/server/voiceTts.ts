@@ -7,6 +7,10 @@ import { groqFetch, groqKeys } from './groq';
 const ENDPOINT = 'https://api.groq.com/openai/v1/audio/speech';
 export const TTS_MODEL = 'canopylabs/orpheus-v1-english';
 export const TTS_VOICE = 'autumn';
+/** Suara yang boleh dipilih: autumn (perintah) & austin (jawaban pertanyaan, DEC-125). */
+export const TTS_VOICES = ['autumn', 'austin'] as const;
+export type TtsVoice = (typeof TTS_VOICES)[number];
+export const pickVoice = (v: unknown): TtsVoice => (TTS_VOICES.includes(v as TtsVoice) ? (v as TtsVoice) : TTS_VOICE);
 export const MAX_TTS_CHARS = 300;
 const TIMEOUT_MS = 20_000;
 
@@ -99,7 +103,7 @@ export function trimLeadingSilence(wav: Uint8Array, threshold = 0.02, keepMs = 6
   return writeWav({ ...p, data: p.data.subarray(from * frame) });
 }
 
-export async function synthesize(text: string): Promise<Uint8Array> {
+export async function synthesize(text: string, voice: TtsVoice = TTS_VOICE): Promise<Uint8Array> {
   if (!groqKeys().length) throw new TtsError(503, 'Suara asisten belum dikonfigurasi (GROQ_API_KEY belum diisi).');
   const input = text.replace(/\s+/g, ' ').trim().slice(0, MAX_TTS_CHARS);
   if (!input) throw new TtsError(400, 'Teks kosong.');
@@ -109,7 +113,7 @@ export async function synthesize(text: string): Promise<Uint8Array> {
     const res = await groqFetch(ENDPOINT, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ model: TTS_MODEL, voice: TTS_VOICE, input, response_format: 'wav' }),
+      body: JSON.stringify({ model: TTS_MODEL, voice, input, response_format: 'wav' }),
       signal: ctl.signal,
     });
     if (res.status === 429) throw new TtsError(429, 'Batas pemakaian Groq tercapai.');

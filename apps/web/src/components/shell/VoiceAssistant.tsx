@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { ElectricBorder } from '@/components/ui/ElectricBorder';
-import { authHeader, speak, startSegmenter, stopSpeaking, transcribe, VOICE_FORM_EVENT, type FilledField } from '@/lib/voiceClient';
+import { authHeader, speak, speakLong, startSegmenter, stopSpeaking, transcribe, VOICE_FORM_EVENT, type FilledField } from '@/lib/voiceClient';
 import { CoconutMascot, type MascotMood } from './CoconutMascot';
 import { ttsText } from '@/lib/ttsText';
 import { askLabAI } from '@/lib/labAi';
@@ -156,14 +156,14 @@ export function VoiceAssistant({ show, userKey, pages }: { show: boolean; userKe
   // suara jawaban (TTS Groq Orpheus "autumn", DEC-115): mikrofon dibisukan selama & sesaat setelah asisten berbicara
   const talking = useRef(0);
   const mutedUntil = useRef(0);
-  const say = useCallback((text: string, raw = false) => {
+  const say = useCallback((text: string, answer = false) => {
     // teks khusus suara: tanda baca untuk intonasi, "maaf" → "ma ap" (layar tetap memakai teks asli), DEC-116;
-    // raw = teks sudah disiapkan untuk TTS (jawaban Lab AI, DEC-123)
-    const t = raw ? text.trim() : ttsText(text);
+    // answer = jawaban Lab AI yang sudah disiapkan untuk TTS (DEC-123): suara Austin, diputar per potongan (DEC-125)
+    const t = answer ? text.trim() : ttsText(text);
     if (!t) return Promise.resolve();
     talking.current++;
     setMood('talking');
-    return speak(t)
+    return (answer ? speakLong(t, 'austin') : speak(t))
       .catch((e: unknown) => console.warn('[tts]', e))
       .finally(() => {
         talking.current--;

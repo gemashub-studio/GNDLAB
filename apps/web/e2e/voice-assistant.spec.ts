@@ -13,12 +13,16 @@ const SILENT_WAV = (() => {
   return b;
 })();
 let spoken: string[] = [];
+let voices: string[] = [];
 const force = async (page: Page) => {
   spoken = [];
+  voices = [];
   await page.addInitScript(() => window.localStorage.setItem('gnd-va-force', '1'));
   await page.route('**/api/voice-transcribe', (r) => r.fulfill({ json: { ok: true, text: '' } }));
   await page.route('**/api/voice-tts', async (r) => {
-    spoken.push((r.request().postDataJSON() as { text: string }).text);
+    const b = r.request().postDataJSON() as { text: string; voice?: string };
+    spoken.push(b.text);
+    voices.push(b.voice ?? '');
     await r.fulfill({ body: SILENT_WAV, contentType: 'audio/wav' });
   });
 };
@@ -103,6 +107,7 @@ test('Ayo → "buka pencatatan data lalu buat catatan baru" → form terbuka →
   // "sebentar aku proses" hanya di layar, tidak diucapkan (DEC-117)
   expect(spoken.some((t) => /sebentar/i.test(t))).toBe(false);
   expect(spoken).toContain('Oke, apalagi?');
+  expect(voices[spoken.indexOf('Oke, apalagi?')]).toBe('autumn');
   expect(spoken.join(' ')).not.toMatch(/\d/);
   // tombol berbahaya tidak pernah dikirim ke perencana
   expect(sent.flatMap((s) => s.ctx.buttons.map((b) => b.id)).some((id) => /delete|hapus|logout/i.test(id))).toBe(false);
@@ -137,6 +142,8 @@ test('pertanyaan "apa itu briket?" → Lab AI (dengan memori) → paragraf perta
   }
   await expect.poll(() => spoken).toContain('Briket adalah bahan bakar padat dari serbuk arang!, misalnya kubus!, silinder!, atau heksagonal berlubang. Mau tahu cara membuatnya?');
   expect(asked[0]!.prompt).toContain('apa itu briket?');
+  // jawaban pertanyaan memakai suara Austin (DEC-125)
+  expect(voices[spoken.indexOf('Briket adalah bahan bakar padat dari serbuk arang!, misalnya kubus!, silinder!, atau heksagonal berlubang. Mau tahu cara membuatnya?')]).toBe('austin');
   // pesan sebelumnya diingat pada pertanyaan berikutnya
   expect(asked[1]!.history.map((m) => m.role)).toEqual(['user', 'assistant']);
   expect(asked[1]!.history[1]!.content).toContain('Briket');

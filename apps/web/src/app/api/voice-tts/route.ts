@@ -1,17 +1,17 @@
 import { NextResponse } from 'next/server';
 import { requireLabUser, VoiceError } from '@/server/voiceTranscribe';
-import { synthesize, TtsError } from '@/server/voiceTts';
+import { pickVoice, synthesize, TtsError } from '@/server/voiceTts';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 export const maxDuration = 30;
 
-/** Suara jawaban asisten kelapa (DEC-115): { text } → audio/wav (hening di awal sudah dipotong). Wajib login. */
+/** Suara jawaban asisten kelapa (DEC-115): { text, voice? (autumn|austin) } → audio/wav (hening di awal sudah dipotong). Wajib login. */
 export async function POST(req: Request) {
   try {
     await requireLabUser(req.headers.get('authorization'));
-    const body = (await req.json().catch(() => ({}))) as { text?: unknown };
-    const wav = await synthesize(typeof body.text === 'string' ? body.text : '');
+    const body = (await req.json().catch(() => ({}))) as { text?: unknown; voice?: unknown };
+    const wav = await synthesize(typeof body.text === 'string' ? body.text : '', pickVoice(body.voice));
     return new NextResponse(wav as Uint8Array<ArrayBuffer>, { headers: { 'content-type': 'audio/wav', 'cache-control': 'no-store' } });
   } catch (e) {
     if (e instanceof VoiceError || e instanceof TtsError) return NextResponse.json({ ok: false, error: e.message }, { status: e.status });

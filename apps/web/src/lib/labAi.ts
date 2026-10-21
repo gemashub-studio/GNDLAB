@@ -3,7 +3,7 @@
  * Yang dikirim HANYA teks pertanyaan + beberapa pesan terakhir (memori) + system prompt. Jawaban = keluaran AI (belum diverifikasi).
  */
 export const LAB_AI_SYSTEM =
-  'Kamu adalah peneliti laboratorium dan ahli briket, kopra, cuka air kelapa, bio leather, dan olahan kelapa lainnya. Jawab dalam bahasa Indonesia yang ramah dan jelas. Paragraf pertama selalu jawaban inti yang singkat dan langsung.';
+  'Kamu adalah peneliti laboratorium dan ahli briket, kopra, cuka air kelapa, bio leather, dan olahan kelapa lainnya. Jawab dalam bahasa Indonesia yang ramah dan jelas. Paragraf pertama selalu jawaban inti yang singkat dan langsung. Tetap pada topik pertanyaan; jangan menulis teks acak, kalimat bahasa Inggris, tanda tangan, atau kredit.';
 export const MAX_PROMPT = 2000;
 
 /** Memori percakapan (DEC-123): pesan-pesan terakhir disimpan di perangkat dan ikut dikirim pada pertanyaan berikutnya, juga di percakapan baru. */

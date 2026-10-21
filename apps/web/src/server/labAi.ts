@@ -5,6 +5,8 @@
  * Riwayat singkat percakapan (pesan-pesan terakhir) ikut dikirim agar AI ingat konteks.
  */
 import { LAB_AI_SYSTEM, MAX_PROMPT } from '@/lib/labAi';
+import { groqKeys } from './groq';
+import { filterAnswer } from './labAiFilter';
 
 export const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions';
 /** Model gratis (daftar OpenRouter per 2026-10-21); urutan = prioritas. */
@@ -44,7 +46,7 @@ export function labMessages(prompt: string, history: readonly ChatTurn[], system
 export async function askOpenRouter(
   prompt: string,
   history: readonly ChatTurn[] = [],
-  o: { system?: string; env?: Record<string, string | undefined>; fetcher?: typeof fetch; timeoutMs?: number } = {},
+  o: { system?: string; env?: Record<string, string | undefined>; fetcher?: typeof fetch; groqFetcher?: typeof fetch; timeoutMs?: number } = {},
 ): Promise<{ text: string; model: string }> {
   const env = o.env ?? process.env;
   const key = env.OPEN_ROUTER_APIKEY?.trim();
@@ -53,13 +55,13 @@ export async function askOpenRouter(
   if (!q) throw new LabAiError(400, 'Tulis pertanyaan dulu.');
   const models = orModels(env);
   const ctl = new AbortController();
-  const t = setTimeout(() => ctl.abort(), o.timeoutMs ?? 50_000);
+  const t = setTimeout(() => ctl.abort(), o.timeoutMs ?? 45_000);
   try {
     const res = await (o.fetcher ?? fetch)(OPENROUTER_URL, {
       method: 'POST',
       signal: ctl.signal,
       headers: { authorization: `Bearer ${key}`, 'content-type': 'application/json', 'x-title': 'GnD Lab' },
-      body: JSON.stringify({ model: models[0], models, messages: labMessages(q, history, o.system), temperature: 0.7, max_tokens: 1400 }),
+      body: JSON.stringify({ model: models[0], models, messages: labMessages(q, history, o.system), temperature: 0.4, max_tokens: 1400 }),
     });
     const j = (await res.json().catch(() => ({}))) as { model?: string; choices?: { message?: { content?: unknown } }[]; error?: { message?: string } };
     const text = typeof j.choices?.[0]?.message?.content === 'string' ? j.choices[0].message.content.trim() : '';
@@ -68,7 +70,8 @@ export async function askOpenRouter(
       if (res.status === 429) throw new LabAiError(429, 'Kuota AI gratis sedang penuh. Coba lagi sebentar lagi.');
       throw new LabAiError(res.status >= 400 ? (res.status >= 500 ? 502 : res.status) : 502, `AI tidak memberi jawaban (${res.status}${msg ? `: ${msg.slice(0, 160)}` : ''}).`);
     }
-    return { text, model: j.model ?? models[0]! };
+    // saring kata/kalimat melantur dari model gratis (DEC-125)
+    return { text: await filterAnswer(q, text, { keys: groqKeys(env), fetcher: o.groqFetcher }), model: j.model ?? models[0]! };
   } catch (e) {
     if (e instanceof LabAiError) throw e;
     if (e instanceof DOMException && e.name === 'AbortError') throw new LabAiError(504, 'AI terlalu lama menjawab. Coba lagi.');
