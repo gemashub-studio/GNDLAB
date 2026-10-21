@@ -4,9 +4,23 @@ import { test, expect, type Page } from '@playwright/test';
 // Rencana Groq ditiru (route) supaya uji tidak memakai kuota; mikrofon palsu Chromium.
 test.use({ launchOptions: { args: ['--use-fake-device-for-media-stream', '--use-fake-ui-for-media-stream'] }, permissions: ['microphone'] });
 
+// WAV hening 0,1 dtk (pengganti suara TTS Groq)
+const SILENT_WAV = (() => {
+  const n = 2400;
+  const b = Buffer.alloc(44 + n * 2);
+  b.write('RIFF', 0); b.writeUInt32LE(36 + n * 2, 4); b.write('WAVEfmt ', 8); b.writeUInt32LE(16, 16); b.writeUInt16LE(1, 20); b.writeUInt16LE(1, 22);
+  b.writeUInt32LE(24000, 24); b.writeUInt32LE(48000, 28); b.writeUInt16LE(2, 32); b.writeUInt16LE(16, 34); b.write('data', 36); b.writeUInt32LE(n * 2, 40);
+  return b;
+})();
+let spoken: string[] = [];
 const force = async (page: Page) => {
+  spoken = [];
   await page.addInitScript(() => window.localStorage.setItem('gnd-va-force', '1'));
   await page.route('**/api/voice-transcribe', (r) => r.fulfill({ json: { ok: true, text: '' } }));
+  await page.route('**/api/voice-tts', async (r) => {
+    spoken.push((r.request().postDataJSON() as { text: string }).text);
+    await r.fulfill({ body: SILENT_WAV, contentType: 'audio/wav' });
+  });
 };
 
 test('kartu sambutan: Gak dulu deh → tidak muncul lagi, tombol kelapa tetap ada', async ({ page }) => {
@@ -33,6 +47,7 @@ test('Ayo → "buka pencatatan data lalu buat catatan baru" → form terbuka →
     { actions: [{ type: 'fill', text: 'jumlah item dua perlakuan green house jumlah produksi dua' }], reply: 'Mengisi jumlah item dan perlakuan.' },
     { actions: [{ type: 'fill', text: 'nomor dua berat awal seribu tiga puluh empat tebal daging sepuluh' }], reply: 'Mengisi nomor dua.' },
     { actions: [{ type: 'fill', text: 'isi kolom perlakuan dengan oven gas' }], reply: 'Memilih Oven Gas.' },
+    { actions: [], reply: 'Maaf, aku belum paham. Coba ucapkan lagi ya.' },
   ];
   const sent: { text: string; ctx: { path: string; form?: string; buttons: { id: string }[] } }[] = [];
   await page.route('**/api/voice-assistant', async (r) => {
@@ -75,6 +90,12 @@ test('Ayo → "buka pencatatan data lalu buat catatan baru" → form terbuka →
   // "isi kolom <nama kolom> dengan <nilai>" — dropdown dipilih otomatis (DEC-113)
   await say('isi kolom perlakuan dengan oven gas');
   await expect(m.getByTestId('catat-perl-0')).toContainText('Oven Gas');
+  // TTS (DEC-115): "sebentar aku proses", jawaban, dan perintah tak dikenali diucapkan
+  await say('nyanyikan lagu dong');
+  await expect(panel.getByTestId('va-status')).toContainText('belum paham');
+  await expect.poll(() => spoken).toContain('Maaf, aku belum paham. Coba ucapkan lagi ya.');
+  expect(spoken).toContain('Sebentar, aku proses ya.');
+  expect(spoken).toContain('Buka pencatatan data dan membuat catatan baru.');
   // tombol berbahaya tidak pernah dikirim ke perencana
   expect(sent.flatMap((s) => s.ctx.buttons.map((b) => b.id)).some((id) => /delete|hapus|logout/i.test(id))).toBe(false);
   await expect(page.getByTestId('va-spark')).toBeVisible();

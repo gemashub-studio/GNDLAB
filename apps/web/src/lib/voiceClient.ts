@@ -28,13 +28,15 @@ export interface SegmenterOptions {
   /** Lama diam yang dianggap ucapan selesai (ms). */
   silenceMs?: number;
   maxSegmentMs?: number;
+  /** Selama true (mis. asisten sedang berbicara), suara diabaikan & rekaman dibuang — agar suara TTS tidak jadi perintah. */
+  isMuted?: () => boolean;
 }
 
 /**
  * Dengarkan mikrofon terus; tiap ucapan dipotong saat diam `silenceMs` lalu diserahkan ke `onSegment`.
  * Ambang suara menyesuaikan kebisingan ruangan. Kembalikan fungsi berhenti.
  */
-export async function startSegmenter({ onSegment, onLevel, onSpeaking, silenceMs = 850, maxSegmentMs = 25_000 }: SegmenterOptions): Promise<() => void> {
+export async function startSegmenter({ onSegment, onLevel, onSpeaking, silenceMs = 850, maxSegmentMs = 25_000, isMuted }: SegmenterOptions): Promise<() => void> {
   if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === 'undefined') throw new Error('Browser ini tidak mendukung rekam suara.');
   let stream: MediaStream;
   try {
@@ -85,6 +87,12 @@ export async function startSegmenter({ onSegment, onLevel, onSpeaking, silenceMs
     const rms = Math.sqrt(sum / buf.length);
     const thr = Math.max(0.015, noise * 3);
     const now = performance.now();
+    if (isMuted?.()) {
+      // asisten berbicara: buang rekaman yang sedang berjalan, jangan anggap sebagai ucapan
+      onLevel?.(0);
+      if (speech || now - segStart > 1000) endSeg(false);
+      return;
+    }
     onLevel?.(Math.min(1, rms / 0.12));
     if (rms > thr) {
       if (!speech) onSpeaking?.(true);
@@ -106,3 +114,46 @@ export async function startSegmenter({ onSegment, onLevel, onSpeaking, silenceMs
 
 /** Event global: teks perintah pengisian dari asisten suara → kotak suara form yang sedang terbuka (DEC-111). */
 export const VOICE_FORM_EVENT = 'gnd-voice-form';
+
+/** Suara jawaban asisten (DEC-115): teks → WAV dari server (Groq Orpheus, suara Autumn; hening awal dipotong). */
+const ttsCache = new Map<string, Promise<Blob>>();
+export function ttsAudio(text: string): Promise<Blob> {
+  const key = text.trim();
+  let p = ttsCache.get(key);
+  if (!p) {
+    p = (async () => {
+      const res = await fetch('/api/voice-tts', { method: 'POST', headers: { 'content-type': 'application/json', ...(await authHeader()) }, body: JSON.stringify({ text: key }) });
+      if (!res.ok) throw new Error(((await res.json().catch(() => ({}))) as { error?: string }).error ?? `Suara gagal (${res.status}).`);
+      return res.blob();
+    })();
+    p.catch(() => ttsCache.delete(key));
+    // simpan hanya frasa pendek yang sering diulang
+    if (key.length <= 60) ttsCache.set(key, p);
+  }
+  return p;
+}
+
+let current: HTMLAudioElement | null = null;
+/** Putar suara teks; selesai saat audio selesai / dihentikan. Satu suara pada satu waktu (yang lama dihentikan). */
+export async function speak(text: string, onStart?: () => void): Promise<void> {
+  if (!text.trim()) return;
+  const blob = await ttsAudio(text);
+  current?.pause();
+  const url = URL.createObjectURL(blob);
+  const audio = new Audio(url);
+  current = audio;
+  try {
+    await new Promise<void>((resolve) => {
+      audio.onended = () => resolve();
+      audio.onerror = () => resolve();
+      audio.onpause = () => resolve();
+      onStart?.();
+      audio.play().catch(() => resolve());
+    });
+  } finally {
+    if (current === audio) current = null;
+    URL.revokeObjectURL(url);
+  }
+}
+export const stopSpeaking = () => current?.pause();
+

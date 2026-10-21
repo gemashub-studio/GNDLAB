@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { ElectricBorder } from '@/components/ui/ElectricBorder';
-import { authHeader, startSegmenter, transcribe, VOICE_FORM_EVENT } from '@/lib/voiceClient';
+import { authHeader, speak, startSegmenter, stopSpeaking, transcribe, VOICE_FORM_EVENT } from '@/lib/voiceClient';
 import { CoconutMascot, type MascotMood } from './CoconutMascot';
 
 interface Plan {
@@ -122,6 +122,22 @@ export function VoiceAssistant({ show, userKey, pages }: { show: boolean; userKe
   const stopRef = useRef<(() => void) | null>(null);
   const queue = useRef<Promise<void>>(Promise.resolve());
   const [spark, setSpark] = useState<HTMLElement>();
+  // suara jawaban (TTS Groq Orpheus "autumn", DEC-115): mikrofon dibisukan selama & sesaat setelah asisten berbicara
+  const talking = useRef(0);
+  const mutedUntil = useRef(0);
+  const say = useCallback((text: string) => {
+    const t = text.replace(/…/g, '.').trim();
+    if (!t) return Promise.resolve();
+    talking.current++;
+    setMood('talking');
+    return speak(t)
+      .catch((e: unknown) => console.warn('[tts]', e))
+      .finally(() => {
+        talking.current--;
+        mutedUntil.current = performance.now() + 450;
+        if (!talking.current) setMood(stopRef.current ? 'listening' : 'idle');
+      });
+  }, []);
   const endSpark = useCallback(() => setSpark(undefined), []);
   const allPages = [...pages, ...LAB_TABS.map(([t, label]) => ({ href: `/lab?t=${t}`, label }))];
   const pagesRef = useRef(allPages);
@@ -208,6 +224,7 @@ export function VoiceAssistant({ show, userKey, pages }: { show: boolean; userKe
       setHeard(t);
       setMood('thinking');
       setStatus('Sebentar, aku proses…');
+      void say('Sebentar, aku proses ya.');
       try {
         const res = await fetch('/api/voice-assistant', { method: 'POST', headers: { 'content-type': 'application/json', ...(await authHeader()) }, body: JSON.stringify({ text: t, ctx: screenContext(pagesRef.current) }) });
         const j = (await res.json().catch(() => ({}))) as Partial<Plan> & { error?: string };
@@ -215,12 +232,16 @@ export function VoiceAssistant({ show, userKey, pages }: { show: boolean; userKe
         const plan: Plan = { actions: j.actions ?? [], reply: j.reply ?? '' };
         setMood('talking');
         setStatus(plan.reply);
+        // jawaban (termasuk "maaf, aku belum paham…" bila perintah tidak dikenali) diucapkan sambil aksi berjalan
+        void say(plan.reply);
         await execute(plan);
         setErr('');
       } catch (e) {
-        setErr(e instanceof Error ? e.message : String(e));
+        const msg = e instanceof Error ? e.message : String(e);
+        setErr(msg);
+        void say(msg);
       } finally {
-        window.setTimeout(() => setMood(stopRef.current ? 'listening' : 'idle'), 1400);
+        window.setTimeout(() => !talking.current && setMood(stopRef.current ? 'listening' : 'idle'), 1400);
       }
     },
     [execute],
@@ -249,12 +270,18 @@ export function VoiceAssistant({ show, userKey, pages }: { show: boolean; userKe
     setMood('listening');
     setStatus('Aku mendengarkan… ucapkan perintahmu, mis. “buka pencatatan data lalu buat catatan baru”.');
     try {
-      stopRef.current = await startSegmenter({ onSegment, silenceMs: ASSISTANT_SILENCE_MS, onSpeaking: (s) => s && setMood('listening') });
+      stopRef.current = await startSegmenter({
+        onSegment,
+        silenceMs: ASSISTANT_SILENCE_MS,
+        onSpeaking: (s) => s && !talking.current && setMood('listening'),
+        isMuted: () => talking.current > 0 || performance.now() < mutedUntil.current,
+      });
     } catch (e) {
       setErr(`${e instanceof Error ? e.message : String(e)} Kamu tetap bisa mengetik perintah di bawah.`);
     }
   };
   const stop = () => {
+    stopSpeaking();
     stopRef.current?.();
     stopRef.current = null;
     setOn(false);
