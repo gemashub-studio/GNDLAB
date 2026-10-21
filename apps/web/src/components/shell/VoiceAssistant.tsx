@@ -76,31 +76,25 @@ function showTop(el: HTMLElement) {
   window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
 }
 
-/** Bingkai listrik (React Bits ElectricBorder) mengikuti posisi modal/kartu yang dibuka lewat suara, ±4,5 detik. */
+/** Bingkai listrik (React Bits ElectricBorder) mengikuti posisi modal/kartu yang dibuka lewat suara — terus menyala sampai modal ditutup (DEC-114). */
 function VoiceSpark({ target, onDone }: { target: HTMLElement; onDone: () => void }) {
   const box = useRef<HTMLDivElement>(null);
-  const [fade, setFade] = useState(false);
   const radius = Math.min(32, parseFloat(getComputedStyle(target).borderTopLeftRadius) || 16);
   useEffect(() => {
     let raf = 0;
     const follow = () => {
+      // modal ditutup (dilepas dari halaman / disembunyikan) → bingkai ikut berhenti
+      if (!document.body.contains(target) || !visible(target)) return onDone();
       const r = target.getBoundingClientRect();
       const b = box.current;
       if (b) Object.assign(b.style, { left: `${r.left}px`, top: `${r.top}px`, width: `${r.width}px`, height: `${r.height}px` });
-      if (!document.body.contains(target)) return onDone();
       raf = requestAnimationFrame(follow);
     };
     follow();
-    const t1 = window.setTimeout(() => setFade(true), 4000);
-    const t2 = window.setTimeout(onDone, 4600);
-    return () => {
-      cancelAnimationFrame(raf);
-      window.clearTimeout(t1);
-      window.clearTimeout(t2);
-    };
+    return () => cancelAnimationFrame(raf);
   }, [target, onDone]);
   return createPortal(
-    <div ref={box} className="voice-spark" style={{ position: 'fixed', opacity: fade ? 0 : 1 }} aria-hidden data-testid="va-spark">
+    <div ref={box} className="voice-spark" style={{ position: 'fixed' }} aria-hidden data-testid="va-spark">
       <ElectricBorder color="#63E6CF" speed={1} chaos={1.5} spread={0.6} strands={3} thickness={1.5} borderRadius={radius} interactive={false} style={{ width: '100%', height: '100%' }}>
         <div style={{ width: '100%', height: '100%' }} />
       </ElectricBorder>

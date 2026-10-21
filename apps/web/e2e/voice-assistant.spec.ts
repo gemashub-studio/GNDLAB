@@ -59,7 +59,9 @@ test('Ayo → "buka pencatatan data lalu buat catatan baru" → form terbuka →
     expect(box!.y).toBeGreaterThanOrEqual(0);
     expect(box!.y).toBeLessThan(220);
   }).toPass({ timeout: 5000 });
-  await expect(page.getByTestId('va-spark')).toHaveCount(0, { timeout: 8000 });
+  // bingkai listrik terus menyala selama modal terbuka (DEC-114)
+  await page.waitForTimeout(6000);
+  await expect(page.getByTestId('va-spark')).toBeVisible();
   await expect(panel.getByTestId('va-status')).toContainText('Buka pencatatan data');
   expect(sent[0]!.ctx.path).toBe('/');
   await say('jumlah itemnya dua, perlakuannya green house sebanyak dua');
@@ -75,6 +77,12 @@ test('Ayo → "buka pencatatan data lalu buat catatan baru" → form terbuka →
   await expect(m.getByTestId('catat-perl-0')).toContainText('Oven Gas');
   // tombol berbahaya tidak pernah dikirim ke perencana
   expect(sent.flatMap((s) => s.ctx.buttons.map((b) => b.id)).some((id) => /delete|hapus|logout/i.test(id))).toBe(false);
+  await expect(page.getByTestId('va-spark')).toBeVisible();
   await panel.getByTestId('va-stop').click();
   await expect(page.getByTestId('va-fab')).toBeVisible();
+  // modal ditutup → bingkai listrik berhenti
+  await expect(page.getByTestId('va-spark')).toBeVisible();
+  await m.getByRole('button', { name: 'Batal' }).click();
+  await expect(m).toHaveCount(0);
+  await expect(page.getByTestId('va-spark')).toHaveCount(0);
 });
