@@ -14,7 +14,8 @@ export async function POST(req: Request) {
     const out = await askOpenRouter(typeof body.prompt === 'string' ? body.prompt : '', cleanHistory(body.history));
     return NextResponse.json({ ok: true, ...out });
   } catch (e) {
-    if (e instanceof VoiceError || e instanceof LabAiError) return NextResponse.json({ ok: false, error: e.message }, { status: e.status });
+    if (e instanceof VoiceError) return NextResponse.json({ ok: false, error: e.message.replace('pengisian suara', 'Lab AI') }, { status: e.status });
+    if (e instanceof LabAiError) return NextResponse.json({ ok: false, error: e.message }, { status: e.status });
     console.error('[lab-ai]', e);
     return NextResponse.json({ ok: false, error: 'Lab AI gagal.' }, { status: 500 });
   }
