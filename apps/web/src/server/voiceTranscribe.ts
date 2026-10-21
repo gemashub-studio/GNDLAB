@@ -1,6 +1,6 @@
 /**
  * Pengisian suara pencatatan (DEC-099, mesin diganti DEC-101): potongan rekaman pendek → Groq Whisper
- * (whisper-large-v3, bahasa Indonesia, endpoint kompatibel OpenAI). Kunci API hanya di server (env GROQ_API_KEY, cadangan GROQ_API_KEY_2),
+ * (whisper-large-v3, bahasa Indonesia, endpoint kompatibel OpenAI). Kunci API hanya di server (env GROQ_API_KEY, cadangan GROQ_API_KEY_2 … _5),
  * tidak pernah dikirim ke browser. Prompt Whisper berisi kosakata perintah supaya ejaannya konsisten.
  */
 import { groqFetch, groqKeys } from './groq';

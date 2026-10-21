@@ -7,6 +7,8 @@ describe('kunci Groq cadangan (DEC-116)', () => {
     expect(groqKeys({ GROQ_API_KEY: 'a', GROQ_API_KEY_2: 'b' })).toEqual(['a', 'b']);
     expect(groqKeys({ GROQ_API_KEY: 'a', GROQ_API_KEY_2: 'a' })).toEqual(['a']);
     expect(groqKeys({ GROQ_API_KEY: '', GROQ_API_KEY_2: 'b' })).toEqual(['b']);
+    // DEC-124: kunci 3–5 ikut berurutan
+    expect(groqKeys({ GROQ_API_KEY: 'a', GROQ_API_KEY_2: 'b', GROQ_API_KEY_3: 'c', GROQ_API_KEY_4: '', GROQ_API_KEY_5: 'e' })).toEqual(['a', 'b', 'c', 'e']);
     expect(groqKeys({})).toEqual([]);
     expect([429, 401, 403, 500, 503].every(shouldFallback)).toBe(true);
     expect([200, 400, 413].some(shouldFallback)).toBe(false);
@@ -24,6 +26,15 @@ describe('kunci Groq cadangan (DEC-116)', () => {
     auth.length = 0;
     const ok = (async () => new Response('{}', { status: 200 })) as unknown as typeof fetch;
     expect((await groqFetch('https://x', {}, ['k1', 'k2'], ok)).status).toBe(200);
+    // 5 kunci (DEC-124): 1–4 limit / galat → kunci 5 dipakai
+    const used: string[] = [];
+    const busy = (async (_u: string, init: RequestInit) => {
+      const a = (init.headers as Record<string, string>).authorization!;
+      used.push(a.slice(7));
+      return new Response('{}', { status: a.endsWith('k5') ? 200 : a.endsWith('k3') ? 503 : 429 });
+    }) as unknown as typeof fetch;
+    expect((await groqFetch('https://x', {}, ['k1', 'k2', 'k3', 'k4', 'k5'], busy)).status).toBe(200);
+    expect(used).toEqual(['k1', 'k2', 'k3', 'k4', 'k5']);
   });
   it('galat jaringan kunci 1 → kunci 2; semua kunci limit → respons 429 terakhir', async () => {
     let n = 0;
