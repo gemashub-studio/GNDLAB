@@ -9,6 +9,7 @@ import { Hint } from '@/components/ui/Hint';
 import { WarningList } from '@/components/ui/Warnings';
 import { HomeCtas, HomeWelcome } from '@/components/auth/HomeAuth';
 import { HomeDriftBg } from '@/components/home/HomeDriftBg';
+import { HomeCardSwaps } from '@/components/home/HomeCardSwaps';
 import { COMMODITY_UI, formLabel } from '@/lib/catalog';
 import { fmt, fmtTon } from '@/lib/format';
 import { containerFtName } from '@/lib/imperial';
@@ -74,57 +75,31 @@ export default async function Home() {
       </header>
       </div>
 
-      {/* Mulai cepat — orientasi tugas untuk pengguna baru */}
-      <section aria-label="Mulai cepat" className="relative z-10 grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
-        {[
+      {/* Mulai cepat (kanan) & kapasitas per komoditas (kiri, dicerminkan) — tumpukan kartu bergeser (DEC-120) */}
+      <HomeCardSwaps
+        quick={[
           { href: '/proses', n: '01', t: 'Kelapa masuk, jadi apa aja?', d: 'Dari kupas sabut sampai kopra & arang — lengkap rak jemur & dipisah per asal kelapa.' },
           { href: '/muat?wizard=1', n: '02', t: 'Muat berapa di container?', d: 'Tinggal pilih barang, bentuk, dan container — langsung ketemu jawabannya.' },
           { href: '/gudang', n: '03', t: 'Gudangnya cukup nggak?', d: 'Isi jumlah stok & tinggi tumpukan, keluar luas lantai yang dibutuhkan.' },
           { href: '/konversi', n: '04', t: 'Butir ↔ kg ↔ karung?', d: 'Ubah satuan bolak-balik, lengkap dengan rentangnya.' },
-        ].map((x) => (
-          <Link key={x.href} href={x.href} className="card card-data group flex flex-col gap-2 p-[18px] no-underline hover:bg-acid">
-            <span className="font-mono text-xs font-bold">{x.n}</span>
-            <span className="text-lg font-extrabold uppercase leading-tight">{x.t}</span>
-            <span className="text-[13px]">{x.d}</span>
-            <span className="mt-auto font-mono text-xs font-bold group-hover:underline">YUK MULAI →</span>
-          </Link>
-        ))}
-      </section>
-
-      {/* Kartu per komoditas (mockup stok → di sini kapasitas 20GP karena modul stok bukan scope v1) */}
-      <section aria-label="Kapasitas per komoditas" className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
-        {ds.commodities.map((c) => {
+        ]}
+        commodities={ds.commodities.map((c) => {
           const row = table.find((r) => r.commodityId === c.id)!;
           const o20 = row.cells[0]!.out;
           const piece = row.mode === 'PIECE';
           const ui = COMMODITY_UI[c.id]!;
-          return (
-            <article key={c.id} className="card card-data flex flex-col gap-3.5 p-[18px]">
-              <div className="flex items-start justify-between gap-2">
-                <span className="text-[15px] font-extrabold uppercase tracking-[0.03em]">{ui.short}</span>
-                <ConfidenceBadge c={o20.confidence} tilt />
-              </div>
-              <div className="flex items-baseline gap-1.5">
-                <span className="font-display text-[40px] leading-none">
-                  {piece ? fmt(o20.result.typ.pieces ?? 0) : fmt(o20.result.typ.massKg / 1000, 1)}
-                </span>
-                <span className="font-mono text-sm font-semibold">{piece ? ui.pieceUnit.toUpperCase() : 'TON'} / 20 FT</span>
-              </div>
-              <div className="grid grid-cols-2 gap-2 font-mono text-xs">
-                <div className="flex flex-col gap-0.5">
-                  <span className="text-muted">BENTUK</span>
-                  <span className="font-bold">{formLabel(c.id, row.formCode)}</span>
-                </div>
-                <div className="flex flex-col gap-0.5">
-                  <span className="text-muted">BATAS</span>
-                  <span className="font-bold">{o20.binding === 'VOLUME' ? 'Volume' : 'Berat'}</span>
-                </div>
-              </div>
-              <div className="border-t-2 border-dashed border-ink pt-2.5 text-xs">{ui.blurb}</div>
-            </article>
-          );
+          return {
+            id: c.id,
+            short: ui.short,
+            confidence: o20.confidence,
+            value: piece ? fmt(o20.result.typ.pieces ?? 0) : fmt(o20.result.typ.massKg / 1000, 1),
+            unit: `${piece ? ui.pieceUnit.toUpperCase() : 'TON'} / 20 FT`,
+            form: formLabel(c.id, row.formCode),
+            batas: o20.binding === 'VOLUME' ? 'Volume' : 'Berat',
+            blurb: ui.blurb,
+          };
         })}
-      </section>
+      />
 
       <div className="flex flex-wrap items-stretch gap-6">
         <section aria-labelledby="cap-h" className="card flex min-w-0 flex-[3_1_520px] flex-col gap-3.5">
