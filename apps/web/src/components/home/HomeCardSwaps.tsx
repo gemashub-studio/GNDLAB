@@ -1,10 +1,10 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
 import type { Confidence } from '@gemas/calc-engine';
 import { ConfidenceBadge } from '@/components/ui/badges';
 import CardSwap, { Card } from '@/components/ui/CardSwap';
+import { useMediaQuery } from '@/lib/useMediaQuery';
 
 export interface QuickItem {
   href: string;
@@ -28,17 +28,7 @@ const BASE = { depth: 80, skewAmount: 5, visibleCards: 4, delay: 4200, cardRadiu
 const MOBILE = { ...BASE, width: 380, height: 236, cardDistance: 46, verticalDistance: 54 };
 const DESKTOP = { ...BASE, width: 500, height: 312, cardDistance: 58, verticalDistance: 62 };
 
-function useDesktop() {
-  const [desk, setDesk] = useState(false);
-  useEffect(() => {
-    const mq = window.matchMedia('(min-width: 1024px)');
-    const on = () => setDesk(mq.matches);
-    on();
-    mq.addEventListener('change', on);
-    return () => mq.removeEventListener('change', on);
-  }, []);
-  return desk;
-}
+const useDesktop = () => useMediaQuery('(min-width: 1024px)');
 
 /**
  * Ringkasan (DEC-120): pengganti dua grid kartu — tumpukan kartu bergeser (React Bits CardSwap).

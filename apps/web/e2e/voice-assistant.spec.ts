@@ -121,32 +121,28 @@ test('Ayo → "buka pencatatan data lalu buat catatan baru" → form terbuka →
   await expect(page.getByTestId('va-spark')).toHaveCount(0);
 });
 
-test('pertanyaan "apa itu briket?" → Lab AI (dengan memori) → paragraf pertama + pertanyaan lanjutan → TTS koma bertanda seru (DEC-123)', async ({ page }) => {
+test('pertanyaan "apa itu briket?" → bukan tugas asisten navigasi: rekaman suara owner diputar + teks arahan ke Tanya Lab AI (DEC-126)', async ({ page }) => {
   test.setTimeout(180_000);
   await force(page);
   await page.addInitScript(() => window.localStorage.setItem('gnd-va:local', 'nanti'));
   await page.route('**/api/voice-assistant', (r) => r.fulfill({ json: { ok: true, actions: [{ type: 'ask', text: 'apa itu briket?' }], reply: 'Aku carikan.' } }));
-  const asked: { prompt: string; history: { role: string; content: string }[] }[] = [];
-  await page.route('**/api/lab-ai', async (r) => {
-    asked.push(r.request().postDataJSON());
-    await r.fulfill({ json: { ok: true, text: '**Briket** adalah bahan bakar padat dari serbuk arang, misalnya kubus, silinder, atau heksagonal berlubang.\n\n- Arang batok\n\nMau tahu cara membuatnya? 🔥' } });
+  let labAi = 0;
+  await page.route('**/api/lab-ai', (r) => {
+    labAi++;
+    return r.fulfill({ json: { ok: true, text: 'x' } });
   });
+  const clips: string[] = [];
+  page.on('request', (r) => r.url().includes('/sounds/') && clips.push(new URL(r.url()).pathname));
   await page.goto('/gudang');
   await page.getByTestId('va-fab').click();
   const panel = page.getByTestId('va-panel');
   await expect(panel).toContainText('Aku mendengarkan');
-  for (let i = 0; i < 2; i++) {
-    await panel.getByTestId('va-text').fill('apa itu briket?');
-    await panel.getByTestId('va-text').press('Enter');
-    await expect(panel.getByTestId('va-status')).toHaveText('Briket adalah bahan bakar padat dari serbuk arang, misalnya kubus, silinder, atau heksagonal berlubang. Mau tahu cara membuatnya?', { timeout: 30_000 });
-  }
-  await expect.poll(() => spoken).toContain('Briket adalah bahan bakar padat dari serbuk arang!, misalnya kubus!, silinder!, atau heksagonal berlubang. Mau tahu cara membuatnya?');
-  expect(asked[0]!.prompt).toContain('apa itu briket?');
-  // jawaban pertanyaan memakai suara Austin (DEC-125)
-  expect(voices[spoken.indexOf('Briket adalah bahan bakar padat dari serbuk arang!, misalnya kubus!, silinder!, atau heksagonal berlubang. Mau tahu cara membuatnya?')]).toBe('austin');
-  // pesan sebelumnya diingat pada pertanyaan berikutnya
-  expect(asked[1]!.history.map((m) => m.role)).toEqual(['user', 'assistant']);
-  expect(asked[1]!.history[1]!.content).toContain('Briket');
+  await panel.getByTestId('va-text').fill('apa itu briket?');
+  await panel.getByTestId('va-text').press('Enter');
+  await expect(panel.getByTestId('va-status')).toHaveText('Aduh! Bukannya aku gak bisa jawab, tapi peranku hanya perintah navigasi cepat. Mungkin kamu bisa pergi ke menu Tanya Lab AI pada halaman GnD Lab.');
+  await expect.poll(() => clips).toContain('/sounds/tanya-lab-ai.wav');
+  expect(labAi).toBe(0);
+  expect(spoken).toEqual([]);
 });
 
 test('tooltip "Harap tutup fitur ini…" bisa ditutup; kartu aktif berbingkai listrik di atas bingkai modal; tutup otomatis 10 menit tanpa perintah', async ({ page }) => {

@@ -129,6 +129,11 @@ const BG = 'FBFAF7';
 const BODY2 = '4A3F3A';
 const TAUPE = 'A58E83';
 const BAR = 'ECE8E3';
+/** Komponen infografik referensi owner (DEC-126): bilah kicker abu bertulisan putih, label tegak abu muda, angka tipis. */
+const KICK_BAR = 'A8A29E';
+const SIDE = 'CFC8C3';
+const THIN_NUM = 'B3A6A0';
+const LIGHT_FONT = 'Segoe UI Light';
 
 /** Gambar grafik (PNG) per `ChartSpec.id`, dibuat di browser dari SVG yang sama dengan PDF (DEC-058). */
 export interface ChartPng {
@@ -300,9 +305,9 @@ const REL_NS = 'http://schemas.openxmlformats.org/officeDocument/2006/relationsh
 const emptyTree = '<p:nvGrpSpPr><p:cNvPr id="1" name=""/><p:cNvGrpSpPr/><p:nvPr/></p:nvGrpSpPr><p:grpSpPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="0" cy="0"/><a:chOff x="0" y="0"/><a:chExt cx="0" cy="0"/></a:xfrm></p:grpSpPr>';
 
 /** serif = judul gaya koran (Georgia); caps = kapital kecil berjarak (label rubrik); mono = label berjarak. */
-type PRun = { t: string; sz: number; b?: boolean; i?: boolean; color?: string; mono?: boolean; serif?: boolean; caps?: boolean };
+type PRun = { t: string; sz: number; b?: boolean; i?: boolean; color?: string; mono?: boolean; serif?: boolean; caps?: boolean; font?: string };
 type PPara = PRun | PRun[];
-const aRun = (p: PRun) => `<a:r><a:rPr lang="id-ID" sz="${p.sz}"${p.b ? ' b="1"' : ''}${p.i ? ' i="1"' : ''}${p.caps ? ' cap="small" spc="150"' : p.mono ? ' spc="60"' : ''} dirty="0"><a:solidFill><a:srgbClr val="${p.color ?? INK}"/></a:solidFill>${p.serif ? '<a:latin typeface="Georgia"/>' : ''}</a:rPr><a:t>${xml(p.t)}</a:t></a:r>`;
+const aRun = (p: PRun) => `<a:r><a:rPr lang="id-ID" sz="${p.sz}"${p.b ? ' b="1"' : ''}${p.i ? ' i="1"' : ''}${p.caps ? ' cap="small" spc="150"' : p.mono ? ' spc="60"' : ''} dirty="0"><a:solidFill><a:srgbClr val="${p.color ?? INK}"/></a:solidFill>${p.font ? `<a:latin typeface="${p.font}"/>` : p.serif ? '<a:latin typeface="Georgia"/>' : ''}</a:rPr><a:t>${xml(p.t)}</a:t></a:r>`;
 const aParas = (paras: PPara[], spcAft = 300, align?: 'ctr' | 'r') => paras.map((p) => `<a:p><a:pPr${align ? ` algn="${align}"` : ''}><a:spcAft><a:spcPts val="${spcAft}"/></a:spcAft></a:pPr>${(Array.isArray(p) ? p : [p]).map(aRun).join('')}</a:p>`).join('') || '<a:p><a:endParaRPr lang="id-ID"/></a:p>';
 
 function pTextBox(id: number, x: number, y: number, w: number, h: number, paras: PPara[], o: { fill?: string; geom?: string; anchor?: 't' | 'ctr' | 'b'; autofit?: boolean; align?: 'ctr' | 'r' } = {}): string {
@@ -312,23 +317,157 @@ function pTextBox(id: number, x: number, y: number, w: number, h: number, paras:
 const pRect = (id: number, x: number, y: number, w: number, h: number, fill: string, geom = 'rect') =>
   `<p:sp><p:nvSpPr><p:cNvPr id="${id}" name="Bentuk ${id}"/><p:cNvSpPr/><p:nvPr/></p:nvSpPr><p:spPr><a:xfrm><a:off x="${Math.round(x)}" y="${Math.round(y)}"/><a:ext cx="${Math.round(w)}" cy="${Math.round(h)}"/></a:xfrm><a:prstGeom prst="${geom}"><a:avLst/></a:prstGeom><a:solidFill><a:srgbClr val="${fill}"/></a:solidFill><a:ln><a:noFill/></a:ln></p:spPr></p:sp>`;
 
-/** Kepala ala template Canva (DEC-123): "GnD Lab" serif besar + bilah abu berisi rubrik (seperti "Ciencia"). */
-function masthead(id: number, x: number, rubric: string, big = false): string {
-  const k = big ? 1.45 : 1;
-  const w = 1900000 * k;
-  const y = big ? 220000 : 110000;
+/**
+ * Kepala ala infografik referensi (DEC-126): "GnD Lab" serif di kotak putih bergaris tipis (seperti "Ciencia"),
+ * di kanannya kalimat pembuka — awalan tebal karat + teks biasa (seperti "El evento tecnológico…").
+ */
+function masthead(id: number, x: number, lead: string, text: string, big = false): string {
+  const k = big ? 1.35 : 1;
+  const w = 2100000 * k;
   const h = 520000 * k;
-  const barY = y + h / 2 - 140000 * k;
+  const y = 120000;
+  const leadX = x + w + 200000;
   return (
-    pTextBox(id, x, y, w, h, [{ t: 'GnD Lab', sz: Math.round(2800 * k), serif: true }], { anchor: 'ctr', autofit: false }) +
-    pRect(id + 1, x + w + 50000, barY, 3400000 * k, 280000 * k, BAR) +
-    pTextBox(id + 2, x + w + 130000, barY, 3250000 * k, 280000 * k, [{ t: rubric, sz: 900, b: true, color: MUTED, caps: true }], { anchor: 'ctr', autofit: false })
+    `<p:sp><p:nvSpPr><p:cNvPr id="${id}" name="Kepala ${id}"/><p:cNvSpPr txBox="1"/><p:nvPr/></p:nvSpPr><p:spPr><a:xfrm><a:off x="${x}" y="${y}"/><a:ext cx="${Math.round(w)}" cy="${Math.round(h)}"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom><a:solidFill><a:srgbClr val="FFFFFF"/></a:solidFill><a:ln w="9525"><a:solidFill><a:srgbClr val="${GRID}"/></a:solidFill></a:ln></p:spPr><p:txBody><a:bodyPr wrap="square" lIns="91440" tIns="0" rIns="91440" bIns="0" anchor="ctr"/><a:lstStyle/><a:p>${aRun({ t: 'GnD Lab', sz: Math.round(3000 * k), serif: true })}</a:p></p:txBody></p:sp>` +
+    pTextBox(id + 1, leadX, y, SW - 500000 - leadX - 900000, h, [[{ t: `${lead} `, sz: 1000, b: true, color: MINT }, { t: text, sz: 1000, color: BODY2 }]], { anchor: 'ctr', autofit: false })
   );
 }
 
-/** Label tegak di tepi kanan slide (seperti "Contenidos" di template). */
+/** Bilah kicker abu bertulisan putih kapital (seperti "DÍA INTERNACIONAL DE LA PROTECCIÓN AL MANGLAR"), di tengah. */
+function kickerBar(id: number, cx: number, y: number, t: string, icon?: IconKind): string {
+  const w = Math.min(7000000, 260000 + t.length * 78000);
+  return (
+    pTextBox(id, cx - w / 2, y, w, 230000, [{ t: t.toUpperCase(), sz: 850, b: true, color: 'FFFFFF', mono: true }], { fill: KICK_BAR, anchor: 'ctr', autofit: false, align: 'ctr' }) +
+    (icon ? pIcon(9100, icon, cx - w / 2 - 330000, y - 50000, 300000, MINT) : '')
+  );
+}
+
+/** Lingkaran sebagai path kubik (untuk ikon). */
+const circ = (cx: number, cy: number, r: number) => {
+  const k = 0.5523 * r;
+  return `M${cx - r} ${cy} C${cx - r} ${cy - k} ${cx - k} ${cy - r} ${cx} ${cy - r} C${cx + k} ${cy - r} ${cx + r} ${cy - k} ${cx + r} ${cy} C${cx + r} ${cy + k} ${cx + k} ${cy + r} ${cx} ${cy + r} C${cx - k} ${cy + r} ${cx - r} ${cy + k} ${cx - r} ${cy} Z`;
+};
+
+/**
+ * Ikon vektor gaya infografik (DEC-127) — siluet datar seperti pohon bakau di referensi, digambar pada kotak 100×100.
+ * fill = bagian berwarna, cut = lubang/aksen yang dicat warna kertas. Path SVG sederhana (M/L/C/Z, koordinat mutlak).
+ */
+export type IconKind = 'palm' | 'coconut' | 'briket' | 'flask' | 'leaf' | 'flame' | 'sack' | 'drop' | 'tree';
+export const ICONS: Record<IconKind, { fill: string[]; cut?: string[] }> = {
+  palm: {
+    fill: [
+      'M47 100 C48 78 50 58 52 42 L57 42 C55 58 54 78 55 100 Z',
+      'M54 40 C42 30 24 32 8 48 C24 40 40 40 54 44 Z',
+      'M56 40 C68 30 86 32 98 48 C84 40 70 40 56 44 Z',
+      'M54 40 C46 24 34 16 18 16 C32 22 42 30 52 42 Z',
+      'M56 40 C64 24 76 16 92 18 C78 24 68 30 58 42 Z',
+      'M55 40 C53 26 56 14 64 4 C62 16 60 28 58 40 Z',
+      circ(50, 46, 4),
+      circ(59, 47, 4),
+    ],
+  },
+  coconut: { fill: [circ(50, 52, 42)], cut: [circ(38, 40, 5), circ(53, 33, 5), circ(47, 52, 5)] },
+  briket: { fill: ['M27 8 L73 8 L97 50 L73 92 L27 92 L3 50 Z'], cut: [circ(50, 50, 15)] },
+  flask: {
+    fill: ['M38 4 L62 4 L62 11 L58 11 L58 38 L86 86 C89 92 85 97 78 97 L22 97 C15 97 11 92 14 86 L42 38 L42 11 L38 11 Z'],
+    cut: [circ(42, 80, 4), circ(57, 72, 3), circ(50, 86, 2.5)],
+  },
+  leaf: { fill: ['M8 92 C8 40 40 8 92 8 C92 60 60 92 8 92 Z'], cut: ['M14 89 L85 14 L88 17 L17 92 Z'] },
+  flame: {
+    fill: ['M50 2 C62 24 82 38 82 64 C82 84 68 98 50 98 C32 98 18 84 18 64 C18 46 30 38 34 22 C42 34 44 42 48 48 C52 34 52 18 50 2 Z'],
+    cut: ['M50 58 C58 67 64 73 64 81 C64 89 58 94 50 94 C42 94 36 89 36 81 C36 73 44 67 50 58 Z'],
+  },
+  sack: {
+    fill: ['M34 6 L66 6 L60 21 C80 31 92 54 90 76 C88 92 76 98 50 98 C24 98 12 92 10 76 C8 54 20 31 40 21 Z'],
+    cut: ['M38 23 L62 23 L62 29 L38 29 Z'],
+  },
+  drop: {
+    fill: ['M50 2 C64 26 84 46 84 66 C84 86 68 98 50 98 C32 98 16 86 16 66 C16 46 36 26 50 2 Z'],
+    cut: ['M33 66 C33 56 37 50 42 45 C40 54 40 61 42 69 Z'],
+  },
+  tree: {
+    fill: [
+      'M8 46 C2 30 16 16 32 20 C36 4 62 2 68 18 C84 12 98 28 90 44 C98 56 84 66 70 60 C62 70 42 70 36 60 C22 68 4 60 8 46 Z',
+      'M45 58 L55 58 L56 78 C60 86 68 92 78 98 L70 98 C64 94 59 90 55 86 L55 98 L45 98 L45 86 C41 90 36 94 30 98 L22 98 C32 92 40 86 44 78 Z',
+    ],
+  },
+};
+
+/** Path SVG (M/L/C/Z mutlak, kotak 100×100) → <a:path> DrawingML. */
+export function iconPath(d: string): string {
+  const tok = d.match(/[MLCZ]|-?\d+(?:\.\d+)?/g) ?? [];
+  let out = '';
+  let i = 0;
+  const pt = () => `<a:pt x="${Math.round(Number(tok[i++]) * 100)}" y="${Math.round(Number(tok[i++]) * 100)}"/>`;
+  while (i < tok.length) {
+    const c = tok[i++];
+    if (c === 'M') out += `<a:moveTo>${pt()}</a:moveTo>`;
+    else if (c === 'L') out += `<a:lnTo>${pt()}</a:lnTo>`;
+    else if (c === 'C') out += `<a:cubicBezTo>${pt()}${pt()}${pt()}</a:cubicBezTo>`;
+    else if (c === 'Z') out += '<a:close/>';
+  }
+  return `<a:path w="10000" h="10000">${out}</a:path>`;
+}
+
+const custShape = (id: number, name: string, x: number, y: number, w: number, h: number, paths: string[], fill: string) =>
+  `<p:sp><p:nvSpPr><p:cNvPr id="${id}" name="${name}"/><p:cNvSpPr/><p:nvPr/></p:nvSpPr><p:spPr><a:xfrm><a:off x="${Math.round(x)}" y="${Math.round(y)}"/><a:ext cx="${Math.round(w)}" cy="${Math.round(h)}"/></a:xfrm><a:custGeom><a:avLst/><a:gdLst/><a:ahLst/><a:cxnLst/><a:rect l="0" t="0" r="r" b="b"/><a:pathLst>${paths.map(iconPath).join('')}</a:pathLst></a:custGeom><a:solidFill><a:srgbClr val="${fill}"/></a:solidFill><a:ln><a:noFill/></a:ln></p:spPr></p:sp>`;
+
+/** Ikon vektor (2 bentuk: isi + lubang berwarna kertas). Memakai id dan id+1. */
+export function pIcon(id: number, kind: IconKind, x: number, y: number, size: number, color: string, paper = BG): string {
+  const ic = ICONS[kind];
+  return custShape(id, `Ikon ${kind}`, x, y, size, size, ic.fill, color) + (ic.cut?.length ? custShape(id + 1, `Ikon ${kind} aksen`, x, y, size, size, ic.cut, paper) : '');
+}
+
+/** Ikon untuk judul bagian berdasarkan kata kuncinya. */
+export function iconFor(title: string): IconKind {
+  const t = title.toLowerCase();
+  if (/belanja|nota/.test(t)) return 'sack';
+  if (/briket|arang/.test(t)) return 'flame';
+  if (/bahan|komposisi|resep|alat|protokol/.test(t)) return 'flask';
+  if (/perbandingan|selisih|grafik|air/.test(t)) return 'drop';
+  if (/foto|perlakuan|kopra/.test(t)) return 'coconut';
+  if (/harian|laporan|riwayat|versi/.test(t)) return 'leaf';
+  if (/ringkasan|kesimpulan/.test(t)) return 'palm';
+  return 'tree';
+}
+
+/**
+ * Panel "Jalur produk kelapa" ala "ESPECIES DE MANGLE" (DEC-127): judul karat + keterangan, siluet taupe di atas pita
+ * tanah coklat berlabel putih, dan lingkaran keterangan marun bertulisan putih di kanan.
+ */
+const GROUND = '5B4636';
+function productPanel(x: number, y: number, w: number): string {
+  const items: [IconKind, string, number][] = [
+    ['palm', 'Kelapa', 1150000],
+    ['coconut', 'Kopra', 700000],
+    ['flame', 'Arang', 760000],
+    ['briket', 'Briket', 640000],
+    ['flask', 'Cuka', 820000],
+    ['leaf', 'Bio leather', 700000],
+  ];
+  const circleD = 1650000;
+  const areaW = w - circleD - 300000;
+  const groundY = y + 1750000;
+  let out = pTextBox(9200, x, y, areaW, 260000, [{ t: 'JALUR PRODUK KELAPA', sz: 1100, b: true, color: MINT }], { autofit: false });
+  out += pTextBox(9201, x, y + 230000, areaW, 260000, [{ t: 'Olahan kelapa yang dicatat di GnD Lab, dari buah sampai produk jadi.', sz: 1000, color: BODY2 }], { autofit: false });
+  out += pRect(9202, x, groundY, areaW, 260000, GROUND);
+  const slot = areaW / items.length;
+  items.forEach(([kind, label, size], i) => {
+    const cx = x + slot * i + slot / 2;
+    out += pIcon(9210 + i * 3, kind, cx - size / 2, groundY - size, size, TAUPE, BG);
+    out += pTextBox(9212 + i * 3, cx - slot / 2, groundY, slot, 260000, [{ t: label.toUpperCase(), sz: 800, b: true, color: 'FFFFFF', mono: true }], { anchor: 'ctr', autofit: false, align: 'ctr' });
+  });
+  const cx = x + w - circleD;
+  out += pTextBox(9250, cx, y + 300000, circleD, circleD, [{ t: 'Isi laporan = catatan pengguna.', sz: 1100, b: true, color: 'FFFFFF' }, { t: 'Bukan klaim produk aman atau memenuhi standar.', sz: 1000, color: 'FFFFFF' }], { fill: AMBER, geom: 'ellipse', anchor: 'ctr', autofit: false, align: 'ctr' });
+  return out;
+}
+
+/** Nomor halaman kecil abu di pojok kanan atas (seperti "26"). */
+const pageNo = (id: number, n: number) => pTextBox(id, SW - 500000 - 700000, 150000, 700000, 300000, [{ t: String(n), sz: 1100, b: true, color: MUTED }], { autofit: false, align: 'r' });
+
+/** Label tegak abu muda besar di tepi kanan (seperti "Contextos") + keterangan kecil di sampingnya. */
 const sideLabel = (id: number, t: string) =>
-  `<p:sp><p:nvSpPr><p:cNvPr id="${id}" name="Label ${id}"/><p:cNvSpPr txBox="1"/><p:nvPr/></p:nvSpPr><p:spPr><a:xfrm><a:off x="${SW - 420000}" y="1500000"/><a:ext cx="300000" cy="3600000"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom><a:noFill/></p:spPr><p:txBody><a:bodyPr vert="vert270" wrap="square" lIns="0" tIns="0" rIns="0" bIns="0" anchor="ctr"/><a:lstStyle/><a:p><a:pPr algn="ctr"/>${aRun({ t, sz: 1000, color: TAUPE, serif: true })}</a:p></p:txBody></p:sp>`;
+  `<p:sp><p:nvSpPr><p:cNvPr id="${id}" name="Label ${id}"/><p:cNvSpPr txBox="1"/><p:nvPr/></p:nvSpPr><p:spPr><a:xfrm><a:off x="${SW - 440000}" y="1300000"/><a:ext cx="360000" cy="3900000"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom><a:noFill/></p:spPr><p:txBody><a:bodyPr vert="vert270" wrap="square" lIns="0" tIns="0" rIns="0" bIns="0" anchor="ctr"/><a:lstStyle/><a:p><a:pPr algn="ctr"/>${aRun({ t, sz: 2000, b: true, color: SIDE })}</a:p><a:p><a:pPr algn="ctr"/>${aRun({ t: 'GnD Lab · catatan lab kelapa', sz: 650, color: SIDE })}</a:p></p:txBody></p:sp>`;
 
 /** Video tertanam (PowerPoint 2010+): poster = gambar pratinjau; a:videoFile + p14:media menunjuk berkas video. */
 function pVideo(id: number, posterRid: string, rid: string, mrid: string, x: number, y: number, w: number, h: number, name: string): string {
@@ -404,12 +543,11 @@ export function buildPptx(r: ResearchReport, charts: ChartPngs = new Map(), vide
   const CW = SW - 2 * M;
   let picN = 0;
   let sec = 0;
-  // judul slide ala template Canva (DEC-123): kepala "GnD Lab" + bilah abu, judul serif di tengah, nomor tipis taupe di kanan
+  // judul slide ala infografik referensi (DEC-126): kepala "GnD Lab" + kalimat pembuka, bilah kicker abu, judul serif tengah
   const title = (t: string, num?: number) =>
-    masthead(6, M, 'Sains & catatan lab') +
-    (num ? pTextBox(3, SW - M - 1300000, 60000, 1300000, 640000, [{ t: pad2(num), sz: 4400, color: TAUPE, serif: true }], { anchor: 'b', autofit: false, align: 'r' }) : '') +
-    pTextBox(2, M, 640000, CW, 400000, [{ t, sz: 2200, b: true, serif: true }], { anchor: 'ctr', align: 'ctr', autofit: false }) +
-    pRect(4, M, 1060000, CW, 7000, GRID);
+    masthead(6, M, `${r.cover.code}.`, r.title) +
+    kickerBar(3, SW / 2, 700000, num ? `${pad2(num)} · Sains & catatan lab` : 'Sains & catatan lab', iconFor(t)) +
+    pTextBox(2, M, 930000, CW, 330000, [{ t, sz: 2000, b: true, serif: true }], { anchor: 'ctr', align: 'ctr', autofit: false });
   const pic = (bytes: Uint8Array, ext: 'jpeg' | 'png', w: number, h: number, caption: string, s: Slide['pics']) => {
     picN++;
     const p = { rid: `rIdP${s.length + 2}`, file: `image${picN}.${ext}`, bytes, w, h, caption, ext };
@@ -422,43 +560,51 @@ export function buildPptx(r: ResearchReport, charts: ChartPngs = new Map(), vide
   };
   const linePara = (t: string): PPara => {
     const [label, val] = splitLabel(t);
-    return label ? [{ t: `${label}  `, sz: 1200, b: true, color: MUTED }, { t: val, sz: 1500 }] : { t, sz: 1500 };
+    return label ? [{ t: `${label}  `, sz: 1200, b: true, color: INK }, { t: val, sz: 1500 }] : [{ t: '▪ ', sz: 1500, b: true, color: MINT }, { t, sz: 1500 }];
   };
 
-  // sampul ala template Canva (DEC-123): kepala besar, foto bulat bercincin marun + lingkaran kecil bersambung, judul di tengah
+  // sampul ala infografik referensi (DEC-126): kepala "GnD Lab" + kalimat pembuka, foto bulat + lingkaran kecil bersambung,
+  // bilah kicker abu, judul serif tengah, baris kredit, linimasa titik (seperti "CATEGORÍA EN RIESGO"), label tegak
   {
     const pics: Slide['pics'] = [];
-    let shapes = masthead(5, M, 'Laporan lab', true);
-    shapes += pTextBox(13, SW - M - 3000000, 330000, 3000000, 300000, [{ t: `Edisi ${r.generatedAt}`, sz: 1000, i: true, color: MUTED, serif: true }], { autofit: false, align: 'r' });
+    const deck0 = r.subtitle || 'Laporan lab GnD Lab';
+    const deck = deck0.startsWith(r.cover.code) ? deck0.slice(r.cover.code.length).replace(/^\s*·\s*/, '') : deck0;
+    let shapes = masthead(5, M, `${r.cover.code}.`, deck, true);
     const img = r.cover.image?.dataUrl ? dataUrlBytes(r.cover.image.dataUrl) : undefined;
-    const d = 3500000;
-    const colX = img ? M + d + 600000 : M;
-    const colW = SW - M - colX;
+    const d = 3300000;
+    const colX = img ? M + d + 500000 : M;
+    const colW = SW - 520000 - colX - 200000;
     if (img) {
       const sz = jpegSize(img);
       const p = pic(img, 'jpeg', sz.w, sz.h, 'sampul', pics);
-      const cy = 1350000;
-      shapes += pRect(16, M - 60000, cy - 60000, d + 120000, d + 120000, AMBER, 'ellipse');
-      shapes += pRect(17, M - 25000, cy - 25000, d + 50000, d + 50000, BG, 'ellipse');
+      const cy = 1150000;
+      shapes += pRect(16, M - 50000, cy - 50000, d + 100000, d + 100000, AMBER, 'ellipse');
+      shapes += pRect(17, M - 20000, cy - 20000, d + 40000, d + 40000, BG, 'ellipse');
       shapes += pPicCover(11, p.rid, M, cy, d, d, p.file, sz.w, sz.h, 'ellipse');
     }
-    // lingkaran kecil bersambung (seperti linimasa foto bulat di template)
     const dots: [number, number, number, string][] = img
-      ? [[M + 250000, 5150000, 380000, AMBER], [M + 1250000, 5450000, 300000, MINT_D], [M + 2250000, 5250000, 340000, TAUPE], [M + 3150000, 4900000, 260000, MINT]]
+      ? [[M + 200000, 4850000, 420000, AMBER], [M + 1150000, 5250000, 330000, MINT_D], [M + 2150000, 5050000, 380000, TAUPE], [M + 3000000, 4650000, 280000, MINT]]
       : [[M, 5500000, 300000, AMBER], [M + 700000, 5600000, 240000, MINT_D], [M + 1300000, 5500000, 280000, TAUPE]];
-    dots.forEach(([x, y, r0, c], k) => {
+    dots.forEach(([x, y, r0], k) => {
       const nx = dots[k + 1];
-      if (nx) shapes += pSeg(30 + k, x + r0 / 2, y + r0 / 2, nx[0] + nx[2] / 2, nx[1] + nx[2] / 2, TAUPE, 15875);
+      if (nx) shapes += pSeg(30 + k, x + r0 / 2, y + r0 / 2, nx[0] + nx[2] / 2, nx[1] + nx[2] / 2, TAUPE, 22225);
     });
     dots.forEach(([x, y, r0, c], k) => (shapes += pRect(40 + k, x, y, r0, r0, c, 'ellipse')));
-    shapes += pTextBox(8, colX, 1150000, colW, 1700000, [{ t: r.title, sz: 3600, b: true, serif: true }], { autofit: true, anchor: 'b', align: 'ctr' });
-    shapes += pTextBox(14, colX, 2880000, colW, 330000, [[{ t: 'Dibuat ', sz: 1100, color: MUTED }, { t: r.generatedAt, sz: 1100, b: true }, { t: '  |  oleh ', sz: 1100, color: MUTED }, { t: 'GnD Lab', sz: 1100, b: true }]], { autofit: false, align: 'ctr' });
-    if (r.subtitle) shapes += pTextBox(15, colX, 3230000, colW, 480000, [{ t: r.subtitle, sz: 1400, i: true, color: BODY2, serif: true }], { autofit: true, align: 'ctr' });
-    shapes += pTextBox(9, colX + (colW - 2400000) / 2, 3780000, 2400000, 340000, [{ t: r.cover.status, sz: 1000, b: true, color: BG, caps: true }], { fill: r.cover.done ? MINT_D : AMBER, anchor: 'ctr', autofit: false, align: 'ctr' });
-    shapes += pRect(18, colX, 4270000, colW, 7000, GRID);
-    shapes += pTextBox(10, colX, 4320000, colW, 1700000, r.cover.meta.map(([k, v]) => [{ t: `${k}   `, sz: 1000, b: true, color: MINT, caps: true }, { t: v, sz: 1200 }]), {});
-    shapes += pTextBox(12, colX, SH - 520000, colW, 320000, [{ t: 'Isi = catatan pengguna; bukan klaim produk aman/memenuhi standar', sz: 850, i: true, color: MUTED, serif: true }], { align: 'ctr' });
-    shapes += sideLabel(19, 'Isi laporan');
+    const cx = colX + colW / 2;
+    shapes += kickerBar(9, cx, 1050000, r.cover.status || 'Laporan lab', 'palm');
+    shapes += pTextBox(8, colX, 1320000, colW, 1500000, [{ t: r.title, sz: 3400, b: true, serif: true }], { autofit: true, anchor: 't', align: 'ctr' });
+    shapes += pTextBox(14, colX, 2850000, colW, 300000, [[{ t: 'Laporan ', sz: 1000, color: BODY2 }, { t: 'GnD Lab', sz: 1000, b: true }, { t: '  |  Dibuat ', sz: 1000, color: BODY2 }, { t: r.generatedAt, sz: 1000, b: true }]], { autofit: false, align: 'ctr' });
+    // linimasa titik: garis tegak + titik per baris identitas
+    const metas = r.cover.meta.slice(0, 7);
+    const ty = 3300000;
+    const step = 360000;
+    if (metas.length) shapes += pSeg(50, colX + 90000, ty + 90000, colX + 90000, ty + 90000 + step * (metas.length - 1), BODY2, 9525);
+    metas.forEach(([k, v], i) => {
+      shapes += pRect(60 + i, colX + 45000, ty + i * step + 45000, 90000, 90000, INK, 'ellipse');
+      shapes += pTextBox(70 + i, colX + 230000, ty + i * step - 20000, colW - 230000, 300000, [[{ t: `${k}  `, sz: 1000, b: true, color: MINT }, { t: v, sz: 1100 }]], { autofit: false });
+    });
+    shapes += pTextBox(12, colX, SH - 520000, colW, 320000, [{ t: 'Isi = catatan pengguna; bukan klaim produk aman/memenuhi standar', sz: 800, i: true, color: MUTED }], { align: 'ctr' });
+    shapes += sideLabel(19, 'Contextos lab');
     slides.push({ shapes, pics, dark: true });
   }
 
@@ -468,14 +614,15 @@ export function buildPptx(r: ResearchReport, charts: ChartPngs = new Map(), vide
     const cols = 3;
     const gap = 250000;
     const cw = (CW - gap * (cols - 1)) / cols;
-    const ch = 1900000;
+    const ch = 1350000;
     r.kpis.forEach((k, i) => {
       const x = M + (i % cols) * (cw + gap);
-      const y = 1300000 + Math.floor(i / cols) * (ch + gap);
+      const y = 1350000 + Math.floor(i / cols) * (ch + 150000);
       // angka besar tipis ala template ("22", "70"): bulatan warna kecil, garis tipis, pemisah antar kolom
       shapes += pRect(20 + i * 3, x, y + 60000, 160000, 160000, [AMBER, MINT_D, MINT][i % 3]!, 'ellipse') + (i % cols ? pRect(21 + i * 3, x - gap / 2, y + 150000, 7000, ch - 300000, GRID) : '');
-      shapes += pTextBox(22 + i * 3, x + 240000, y, cw - 240000, ch - 200000, [{ t: k.value, sz: 6000, serif: true, color: TAUPE }, { t: k.label, sz: 1100, b: true, color: MINT, caps: true }], { anchor: 't' });
+      shapes += pTextBox(22 + i * 3, x + 240000, y, cw - 240000, ch - 200000, [{ t: k.value, sz: 5000, font: LIGHT_FONT, color: THIN_NUM }, { t: k.label, sz: 1100, b: true }], { anchor: 't' });
     });
+    shapes += productPanel(M, 4300000, CW);
     slides.push({ shapes, pics: [] });
   }
 
@@ -510,15 +657,15 @@ export function buildPptx(r: ResearchReport, charts: ChartPngs = new Map(), vide
         shapes += pTextBox(id++, M, y, 3000000, 230000, [{ t, sz: 1000, b: true, color, mono: true }], { autofit: false });
       };
       if (hasAkhir) {
-        const yA = 1250000;
+        const yA = 1450000;
         const yB = yA + imgH + 1120000;
-        label('DATA AWAL', yA - 250000, MINT_D);
+        label('DATA AWAL', yA - 250000, MINT);
         chunk.forEach((p, k) => cell(p.awal, p.no, M + k * cellW, yA, 780000, 'awal'));
         shapes += pRect(id++, M, yA + imgH + 840000, CW, 28000, MINT);
-        label('DATA AKHIR', yB - 250000, AMBER);
+        label('DATA AKHIR', yB - 250000, MINT);
         chunk.forEach((p, k) => p.akhir && cell(p.akhir, p.no, M + k * cellW, yB, 420000, 'akhir'));
       } else {
-        const yA = 1250000;
+        const yA = 1450000;
         const y2 = yA + imgH + 1120000;
         label('DATA AWAL', yA - 250000, MINT_D);
         chunk.forEach((p, k) => cell(p.awal, p.no, M + (k % COLS) * cellW, k < COLS ? yA : y2, 780000, 'awal'));
@@ -529,7 +676,7 @@ export function buildPptx(r: ResearchReport, charts: ChartPngs = new Map(), vide
     return out;
   }
 
-  const BODY_TOP = 1150000;
+  const BODY_TOP = 1300000;
   /** Tinggi baris foto di dalam slide (foto + keterangan). */
   const IMG_STRIP_H = 1900000;
   /** Baris foto (maks. 4) mengisi ruang tersisa sebuah slide: foto dipotong rapi + keterangan di bawahnya. */
@@ -994,10 +1141,9 @@ export function buildPptx(r: ResearchReport, charts: ChartPngs = new Map(), vide
   // nomor halaman (setelah jumlah slide diketahui)
   slides.forEach((s, i) => {
     if (i === 0) return;
-    // folio gaya koran: garis tipis, keterangan miring, nomor halaman serif terakota (DEC-121)
-    s.shapes += pRect(89, M, SH - 500000, CW, 6000, GRID) + sideLabel(92, 'Catatan lab');
-    s.shapes += pTextBox(90, M, SH - 470000, CW * 0.8, 320000, [{ t: `${r.cover.code} · ${r.footer}`, sz: 800, i: true, color: MUTED, serif: true }]);
-    s.shapes += pTextBox(91, SW - M - 1200000, SH - 480000, 1200000, 320000, [[{ t: `${i + 1}`, sz: 1100, b: true, color: AMBER, serif: true }, { t: ` / ${slides.length}`, sz: 900, color: MUTED, serif: true }]], { align: 'r' });
+    // folio ala infografik referensi (DEC-126): nomor halaman kecil abu di kanan atas, label tegak, keterangan bawah
+    s.shapes += pageNo(91, i + 1) + sideLabel(92, 'Contextos lab');
+    s.shapes += pTextBox(90, M, SH - 450000, CW * 0.8, 300000, [{ t: `${r.cover.code} · ${r.footer}`, sz: 800, color: MUTED }]);
   });
 
   return packPptx(slides, vidExts);
@@ -1017,7 +1163,7 @@ function packPptx(slides: Slide[], vidExts: ReadonlyMap<string, string> = new Ma
     for (const v of s.vids ?? []) files.push({ name: `ppt/media/${v.file}`, data: v.bytes });
   });
 
-  const theme = `${CT_HEAD}<a:theme xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" name="GEMA"><a:themeElements><a:clrScheme name="GEMA"><a:dk1><a:srgbClr val="2B2320"/></a:dk1><a:lt1><a:srgbClr val="FBFAF7"/></a:lt1><a:dk2><a:srgbClr val="4A3F3A"/></a:dk2><a:lt2><a:srgbClr val="F1EDE8"/></a:lt2><a:accent1><a:srgbClr val="A64B2A"/></a:accent1><a:accent2><a:srgbClr val="7B3B34"/></a:accent2><a:accent3><a:srgbClr val="5E7B3A"/></a:accent3><a:accent4><a:srgbClr val="A58E83"/></a:accent4><a:accent5><a:srgbClr val="7D6E66"/></a:accent5><a:accent6><a:srgbClr val="DCD4CC"/></a:accent6><a:hlink><a:srgbClr val="5E7B3A"/></a:hlink><a:folHlink><a:srgbClr val="7D6E66"/></a:folHlink></a:clrScheme><a:fontScheme name="GEMA"><a:majorFont><a:latin typeface="Georgia"/><a:ea typeface=""/><a:cs typeface=""/></a:majorFont><a:minorFont><a:latin typeface="Calibri"/><a:ea typeface=""/><a:cs typeface=""/></a:minorFont></a:fontScheme><a:fmtScheme name="GEMA"><a:fillStyleLst><a:solidFill><a:schemeClr val="phClr"/></a:solidFill><a:solidFill><a:schemeClr val="phClr"/></a:solidFill><a:solidFill><a:schemeClr val="phClr"/></a:solidFill></a:fillStyleLst><a:lnStyleLst><a:ln w="6350"><a:solidFill><a:schemeClr val="phClr"/></a:solidFill></a:ln><a:ln w="12700"><a:solidFill><a:schemeClr val="phClr"/></a:solidFill></a:ln><a:ln w="19050"><a:solidFill><a:schemeClr val="phClr"/></a:solidFill></a:ln></a:lnStyleLst><a:effectStyleLst><a:effectStyle><a:effectLst/></a:effectStyle><a:effectStyle><a:effectLst/></a:effectStyle><a:effectStyle><a:effectLst/></a:effectStyle></a:effectStyleLst><a:bgFillStyleLst><a:solidFill><a:schemeClr val="phClr"/></a:solidFill><a:solidFill><a:schemeClr val="phClr"/></a:solidFill><a:solidFill><a:schemeClr val="phClr"/></a:solidFill></a:bgFillStyleLst></a:fmtScheme></a:themeElements></a:theme>`;
+  const theme = `${CT_HEAD}<a:theme xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" name="GEMA"><a:themeElements><a:clrScheme name="GEMA"><a:dk1><a:srgbClr val="2B2320"/></a:dk1><a:lt1><a:srgbClr val="FBFAF7"/></a:lt1><a:dk2><a:srgbClr val="4A3F3A"/></a:dk2><a:lt2><a:srgbClr val="F1EDE8"/></a:lt2><a:accent1><a:srgbClr val="A64B2A"/></a:accent1><a:accent2><a:srgbClr val="7B3B34"/></a:accent2><a:accent3><a:srgbClr val="5E7B3A"/></a:accent3><a:accent4><a:srgbClr val="A58E83"/></a:accent4><a:accent5><a:srgbClr val="7D6E66"/></a:accent5><a:accent6><a:srgbClr val="DCD4CC"/></a:accent6><a:hlink><a:srgbClr val="5E7B3A"/></a:hlink><a:folHlink><a:srgbClr val="7D6E66"/></a:folHlink></a:clrScheme><a:fontScheme name="GEMA"><a:majorFont><a:latin typeface="Georgia"/><a:ea typeface=""/><a:cs typeface=""/></a:majorFont><a:minorFont><a:latin typeface="Arial Narrow"/><a:ea typeface=""/><a:cs typeface=""/></a:minorFont></a:fontScheme><a:fmtScheme name="GEMA"><a:fillStyleLst><a:solidFill><a:schemeClr val="phClr"/></a:solidFill><a:solidFill><a:schemeClr val="phClr"/></a:solidFill><a:solidFill><a:schemeClr val="phClr"/></a:solidFill></a:fillStyleLst><a:lnStyleLst><a:ln w="6350"><a:solidFill><a:schemeClr val="phClr"/></a:solidFill></a:ln><a:ln w="12700"><a:solidFill><a:schemeClr val="phClr"/></a:solidFill></a:ln><a:ln w="19050"><a:solidFill><a:schemeClr val="phClr"/></a:solidFill></a:ln></a:lnStyleLst><a:effectStyleLst><a:effectStyle><a:effectLst/></a:effectStyle><a:effectStyle><a:effectLst/></a:effectStyle><a:effectStyle><a:effectLst/></a:effectStyle></a:effectStyleLst><a:bgFillStyleLst><a:solidFill><a:schemeClr val="phClr"/></a:solidFill><a:solidFill><a:schemeClr val="phClr"/></a:solidFill><a:solidFill><a:schemeClr val="phClr"/></a:solidFill></a:bgFillStyleLst></a:fmtScheme></a:themeElements></a:theme>`;
   const master = `${CT_HEAD}<p:sldMaster ${P_NS}><p:cSld><p:bg><p:bgPr><a:solidFill><a:srgbClr val="${BG}"/></a:solidFill><a:effectLst/></p:bgPr></p:bg><p:spTree>${emptyTree}</p:spTree></p:cSld><p:clrMap bg1="lt1" tx1="dk1" bg2="lt2" tx2="dk2" accent1="accent1" accent2="accent2" accent3="accent3" accent4="accent4" accent5="accent5" accent6="accent6" hlink="hlink" folHlink="folHlink"/><p:sldLayoutIdLst><p:sldLayoutId id="2147483649" r:id="rId1"/></p:sldLayoutIdLst><p:txStyles><p:titleStyle><a:lvl1pPr><a:defRPr sz="3200"/></a:lvl1pPr></p:titleStyle><p:bodyStyle><a:lvl1pPr><a:defRPr sz="1800"/></a:lvl1pPr></p:bodyStyle><p:otherStyle><a:lvl1pPr><a:defRPr sz="1800"/></a:lvl1pPr></p:otherStyle></p:txStyles></p:sldMaster>`;
   const layout = `${CT_HEAD}<p:sldLayout ${P_NS} type="blank" preserve="1"><p:cSld name="Kosong"><p:spTree>${emptyTree}</p:spTree></p:cSld><p:clrMapOvr><a:masterClrMapping/></p:clrMapOvr></p:sldLayout>`;
   const pres = `${CT_HEAD}<p:presentation ${P_NS} saveSubsetFonts="1"><p:sldMasterIdLst><p:sldMasterId id="2147483648" r:id="rId1"/></p:sldMasterIdLst><p:sldIdLst>${slides.map((_, i) => `<p:sldId id="${256 + i}" r:id="rId${i + 3}"/>`).join('')}</p:sldIdLst><p:sldSz cx="${SW}" cy="${SH}"/><p:notesSz cx="6858000" cy="9144000"/></p:presentation>`;
@@ -1171,18 +1317,17 @@ export function buildTreePptx(items: TreeSlide[]): Uint8Array {
     chunks.forEach((leaves, ci) => {
       const pics: Slide['pics'] = [];
       let id = 10;
-      // kepala ala template Canva (DEC-123)
-      let shapes = masthead(id, M, 'Laporan belanja') + sideLabel(id + 3, 'Laporan belanja');
+      // kepala ala infografik referensi (DEC-126)
+      let shapes = masthead(id, M, 'Laporan belanja.', it.subtitle) + sideLabel(id + 2, 'Contextos lab') + pageNo(id + 3, slides.length + 1);
       id += 4;
-      shapes += pTextBox(id++, M, 600000, CW, 330000, [{ t: it.title + (ci ? ' (lanjutan)' : ''), sz: 2000, b: true, serif: true }], { anchor: 'ctr', autofit: false, align: 'ctr' });
-      shapes += pTextBox(id++, M, 860000, CW, 260000, [{ t: it.subtitle, sz: 1100, i: true, color: BODY2, serif: true }], { autofit: false, align: 'ctr' });
-      shapes += pRect(id++, M, 1110000, CW, 7000, GRID);
+      shapes += kickerBar(id++, SW / 2, 640000, 'Laporan belanja', 'sack');
+      shapes += pTextBox(id++, M, 860000, CW, 300000, [{ t: it.title + (ci ? ' (lanjutan)' : ''), sz: 2000, b: true, serif: true }], { anchor: 'ctr', autofit: false, align: 'ctr' });
       // label akar di atas, lalu foto nota (bingkai rapat mengikuti foto)
-      shapes += pTextBox(id++, M, 1140000, CW, 280000, [{ t: it.rootLabel, sz: 1000, b: true, color: MINT, caps: true }], { autofit: false, align: 'ctr' });
+      shapes += pTextBox(id++, M, 1190000, CW, 280000, [{ t: it.rootLabel, sz: 1000, b: true, color: MINT, caps: true }], { autofit: false, align: 'ctr' });
       const roots = it.roots.length ? it.roots.slice(0, 3) : [{ label: 'tanpa foto nota' }];
       const rootBoxW = 2300000;
       const rootBoxH = 1650000;
-      const rootY = 1430000;
+      const rootY = 1490000;
       const totalRootW = roots.length * rootBoxW + (roots.length - 1) * 150000;
       const rootX0 = M + (CW - totalRootW) / 2;
       roots.forEach((n, k) => {

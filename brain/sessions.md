@@ -210,3 +210,5 @@
 - E2E home-swap bisa gagal saat /proses belum terkompilasi → curl dulu.
 - DEC-122: successText(turn, dest, filled) + failText(turn, reply) di VoiceAssistant; VoiceFill.run mengembalikan FilledField[] (tipe di voiceClient) dan memanggil detail.done.
 - DEC-123: OpenRouter (server/labAi.ts, models fallback array) — secret Vercel tidak bisa ditarik lokal (`vercel env run` → kosong), jadi uji pakai fetch tiruan. Template Canva owner = design DAHYnsV6Y0k "Infografik Manglar - Editable" (link canva.com/d/… butuh login; ditemukan via search-designs). officeExport: masthead()/sideLabel() + TAUPE/BAR.
+- DEC-125: labAiFilter (STRIP sebelum pecah kalimat — "You have 9760.keys" memuat titik). Python heredoc: `\n` di string biasa jadi newline asli → tulis skrip ke file / pakai raw string.
+- DEC-126: OptionWheel (prop selected terkendali + itemTestId lab-tab-*), GabungTab, playClip; tts.wav owner ber-header streaming (panjang 0xFFFFFFFF) → ditulis ulang. Canva connector sempat terputus (perlu disambung ulang owner).

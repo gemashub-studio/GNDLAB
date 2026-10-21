@@ -201,6 +201,25 @@ export async function speakLong(text: string, voice?: TtsVoice): Promise<void> {
   }
 }
 
+/** Putar berkas suara (mis. rekaman owner di public/sounds, DEC-126); selesai saat audio selesai / dihentikan. */
+export async function playClip(url: string): Promise<void> {
+  const gen = ++speakGen;
+  current?.pause();
+  const audio = new Audio(url);
+  current = audio;
+  try {
+    await new Promise<void>((resolve) => {
+      audio.onended = () => resolve();
+      audio.onerror = () => resolve();
+      audio.onpause = () => resolve();
+      if (gen !== speakGen) return resolve();
+      audio.play().catch(() => resolve());
+    });
+  } finally {
+    if (current === audio) current = null;
+  }
+}
+
 /** Pecah teks per kalimat menjadi potongan ≤ max karakter; kalimat yang terlalu panjang dipecah di koma/spasi. */
 export function splitTts(text: string, max = 280): string[] {
   const t = text.replace(/\s+/g, ' ').trim();

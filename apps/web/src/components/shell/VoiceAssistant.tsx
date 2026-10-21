@@ -4,11 +4,10 @@ import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { ElectricBorder } from '@/components/ui/ElectricBorder';
-import { authHeader, speak, speakLong, startSegmenter, stopSpeaking, transcribe, VOICE_FORM_EVENT, type FilledField } from '@/lib/voiceClient';
+import { authHeader, playClip, speak, startSegmenter, stopSpeaking, transcribe, VOICE_FORM_EVENT, type FilledField } from '@/lib/voiceClient';
 import { CoconutMascot, type MascotMood } from './CoconutMascot';
 import { ttsText } from '@/lib/ttsText';
-import { askLabAI } from '@/lib/labAi';
-import { answerTts, looksLikeQuestion, VOICE_ASK_HINT, voiceAnswer } from '@/lib/voiceAnswer';
+import { looksLikeQuestion } from '@/lib/voiceAnswer';
 
 interface Plan {
   actions: ({ type: 'navigate'; target: string } | { type: 'click'; target: string } | { type: 'fill'; text: string } | { type: 'ask'; text: string })[];
@@ -42,6 +41,10 @@ export function successText(turn: number, dest?: string, filled: readonly Filled
   if (d && turn % 2 === 1) return `Berikutnya ${d}!`;
   return SUCCESS_LINES[Math.floor(d ? turn / 2 : turn) % SUCCESS_LINES.length]!;
 }
+
+/** Pertanyaan ke asisten kelapa → rekaman suara owner (public/sounds) + teks yang sama di layar (DEC-126). */
+export const ASK_REDIRECT_CLIP = '/sounds/tanya-lab-ai.wav';
+export const ASK_REDIRECT_TEXT = 'Aduh! Bukannya aku gak bisa jawab, tapi peranku hanya perintah navigasi cepat. Mungkin kamu bisa pergi ke menu Tanya Lab AI pada halaman GnD Lab.';
 
 export const MENU_MISSING = 'Menu itu ga ada, katakan menu yang tersedia!';
 export const NOT_UNDERSTOOD_LINES = ['Hahaha! Kamu bilang apa?', 'Aku ga paham, katakan sesuatu tentang website ini!!!', 'HAHAHA!! aku ga paham apa yang kamu bilang, tau..'] as const;
@@ -156,14 +159,11 @@ export function VoiceAssistant({ show, userKey, pages }: { show: boolean; userKe
   // suara jawaban (TTS Groq Orpheus "autumn", DEC-115): mikrofon dibisukan selama & sesaat setelah asisten berbicara
   const talking = useRef(0);
   const mutedUntil = useRef(0);
-  const say = useCallback((text: string, answer = false) => {
-    // teks khusus suara: tanda baca untuk intonasi, "maaf" → "ma ap" (layar tetap memakai teks asli), DEC-116;
-    // answer = jawaban Lab AI yang sudah disiapkan untuk TTS (DEC-123): suara Austin, diputar per potongan (DEC-125)
-    const t = answer ? text.trim() : ttsText(text);
-    if (!t) return Promise.resolve();
+  /** Putar suara (TTS / rekaman) dengan mikrofon dibisukan selama & sesaat sesudahnya. */
+  const talk = useCallback((play: () => Promise<void>) => {
     talking.current++;
     setMood('talking');
-    return (answer ? speakLong(t, 'austin') : speak(t))
+    return play()
       .catch((e: unknown) => console.warn('[tts]', e))
       .finally(() => {
         talking.current--;
@@ -171,10 +171,17 @@ export function VoiceAssistant({ show, userKey, pages }: { show: boolean; userKe
         if (!talking.current) setMood(stopRef.current ? 'listening' : 'idle');
       });
   }, []);
+  const say = useCallback(
+    (text: string) => {
+      // teks khusus suara: tanda baca untuk intonasi, "maaf" → "ma ap" (layar tetap memakai teks asli), DEC-116
+      const t = ttsText(text);
+      return t ? talk(() => speak(t)) : Promise.resolve();
+    },
+    [talk],
+  );
   const endSpark = useCallback(() => setSpark(undefined), []);
   const okTurn = useRef(0);
   const failTurn = useRef(0);
-  const askTurn = useRef(0);
   const filled = useRef<FilledField[]>([]);
   const lastCmd = useRef(Date.now());
   // tooltip "Harap tutup fitur ini…" (✕ menyembunyikannya sampai halaman dimuat ulang), DEC-118
@@ -282,15 +289,12 @@ export function VoiceAssistant({ show, userKey, pages }: { show: boolean; userKe
         const j = (await res.json().catch(() => ({}))) as Partial<Plan> & { error?: string };
         if (!res.ok) throw new Error(j.error ?? `Asisten gagal (${res.status}).`);
         const plan: Plan = { actions: j.actions ?? [], reply: j.reply ?? '' };
-        // pertanyaan pengetahuan (mis. "apa itu kopra?") → Lab AI → paragraf pertama + pertanyaan lanjutan (DEC-123)
-        const ask = plan.actions[0]?.type === 'ask' ? plan.actions[0].text : !plan.actions.length && looksLikeQuestion(t) ? t : undefined;
+        // pertanyaan (mis. "apa itu kopra?") → bukan tugas asisten navigasi: putar rekaman suara owner yang mengarahkan
+        // ke menu Tanya Lab AI (DEC-126; jawaban + suara pertanyaan pindah ke Tanya Lab AI)
+        const ask = plan.actions[0]?.type === 'ask' || (!plan.actions.length && looksLikeQuestion(t));
         if (ask) {
-          setStatus('Sebentar, aku cari jawabannya…');
-          const ans = voiceAnswer(await askLabAI(`${ask}
-
-${VOICE_ASK_HINT}`), askTurn.current++);
-          setStatus(ans.text);
-          void say(answerTts(ans.first, ans.question), true);
+          setStatus(ASK_REDIRECT_TEXT);
+          void talk(() => playClip(ASK_REDIRECT_CLIP));
         } else if (!plan.actions.length) {
           // tidak dikenali / menu tidak ada: kalimat owner (DEC-122) + penjelasan perencana di layar
           const msg = failText(failTurn.current++, plan.reply);

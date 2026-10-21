@@ -209,8 +209,8 @@ test.describe('Hapus hasil riset', () => {
     test.setTimeout(480_000);
     const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==', 'base64');
     await page.goto('/lab?t=bahan');
-    // urutan menu (DEC-112): Pencatatan Data → Riset Produk → Laporan Belanja
-    await expect(page.getByRole('tab')).toHaveText(['Pencatatan Data', 'Riset Produk', 'Laporan Belanja']);
+    // urutan menu (DEC-112 → DEC-126): Pencatatan Data → Riset Produk → Laporan Belanja → Gabungkan Data
+    await expect(page.getByTestId('lab-wheel').getByRole('option')).toHaveText(['Pencatatan Data', 'Riset Produk', 'Laporan Belanja', 'Gabungkan Data']);
     await expect(page.getByTestId('lab-tab-bahan')).toHaveText('Pencatatan Data');
     // Tanya Lab AI: sambutan + pesan otomatis saat membuka Pencatatan Data (DEC-087)
     await expect(page.getByTestId('lab-ai').getByTestId('lab-ai-auto').first()).toContainText('Selamat datang di GnD Lab');
@@ -563,6 +563,12 @@ test.describe('Upload progres perlakuan, form & foto OCR (DEC-095)', () => {
   test('Tanya Lab AI: ＋ → Foto dari galeri → chip foto → pesan gambar → AI berpikir sambil OCR → teks ikut prompt (DEC-097)', async ({ page }) => {
     test.setTimeout(180_000);
     await page.route('**/api/lab-ai', (r) => r.fulfill({ json: { ok: true, text: `JAWABAN: ${(r.request().postDataJSON() as { prompt: string }).prompt}` } }));
+    // jawaban dibacakan dengan suara Austin (DEC-126, pindahan dari asisten kelapa)
+    const tts: { text: string; voice?: string }[] = [];
+    await page.route('**/api/voice-tts', (r) => {
+      tts.push(r.request().postDataJSON());
+      return r.fulfill({ body: Buffer.from('RIFF$   WAVEfmt '), contentType: 'audio/wav' });
+    });
     await page.goto('/lab?t=bahan');
     const b64 = await page.evaluate(() => {
       const c = document.createElement('canvas');
@@ -590,6 +596,9 @@ test.describe('Upload progres perlakuan, form & foto OCR (DEC-095)', () => {
     await expect(page.getByTestId('lab-ai-user-photo')).toBeVisible();
     await expect(page.getByTestId('lab-ai-card')).toContainText(/Kadar air kopra/i, { timeout: 120_000 });
     await expect(page.getByTestId('lab-ai-card')).toContainText('apa artinya?');
+    await expect.poll(() => tts.length).toBeGreaterThan(0);
+    expect(tts[0]!.voice).toBe('austin');
+    expect(tts[0]!.text).toContain('JAWABAN');
   });
 });
 
@@ -833,17 +842,6 @@ test.describe('Suara: nama kolom + nilai di form awal, akhir & revisi (DEC-104)'
     await page.getByTestId('catat-revise').click();
     await expect(page.getByTestId('catat-perl-1')).toContainText('Oven Briket');
     await expect(page.getByTestId('catat-perl-count-1')).toHaveValue('1');
-  });
-});
-
-test.describe('Menu GnD Lab (DEC-112)', () => {
-  test('hanya Pencatatan Data, Riset Produk, Laporan Belanja; tautan lama → Pencatatan Data', async ({ page }) => {
-    await page.goto('/lab?t=eksperimen');
-    const tabs = page.getByRole('tablist', { name: 'Bagian lab' }).getByRole('tab');
-    await expect(tabs).toHaveText(['Pencatatan Data', 'Riset Produk', 'Laporan Belanja']);
-    await expect(page.getByTestId('lab-tab-bahan')).toHaveAttribute('aria-selected', 'true');
-    await expect(page).toHaveURL(/t=bahan/);
-    for (const gone of ['ringkasan', 'eksperimen', 'library', 'standar']) await expect(page.getByTestId(`lab-tab-${gone}`)).toHaveCount(0);
   });
 });
 

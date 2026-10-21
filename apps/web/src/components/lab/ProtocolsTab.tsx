@@ -77,7 +77,7 @@ const KIND_LABEL: Record<ExportKind, string> = { pdf: 'PDF', docx: 'Word', pptx:
 const KINDS: ExportKind[] = ['pdf', 'docx', 'pptx', 'html'];
 
 /** Video asli dari media laporan → ditanam di PowerPoint (DEC-073). */
-async function reportVideos(report: import('@/lib/researchReport').ResearchReport, media: MediaItem[]) {
+export async function reportVideos(report: import('@/lib/researchReport').ResearchReport, media: MediaItem[]) {
   const ids = new Set(report.blocks.flatMap((b) => b.images.filter((i) => i.video && i.mediaId).map((i) => i.mediaId!)));
   const out = new Map<string, import('@/lib/officeExport').VideoFile>();
   for (const m of media) {

@@ -5,6 +5,10 @@ import { Camera01Icon, DropletIcon, Fire02Icon, ImageUploadIcon, Leaf01Icon, Not
 import { PromptBar, type PromptSendMeta } from '@/components/ui/PromptBar';
 import { ocrPhoto, prepPhoto } from '@/lib/photoOcr';
 import { answerCards, askLabAI, buildLabPrompt, withOcrText, CATAT_HINT, LAB_COMMANDS, LAB_EFFORTS, LAB_TOPICS, labGreeting, MAX_PROMPT } from '@/lib/labAi';
+import { answerTts, voiceAnswer } from '@/lib/voiceAnswer';
+
+/** Suara jawaban Tanya Lab AI (DEC-126, pindahan dari asisten kelapa): aktif bawaan, bisa dimatikan. */
+const VOICE_KEY = 'gnd-labai:voice';
 
 interface Msg {
   role: 'ai' | 'user';
@@ -32,6 +36,36 @@ interface Photo {
 export function AskLabAI({ tab, username }: { tab: string; username?: string }) {
   const [msgs, setMsgs] = useState<Msg[]>(() => [{ role: 'ai', text: labGreeting(username), auto: true }]);
   const [busy, setBusy] = useState(false);
+  const [voiceOn, setVoiceOn] = useState(true);
+  const voiceRef = useRef(true);
+  const answerN = useRef(0);
+  useEffect(() => {
+    try {
+      const v = localStorage.getItem(VOICE_KEY) !== 'off';
+      setVoiceOn(v);
+      voiceRef.current = v;
+    } catch {
+      // penyimpanan diblokir → suara tetap aktif
+    }
+    return () => void import('@/lib/voiceClient').then((m) => m.stopSpeaking());
+  }, []);
+  const toggleVoice = () => {
+    const v = !voiceRef.current;
+    voiceRef.current = v;
+    setVoiceOn(v);
+    try {
+      localStorage.setItem(VOICE_KEY, v ? 'on' : 'off');
+    } catch {
+      // abaikan
+    }
+    if (!v) void import('@/lib/voiceClient').then((m) => m.stopSpeaking());
+  };
+  /** Bacakan jawaban: paragraf pertama + pertanyaan lanjutan, koma bertanda seru, suara Austin (DEC-123/125/126). */
+  const speakAnswer = (answer: string) => {
+    if (!voiceRef.current) return;
+    const a = voiceAnswer(answer, answerN.current++);
+    void import('@/lib/voiceClient').then((m) => m.speakLong(answerTts(a.first, a.question), 'austin')).catch(() => undefined);
+  };
   const hinted = useRef(false);
   const list = useRef<HTMLDivElement>(null);
   // sapaan memakai username begitu status login terbaca
@@ -104,6 +138,8 @@ export function AskLabAI({ tab, username }: { tab: string; username?: string }) 
     setBusy(true);
     const ctl = new AbortController();
     controller.current = ctl;
+    // pertanyaan baru → hentikan suara jawaban sebelumnya
+    void import('@/lib/voiceClient').then((m) => m.stopSpeaking());
     try {
       let ocr: string[] = [];
       if (pics.length) {
@@ -128,6 +164,7 @@ export function AskLabAI({ tab, username }: { tab: string; username?: string }) 
       const a = await askLabAI(withOcrText(buildLabPrompt(question, meta.effort), ocr), 45_000, ctl.signal);
       // mode Mendalam: maks. 4 paragraf per kartu (lainnya 2)
       setMsgs((m) => [...m, { role: 'ai', text: a, perCard: meta.effort === 'Mendalam' ? 4 : 2 }]);
+      speakAnswer(a);
     } catch (e) {
       setMsgs((m) => [...m, { role: 'ai', text: e instanceof Error ? e.message : String(e), error: true }]);
     } finally {
@@ -167,7 +204,12 @@ export function AskLabAI({ tab, username }: { tab: string; username?: string }) 
           </span>
           Tanya Lab AI
         </h2>
-        <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-muted">jawaban AI · periksa ulang sebelum dipakai</span>
+        <span className="flex items-center gap-2">
+          <button type="button" onClick={toggleVoice} aria-pressed={voiceOn} className={`rounded-full border px-2.5 py-1 font-mono text-[10px] uppercase tracking-[0.1em] ${voiceOn ? 'border-ink bg-ink text-acid' : 'border-ink/20 text-muted'}`} data-testid="lab-ai-voice">
+            {voiceOn ? '🔊 Suara jawaban' : '🔇 Suara mati'}
+          </button>
+          <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-muted">jawaban AI · periksa ulang sebelum dipakai</span>
+        </span>
       </div>
       <div ref={list} className="flex max-h-72 flex-col gap-2 overflow-y-auto pr-1" aria-live="polite" data-testid="lab-ai-msgs">
         {msgs.map((m, i) => (
