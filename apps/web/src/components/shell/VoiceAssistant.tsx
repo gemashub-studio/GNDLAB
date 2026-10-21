@@ -21,6 +21,19 @@ const LAB_TABS = [
 /** Tombol yang tidak boleh ditekan asisten (hapus data, keluar akun, konfirmasi berbahaya). */
 const DANGER = /hapus|delete|del-|logout|keluar|sign-?out|remove|finish-ok|confirm-ok|va-/i;
 const ROW_FIELDS = ['berat awal', 'volume air', 'berat air', 'tebal daging', 'berat akhir', 'tebal akhir'];
+/** Kartu kelapa ditutup otomatis bila tidak menerima perintah selama 10 menit (DEC-118). */
+export const IDLE_CLOSE_MS = 10 * 60_000;
+export const TIP_TEXT = 'Harap tutup fitur ini jika sudah menggunakannya.';
+
+/**
+ * Teks respons sukses (DEC-118): bergantian "Sudah!" ↔ "Berikutnya <tujuan>!" (mis. "Berikutnya halaman gudang!").
+ * Tanpa tujuan (mis. hanya mengisi form) → selalu "Sudah!".
+ */
+export function successText(turn: number, dest?: string): string {
+  const d = dest?.replace(/GnD Lab · /, '').replace(/[.!?…]+$/, '').trim().toLowerCase();
+  return d && turn % 2 === 1 ? `Berikutnya ${d}!` : 'Sudah!';
+}
+
 /** Lama diam yang dianggap ucapan selesai — asisten menunggu kalimat perintah selesai (DEC-111). */
 const ASSISTANT_SILENCE_MS = 1300;
 
@@ -141,6 +154,10 @@ export function VoiceAssistant({ show, userKey, pages }: { show: boolean; userKe
       });
   }, []);
   const endSpark = useCallback(() => setSpark(undefined), []);
+  const okTurn = useRef(0);
+  const lastCmd = useRef(Date.now());
+  // tooltip "Harap tutup fitur ini…" (✕ menyembunyikannya sampai halaman dimuat ulang), DEC-118
+  const [tip, setTip] = useState(true);
   const allPages = [...pages, ...LAB_TABS.map(([t, label]) => ({ href: `/lab?t=${t}`, label }))];
   const pagesRef = useRef(allPages);
   pagesRef.current = allPages;
@@ -165,13 +182,14 @@ export function VoiceAssistant({ show, userKey, pages }: { show: boolean; userKe
   };
 
   const execute = useCallback(
-    async (plan: Plan) => {
+    async (plan: Plan): Promise<string | undefined> => {
       const before = openDialog();
       let navigated = false;
+      let dest: string | undefined;
       for (const a of plan.actions) {
         if (a.type === 'navigate') navigated = true;
         if (a.type === 'navigate') {
-          setStatus(`${plan.reply} (membuka halaman…)`);
+          dest = `halaman ${pagesRef.current.find((x) => x.href === a.target)?.label ?? a.target}`;
           const tab = /^\/lab\?t=(\w+)$/.exec(a.target)?.[1];
           if (tab) {
             // tab GnD Lab: buka /lab dulu (bila perlu), lalu klik tabnya — halaman lab membaca ?t= hanya saat dimuat
@@ -193,7 +211,7 @@ export function VoiceAssistant({ show, userKey, pages }: { show: boolean; userKe
             return x && visible(x) && !(x as HTMLButtonElement).disabled ? x : null;
           }, 30_000);
           if (!el) throw new Error(`Tombol “${a.target}” tidak ditemukan di layar.`);
-          setStatus(plan.reply);
+          dest = (el.getAttribute('aria-label') || el.innerText || '').replace(/^\+\s*/, '').trim() || dest;
           el.scrollIntoView({ block: 'center', behavior: 'smooth' });
           el.click();
           await sleep(350);
@@ -210,6 +228,7 @@ export function VoiceAssistant({ show, userKey, pages }: { show: boolean; userKe
         showTop(opened);
         setSpark(opened);
       } else if (navigated) window.scrollTo({ top: 0, behavior: 'smooth' });
+      return dest;
     },
     [router],
   );
@@ -224,6 +243,7 @@ export function VoiceAssistant({ show, userKey, pages }: { show: boolean; userKe
         return;
       }
       setHeard(t);
+      lastCmd.current = Date.now();
       setMood('thinking');
       // tampil di layar saja — tidak diucapkan; TTS hanya untuk respons berhasil / gagal (DEC-117)
       setStatus('Sebentar, aku proses…');
@@ -232,11 +252,17 @@ export function VoiceAssistant({ show, userKey, pages }: { show: boolean; userKe
         const j = (await res.json().catch(() => ({}))) as Partial<Plan> & { error?: string };
         if (!res.ok) throw new Error(j.error ?? `Asisten gagal (${res.status}).`);
         const plan: Plan = { actions: j.actions ?? [], reply: j.reply ?? '' };
-        setMood('talking');
-        setStatus(plan.reply);
-        // jawaban (termasuk "maaf, aku belum paham…" bila perintah tidak dikenali) diucapkan sambil aksi berjalan
-        void say(plan.reply);
-        await execute(plan);
+        if (!plan.actions.length) {
+          // tidak dikenali / ditolak: tampilkan & ucapkan jawaban perencana
+          setStatus(plan.reply);
+          void say(plan.reply);
+        } else {
+          const dest = await execute(plan);
+          // sukses: "Sudah!" bergantian dengan "Berikutnya halaman …!" (teks & suara), DEC-118
+          const msg = successText(okTurn.current++, dest);
+          setStatus(msg);
+          void say(msg);
+        }
         setErr('');
       } catch (e) {
         const msg = e instanceof Error ? e.message : String(e);
@@ -282,6 +308,7 @@ export function VoiceAssistant({ show, userKey, pages }: { show: boolean; userKe
       setErr(`${e instanceof Error ? e.message : String(e)} Kamu tetap bisa mengetik perintah di bawah.`);
     }
   };
+  const closeIdle = useRef(() => {});
   const stop = () => {
     stopSpeaking();
     stopRef.current?.();
@@ -290,14 +317,23 @@ export function VoiceAssistant({ show, userKey, pages }: { show: boolean; userKe
     setMood('idle');
     setStatus('');
   };
+  closeIdle.current = stop;
   useEffect(() => () => stopRef.current?.(), []);
+  useEffect(() => {
+    if (!on) return;
+    lastCmd.current = Date.now();
+    const id = window.setInterval(() => {
+      if (Date.now() - lastCmd.current >= IDLE_CLOSE_MS) closeIdle.current();
+    }, 15_000);
+    return () => window.clearInterval(id);
+  }, [on]);
 
   if (!show) return null;
   const sparkEl = spark ? <VoiceSpark target={spark} onDone={endSpark} /> : null;
 
   if (intro)
     return (
-      <div className="sheet-up fixed bottom-5 right-4 z-[75] flex w-[min(340px,calc(100vw-2rem))] flex-col items-center gap-3 rounded-3xl border border-acid/40 bg-surface p-5 text-center shadow-2xl" role="dialog" aria-labelledby="va-intro-t" data-testid="va-intro">
+      <div className="sheet-up fixed bottom-5 right-4 z-[96] flex w-[min(340px,calc(100vw-2rem))] flex-col items-center gap-3 rounded-3xl border border-acid/40 bg-surface p-5 text-center shadow-2xl" role="dialog" aria-labelledby="va-intro-t" data-testid="va-intro">
         <CoconutMascot size={92} mood="talking" />
         <p id="va-intro-t" className="font-display text-lg font-semibold leading-snug">Mau mulai bersama ku?</p>
         <p className="text-sm text-muted">Ucapkan apa saja mengenai pengerjaan data dan menu — aku bisa lakukan itu via perintah suara.</p>
@@ -331,20 +367,37 @@ export function VoiceAssistant({ show, userKey, pages }: { show: boolean; userKe
       </div>
     );
 
+  const tipEl = tip ? (
+    <div className="flex max-w-[260px] items-start gap-2 rounded-2xl bg-ink px-3 py-2 text-xs leading-snug text-paper shadow-lg" role="note" data-testid="va-tip">
+      <span>{TIP_TEXT}</span>
+      <button type="button" className="-mr-1 -mt-0.5 inline-flex h-5 w-5 flex-none items-center justify-center rounded-full text-[11px] text-muted-ink hover:bg-white/10 hover:text-paper" onClick={() => setTip(false)} aria-label="Tutup petunjuk" data-testid="va-tip-close">
+        ✕
+      </button>
+    </div>
+  ) : null;
+
   if (!on)
     return (
       <>
       {sparkEl}
-      <button type="button" className="fixed bottom-5 right-4 z-[70] rounded-full bg-surface p-1.5 shadow-xl ring-1 ring-ink/10 transition hover:scale-105" onClick={() => void start()} aria-label="Mulai asisten suara" title="Asisten suara" data-testid="va-fab">
-        <CoconutMascot size={dismissed ? 46 : 52} mood="idle" />
-      </button>
+      {/* kartu kelapa selalu DI ATAS bingkai listrik modal (z-index lebih tinggi), DEC-118 */}
+      <div className="fixed bottom-5 right-4 z-[96] flex flex-col items-end gap-2">
+        {tipEl}
+        <button type="button" className="rounded-full bg-surface p-1.5 shadow-xl ring-1 ring-ink/10 transition hover:scale-105" onClick={() => void start()} aria-label="Mulai asisten suara" title="Asisten suara" data-testid="va-fab">
+          <CoconutMascot size={dismissed ? 46 : 52} mood="idle" />
+        </button>
+      </div>
       </>
     );
 
   return (
     <>
     {sparkEl}
-    <div className="fixed bottom-5 right-4 z-[75] flex w-[min(340px,calc(100vw-2rem))] flex-col gap-2 rounded-3xl border border-acid/50 bg-surface p-3 shadow-2xl" role="status" aria-live="polite" data-testid="va-panel">
+    <div className="fixed bottom-5 right-4 z-[96] flex w-[min(340px,calc(100vw-2rem))] flex-col items-end gap-2">
+    {tipEl}
+    {/* kartu kelapa aktif dengan bingkai listrik (DEC-118) */}
+    <ElectricBorder color="#63E6CF" speed={1} chaos={1.5} spread={0.6} strands={3} thickness={1.5} borderRadius={24} interactive={false} className="w-full" data-testid="va-panel-spark">
+    <div className="flex w-full flex-col gap-2 rounded-3xl border border-acid/50 bg-surface p-3 shadow-2xl" role="status" aria-live="polite" data-testid="va-panel">
       <div className="flex items-start gap-3">
         <CoconutMascot size={60} mood={mood} />
         <div className="min-w-0 flex-1">
@@ -371,6 +424,8 @@ export function VoiceAssistant({ show, userKey, pages }: { show: boolean; userKe
         data-enter-skip
       />
       {err && <p className="text-xs" role="alert"><span className="bg-safety px-1">{err}</span></p>}
+    </div>
+    </ElectricBorder>
     </div>
     </>
   );

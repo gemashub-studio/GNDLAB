@@ -43,3 +43,14 @@ describe('asisten suara kelapa: penyaring rencana (DEC-111)', () => {
     expect(s).toContain('nomor <angka dalam kata>');
   });
 });
+
+describe('teks sukses asisten (DEC-118)', () => {
+  it('"Sudah!" bergantian dengan "Berikutnya <tujuan>!"; tanpa tujuan selalu "Sudah!"', async () => {
+    const { successText, IDLE_CLOSE_MS } = await import('@/components/shell/VoiceAssistant');
+    expect(successText(0, 'halaman Gudang')).toBe('Sudah!');
+    expect(successText(1, 'halaman Gudang')).toBe('Berikutnya halaman gudang!');
+    expect(successText(3, 'halaman GnD Lab · Pencatatan Data')).toBe('Berikutnya halaman pencatatan data!');
+    expect(successText(1, undefined)).toBe('Sudah!');
+    expect(IDLE_CLOSE_MS).toBe(600_000);
+  });
+});

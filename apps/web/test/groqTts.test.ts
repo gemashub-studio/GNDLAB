@@ -54,6 +54,8 @@ describe('teks khusus TTS: tanda baca & "ma ap" (DEC-116)', () => {
     expect(ttsText('Siap. Formnya sudah terbuka.')).toBe('Siap, Formnya sudah terbuka!');
     expect(ttsText('Mau aku isi sekarang')).toBe('Mau aku isi sekarang?');
     expect(ttsText('Berapa jumlah itemnya?')).toBe('Berapa jumlah itemnya?');
+    expect(ttsText('Sudah!')).toBe('Sudah!');
+    expect(ttsText('Berikutnya halaman gudang!')).toBe('Berikutnya halaman gudang!');
     expect(ttsText('Membuka halaman…')).toBe('Membuka halaman!');
     expect(ttsText('   ')).toBe('');
   });
@@ -73,3 +75,20 @@ describe('saring halusinasi Whisper (DEC-117)', () => {
   });
 });
 
+
+describe('angka di TTS diucapkan dengan kata (DEC-118)', () => {
+  it('bulat, ribuan, desimal, persen, satuan', async () => {
+    const { angkaKata, numbersToWords } = await import('@/lib/ttsText');
+    expect(angkaKata(15)).toBe('lima belas');
+    expect(angkaKata(1034)).toBe('seribu tiga puluh empat');
+    expect(angkaKata(250)).toBe('dua ratus lima puluh');
+    expect(angkaKata(11)).toBe('sebelas');
+    expect(angkaKata(2026)).toBe('dua ribu dua puluh enam');
+    expect(angkaKata(0)).toBe('nol');
+    expect(numbersToWords('Jumlah produksi 15 item')).toBe('Jumlah produksi lima belas item');
+    expect(numbersToWords('berat 1.034 g, tebal 6,5 mm')).toBe('berat seribu tiga puluh empat gram, tebal enam koma lima milimeter');
+    expect(numbersToWords('naik 25%')).toBe('naik dua puluh lima persen');
+    expect(ttsText('Mengisi nomor 2 dengan 1034.')).toBe('Mengisi nomor dua dengan seribu tiga puluh empat!');
+    expect(ttsText('Batas pemakaian Groq tercapai (429).')).not.toMatch(/\d/);
+  });
+});

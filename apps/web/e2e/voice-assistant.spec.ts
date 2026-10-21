@@ -77,7 +77,8 @@ test('Ayo → "buka pencatatan data lalu buat catatan baru" → form terbuka →
   // bingkai listrik terus menyala selama modal terbuka (DEC-114)
   await page.waitForTimeout(6000);
   await expect(page.getByTestId('va-spark')).toBeVisible();
-  await expect(panel.getByTestId('va-status')).toContainText('Buka pencatatan data');
+  // sukses → "Sudah!" bergantian dengan "Berikutnya …!" (DEC-118)
+  await expect(panel.getByTestId('va-status')).toHaveText('Sudah!');
   expect(sent[0]!.ctx.path).toBe('/');
   await say('jumlah itemnya dua, perlakuannya green house sebanyak dua');
   await expect(m.getByTestId('catat-count')).toHaveValue('2');
@@ -97,7 +98,8 @@ test('Ayo → "buka pencatatan data lalu buat catatan baru" → form terbuka →
   await expect.poll(() => spoken).toContain('ma ap, aku masih belum paham, coba ucapkan lagi ya!');
   // "sebentar aku proses" hanya di layar, tidak diucapkan (DEC-117)
   expect(spoken.some((t) => /sebentar/i.test(t))).toBe(false);
-  expect(spoken).toContain('Buka pencatatan data dan membuat catatan baru!');
+  expect(spoken).toContain('Sudah!');
+  expect(spoken.join(' ')).not.toMatch(/\d/);
   // tombol berbahaya tidak pernah dikirim ke perencana
   expect(sent.flatMap((s) => s.ctx.buttons.map((b) => b.id)).some((id) => /delete|hapus|logout/i.test(id))).toBe(false);
   await expect(page.getByTestId('va-spark')).toBeVisible();
@@ -109,3 +111,37 @@ test('Ayo → "buka pencatatan data lalu buat catatan baru" → form terbuka →
   await expect(m).toHaveCount(0);
   await expect(page.getByTestId('va-spark')).toHaveCount(0);
 });
+
+test('tooltip "Harap tutup fitur ini…" bisa ditutup; kartu aktif berbingkai listrik di atas bingkai modal; tutup otomatis 10 menit tanpa perintah', async ({ page }) => {
+  test.setTimeout(180_000);
+  await force(page);
+  await page.clock.install();
+  await page.addInitScript(() => window.localStorage.setItem('gnd-va:local', 'nanti'));
+  await page.goto('/gudang');
+  await expect(page.getByTestId('va-tip')).toHaveText(/Harap tutup fitur ini jika sudah menggunakannya\./);
+  await page.getByTestId('va-fab').click();
+  const panel = page.getByTestId('va-panel');
+  await expect(panel).toBeVisible();
+  await expect(page.getByTestId('va-tip')).toBeVisible();
+  await expect(page.getByTestId('va-panel-spark').locator('canvas')).toHaveCount(1);
+  // kartu kelapa di atas lapisan bingkai listrik modal
+  const z = await page.evaluate(() => {
+    const card = document.querySelector('[data-testid="va-panel"]')!.closest('.fixed') as HTMLElement;
+    const probe = document.createElement('div');
+    probe.className = 'voice-spark';
+    document.body.appendChild(probe);
+    const r = [Number(getComputedStyle(card).zIndex), Number(getComputedStyle(probe).zIndex)];
+    probe.remove();
+    return r;
+  });
+  expect(z[0]).toBeGreaterThan(z[1]!);
+  await page.getByTestId('va-tip-close').click();
+  await expect(page.getByTestId('va-tip')).toHaveCount(0);
+  // 9 menit: masih terbuka; 10 menit tanpa perintah: ditutup otomatis
+  await page.clock.fastForward('09:00');
+  await expect(panel).toBeVisible();
+  await page.clock.fastForward('01:30');
+  await expect(panel).toHaveCount(0);
+  await expect(page.getByTestId('va-fab')).toBeVisible();
+});
+
