@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { startSegmenter, transcribe, VOICE_FORM_EVENT } from '@/lib/voiceClient';
+import { startSegmenter, transcribe, VOICE_FORM_EVENT, type FilledField } from '@/lib/voiceClient';
 import { applyVoice, matchOption, normalize, parseVoice, type VoiceCursor, type VoiceField } from '@/lib/voiceFill';
 
 /** Kolom lain di form yang bisa diisi "nama kolom + nilai" (atribut data-voice-name, DEC-104). */
@@ -73,7 +73,9 @@ export function VoiceFill({ fields, rowCount, inputId, onFill, testId }: { field
     async (text: string) => {
       const { fields: f, rowCount: n, onFill: fill } = latest.current;
       setHeard(text);
-      if (!text.trim()) return;
+      // kolom yang terisi → dilaporkan ke asisten kelapa untuk respons "<kolom>, <nilai>!" (DEC-122)
+      const done: FilledField[] = [];
+      if (!text.trim()) return done;
       const msgs: string[] = [];
       const root: ParentNode = box.current?.closest('[role="dialog"]') ?? document;
       const extra = formFields(root);
@@ -95,10 +97,12 @@ export function VoiceFill({ fields, rowCount, inputId, onFill, testId }: { field
             await new Promise((r) => window.setTimeout(r, 60));
             root.querySelector<HTMLElement>(`[data-testid="${CSS.escape(`${tid}-opt-${opt.value || 'none'}`)}"]`)?.click();
             msgs.push(`${xf.label} = ${opt.label}`);
+            done.push({ label: xf.label, value: opt.label, num: false });
           } else {
             const v = xf.kind === 'number' ? cmd.value.replace(/,\d+$/, '') : cmd.value;
             setNativeValue(el as HTMLInputElement, v);
             msgs.push(`${xf.label} = ${v}`);
+            done.push({ label: xf.label, value: v, num: xf.kind === 'number' });
           }
           flash(el);
           continue;
@@ -108,13 +112,16 @@ export function VoiceFill({ fields, rowCount, inputId, onFill, testId }: { field
         cur.current = r.cur;
         if (r.fill) {
           fill(r.fill.row, r.fill.field, r.fill.value);
-          msgs.push(`#${r.fill.row} ${f.find((x) => x.key === r.fill!.field)?.label ?? r.fill.field} = ${r.fill.value}`);
+          const label = f.find((x) => x.key === r.fill!.field)?.label ?? r.fill.field;
+          msgs.push(`#${r.fill.row} ${label} = ${r.fill.value}`);
+          done.push({ label, value: r.fill.value, num: true });
         } else if ((cmd.kind === 'row' || cmd.kind === 'num') && !r.error) msgs.push(`Nomor ${r.cur.row}`);
         else if (cmd.kind === 'next' && !r.error) msgs.push(`→ ${f.find((x) => x.key === r.cur.field)?.label} #${r.cur.row}`);
         if (r.error) msgs.push(r.error);
       }
       setNote(msgs.join(' · '));
       if (moved) highlight(cur.current);
+      return done;
     },
     [highlight],
   );
@@ -151,8 +158,8 @@ export function VoiceFill({ fields, rowCount, inputId, onFill, testId }: { field
   // perintah pengisian dari asisten suara kelapa (DEC-111) → dijalankan di form yang sedang terbuka
   useEffect(() => {
     const onCmd = (e: Event) => {
-      const text = (e as CustomEvent<{ text: string }>).detail?.text;
-      if (text) void run(text);
+      const d = (e as CustomEvent<{ text: string; done?: (f: FilledField[]) => void }>).detail;
+      if (d?.text) void run(d.text).then((f) => d.done?.(f), () => d.done?.([]));
     };
     window.addEventListener(VOICE_FORM_EVENT, onCmd);
     return () => window.removeEventListener(VOICE_FORM_EVENT, onCmd);

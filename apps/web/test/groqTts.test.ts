@@ -55,6 +55,12 @@ describe('teks khusus TTS: tanda baca & "ma ap" (DEC-116)', () => {
     expect(ttsText('Mau aku isi sekarang')).toBe('Mau aku isi sekarang?');
     expect(ttsText('Berapa jumlah itemnya?')).toBe('Berapa jumlah itemnya?');
     expect(ttsText('Sudah!')).toBe('Sudah!');
+    // DEC-122: kalimat owner & isi kolom angka diucapkan dengan kata
+    expect(ttsText('Jumlah produksi, 113!')).toBe('Jumlah produksi, seratus tiga belas!');
+    expect(ttsText('Oke, apalagi?')).toBe('Oke, apalagi?');
+    expect(ttsText('Udah!...')).toBe('Udah!');
+    expect(ttsText('HAHAHA!! aku ga paham apa yang kamu bilang, tau..')).toBe('HAHAHA!! aku ga paham apa yang kamu bilang, tau!');
+    expect(ttsText('Hahaha! Kamu bilang apa?')).toBe('Hahaha! Kamu bilang apa?');
     expect(ttsText('Berikutnya halaman gudang!')).toBe('Berikutnya halaman gudang!');
     expect(ttsText('Membuka halaman…')).toBe('Membuka halaman!');
     expect(ttsText('   ')).toBe('');

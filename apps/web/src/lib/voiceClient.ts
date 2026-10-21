@@ -114,6 +114,12 @@ export async function startSegmenter({ onSegment, onLevel, onSpeaking, silenceMs
 
 /** Event global: teks perintah pengisian dari asisten suara → kotak suara form yang sedang terbuka (DEC-111). */
 export const VOICE_FORM_EVENT = 'gnd-voice-form';
+/** Kolom yang diisi form lewat perintah asisten (detail.done), untuk respons "<kolom>, <nilai>!" (DEC-122). */
+export interface FilledField {
+  label: string;
+  value: string;
+  num: boolean;
+}
 
 /** Suara jawaban asisten (DEC-115): teks → WAV dari server (Groq Orpheus, suara Autumn; hening awal dipotong). */
 const ttsCache = new Map<string, Promise<Blob>>();

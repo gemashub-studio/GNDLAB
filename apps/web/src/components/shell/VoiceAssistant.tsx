@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { ElectricBorder } from '@/components/ui/ElectricBorder';
-import { authHeader, speak, startSegmenter, stopSpeaking, transcribe, VOICE_FORM_EVENT } from '@/lib/voiceClient';
+import { authHeader, speak, startSegmenter, stopSpeaking, transcribe, VOICE_FORM_EVENT, type FilledField } from '@/lib/voiceClient';
 import { CoconutMascot, type MascotMood } from './CoconutMascot';
 import { ttsText } from '@/lib/ttsText';
 
@@ -25,13 +25,28 @@ const ROW_FIELDS = ['berat awal', 'volume air', 'berat air', 'tebal daging', 'be
 export const IDLE_CLOSE_MS = 10 * 60_000;
 export const TIP_TEXT = 'Harap tutup fitur ini jika sudah menggunakannya.';
 
+/** Kalimat sukses owner (DEC-122), dipakai bergiliran. */
+export const SUCCESS_LINES = ['Oke, apalagi?', 'Udah!...', 'Oke, udah...', 'Apalagi?', 'Sudah! Apalagi yang bisa aku bantu?'] as const;
+
 /**
- * Teks respons sukses (DEC-118): bergantian "Sudah!" ↔ "Berikutnya <tujuan>!" (mis. "Berikutnya halaman gudang!").
- * Tanpa tujuan (mis. hanya mengisi form) → selalu "Sudah!".
+ * Teks respons sukses (DEC-118 → DEC-122): isi kolom angka → "<nama kolom>, <nilai>!" (mis. "Jumlah produksi, 113!",
+ * diucapkan "seratus tiga belas"). Selain itu kalimat owner bergiliran; ada tujuan (halaman/menu) → giliran ganjil
+ * "Berikutnya <tujuan>!".
  */
-export function successText(turn: number, dest?: string): string {
+export function successText(turn: number, dest?: string, filled: readonly FilledField[] = []): string {
+  const nums = filled.filter((f) => f.num && f.value.trim());
+  if (nums.length) return `${nums.map((f) => `${f.label}, ${f.value}`).join(', ')}!`;
   const d = dest?.replace(/GnD Lab · /, '').replace(/[.!?…]+$/, '').trim().toLowerCase();
-  return d && turn % 2 === 1 ? `Berikutnya ${d}!` : 'Sudah!';
+  if (d && turn % 2 === 1) return `Berikutnya ${d}!`;
+  return SUCCESS_LINES[Math.floor(d ? turn / 2 : turn) % SUCCESS_LINES.length]!;
+}
+
+export const MENU_MISSING = 'Menu itu ga ada, katakan menu yang tersedia!';
+export const NOT_UNDERSTOOD_LINES = ['Hahaha! Kamu bilang apa?', 'Aku ga paham, katakan sesuatu tentang website ini!!!', 'HAHAHA!! aku ga paham apa yang kamu bilang, tau..'] as const;
+/** Respons gagal (DEC-122): menu/halaman tidak ada → MENU_MISSING; selain itu "tidak paham" bergiliran. */
+export function failText(turn: number, reply: string): string {
+  if (/\b(tidak|ga|gak|nggak|enggak|belum) (ada|tersedia)\b|tidak ditemukan/i.test(reply)) return MENU_MISSING;
+  return NOT_UNDERSTOOD_LINES[turn % NOT_UNDERSTOOD_LINES.length]!;
 }
 
 /** Lama diam yang dianggap ucapan selesai — asisten menunggu kalimat perintah selesai (DEC-111). */
@@ -155,6 +170,8 @@ export function VoiceAssistant({ show, userKey, pages }: { show: boolean; userKe
   }, []);
   const endSpark = useCallback(() => setSpark(undefined), []);
   const okTurn = useRef(0);
+  const failTurn = useRef(0);
+  const filled = useRef<FilledField[]>([]);
   const lastCmd = useRef(Date.now());
   // tooltip "Harap tutup fitur ini…" (✕ menyembunyikannya sampai halaman dimuat ulang), DEC-118
   const [tip, setTip] = useState(true);
@@ -218,7 +235,16 @@ export function VoiceAssistant({ show, userKey, pages }: { show: boolean; userKe
         } else if (a.type === 'fill') {
           const box = await waitFor(() => document.querySelector('[role="dialog"] [data-testid$="-voice"]'), 5000);
           if (!box) throw new Error('Belum ada form yang terbuka untuk diisi.');
-          window.dispatchEvent(new CustomEvent(VOICE_FORM_EVENT, { detail: { text: a.text } }));
+          // form melaporkan kolom yang terisi → dipakai untuk respons "<kolom>, <nilai>!" (DEC-122)
+          await new Promise<void>((res) => {
+            const t = window.setTimeout(res, 2500);
+            const done = (f: FilledField[]) => {
+              filled.current.push(...f);
+              window.clearTimeout(t);
+              res();
+            };
+            window.dispatchEvent(new CustomEvent(VOICE_FORM_EVENT, { detail: { text: a.text, done } }));
+          });
           await sleep(250);
         }
       }
@@ -253,13 +279,15 @@ export function VoiceAssistant({ show, userKey, pages }: { show: boolean; userKe
         if (!res.ok) throw new Error(j.error ?? `Asisten gagal (${res.status}).`);
         const plan: Plan = { actions: j.actions ?? [], reply: j.reply ?? '' };
         if (!plan.actions.length) {
-          // tidak dikenali / ditolak: tampilkan & ucapkan jawaban perencana
-          setStatus(plan.reply);
-          void say(plan.reply);
+          // tidak dikenali / menu tidak ada: kalimat owner (DEC-122) + penjelasan perencana di layar
+          const msg = failText(failTurn.current++, plan.reply);
+          setStatus(/belum paham/i.test(plan.reply) ? msg : `${msg} ${plan.reply}`);
+          void say(msg);
         } else {
+          filled.current = [];
           const dest = await execute(plan);
-          // sukses: "Sudah!" bergantian dengan "Berikutnya halaman …!" (teks & suara), DEC-118
-          const msg = successText(okTurn.current++, dest);
+          // sukses: isi kolom angka → "<kolom>, <nilai>!"; selain itu kalimat owner bergiliran (DEC-122)
+          const msg = successText(okTurn.current++, dest, filled.current);
           setStatus(msg);
           void say(msg);
         }

@@ -77,28 +77,32 @@ test('Ayo → "buka pencatatan data lalu buat catatan baru" → form terbuka →
   // bingkai listrik terus menyala selama modal terbuka (DEC-114)
   await page.waitForTimeout(6000);
   await expect(page.getByTestId('va-spark')).toBeVisible();
-  // sukses → "Sudah!" bergantian dengan "Berikutnya …!" (DEC-118)
-  await expect(panel.getByTestId('va-status')).toHaveText('Sudah!');
+  // sukses → kalimat owner bergiliran (DEC-122)
+  await expect(panel.getByTestId('va-status')).toHaveText('Oke, apalagi?');
   expect(sent[0]!.ctx.path).toBe('/');
   await say('jumlah itemnya dua, perlakuannya green house sebanyak dua');
   await expect(m.getByTestId('catat-count')).toHaveValue('2');
   await expect(m.getByTestId('catat-perl-0')).toContainText('Green House');
   await expect(m.getByTestId('catat-perl-count-0')).toHaveValue('2');
   expect(sent[1]!.ctx.form).toBe('Buat catatan awal');
+  // isi kolom angka → "<nama kolom>, <nilai>!" (DEC-122)
+  await expect(panel.getByTestId('va-status')).toHaveText(/, 2!$/);
   await say('nomor dua berat awalnya seribu tiga puluh empat, tebalnya sepuluh');
   await expect(m.getByTestId('catat-awal-beratAwal-2')).toHaveValue('1034');
   await expect(m.getByTestId('catat-awal-tebalAwal-2')).toHaveValue('10');
+  await expect(panel.getByTestId('va-status')).toHaveText(/1034.*10!$/);
   // "isi kolom <nama kolom> dengan <nilai>" — dropdown dipilih otomatis (DEC-113)
   await say('isi kolom perlakuan dengan oven gas');
   await expect(m.getByTestId('catat-perl-0')).toContainText('Oven Gas');
   // TTS (DEC-115): "sebentar aku proses", jawaban, dan perintah tak dikenali diucapkan
   await say('nyanyikan lagu dong');
-  await expect(panel.getByTestId('va-status')).toContainText('belum paham');
-  // teks TTS diberi tanda baca intonasi & "ma ap" (DEC-116); layar tetap teks asli
-  await expect.poll(() => spoken).toContain('ma ap, aku masih belum paham, coba ucapkan lagi ya!');
+  // tidak dikenali → kalimat owner (DEC-122)
+  await expect(panel.getByTestId('va-status')).toHaveText('Hahaha! Kamu bilang apa?');
+  await expect.poll(() => spoken).toContain('Hahaha! Kamu bilang apa?');
+  expect(spoken.some((t) => /seribu tiga puluh empat/.test(t))).toBe(true);
   // "sebentar aku proses" hanya di layar, tidak diucapkan (DEC-117)
   expect(spoken.some((t) => /sebentar/i.test(t))).toBe(false);
-  expect(spoken).toContain('Sudah!');
+  expect(spoken).toContain('Oke, apalagi?');
   expect(spoken.join(' ')).not.toMatch(/\d/);
   // tombol berbahaya tidak pernah dikirim ke perencana
   expect(sent.flatMap((s) => s.ctx.buttons.map((b) => b.id)).some((id) => /delete|hapus|logout/i.test(id))).toBe(false);

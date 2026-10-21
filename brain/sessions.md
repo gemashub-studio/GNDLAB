@@ -208,3 +208,4 @@
 ## 2026-10-21 · Claude — CardSwap tepi desktop + PPTX gaya koran sains
 - DEC-121: CardSwap prop align (start/end) + section lg:-ml-11/-mr-11 (tumpukan pas tepi konten 130/1310 px pada 1440). officeExport: palet tanah (INK 2B2118, MINT=terakota B85A33, MINT_D=zaitun 56703A, BG krem F7F1E2), PRun serif/caps/i, title() rubrik+serif+garis ganda, sampul kepala koran + foto bulat (pPicCover geom), KPI angka besar, warna seri grafik native dipetakan via earth(). Render cek: PowerPoint COM Export PNG (scratchpad cek*.ps1).
 - E2E home-swap bisa gagal saat /proses belum terkompilasi → curl dulu.
+- DEC-122: successText(turn, dest, filled) + failText(turn, reply) di VoiceAssistant; VoiceFill.run mengembalikan FilledField[] (tipe di voiceClient) dan memanggil detail.done.

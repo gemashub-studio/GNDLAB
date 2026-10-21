@@ -44,13 +44,24 @@ describe('asisten suara kelapa: penyaring rencana (DEC-111)', () => {
   });
 });
 
-describe('teks sukses asisten (DEC-118)', () => {
-  it('"Sudah!" bergantian dengan "Berikutnya <tujuan>!"; tanpa tujuan selalu "Sudah!"', async () => {
-    const { successText, IDLE_CLOSE_MS } = await import('@/components/shell/VoiceAssistant');
-    expect(successText(0, 'halaman Gudang')).toBe('Sudah!');
+describe('teks sukses & gagal asisten (DEC-118, DEC-122)', () => {
+  it('kalimat owner bergiliran; tujuan → "Berikutnya <tujuan>!"; isi angka → "<kolom>, <nilai>!"; gagal → menu ga ada / ga paham', async () => {
+    const { successText, failText, MENU_MISSING, SUCCESS_LINES, IDLE_CLOSE_MS } = await import('@/components/shell/VoiceAssistant');
+    expect(SUCCESS_LINES).toEqual(['Oke, apalagi?', 'Udah!...', 'Oke, udah...', 'Apalagi?', 'Sudah! Apalagi yang bisa aku bantu?']);
+    expect(successText(0, 'halaman Gudang')).toBe('Oke, apalagi?');
     expect(successText(1, 'halaman Gudang')).toBe('Berikutnya halaman gudang!');
+    expect(successText(2, 'halaman Gudang')).toBe('Udah!...');
     expect(successText(3, 'halaman GnD Lab · Pencatatan Data')).toBe('Berikutnya halaman pencatatan data!');
-    expect(successText(1, undefined)).toBe('Sudah!');
+    expect([0, 1, 2, 3, 4, 5].map((i) => successText(i))).toEqual([...SUCCESS_LINES, SUCCESS_LINES[0]]);
+    expect(successText(1, 'x', [{ label: 'Jumlah produksi', value: '113', num: true }])).toBe('Jumlah produksi, 113!');
+    expect(successText(0, undefined, [{ label: 'Berat awal', value: '1034', num: true }, { label: 'Tebal daging', value: '10', num: true }])).toBe('Berat awal, 1034, Tebal daging, 10!');
+    expect(successText(0, undefined, [{ label: 'Perlakuan', value: 'Oven Gas', num: false }])).toBe('Oke, apalagi?');
+    expect(failText(0, 'Menu resep tidak ada di aplikasi ini.')).toBe(MENU_MISSING);
+    expect(MENU_MISSING).toBe('Menu itu ga ada, katakan menu yang tersedia!');
+    expect(failText(0, 'Maaf, aku belum paham. Coba ucapkan lagi ya.')).toBe('Hahaha! Kamu bilang apa?');
+    expect(failText(1, 'Maaf, aku belum paham.')).toBe('Aku ga paham, katakan sesuatu tentang website ini!!!');
+    expect(failText(2, 'Maaf, aku belum paham.')).toBe('HAHAHA!! aku ga paham apa yang kamu bilang, tau..');
+    expect(failText(3, 'x')).toBe('Hahaha! Kamu bilang apa?');
     expect(IDLE_CLOSE_MS).toBe(600_000);
   });
 });
