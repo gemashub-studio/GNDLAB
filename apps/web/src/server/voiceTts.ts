@@ -3,6 +3,7 @@
  * Keluaran Orpheus diawali hening ±0,5 detik → dipotong (hening di awal saja) sebelum dikirim ke browser.
  * Kunci API sama dengan transkripsi (GROQ_API_KEY, hanya di server).
  */
+import { groqFetch, groqKeys } from './groq';
 const ENDPOINT = 'https://api.groq.com/openai/v1/audio/speech';
 export const TTS_MODEL = 'canopylabs/orpheus-v1-english';
 export const TTS_VOICE = 'autumn';
@@ -99,16 +100,15 @@ export function trimLeadingSilence(wav: Uint8Array, threshold = 0.02, keepMs = 6
 }
 
 export async function synthesize(text: string): Promise<Uint8Array> {
-  const key = process.env.GROQ_API_KEY ?? '';
-  if (!key) throw new TtsError(503, 'Suara asisten belum dikonfigurasi (GROQ_API_KEY belum diisi).');
+  if (!groqKeys().length) throw new TtsError(503, 'Suara asisten belum dikonfigurasi (GROQ_API_KEY belum diisi).');
   const input = text.replace(/\s+/g, ' ').trim().slice(0, MAX_TTS_CHARS);
   if (!input) throw new TtsError(400, 'Teks kosong.');
   const ctl = new AbortController();
   const t = setTimeout(() => ctl.abort(), TIMEOUT_MS);
   try {
-    const res = await fetch(ENDPOINT, {
+    const res = await groqFetch(ENDPOINT, {
       method: 'POST',
-      headers: { authorization: `Bearer ${key}`, 'content-type': 'application/json' },
+      headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ model: TTS_MODEL, voice: TTS_VOICE, input, response_format: 'wav' }),
       signal: ctl.signal,
     });

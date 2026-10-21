@@ -6,6 +6,7 @@ import { createPortal } from 'react-dom';
 import { ElectricBorder } from '@/components/ui/ElectricBorder';
 import { authHeader, speak, startSegmenter, stopSpeaking, transcribe, VOICE_FORM_EVENT } from '@/lib/voiceClient';
 import { CoconutMascot, type MascotMood } from './CoconutMascot';
+import { ttsText } from '@/lib/ttsText';
 
 interface Plan {
   actions: ({ type: 'navigate'; target: string } | { type: 'click'; target: string } | { type: 'fill'; text: string })[];
@@ -126,7 +127,8 @@ export function VoiceAssistant({ show, userKey, pages }: { show: boolean; userKe
   const talking = useRef(0);
   const mutedUntil = useRef(0);
   const say = useCallback((text: string) => {
-    const t = text.replace(/…/g, '.').trim();
+    // teks khusus suara: tanda baca untuk intonasi, "maaf" → "ma ap" (layar tetap memakai teks asli), DEC-116
+    const t = ttsText(text);
     if (!t) return Promise.resolve();
     talking.current++;
     setMood('talking');

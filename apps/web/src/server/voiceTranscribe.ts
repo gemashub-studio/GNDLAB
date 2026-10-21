@@ -1,8 +1,9 @@
 /**
  * Pengisian suara pencatatan (DEC-099, mesin diganti DEC-101): potongan rekaman pendek → Groq Whisper
- * (whisper-large-v3, bahasa Indonesia, endpoint kompatibel OpenAI). Kunci API hanya di server (env GROQ_API_KEY),
+ * (whisper-large-v3, bahasa Indonesia, endpoint kompatibel OpenAI). Kunci API hanya di server (env GROQ_API_KEY, cadangan GROQ_API_KEY_2),
  * tidak pernah dikirim ke browser. Prompt Whisper berisi kosakata perintah supaya ejaannya konsisten.
  */
+import { groqFetch, groqKeys } from './groq';
 import { createClient } from '@supabase/supabase-js';
 
 const ENDPOINT = 'https://api.groq.com/openai/v1/audio/transcriptions';
@@ -41,8 +42,7 @@ export async function requireLabUser(authHeader: string | null): Promise<void> {
 export const audioExt = (mime: string) => (/mp4|m4a|aac/.test(mime) ? 'mp4' : /ogg/.test(mime) ? 'ogg' : /wav/.test(mime) ? 'wav' : /mpeg|mp3/.test(mime) ? 'mp3' : 'webm');
 
 export async function transcribeVoice(audio: ArrayBuffer, mime = 'audio/webm'): Promise<string> {
-  const key = process.env.GROQ_API_KEY ?? '';
-  if (!key) throw new VoiceError(503, 'Pengisian suara belum dikonfigurasi (GROQ_API_KEY belum diisi).');
+  if (!groqKeys().length) throw new VoiceError(503, 'Pengisian suara belum dikonfigurasi (GROQ_API_KEY belum diisi).');
   if (!audio.byteLength) throw new VoiceError(400, 'Rekaman kosong.');
   if (audio.byteLength > MAX_AUDIO_BYTES) throw new VoiceError(413, 'Rekaman terlalu panjang. Ucapkan per perintah (maks. ±30 detik).');
   const type = mime.split(';')[0] || 'audio/webm';
@@ -56,9 +56,9 @@ export async function transcribeVoice(audio: ArrayBuffer, mime = 'audio/webm'): 
   const ctl = new AbortController();
   const t = setTimeout(() => ctl.abort(), TIMEOUT_MS);
   try {
-    const res = await fetch(ENDPOINT, { method: 'POST', headers: { authorization: `Bearer ${key}` }, body: form, signal: ctl.signal });
+    const res = await groqFetch(ENDPOINT, { method: 'POST', body: form, signal: ctl.signal });
     const body = (await res.json().catch(() => ({}))) as { text?: string; error?: { message?: string } };
-    if (res.status === 429) throw new VoiceError(429, 'Batas pemakaian Groq tercapai. Tunggu sebentar lalu coba lagi.');
+    if (res.status === 429) throw new VoiceError(429, 'Batas pemakaian Groq tercapai (kunci utama & cadangan). Tunggu sebentar lalu coba lagi.');
     if (!res.ok) throw new VoiceError(502, `Transkripsi gagal (${res.status})${body.error?.message ? `: ${body.error.message.slice(0, 160)}` : ''}.`);
     return (body.text ?? '').trim();
   } catch (e) {

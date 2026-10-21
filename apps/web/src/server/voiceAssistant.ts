@@ -3,6 +3,7 @@
  * Aksi yang diizinkan HANYA: buka halaman dari daftar, klik tombol dari daftar yang dikirim browser (tanpa tombol hapus/keluar),
  * dan isi form yang sedang terbuka (teks perintah diteruskan ke pengurai suara form). Semua target divalidasi ulang di sini.
  */
+import { groqFetch, groqKeys } from './groq';
 const ENDPOINT = 'https://api.groq.com/openai/v1/chat/completions';
 export const ASSISTANT_MODEL = 'openai/gpt-oss-20b';
 const TIMEOUT_MS = 20_000;
@@ -83,16 +84,15 @@ export function sanitizePlan(raw: unknown, ctx: AssistantContext): AssistantPlan
 }
 
 export async function planVoiceCommand(text: string, ctx: AssistantContext): Promise<AssistantPlan> {
-  const key = process.env.GROQ_API_KEY ?? '';
-  if (!key) throw new AssistantError(503, 'Asisten suara belum dikonfigurasi (GROQ_API_KEY belum diisi).');
+  if (!groqKeys().length) throw new AssistantError(503, 'Asisten suara belum dikonfigurasi (GROQ_API_KEY belum diisi).');
   const q = text.trim().slice(0, 500);
   if (!q) return { actions: [], reply: 'Aku belum mendengar apa-apa.' };
   const ctl = new AbortController();
   const t = setTimeout(() => ctl.abort(), TIMEOUT_MS);
   try {
-    const res = await fetch(ENDPOINT, {
+    const res = await groqFetch(ENDPOINT, {
       method: 'POST',
-      headers: { authorization: `Bearer ${key}`, 'content-type': 'application/json' },
+      headers: { 'content-type': 'application/json' },
       body: JSON.stringify({
         model: ASSISTANT_MODEL,
         temperature: 0,
@@ -105,7 +105,7 @@ export async function planVoiceCommand(text: string, ctx: AssistantContext): Pro
       signal: ctl.signal,
     });
     const body = (await res.json().catch(() => ({}))) as { choices?: { message?: { content?: string } }[]; error?: { message?: string } };
-    if (res.status === 429) throw new AssistantError(429, 'Batas pemakaian Groq tercapai. Tunggu sebentar lalu coba lagi.');
+    if (res.status === 429) throw new AssistantError(429, 'Batas pemakaian Groq tercapai (kunci utama & cadangan). Tunggu sebentar lalu coba lagi.');
     if (!res.ok) throw new AssistantError(502, `Asisten gagal (${res.status})${body.error?.message ? `: ${clip(body.error.message, 160)}` : ''}.`);
     let parsed: unknown;
     try {
