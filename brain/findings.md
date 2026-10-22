@@ -171,3 +171,9 @@ Server `web-e2e` (folder build `.next-e2e`) bisa macet berkompilasi > 10 menit (
 ### FND-048 · 2026-10-22 · Hamparan (overlay) dekoratif tetap: jangan halangi klik
 Elemen `fixed` dekoratif (pohon kelapa WebGL) yang sebagian tampak di tepi layar menangkap klik di area transparannya dan menutupi tombol di ponsel. *How to apply:* `pointer-events: none` pada pembungkus saat diam + satu area pemicu kecil (`pointer-events: auto`) di tepi layar; uji dengan `document.elementFromPoint` bahwa isi di sebelahnya tetap bisa diklik.
 
+### FND-049 · 2026-10-22 · "1 Issue" hydration di server dev = SSR basi
+Setelah komponen client (PalmCorner) diubah berkali-kali, server dev Turbopack bisa tetap merender HTML versi lama sementara bundel client sudah baru → galat "Hydration failed" di semua halaman (indikator dev "1 Issue"). *How to apply:* cek HTML server (`curl -s localhost:3210/<hal> | grep data-testid=...`); bila elemen baru tidak ada, mulai ulang server dev (preview_stop/preview_start) lalu uji ulang — bukan bug kode. Uji `pageerror` kosong di beberapa halaman setelah mulai ulang. Indikator dev "N" Next.js juga menempati pojok kiri bawah → jangan klik koordinat di situ dalam uji.
+
+### FND-050 · 2026-10-22 · Sorot + klik pada elemen yang sama
+Desktop: mengklik area pemicu = mouseenter lalu click → kalau keduanya men-toggle, elemen terbuka lalu langsung tertutup (atau sebaliknya). *How to apply:* jeda buka/tutup beruntun (≥ 0,7 dtk, `Date.now()` — `performance.now()` tidak ikut jam tiruan Playwright) dan tutup-lewat-sorotan hanya setelah kursor sempat keluar (mouseleave).
+

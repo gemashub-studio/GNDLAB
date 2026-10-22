@@ -9,12 +9,14 @@ const PALM_H = 1014;
 /** Pangkal batang di gambar: baris terbawah yang tak transparan (y 978) & tepi kiri pangkal (x ≈ 231). */
 const BASE_X = 231 / PALM_W;
 const BASE_Y = 978 / PALM_H;
-/** Lama pohon tampil penuh setelah disorot / diklik. */
-export const PALM_SHOW_MS = 10_000;
-/** Saat bersembunyi pohon condong ke kiri (berporos di pangkal batang) sehingga mahkotanya keluar layar. */
-const HIDE_DEG = -25;
-/** Area pemicu tetap di tepi kiri bawah saat bersembunyi (tidak ikut berputar, tidak menutupi isi halaman). */
-const HIT = { desktop: { w: 64, h: 360 }, ponsel: { w: 22, h: 190 } };
+/** Lama pohon tampil penuh setelah disorot / diklik (DEC-131: 20 detik). */
+export const PALM_SHOW_MS = 20_000;
+/** Saat bersembunyi pohon tetap tegak, digeser ke kiri sehingga hanya sebagian mahkota yang mengintip. */
+const HIDE_PCT = 60;
+/** Jeda sebelum sorotan kursor boleh menutup lagi (hindari langsung tertutup saat baru muncul). */
+const ARM_MS = 700;
+/** Area pemicu tetap di tepi kiri bawah saat bersembunyi (tidak menutupi isi halaman). */
+const HIT = { desktop: { w: 64, h: 400 }, ponsel: { w: 22, h: 210 } };
 
 declare global {
   interface Window {
@@ -23,9 +25,11 @@ declare global {
 }
 
 /**
- * Pohon kelapa tertiup angin (WebGL, paket owner di public/assets/palm, DEC-129 → DEC-130) di pojok kiri bawah layar.
- * Pangkal batang selalu menempel di pojok kiri bawah layar — saat bersembunyi maupun muncul. Bawaan: pohon condong ke
- * kiri (mahkota sebagian keluar layar); disorot / diklik / difokus → tegak penuh selama 10 detik lalu condong lagi.
+ * Pohon kelapa tertiup angin (WebGL, paket owner di public/assets/palm, DEC-129 → DEC-131) di pojok kiri bawah layar,
+ * tampil di semua halaman (dipasang di Shell). Pohon selalu tegak & bawahnya rata tepi bawah layar; bayangan tanah hitam
+ * di pojok hanya muncul saat pohon tampil. Bawaan: bersembunyi di sisi kiri (sebagian mahkota mengintip). Disorot / diklik → muncul penuh dengan
+ * pangkal batang menempel di pojok kiri bawah selama 20 detik; disorot lagi (setelah kursor sempat keluar) / diklik lagi →
+ * kembali bersembunyi.
  */
 export function PalmCorner() {
   const wide = useMediaQuery('(min-width: 640px)');
@@ -35,6 +39,11 @@ export function PalmCorner() {
   const canvas = useRef<HTMLCanvasElement>(null);
   const [open, setOpen] = useState(false);
   const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
+  // buka/tutup berikutnya hanya setelah ARM_MS sejak buka/tutup terakhir (sorot + klik beruntun tidak saling membatalkan);
+  // tutup lewat sorotan hanya setelah kursor sempat keluar dari pohon
+  const lastToggle = useRef(-Infinity);
+  const leftTree = useRef(false);
+  const ready = () => Date.now() - lastToggle.current >= ARM_MS;
 
   // muat palm-wind.js sekali; skripnya memasang semua canvas.palm-wind saat dimuat, kalau sudah ada → pasang manual
   useEffect(() => {
@@ -52,36 +61,45 @@ export function PalmCorner() {
     document.body.appendChild(s);
   }, []);
 
-  const show = useCallback(() => {
-    setOpen(true);
+  const hide = useCallback(() => {
     clearTimeout(timer.current);
+    lastToggle.current = Date.now();
+    setOpen(false);
+  }, []);
+  const show = useCallback(() => {
+    clearTimeout(timer.current);
+    lastToggle.current = Date.now();
+    leftTree.current = false;
+    setOpen(true);
     timer.current = setTimeout(() => setOpen(false), PALM_SHOW_MS);
   }, []);
   useEffect(() => () => clearTimeout(timer.current), []);
 
-  const handlers = {
-    onMouseEnter: show,
-    onClick: show,
-    onFocus: show,
-    onKeyDown: (e: React.KeyboardEvent) => (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), show()),
-  };
-
   return (
     <>
+      {/* bayangan tanah hitam di pojok kiri bawah — menutup celah putih di bawah pangkal pohon; hanya saat pohon muncul */}
+      <span
+        aria-hidden
+        className="pointer-events-none fixed bottom-0 left-0 z-40 transition-opacity duration-700 ease-out print:hidden"
+        style={{ opacity: open ? 1 : 0, width: width * 0.95, height: height * 0.16, background: 'radial-gradient(ellipse at 0% 100%, rgba(10,8,6,0.92) 0%, rgba(10,8,6,0.7) 28%, rgba(10,8,6,0.32) 52%, rgba(10,8,6,0) 74%)' }}
+        data-testid="palm-ground"
+      />
       <div
         role="button"
         tabIndex={0}
-        aria-label="Pohon kelapa — tampilkan"
+        aria-label={open ? 'Pohon kelapa — sembunyikan' : 'Pohon kelapa — tampilkan'}
         aria-expanded={open}
-        {...handlers}
+        onClick={() => ready() && (open ? hide() : show())}
+        onMouseEnter={() => open && leftTree.current && ready() && hide()}
+        onMouseLeave={() => (leftTree.current = true)}
+        onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), open ? hide() : show())}
         className="fixed left-0 z-40 cursor-pointer outline-none transition-transform duration-700 ease-out focus-visible:ring-2 focus-visible:ring-acid print:hidden"
         style={{
           width,
           height,
-          // pangkal batang tepat di pojok kiri bawah layar
+          // bawah pohon (pangkal batang) rata tepi bawah layar; tegak di kedua keadaan
           bottom: -(1 - BASE_Y) * height,
-          transformOrigin: `${BASE_X * 100}% ${BASE_Y * 100}%`,
-          transform: `translateX(${-BASE_X * 100}%) rotate(${open ? 0 : HIDE_DEG}deg)`,
+          transform: `translateX(${-(open ? BASE_X * 100 : HIDE_PCT)}%)`,
           pointerEvents: open ? 'auto' : 'none',
         }}
         data-testid="palm-corner"
@@ -89,7 +107,7 @@ export function PalmCorner() {
       >
         <canvas ref={canvas} className="palm-wind" data-src="/assets/palm/" style={{ width: '100%', height: 'auto', display: 'block' }} />
       </div>
-      {!open && <span aria-hidden className="fixed bottom-0 left-0 z-40 cursor-pointer print:hidden" style={{ width: hit.w, height: hit.h }} onMouseEnter={show} onClick={show} data-testid="palm-hit" />}
+      {!open && <span aria-hidden className="fixed bottom-0 left-0 z-40 cursor-pointer print:hidden" style={{ width: hit.w, height: hit.h }} onMouseEnter={() => ready() && show()} onClick={() => ready() && show()} data-testid="palm-hit" />}
     </>
   );
 }

@@ -221,4 +221,5 @@
 - Push GitHub: merge lokal 2bfac98 membatalkan penghapusan 11825ac; push ditahan menunggu keputusan owner soal catatan SOP KORA internal (FND-037) di repo publik.
 - DEC-129: pohon kelapa WebGL di pojok kiri bawah layar (PalmCorner), uji e2e/palm-corner.spec.ts (desktop + ponsel). FND-046..048. Preview lokal tetap http://localhost:3000. Belum deploy (owner meninjau preview lokal).
 - DEC-130: form Gudang "Input barang masuk dan barang keluar" (lib/gudangItems.ts; e2e/gudang-input.spec.ts) + pohon kelapa berporos di pangkal batang (pojok kiri bawah). Owner belum memberi daftar barang Bio Leather & Cuka — dipakai satu barang sesuai nama gudang; Gudang Kopra hanya Kelapa jambul sesuai permintaan (kopra asalan/edible hanya muncul dari tautan lama). Belum deploy.
+- DEC-131: pohon kelapa tegak + bayangan tanah saat muncul + tampil 20 dtk + tutup lagi dengan klik/sorot; FND-049..050. Deploy DEC-128..131 atas permintaan owner ("langsung deploy").
 

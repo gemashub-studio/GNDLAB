@@ -35,6 +35,10 @@ description: Menjalankan & menulis uji Playwright E2E GnD Lab / gemasSTUDIO di s
 - Hitungan waktu (mis. tampil 10 detik): `page.clock.install()` lalu `page.clock.pauseAt(Date.now()+1000)` sebelum aksi,
   majukan dengan `runFor` (tanpa pause, waitForTimeout/screenshot ikut memajukan jam) — contoh `e2e/palm-corner.spec.ts`.
 - Elemen dekoratif `fixed` di tepi layar: uji `document.elementFromPoint` agar isi halaman di sebelahnya tetap bisa diklik.
+- Galat hydration ("1 Issue") setelah mengubah komponen client berulang kali → cek HTML server dengan curl; bila elemen baru
+  tak ada, server dev basi → mulai ulang server lalu uji `pageerror` kosong (FND-049). Indikator dev "N" ada di pojok kiri
+  bawah — jangan klik koordinat di situ.
+- Buka/tutup dengan sorot + klik: pakai `Date.now()` untuk jeda (jam tiruan Playwright tidak memajukan `performance.now`).
 
 ## Screenshot / ukur tata letak
 Buat spec sementara (`e2e/shotN.spec.ts`, hapus setelahnya) yang `page.screenshot({ path: process.env.SHOT })` atau
