@@ -119,8 +119,9 @@ export function WarehouseCalculator({ initial }: { initial?: WarehouseState }) {
         </div>
       </header>
 
-      <div className="flex flex-wrap items-start gap-6">
-        <section aria-label="Input gudang" className="card flex min-w-0 flex-[1_1_340px] flex-col gap-5">
+      {/* satu kartu landscape: form isian (kiri) + luas lantai dibutuhkan (kanan); peringatan & aksi di bawahnya */}
+      <div className="card card-data flex flex-col gap-6 lg:flex-row lg:items-start" data-testid="warehouse-card">
+        <section aria-label="Input gudang" className="flex min-w-0 flex-col gap-5 lg:flex-[1.2_1_0%]">
           <ChoiceGroup
             legend="01 / KOMODITAS"
             columns={2}
@@ -269,20 +270,20 @@ export function WarehouseCalculator({ initial }: { initial?: WarehouseState }) {
           </details>
         </section>
 
-        <section aria-label="Hasil gudang" aria-live="polite" className="flex min-w-0 flex-[2_1_480px] flex-col gap-6" data-testid="warehouse-result">
+        <section aria-label="Hasil gudang" aria-live="polite" className="flex min-w-0 flex-col gap-3 border-t-2 border-dashed border-ink pt-5 lg:sticky lg:top-24 lg:flex-[1_1_0%] lg:border-l-2 lg:border-t-0 lg:pl-6 lg:pt-0" data-testid="warehouse-result">
           {r ? (
             <>
-              <div className="card card-data flex flex-col gap-3 p-[18px]">
+              <div className="flex flex-col gap-2.5">
                 <span className="label-mono">LUAS LANTAI DIBUTUHKAN</span>
                 <div className="flex flex-wrap items-baseline gap-2">
-                  <span className="font-display text-[56px] leading-none" data-testid="floor-area">{fmt(r.typ.floorAreaM2, 2)}</span>
-                  <span className="font-mono text-lg font-bold">M²</span>
+                  <span className="font-display text-[38px] leading-none" data-testid="floor-area">{fmt(r.typ.floorAreaM2, 2)}</span>
+                  <span className="font-mono text-sm font-bold">M²</span>
                   <span className="ml-auto"><ConfidenceBadge c={result.ok ? result.out.confidence : 'C'} withText /></span>
                 </div>
-                <span className="font-mono text-xs">
+                <span className="font-mono text-[11px]">
                   Rentang {fmtM2(r.min.floorAreaM2)} – {fmtM2(r.max.floorAreaM2)} · termasuk lorong (utilisasi {fmt(s.floorUtil ?? DEFAULT_FLOOR_UTIL, 2)})
                 </span>
-                <div className="grid grid-cols-2 gap-2 font-mono text-xs sm:grid-cols-3">
+                <div className="grid grid-cols-2 gap-1.5 font-mono text-[11px]">
                   <Tile label="Massa" value={`${fmt(r.typ.massKg)} kg`} />
                   <Tile label="Volume" value={fmtM3(r.typ.volumeM3)} />
                   <Tile label="Tapak tumpukan" value={fmtM2(r.typ.footprintM2)} />
@@ -298,27 +299,31 @@ export function WarehouseCalculator({ initial }: { initial?: WarehouseState }) {
                     <Tile wide accent label={`Berat setara kering ${fmt(dryPct!)}%`} value={`${fmt(dry)} kg`} />
                   )}
                 </div>
-                <span className="font-mono text-[11px]">
+                <span className="font-mono text-[10px] text-muted">
                   ρ {fmt(form.params.bulk_density!.typ)} kg/m³ · tumpuk {fmt(s.stackHeightM, 2)} m · util lantai {fmt(s.floorUtil ?? DEFAULT_FLOOR_UTIL, 2)}
                 </span>
               </div>
-              {result.ok && <WarningList warnings={result.out.warnings} />}
-              <ScenarioActions state={s} />
             </>
           ) : (
-            <div role="alert" className="card"><h2 className="text-xl">Hmm, belum bisa dihitung</h2><p className="mt-2">{!result.ok && result.message}</p></div>
+            <div role="alert"><h2 className="text-lg">Hmm, belum bisa dihitung</h2><p className="mt-2 text-sm">{!result.ok && result.message}</p></div>
           )}
         </section>
       </div>
+      {r && (
+        <div className="flex flex-col gap-6">
+          {result.ok && <WarningList warnings={result.out.warnings} />}
+          <ScenarioActions state={s} />
+        </div>
+      )}
     </div>
   );
 }
 
 function Tile({ label, value, wide, accent, danger }: { label: string; value: string; wide?: boolean; accent?: boolean; danger?: boolean }) {
   return (
-    <div className={`flex flex-col gap-0.5 border-2 border-ink p-2 ${wide ? 'col-span-2 sm:col-span-3' : ''} ${accent ? 'bg-acid' : danger ? 'bg-safety' : 'bg-surface'}`}>
+    <div className={`flex flex-col gap-0.5 border-2 border-ink px-2 py-1.5 ${wide ? 'col-span-2' : ''} ${accent ? 'bg-acid' : danger ? 'bg-safety' : 'bg-surface'}`}>
       <span className="uppercase">{label}</span>
-      <span className="text-base font-bold">{value}</span>
+      <span className="text-[13px] font-bold">{value}</span>
     </div>
   );
 }

@@ -215,3 +215,8 @@
 - DEC-127: jendela roda menu rapat (wheelWindow) + gulir hanya di menu; PPTX komponen grafis (ikon vektor custGeom, panel jalur produk, lingkaran marun).
 - 2026-10-21 (owner): "selalu simpan pekerjaan, temuan dan info baru agar menjadi skill dan cekpoint" → skill proyek `.claude/skills/gnd-checkpoint` (wajib tiap tugas), `gnd-pptx-design`, `gnd-e2e-verify`, `gnd-voice-ai`; FND-038..045; aturan di CLAUDE.md.
 - Menunggu owner: keputusan push GitHub (remote 11825ac menghapus 14 berkas); sambung ulang Canva bila mau desain dibuat langsung di Canva.
+
+## 2026-10-22 · Claude — Gudang satu kartu landscape
+- DEC-128: WarehouseCalculator — form + hasil luas lantai dalam satu kartu (data-testid warehouse-card), font hasil diperkecil. Preview lokal: launch config `web` (http://localhost:3000/gudang). Belum deploy (owner minta preview lokal dulu).
+- Push GitHub: merge lokal 2bfac98 membatalkan penghapusan 11825ac; push ditahan menunggu keputusan owner soal catatan SOP KORA internal (FND-037) di repo publik.
+
