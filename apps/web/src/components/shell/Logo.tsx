@@ -10,10 +10,10 @@ export function LogoMark({ size = 44 }: { size?: number }) {
   );
 }
 
-export function Wordmark({ className = 'text-[22px]' }: { className?: string }) {
+export function Wordmark({ className = 'text-[22px]', accentClass = 'text-acid' }: { className?: string; accentClass?: string }) {
   return (
     <span className={`font-display leading-none tracking-[0.01em] ${className}`}>
-      gemas<span className="text-acid">STUDIO</span>
+      gemas<span className={`transition-colors ${accentClass}`}>STUDIO</span>
     </span>
   );
 }

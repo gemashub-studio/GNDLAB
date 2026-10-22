@@ -135,7 +135,14 @@ export function Shell({ children, datasetVersion, profile }: { children: ReactNo
     };
   }, [open]);
 
-  const current = NAV.find((n) => isActive(path, n.href));
+  // bilah atas transparan di puncak halaman, hitam setelah digulir (DEC-132)
+  const [scrolled, setScrolled] = useState(false);
+  useEffect(() => {
+    const on = () => setScrolled(window.scrollY > 4);
+    on();
+    window.addEventListener('scroll', on, { passive: true });
+    return () => window.removeEventListener('scroll', on);
+  }, []);
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -143,18 +150,20 @@ export function Shell({ children, datasetVersion, profile }: { children: ReactNo
         Lompat ke konten
       </a>
 
-      {/* Bilah atas — sama di HP & laptop: logo kiri, menu ☰ pojok kanan atas */}
-      <header className="sticky top-0 z-40 border-b border-line-ink bg-ink text-paper print:hidden" data-testid="topbar">
+      {/* Bilah atas — sama di HP & laptop: logo kiri, menu ☰ pojok kanan atas. Di puncak halaman transparan (tanpa kartu
+          hitam, huruf gelap); setelah digulir ke bawah kembali hitam (DEC-132). */}
+      <header
+        className={`sticky top-0 z-40 border-b transition-[background-color,color,border-color,box-shadow] duration-300 print:hidden ${scrolled ? 'border-line-ink bg-ink text-paper shadow-[0_6px_24px_rgba(14,26,31,0.18)]' : 'border-transparent bg-transparent text-ink'}`}
+        data-testid="topbar"
+        data-scrolled={scrolled ? '1' : '0'}
+      >
         <div className="flex h-16 items-center gap-3 px-4 sm:px-6">
           <Link href="/" className="flex min-w-0 items-center gap-2.5 no-underline" aria-label="gemasSTUDIO — beranda">
             <span className="hidden sm:inline-flex">
               <LogoMark size={36} />
             </span>
-            <Wordmark className="text-xl" />
+            <Wordmark className="text-xl" accentClass={scrolled ? 'text-acid' : 'text-[#1FA88F]'} />
           </Link>
-          {current && current.href !== '/' && (
-            <span className="hidden truncate font-mono text-xs text-muted-ink md:inline">/ {current.label}</span>
-          )}
 
           <nav aria-label="Pintasan" className="ml-auto hidden items-center gap-1 lg:flex">
             {NAV.filter((n) => n.quick).map((n) => {
@@ -164,7 +173,7 @@ export function Shell({ children, datasetVersion, profile }: { children: ReactNo
                   key={n.href}
                   href={n.href}
                   aria-current={active ? 'page' : undefined}
-                  className={`rounded-full px-3.5 py-2 text-sm font-semibold no-underline transition ${active ? 'bg-acid text-ink' : 'text-paper hover:bg-line-ink'}${neon(n.href)}`}
+                  className={`rounded-full px-3.5 py-2 text-sm font-semibold no-underline transition ${active ? 'bg-acid text-ink' : scrolled ? 'text-paper hover:bg-line-ink' : 'text-ink hover:bg-ink/10'}${neon(n.href)}`}
                   {...(neon(n.href) && { title: `${pendingCatat} pencatatan data belum lengkap`, 'data-pending': pendingCatat })}
                 >
                   {n.label}
@@ -176,7 +185,7 @@ export function Shell({ children, datasetVersion, profile }: { children: ReactNo
           {/* label versi/ONLINE dihapus (DEC-119); status offline tetap lewat banner */}
           <span className="ml-auto lg:ml-2" aria-hidden />
 
-          <ProfileMenu />
+          <ProfileMenu light={!scrolled} />
 
           <button
             ref={burger}
@@ -185,7 +194,7 @@ export function Shell({ children, datasetVersion, profile }: { children: ReactNo
             aria-label="Buka menu"
             aria-expanded={open}
             aria-controls="menu-utama"
-            className={`relative inline-flex h-11 w-11 flex-none items-center justify-center rounded-xl border border-line-ink text-paper transition hover:border-acid hover:text-acid sm:ml-0 ${signedIn ? 'ml-2' : 'ml-auto'}`}
+            className={`relative inline-flex h-11 w-11 flex-none items-center justify-center rounded-xl border transition hover:border-acid hover:text-acid sm:ml-0 ${scrolled ? 'border-line-ink text-paper' : 'border-ink/25 text-ink'} ${signedIn ? 'ml-2' : 'ml-auto'}`}
             data-testid="menu-open"
           >
             <Icon.menu />

@@ -7,7 +7,8 @@ import { useAuth } from '@/lib/useAuth';
 const fmt = (iso?: string) => (iso ? new Date(iso).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' }) : '–');
 
 /** Ikon profil di header (kiri tombol ☰) — klik → kartu kecil berisi data login (DEC-087). */
-export function ProfileMenu() {
+/** light = bilah atas transparan di atas latar terang (DEC-132) → huruf avatar gelap agar terbaca. */
+export function ProfileMenu({ light = false }: { light?: boolean }) {
   const a = useAuth();
   const [open, setOpen] = useState(false);
   const wrap = useRef<HTMLDivElement>(null);
@@ -31,7 +32,7 @@ export function ProfileMenu() {
         onClick={() => setOpen((o) => !o)}
         aria-label={`Profil ${a.username}`}
         aria-expanded={open}
-        className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-acid/60 bg-acid/15 font-display text-base font-bold text-acid transition hover:bg-acid hover:text-ink"
+        className={`inline-flex h-11 w-11 items-center justify-center rounded-full border font-display text-base font-bold transition hover:bg-acid hover:text-ink ${light ? 'border-ink/30 bg-acid/40 text-ink' : 'border-acid/60 bg-acid/15 text-acid'}`}
         data-testid="profile-open"
       >
         {initial}
