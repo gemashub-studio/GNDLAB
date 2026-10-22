@@ -8,6 +8,7 @@ import { LogoMark, Wordmark } from './Logo';
 import { ProfileMenu } from '@/components/auth/ProfileMenu';
 import { HomeDriftBg } from '@/components/home/HomeDriftBg';
 import { VoiceAssistant } from './VoiceAssistant';
+import { PalmCorner } from './PalmCorner';
 import { useAuth } from '@/lib/useAuth';
 
 interface NavItem {
@@ -265,6 +266,7 @@ export function Shell({ children, datasetVersion, profile }: { children: ReactNo
           {children}
         </div>
       </main>
+      <PalmCorner />
       <VoiceAssistant show={signedIn || vaForce} userKey={auth.email ?? 'local'} pages={NAV.map((n) => ({ href: n.href, label: n.label }))} />
     </div>
   );

@@ -219,4 +219,5 @@
 ## 2026-10-22 · Claude — Gudang satu kartu landscape
 - DEC-128: WarehouseCalculator — form + hasil luas lantai dalam satu kartu (data-testid warehouse-card), font hasil diperkecil. Preview lokal: launch config `web` (http://localhost:3000/gudang). Belum deploy (owner minta preview lokal dulu).
 - Push GitHub: merge lokal 2bfac98 membatalkan penghapusan 11825ac; push ditahan menunggu keputusan owner soal catatan SOP KORA internal (FND-037) di repo publik.
+- DEC-129: pohon kelapa WebGL di pojok kiri bawah layar (PalmCorner), uji e2e/palm-corner.spec.ts (desktop + ponsel). FND-046..048. Preview lokal tetap http://localhost:3000. Belum deploy (owner meninjau preview lokal).
 

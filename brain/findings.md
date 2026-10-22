@@ -161,3 +161,13 @@ Pilihan berjarak d: geser tegak `R·sin(d·tilt)` (R = tinggi baris / tilt), dip
 
 ### FND-045 · 2026-10-21 · Render PPTX untuk cek visual
 PowerPoint terpasang di mesin owner → `Slides[i].Export(png, "PNG", 1280, 720)` lewat PowerShell COM memberi gambar persis seperti di PowerPoint. *How to apply:* lihat skill `gnd-pptx-design`; `Remove-Item` di scratchpad diblokir → ekspor ke folder baru.
+
+### FND-046 · 2026-10-22 · Server uji 3210 macet "Compiling …"
+Server `web-e2e` (folder build `.next-e2e`) bisa macet berkompilasi > 10 menit (curl ke 3210 tidak pernah menjawab) sementara server 3000 normal. *How to apply:* hentikan preview `web-e2e`, `rm -rf apps/web/.next-e2e`, mulai lagi (kompilasi pertama /gudang ±35 dtk). Playwright `webServer` gagal "exit code 143" bila 3210 tidak hidup → nyalakan lewat preview_start `web-e2e`.
+
+### FND-047 · 2026-10-22 · Uji timer di Playwright & tur sambutan
+`page.clock.install()` membiarkan waktu tetap berjalan (waitForTimeout/screenshot ikut memajukan timer halaman) → untuk menguji hitungan mundur (mis. 10 detik) panggil `page.clock.pauseAt(Date.now()+1000)` lalu majukan dengan `runFor`. Tur sambutan "Halo! Nggak perlu kira-kira lagi" menutupi layar pada kunjungan pertama → di uji set `localStorage['gemas.tour.v1']='done'`.
+
+### FND-048 · 2026-10-22 · Hamparan (overlay) dekoratif tetap: jangan halangi klik
+Elemen `fixed` dekoratif (pohon kelapa WebGL) yang sebagian tampak di tepi layar menangkap klik di area transparannya dan menutupi tombol di ponsel. *How to apply:* `pointer-events: none` pada pembungkus saat diam + satu area pemicu kecil (`pointer-events: auto`) di tepi layar; uji dengan `document.elementFromPoint` bahwa isi di sebelahnya tetap bisa diklik.
+

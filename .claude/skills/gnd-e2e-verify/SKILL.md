@@ -12,6 +12,8 @@ description: Menjalankan & menulis uji Playwright E2E GnD Lab / gemasSTUDIO di s
 - Server dev lambat saat kompilasi dingin → **hangatkan rute dulu**:
   `for r in / "/lab?t=bahan" "/lab?t=protokol" "/lab?t=belanja" "/lab?t=gabung" /muat /gudang /proses /konversi /data; do curl -s -o /dev/null --max-time 240 "http://localhost:3210$r"; done`
 - `.next` kadang korup di Windows (UNKNOWN -4094) → hentikan server, hapus `.next`, mulai lagi.
+- Server 3210 macet di "Compiling …" (curl tak menjawab, Playwright webServer exit 143) → hentikan preview `web-e2e`,
+  `rm -rf apps/web/.next-e2e`, `preview_start web-e2e` lagi (FND-046).
 
 ## Menjalankan
 - Dari `apps/web`: `npx playwright test e2e/<file>.spec.ts --project=desktop --reporter=line`.
@@ -29,6 +31,10 @@ description: Menjalankan & menulis uji Playwright E2E GnD Lab / gemasSTUDIO di s
   (objek LPJ lengkap — lebih aman dibuat lewat UI).
 - Menu GnD Lab = OptionWheel: opsi `lab-tab-<id>` (role option, `aria-selected`); klik lewat kode pakai `dispatchEvent('click')`.
 - Dropdown: buka `<testId>`, pilih `<testId>-opt-<value>`.
+- Tur sambutan menutupi layar di kunjungan pertama → `localStorage['gemas.tour.v1']='done'` di addInitScript.
+- Hitungan waktu (mis. tampil 10 detik): `page.clock.install()` lalu `page.clock.pauseAt(Date.now()+1000)` sebelum aksi,
+  majukan dengan `runFor` (tanpa pause, waitForTimeout/screenshot ikut memajukan jam) — contoh `e2e/palm-corner.spec.ts`.
+- Elemen dekoratif `fixed` di tepi layar: uji `document.elementFromPoint` agar isi halaman di sebelahnya tetap bisa diklik.
 
 ## Screenshot / ukur tata letak
 Buat spec sementara (`e2e/shotN.spec.ts`, hapus setelahnya) yang `page.screenshot({ path: process.env.SHOT })` atau
