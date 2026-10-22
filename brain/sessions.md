@@ -212,3 +212,6 @@
 - DEC-123: OpenRouter (server/labAi.ts, models fallback array) — secret Vercel tidak bisa ditarik lokal (`vercel env run` → kosong), jadi uji pakai fetch tiruan. Template Canva owner = design DAHYnsV6Y0k "Infografik Manglar - Editable" (link canva.com/d/… butuh login; ditemukan via search-designs). officeExport: masthead()/sideLabel() + TAUPE/BAR.
 - DEC-125: labAiFilter (STRIP sebelum pecah kalimat — "You have 9760.keys" memuat titik). Python heredoc: `\n` di string biasa jadi newline asli → tulis skrip ke file / pakai raw string.
 - DEC-126: OptionWheel (prop selected terkendali + itemTestId lab-tab-*), GabungTab, playClip; tts.wav owner ber-header streaming (panjang 0xFFFFFFFF) → ditulis ulang. Canva connector sempat terputus (perlu disambung ulang owner).
+- DEC-127: jendela roda menu rapat (wheelWindow) + gulir hanya di menu; PPTX komponen grafis (ikon vektor custGeom, panel jalur produk, lingkaran marun).
+- 2026-10-21 (owner): "selalu simpan pekerjaan, temuan dan info baru agar menjadi skill dan cekpoint" → skill proyek `.claude/skills/gnd-checkpoint` (wajib tiap tugas), `gnd-pptx-design`, `gnd-e2e-verify`, `gnd-voice-ai`; FND-038..045; aturan di CLAUDE.md.
+- Menunggu owner: keputusan push GitHub (remote 11825ac menghapus 14 berkas); sambung ulang Canva bila mau desain dibuat langsung di Canva.

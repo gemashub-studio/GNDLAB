@@ -193,3 +193,8 @@ Status: SELESAI 2026-10-11 (DEC-059) lalu DISEDERHANAKAN owner (DEC-060) jadi up
 ## STATUS ONLINE (2026-10-13) — owner: "balik ke offline dulu" (DEC-066)
 - Mode kerja = OFFLINE. Sinkron Google Drive siap di kode (panel tersembunyi; aktif bila Client ID dipasang). Sinkron Wi-Fi: tidak dibuat (rancangan: API /api/lab-sync menyimpan file di laptop + tombol + alamat LAN; bisa dihidupkan lagi bila diminta).
 - Vercel gemasstudio.vercel.app: owner putuskan DIBIARKAN (gratis, untuk nanti) — 2026-10-13. Isinya versi commit ae00721 (belum termasuk DEC-066); deploy ulang hanya bila owner minta.
+
+## STATUS 2026-10-21 — GnD Lab online (Vercel gemas-rnd.vercel.app)
+- Selesai & ter-deploy: DEC-120..127 (CardSwap Ringkasan, PPTX tema infografik + ikon, asisten kelapa & Tanya Lab AI bersuara, Lab AI OpenRouter + filter + memori, kunci Groq 1–5, menu roda OptionWheel, halaman Gabungkan Data PPTX/Word/PDF/TXT).
+- Tertunda (keputusan owner): push GitHub (remote 11825ac), Canva langsung (koneksi terputus).
+- Cara kerja tetap: tiap tugas diakhiri skill `gnd-checkpoint`.

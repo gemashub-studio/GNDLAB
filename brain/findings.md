@@ -136,3 +136,28 @@ Parameter A/B yang hanya bersumber SOP KORA (F01–F06), atau jurnal yang hanya 
 - Keputusan owner: belah kelapa harus 50:50 (dua belahan sama besar) — masuk SOP-01 langkah 6.
 - Konflik dibiarkan untuk owner: jemur v1.0 "daging menghadap atas" vs SOP Rev 03 telungkup 1–2 hari.
 - SOP-KORA-04 (riset QC pasar, 6 hal) → v1.1 (7 hal) + PPTX. Temuan: pembanding P1/P2 di rapor lab = basis basah (abu+FC+ZT ≈ 94,4) sementara sampel Kora basis kering; arang mentah ZT 16,16% > SNI/APCC/usulan ≤ 15%; usulan arang SOP-04 (KA ≤ 8%, abu ≤ 2%) beda dengan SOP-02 (≤ 6%, ≤ 3%); tabel grade hal 4 kalori Premium "≤ 7.500" & Grade C "≥ 7.100" kemungkinan salah ketik. Hitungan "turun … poin" hal 5 dicek: cocok. Isian v1.1 semua SOP kini satu sumber: sumber/isian.py.
+- 2026-10-21: SOP-01 v1.1 jadi 5 hal — hal 5 "Jamur Saat Jemur & K3 Wajib" (cegah 4 jam/para-para/tutup embun/alarm KA; pilah ringan→cuci→Asalan, banyak→Asalan, kuning-hijau/hitam tembus/busuk→REJECT musnahkan; dari SOP Rev 03 F4/F5/F7). Keputusan owner: dilarang celana pendek & sandal jepit di semua area kerja (masuk SOP-01 hal 5, SOP-02 hal 4, SOP-03 hal 4). ke_pptx.py --v11 = hanya bangun v1.1 (jangan timpa PPTX yang sedang dibuka owner).
+
+### FND-038 · 2026-10-21 · Patch kode lewat Python di Git Bash
+Heredoc + string Python biasa merusak regex/escape: `\b` jadi karakter backspace, `\n` di string tiga-kutip jadi baris baru asli, `\s` memberi SyntaxWarning, dan teks yang memuat tiga tanda kutip menutup string lebih awal. *Why:* beberapa kali menghasilkan regex rusak (voiceTranscribe, ttsText, labAiFilter, officeExport `deck`). *How to apply:* tulis skrip ke file di scratchpad (Write tool) dengan raw string, cek `grep -c $'\x08'` = 0, lalu jalankan `tsc`; regex escape sebaiknya diganti logika `startsWith`.
+
+### FND-039 · 2026-10-21 · Rahasia Vercel tidak bisa diuji lokal
+Variabel bertipe Secret (OPEN_ROUTER_APIKEY, GROQ_API_KEY_2..5) tidak bisa ditarik (`vercel env run`/`pull` memberi nilai kosong). *How to apply:* uji integrasi dengan fetch tiruan (unit) + cek rute produksi menolak tanpa login (401); minta owner mencoba sekali di aplikasi. Jangan menulis rahasia ke berkas.
+
+### FND-040 · 2026-10-21 · OpenRouter gratis tanpa model "uncensored"
+Daftar model `:free` (cek `https://openrouter.ai/api/v1/models`) tidak memuat Dolphin Venice/Cydonia (berbayar). Model gratis kadang melantur (Inggris acak, "Created by: …®", huruf kapital-kecil Unicode) → disaring `server/labAiFilter.ts` (aturan + penyunting Groq). *How to apply:* contoh teks rusak dari owner → tambah pola + uji di `test/labAiFilter.test.ts`.
+
+### FND-041 · 2026-10-21 · Batas TTS Orpheus 300 karakter
+`synthesize` memotong input di 300 karakter → jawaban panjang kehilangan pertanyaan penutup. *How to apply:* pakai `speakLong` (dipecah per kalimat ≤ 280, potongan berikutnya disiapkan selagi diputar). Suara: `autumn` (perintah), `austin` (jawaban Lab AI); server hanya menerima keduanya (`pickVoice`).
+
+### FND-042 · 2026-10-21 · WAV dari owner ber-header streaming
+`tts.wav` owner mencantumkan panjang data 0xFFFFFFFF (diklaim ±24 jam). *How to apply:* tulis ulang header RIFF/`data` dengan panjang sebenarnya (Python `struct`) sebelum ditaruh di `public/sounds/`; transkripnya bisa dibaca lewat `/api/voice-transcribe` server dev lokal.
+
+### FND-043 · 2026-10-21 · Tautan Canva owner
+`canva.com/d/<id>` butuh login & bukan format yang diterima `read-design`/`resolve-shortlink` (itu untuk canva.link). *How to apply:* cari desainnya lewat `search-designs` (urut terbaru) di akun owner. Template owner = "Infografik Manglar - Editable" (versi editable infografik mangrove yang sama dengan gambar Pinterest). Ekspor PNG desain itu ditolak (izin) → pakai thumbnail. Koneksi Canva bisa terputus; owner yang menyambung ulang.
+
+### FND-044 · 2026-10-21 · Jendela OptionWheel yang pas
+Pilihan berjarak d: geser tegak `R·sin(d·tilt)` (R = tinggi baris / tilt), diputar `d·tilt` di titik kiri-tengah → ujung kanan teks naik/turun `lebar·sin`, ditambah blur 2 px/langkah. *How to apply:* `wheelWindow()` di `LabPage.tsx` memakai lebar label dari `offsetWidth` (tidak terpengaruh transform; ukur ulang via ResizeObserver karena font termuat belakangan). Event `wheel` OptionWheel non-pasif → batasi area roda selebar teks agar gulir di luar menu tetap menggulir halaman; di ujung daftar gulir diteruskan ke halaman.
+
+### FND-045 · 2026-10-21 · Render PPTX untuk cek visual
+PowerPoint terpasang di mesin owner → `Slides[i].Export(png, "PNG", 1280, 720)` lewat PowerShell COM memberi gambar persis seperti di PowerPoint. *How to apply:* lihat skill `gnd-pptx-design`; `Remove-Item` di scratchpad diblokir → ekspor ke folder baru.

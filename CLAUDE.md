@@ -30,3 +30,7 @@ bash architecture/scripts/run_all_checks.sh
 PGURL=postgresql://postgres@localhost:5432/postgres bash architecture/scripts/run_all_checks.sh   # + uji database
 ```
 Di Windows jalankan lewat Git Bash atau WSL (butuh Python 3; uji database butuh PostgreSQL 16 + psql).
+
+## Checkpoint & skill (permintaan owner 2026-10-21)
+- **Setiap tugas selesai → jalankan skill `gnd-checkpoint`** (`.claude/skills/gnd-checkpoint/SKILL.md`): log DEC, temuan FND di `brain/findings.md`, entri `brain/sessions.md`, perbarui/buat skill bila ada prosedur yang bisa diulang, `run_all_checks`, lalu commit sebagai checkpoint.
+- Skill proyek lain: `gnd-pptx-design` (laporan PPTX/DOCX), `gnd-e2e-verify` (Playwright port 3210), `gnd-voice-ai` (suara & Lab AI).
