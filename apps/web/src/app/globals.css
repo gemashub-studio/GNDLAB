@@ -150,24 +150,22 @@
 .electric-border__canvas { position: absolute; z-index: 1; display: block; pointer-events: none; }
 .voice-spark { position: absolute; pointer-events: none; z-index: 95; transition: opacity 0.5s ease; }
 
-/* maskot kelapa asisten suara (DEC-111) */
-.coco-mascot { overflow: visible; }
-.coco-body { transform-origin: 50px 90px; animation: cocoBob 2.6s ease-in-out infinite; }
-.coco-eye { transform-box: fill-box; transform-origin: center; animation: cocoBlink 4.2s infinite; }
-.coco-open { opacity: 0; transform-box: fill-box; transform-origin: center; }
-.coco-listening .coco-smile, .coco-talking .coco-smile { opacity: 0; }
-.coco-listening .coco-open { opacity: 1; transform: scale(0.55, 0.7); }
-.coco-talking .coco-open { opacity: 1; animation: cocoTalk 0.32s ease-in-out infinite alternate; }
-.coco-thinking .coco-body { animation: cocoWobble 0.9s ease-in-out infinite; }
-.coco-thinking .coco-pupil { transform: translate(2px, -2.5px); }
-.coco-listening .coco-body { animation: cocoBob 1.2s ease-in-out infinite; }
-.coco-shadow { transform-box: fill-box; transform-origin: center; }
-@keyframes cocoBob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
-@keyframes cocoWobble { 0%, 100% { transform: rotate(-5deg); } 50% { transform: rotate(5deg); } }
-@keyframes cocoBlink { 0%, 92%, 100% { transform: scaleY(1); } 95% { transform: scaleY(0.08); } }
-@keyframes cocoTalk { from { transform: scale(0.9, 0.35); } to { transform: scale(1, 1.05); } }
+/* maskot kelapa asisten suara (DEC-111 → DEC-133): gambar kelapa peselancar + animasi per keadaan */
+.coco-surf { transform-origin: 50% 92%; }
+.coco-surf--idle { animation: cocoFloat 3.4s ease-in-out infinite; }
+.coco-surf--listening { animation: cocoFloat 1.4s ease-in-out infinite; filter: drop-shadow(0 0 6px rgba(99, 230, 207, 0.85)); }
+.coco-surf--thinking { animation: cocoTilt 1s ease-in-out infinite; }
+.coco-surf--talking { animation: cocoHop 0.42s ease-in-out infinite alternate; }
+@keyframes cocoFloat { 0%, 100% { transform: translateY(0) rotate(-2deg); } 50% { transform: translateY(-5px) rotate(2deg); } }
+@keyframes cocoTilt { 0%, 100% { transform: rotate(-6deg); } 50% { transform: rotate(6deg); } }
+@keyframes cocoHop { from { transform: translateY(0) scale(1); } to { transform: translateY(-4px) scale(1.04, 0.97); } }
+/* dok maskot di sisi kanan layar: sebagian badan bersembunyi, meluncur keluar saat diklik (seperti pohon kelapa) */
+.coco-dock { touch-action: none; transition: transform 0.55s cubic-bezier(0.2, 0.8, 0.2, 1); }
+.coco-dock[data-out='0']:hover { transform: translateX(var(--dock-peek-hover)) !important; }
+.coco-dock--drag { transition: none; cursor: grabbing; }
 @media (prefers-reduced-motion: reduce) {
-  .coco-body, .coco-eye, .coco-talking .coco-open { animation: none !important; }
+  .coco-surf { animation: none !important; }
+  .coco-dock { transition: none; }
 }
 
 /* pengisian suara (DEC-099): semua kolom nomor yang disebut berkedip neon; kolom aktif bercincin tebal */

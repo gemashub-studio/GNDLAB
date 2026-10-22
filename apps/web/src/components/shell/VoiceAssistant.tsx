@@ -6,6 +6,7 @@ import { createPortal } from 'react-dom';
 import { ElectricBorder } from '@/components/ui/ElectricBorder';
 import { authHeader, playClip, speak, startSegmenter, stopSpeaking, transcribe, VOICE_FORM_EVENT, type FilledField } from '@/lib/voiceClient';
 import { CoconutMascot, type MascotMood } from './CoconutMascot';
+import { DOCK_DEFAULT, MascotDock, readDockY } from './MascotDock';
 import { ttsText } from '@/lib/ttsText';
 import { looksLikeQuestion } from '@/lib/voiceAnswer';
 
@@ -146,7 +147,6 @@ export function VoiceAssistant({ show, userKey, pages }: { show: boolean; userKe
   const router = useRouter();
   const storeKey = `gnd-va:${userKey}`;
   const [intro, setIntro] = useState(false);
-  const [dismissed, setDismissed] = useState(true);
   const [on, setOn] = useState(false);
   const [mood, setMood] = useState<MascotMood>('idle');
   const [status, setStatus] = useState('');
@@ -156,6 +156,9 @@ export function VoiceAssistant({ show, userKey, pages }: { show: boolean; userKe
   const stopRef = useRef<(() => void) | null>(null);
   const queue = useRef<Promise<void>>(Promise.resolve());
   const [spark, setSpark] = useState<HTMLElement>();
+  // posisi tegak dok maskot (DEC-133), dibaca dari perangkat setelah mount
+  const [dockY, setDockY] = useState(DOCK_DEFAULT);
+  useEffect(() => setDockY(readDockY()), []);
   // suara jawaban (TTS Groq Orpheus "autumn", DEC-115): mikrofon dibisukan selama & sesaat setelah asisten berbicara
   const talking = useRef(0);
   const mutedUntil = useRef(0);
@@ -199,7 +202,6 @@ export function VoiceAssistant({ show, userKey, pages }: { show: boolean; userKe
       seen = 'x';
     }
     setIntro(!seen);
-    setDismissed(!!seen);
   }, [show, storeKey]);
   const remember = (v: string) => {
     try {
@@ -374,6 +376,8 @@ export function VoiceAssistant({ show, userKey, pages }: { show: boolean; userKe
   }, [on]);
 
   if (!show) return null;
+  // panel asisten muncul setinggi dok maskot, tetap di dalam layar
+  const panelBottom = Math.max(20, Math.min(dockY, (typeof window === 'undefined' ? 900 : window.innerHeight) - 360));
   const sparkEl = spark ? <VoiceSpark target={spark} onDone={endSpark} /> : null;
 
   if (intro)
@@ -389,7 +393,6 @@ export function VoiceAssistant({ show, userKey, pages }: { show: boolean; userKe
             onClick={() => {
               remember('ayo');
               setIntro(false);
-              setDismissed(false);
               void start();
             }}
             data-testid="va-yes"
@@ -402,7 +405,6 @@ export function VoiceAssistant({ show, userKey, pages }: { show: boolean; userKe
             onClick={() => {
               remember('nanti');
               setIntro(false);
-              setDismissed(true);
             }}
             data-testid="va-no"
           >
@@ -425,20 +427,16 @@ export function VoiceAssistant({ show, userKey, pages }: { show: boolean; userKe
     return (
       <>
       {sparkEl}
-      {/* kartu kelapa selalu DI ATAS bingkai listrik modal (z-index lebih tinggi), DEC-118 */}
-      <div className="fixed bottom-5 right-4 z-[96] flex flex-col items-end gap-2">
-        {tipEl}
-        <button type="button" className="rounded-full bg-surface p-1.5 shadow-xl ring-1 ring-ink/10 transition hover:scale-105" onClick={() => void start()} aria-label="Mulai asisten suara" title="Asisten suara" data-testid="va-fab">
-          <CoconutMascot size={dismissed ? 46 : 52} mood="idle" />
-        </button>
-      </div>
+      {/* maskot di dok sisi kanan (DEC-133): sebagian bersembunyi, seret naik-turun, klik → meluncur keluar lalu mulai.
+          Selalu DI ATAS bingkai listrik modal (z-index lebih tinggi), DEC-118 */}
+      <MascotDock bottom={dockY} onMove={setDockY} onActivate={() => void start()} tip={tipEl} />
       </>
     );
 
   return (
     <>
     {sparkEl}
-    <div className="fixed bottom-5 right-4 z-[96] flex w-[min(340px,calc(100vw-2rem))] flex-col items-end gap-2">
+    <div className="fixed right-4 z-[96] flex w-[min(340px,calc(100vw-2rem))] flex-col items-end gap-2" style={{ bottom: panelBottom }}>
     {tipEl}
     {/* kartu kelapa aktif dengan bingkai listrik (DEC-118) */}
     <ElectricBorder color="#63E6CF" speed={1} chaos={1.5} spread={0.6} strands={3} thickness={1.5} borderRadius={24} interactive={false} className="w-full" data-testid="va-panel-spark">
