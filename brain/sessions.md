@@ -223,4 +223,5 @@
 - DEC-130: form Gudang "Input barang masuk dan barang keluar" (lib/gudangItems.ts; e2e/gudang-input.spec.ts) + pohon kelapa berporos di pangkal batang (pojok kiri bawah). Owner belum memberi daftar barang Bio Leather & Cuka — dipakai satu barang sesuai nama gudang; Gudang Kopra hanya Kelapa jambul sesuai permintaan (kopra asalan/edible hanya muncul dari tautan lama). Belum deploy.
 - DEC-131: pohon kelapa tegak + bayangan tanah saat muncul + tampil 20 dtk + tutup lagi dengan klik/sorot; FND-049..050. Deploy DEC-128..131 atas permintaan owner ("langsung deploy").
 - DEC-132: bilah atas tanpa label halaman; transparan di puncak, hitam saat digulir (state `scrolled` di Shell, data-scrolled untuk uji). e2e/header.spec.ts (4 halaman).
+- 2026-10-22: owner "push" → push GitHub selesai (11825ac..ea2a0a8, 21 commit; merge 2bfac98 membatalkan penghapusan 14 berkas dari 11825ac). Catatan SOP KORA (FND-037) ikut terbit atas keputusan owner. Tidak ada lagi yang tertahan.
 

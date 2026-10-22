@@ -196,5 +196,5 @@ Status: SELESAI 2026-10-11 (DEC-059) lalu DISEDERHANAKAN owner (DEC-060) jadi up
 
 ## STATUS 2026-10-21 — GnD Lab online (Vercel gemas-rnd.vercel.app)
 - Selesai & ter-deploy: DEC-120..127 (CardSwap Ringkasan, PPTX tema infografik + ikon, asisten kelapa & Tanya Lab AI bersuara, Lab AI OpenRouter + filter + memori, kunci Groq 1–5, menu roda OptionWheel, halaman Gabungkan Data PPTX/Word/PDF/TXT).
-- Tertunda (keputusan owner): push GitHub (remote 11825ac), Canva langsung (koneksi terputus).
+- Push GitHub selesai 2026-10-22 (ea2a0a8). Tertunda: Canva langsung (koneksi terputus).
 - Cara kerja tetap: tiap tugas diakhiri skill `gnd-checkpoint`.
