@@ -234,3 +234,4 @@
 
 ## 2026-10-23 · Claude (sesi animasi maskot) — maskot KORA beranimasi
 - DEC-136: `kelapa-kora.webp` diganti animated WebP (192×240, 288 frame, 2,2 MB) + `kelapa-kora-diam.webp` untuk reduce-motion; CoconutMascot pakai `<picture>`. FND-052: lampiran chat meratakan animasi.
+- Deploy production DEC-136: dpl_84qdLRng2nVfJGBfU8jHWu8M1YER (6ed84c9) READY → gemasstudio.vercel.app. Uji: run_all_checks gagal hanya pada tautan `.claude/settings.json` di DEC-135 (sudah ada sebelumnya, bukan dari DEC-136); tsc: 0 error di berkas maskot (52 error lain dari Prisma client yang tak bisa di-generate offline, FND-051); uji browser Chromium: animasi berjalan, reduce-motion memakai frame diam.
