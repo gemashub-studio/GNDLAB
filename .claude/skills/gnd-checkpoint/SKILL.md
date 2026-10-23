@@ -32,7 +32,9 @@ Bila tugas menghasilkan **prosedur yang bisa diulang** (cara uji, cara render, p
 - `git add` hanya berkas yang memang diubah tugas ini (jangan ikutkan `apps/web/next-env.d.ts` buatan dev server, `.env*`,
   atau perubahan agent lain yang belum jelas). Pesan commit bahasa Indonesia + `(DEC-NNN)`, diakhiri baris
   `Co-Authored-By` sesuai pengingat sistem.
-- Deploy Vercel (`npx vercel deploy --prod --yes` dari root repo) sudah disetujui owner untuk proyek ini.
+- Deploy Vercel (`npx vercel deploy --prod --yes` dari root repo) sudah disetujui owner untuk proyek ini. Push ke `main` TIDAK
+  memicu deploy otomatis. Dari sesi cloud: Vercel MCP `create_deployment` (teamId team_Xv3IheWgkiuJdh44OPlhbtNn, project
+  gemasstudio, gitSource github gemashub-studio/GNDLAB ref main + sha, target production), lalu `get_deployment` sampai READY.
 - Push GitHub: **jangan force push**. Status 2026-10-21: push tertahan karena commit remote `11825ac` (menghapus 14 berkas) —
   tunggu keputusan owner.
 
