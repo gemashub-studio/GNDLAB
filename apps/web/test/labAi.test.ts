@@ -6,14 +6,15 @@ describe('Tanya Lab AI & username (DEC-087)', () => {
   it('OpenRouter (DEC-123): model gratis + cadangan, OPEN_ROUTER_MODEL dicoba dulu; pesan = system + riwayat + pertanyaan', async () => {
     const { askOpenRouter, cleanHistory, labMessages, orModels, OR_FREE_MODELS } = await import('@/server/labAi');
     expect(LAB_AI_SYSTEM).toContain('briket');
-    expect(OR_FREE_MODELS.every((m) => m.endsWith(':free'))).toBe(true);
+    expect(OR_FREE_MODELS.every((m) => m.endsWith(':free') || m === 'openrouter/free')).toBe(true);
+    expect(OR_FREE_MODELS).not.toContain('minimax/minimax-m3.1-flash:free'); // dicabut 2026-10-22 (DEC-139)
     expect(orModels({})).toEqual(OR_FREE_MODELS);
     expect(orModels({ OPEN_ROUTER_MODEL: 'x/y' })[0]).toBe('x/y');
     const hist = cleanHistory([{ role: 'system', content: 'jahat' }, ...Array.from({ length: 12 }, (_, i) => ({ role: i % 2 ? 'assistant' : 'user', content: `m${i}` })), { role: 'user', content: '  ' }]);
     expect(hist).toHaveLength(8);
     expect(hist.map((m) => m.content)).toEqual(['m4', 'm5', 'm6', 'm7', 'm8', 'm9', 'm10', 'm11']);
     expect(labMessages('apa itu kopra?', hist.slice(-2)).map((m) => m.role)).toEqual(['system', 'user', 'assistant', 'user']);
-    let sent: { url: string; body: { model: string; models: string[]; messages: { role: string; content: string }[] }; auth: string } | undefined;
+    let sent: { url: string; body: { model: string; models?: string[]; messages: { role: string; content: string }[] }; auth: string } | undefined;
     const fetcher = (async (url: string, init: RequestInit) => {
       sent = { url, body: JSON.parse(String(init.body)), auth: (init.headers as Record<string, string>).authorization! };
       return new Response(JSON.stringify({ model: 'google/gemma-4-31b-it:free', choices: [{ message: { content: ' Kopra adalah daging kelapa kering. ' } }] }), { status: 200 });
@@ -22,11 +23,47 @@ describe('Tanya Lab AI & username (DEC-087)', () => {
     expect(out.text).toBe('Kopra adalah daging kelapa kering.');
     expect(sent!.url).toBe('https://openrouter.ai/api/v1/chat/completions');
     expect(sent!.auth).toBe('Bearer k');
-    expect(sent!.body.models).toEqual(OR_FREE_MODELS);
+    expect(sent!.body.model).toBe(OR_FREE_MODELS[0]);
+    expect(sent!.body.models).toBeUndefined();
     expect(sent!.body.messages.map((m) => m.content)).toEqual([LAB_AI_SYSTEM, 'halo', 'hai', 'apa itu kopra?']);
     await expect(askOpenRouter('x', [], { env: {} })).rejects.toThrow(/OPEN_ROUTER_APIKEY/);
     const limit = (async () => new Response(JSON.stringify({ error: { message: 'rate' } }), { status: 429 })) as unknown as typeof fetch;
     await expect(askOpenRouter('x', [], { env: { OPEN_ROUTER_APIKEY: 'k' }, fetcher: limit })).rejects.toThrow(/Kuota AI gratis/);
+  });
+  it('DEC-139: model gagal (404 dicabut / jawaban kosong) → model berikutnya; semua OpenRouter gagal → Groq', async () => {
+    const { askOpenRouter, OR_FREE_MODELS, GROQ_FALLBACK_MODELS } = await import('@/server/labAi');
+    const tried: string[] = [];
+    const or = (async (_u: string, init: RequestInit) => {
+      const m = JSON.parse(String(init.body)).model as string;
+      tried.push(m);
+      if (m === OR_FREE_MODELS[0]) return new Response(JSON.stringify({ error: { message: 'Provider returned error' } }), { status: 404 });
+      if (m === OR_FREE_MODELS[1]) return new Response(JSON.stringify({ choices: [{ message: { content: '' } }] }), { status: 200 });
+      return new Response(JSON.stringify({ model: m, choices: [{ message: { content: 'Briket dari arang batok.' } }] }), { status: 200 });
+    }) as unknown as typeof fetch;
+    const a = await askOpenRouter('apa itu briket?', [], { env: { OPEN_ROUTER_APIKEY: 'k' }, fetcher: or });
+    expect(a).toEqual({ text: 'Briket dari arang batok.', model: OR_FREE_MODELS[2] });
+    expect(tried).toEqual(OR_FREE_MODELS.slice(0, 3));
+
+    const dead = (async () => new Response(JSON.stringify({ error: { message: 'Provider returned error' } }), { status: 404 })) as unknown as typeof fetch;
+    const groqSeen: { url: string; model: string; auth: string }[] = [];
+    const groq = (async (u: string, init: RequestInit) => {
+      const b = JSON.parse(String(init.body));
+      groqSeen.push({ url: u, model: b.model, auth: (init.headers as Record<string, string>).authorization! });
+      // penyunting jawaban (labAiFilter) juga lewat Groq → kembalikan teks yang sama
+      if (b.model === GROQ_FALLBACK_MODELS[0]) return new Response(JSON.stringify({ model: b.model, choices: [{ message: { content: 'Jawaban dari Groq.' } }] }), { status: 200 });
+      return new Response(JSON.stringify({ choices: [{ message: { content: 'Jawaban dari Groq.' } }] }), { status: 200 });
+    }) as unknown as typeof fetch;
+    const g = await askOpenRouter('apa itu briket?', [], { env: { OPEN_ROUTER_APIKEY: 'k', GROQ_API_KEY: 'g' }, fetcher: dead, groqFetcher: groq });
+    expect(g).toEqual({ text: 'Jawaban dari Groq.', model: `groq/${GROQ_FALLBACK_MODELS[0]}` });
+    expect(groqSeen[0]).toEqual({ url: 'https://api.groq.com/openai/v1/chat/completions', model: GROQ_FALLBACK_MODELS[0], auth: 'Bearer g' });
+
+    // tanpa kunci Groq & semua model OpenRouter mati → pesan galat terakhir diteruskan
+    await expect(askOpenRouter('x', [], { env: { OPEN_ROUTER_APIKEY: 'k' }, fetcher: dead })).rejects.toThrow('AI tidak memberi jawaban (404: Provider returned error).');
+    // kunci OpenRouter ditolak (401) → tidak mencoba model lain, langsung Groq
+    const n: string[] = [];
+    const denied = (async (_u: string, init: RequestInit) => (n.push(JSON.parse(String(init.body)).model), new Response('{}', { status: 401 }))) as unknown as typeof fetch;
+    expect((await askOpenRouter('x', [], { env: { OPEN_ROUTER_APIKEY: 'k', GROQ_API_KEY: 'g' }, fetcher: denied, groqFetcher: groq })).model).toBe(`groq/${GROQ_FALLBACK_MODELS[0]}`);
+    expect(n).toHaveLength(1);
   });
   it('memori: maks. 8 pesan terakhir disimpan di perangkat', () => {
     const store = new Map<string, string>();

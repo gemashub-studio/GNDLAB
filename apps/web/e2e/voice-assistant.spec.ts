@@ -178,3 +178,38 @@ test('tooltip "Harap tutup fitur ini…" bisa ditutup; kartu aktif berbingkai li
   await expect(page.getByTestId('va-fab')).toBeVisible();
 });
 
+test('DEC-139: suara TTS disimpan di perangkat → kalimat yang sama (juga setelah muat ulang) tidak meminta Groq lagi', async ({ page }) => {
+  test.setTimeout(180_000);
+  await force(page);
+  await page.route('**/api/voice-assistant', (r) => r.fulfill({ json: { ok: true, actions: [], reply: 'Maaf, aku belum paham. Coba ucapkan lagi ya.' } }));
+  const shown: string[] = [];
+  const round = async () => {
+    await page.goto('/konversi');
+    await page.getByTestId('va-yes').click();
+    const panel = page.getByTestId('va-panel');
+    await expect(panel).toContainText('Aku mendengarkan');
+    for (let i = 0; i < 3; i++) {
+      await panel.getByTestId('va-text').fill('nyanyikan lagu dong');
+      await panel.getByTestId('va-text').press('Enter');
+      await expect(panel.getByTestId('va-status')).not.toHaveText(/sebentar/i, { timeout: 30_000 });
+      await page.waitForTimeout(400);
+      shown.push((await panel.getByTestId('va-status').textContent()) ?? '');
+    }
+    await panel.getByTestId('va-stop').click();
+  };
+  await round();
+  await expect.poll(() => spoken.length).toBeGreaterThan(0);
+  const first = [...spoken];
+  // setiap kalimat hanya sekali meminta suara ke server
+  expect(new Set(first).size).toBe(first.length);
+  await expect
+    .poll(() => page.evaluate(() => new Promise<number>((res) => { const r = indexedDB.open('gnd-tts'); r.onsuccess = () => { const c = r.result.transaction('clips').objectStore('clips').count(); c.onsuccess = () => res(c.result); }; r.onerror = () => res(-1); })))
+    .toBeGreaterThanOrEqual(first.length);
+  // muat ulang (memori sesi hilang) → kalimat yang sama diambil dari IndexedDB, bukan Groq
+  await page.evaluate(() => localStorage.removeItem('gnd-va:local'));
+  await round();
+  const again = spoken.slice(first.length);
+  expect(again.filter((t) => first.includes(t))).toEqual([]);
+  // putaran kedua memang mengucapkan kalimat yang sudah pernah dibuat (jadi suaranya dari simpanan)
+  expect(shown.slice(3).some((t) => first.includes(t))).toBe(true);
+});

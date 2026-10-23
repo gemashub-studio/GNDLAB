@@ -245,3 +245,8 @@
 ## 2026-10-23 · Claude (sesi cloud) — Ringkasan tanpa kartu Kapasitas Container
 - DEC-138: kelas `card` dihapus dari section Kapasitas Container (isi tetap). Ditafsirkan "hapus card" = hapus bingkai kartu, bukan isi tabel.
 - Deploy production DEC-138: dpl_EKxGmQH1Su8gh4cTywvcX4S1CUhd (eaa6cb2) READY → gemas-rnd.vercel.app; HTML production: section cap-h tanpa kelas card, tabel tetap ada. Uji: typecheck 0, run_all_checks LULUS, screenshot desktop 1440 & ponsel 390.
+
+## 2026-10-23 · Claude (sesi cloud) — Lab AI 404 & simpanan suara TTS
+- DEC-139: Lab AI — model gratis baru, dicoba satu per satu, cadangan Groq; TTS — IndexedDB `gnd-tts` (FND-053, FND-054).
+- Uji: typecheck 0; unit 160/74/190 (19 skip; +3 tes baru); E2E voice-assistant 5/5 termasuk tes baru (putaran kedua setelah muat ulang: 3 kalimat sama, 0 panggilan /api/voice-tts); mascot-dock 2/2 (sekali flake saat suite gabungan); lab "Lab AI tanpa pilihan model" lulus; lab OCR gagal juga tanpa perubahan (FND-054).
+- Belum terverifikasi dengan kunci asli: OpenRouter & Groq dari production (sesi cloud tidak bisa memanggil openrouter.ai) → owner coba Tanya Lab AI setelah deploy.

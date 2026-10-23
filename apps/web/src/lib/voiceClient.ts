@@ -3,6 +3,7 @@
  * transkripsi Groq Whisper lewat server. Dipakai kotak suara form pencatatan dan asisten suara kelapa.
  */
 import { getSupabase } from './supabase';
+import { loadClip, saveClip, ttsKey } from './ttsStore';
 
 /** Token sesi Supabase untuk API server (kosong bila Supabase tidak diatur). */
 export async function authHeader(): Promise<Record<string, string>> {
@@ -121,21 +122,29 @@ export interface FilledField {
   num: boolean;
 }
 
-/** Suara jawaban asisten (DEC-115): teks → WAV dari server (Groq Orpheus, suara Autumn; hening awal dipotong). */
+/**
+ * Suara jawaban asisten (DEC-115): teks → WAV dari server (Groq Orpheus, suara Autumn; hening awal dipotong).
+ * DEC-139: urutan cari = memori sesi → simpanan perangkat (IndexedDB `gnd-tts`) → Groq; suara baru dari Groq selalu
+ * disimpan, jadi kalimat yang sama pada perintah berikutnya tidak memanggil Groq lagi (hemat limit).
+ */
 const ttsCache = new Map<string, Promise<Blob>>();
 export type TtsVoice = 'autumn' | 'austin';
 export function ttsAudio(text: string, voice: TtsVoice = 'autumn'): Promise<Blob> {
-  const key = text.trim();
-  const ck = `${voice}|${key}`;
+  const key = text.replace(/\s+/g, ' ').trim();
+  const ck = ttsKey(key, voice);
   let p = ttsCache.get(ck);
   if (!p) {
     p = (async () => {
+      const saved = await loadClip(ck);
+      if (saved) return saved;
       const res = await fetch('/api/voice-tts', { method: 'POST', headers: { 'content-type': 'application/json', ...(await authHeader()) }, body: JSON.stringify({ text: key, voice }) });
       if (!res.ok) throw new Error(((await res.json().catch(() => ({}))) as { error?: string }).error ?? `Suara gagal (${res.status}).`);
-      return res.blob();
+      const blob = await res.blob();
+      void saveClip(ck, blob);
+      return blob;
     })();
     p.catch(() => ttsCache.delete(ck));
-    // simpan hanya frasa pendek yang sering diulang
+    // memori sesi hanya untuk frasa pendek yang sering diulang; sisanya diambil dari IndexedDB
     if (key.length <= 60) ttsCache.set(ck, p);
   }
   return p;

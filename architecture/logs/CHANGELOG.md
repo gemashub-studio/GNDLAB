@@ -3,6 +3,12 @@
 Format: [Keep a Changelog](https://keepachangelog.com/id/1.1.0/) · Versi dataset mengikuti SemVer (ADR-002).
 Waktu dalam WIB (UTC+7).
 
+## [Lab AI pulih & suara maskot hemat limit] — 2026-10-23
+### Diperbaiki
+- Tanya Lab AI tidak lagi galat "404: Provider returned error": model gratis diganti yang masih aktif, dicoba bergantian, dengan cadangan Groq.
+### Ditambahkan
+- Suara asisten & jawaban Lab AI disimpan di perangkat; kalimat yang sama diputar dari simpanan tanpa memakai kuota Groq lagi.
+
 ## [Ringkasan: Kapasitas Container tanpa kartu] — 2026-10-23
 ### Diubah
 - Tabel Kapasitas Container di halaman Ringkasan tampil langsung tanpa bingkai kartu.

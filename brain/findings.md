@@ -182,3 +182,9 @@ Clone baru tidak punya Prisma client → `pnpm typecheck`/`next build` gagal "Pa
 
 ### FND-052 · 2026-10-23 · Animated WebP jadi statis saat dilampirkan ke chat
 File animasi owner (kelapa-kora.webp, 288 frame) sampai ke sesi lain sebagai 1 frame 346×375 karena lampiran gambar di chat diratakan menjadi gambar diam. *Why:* DEC-134 mengira berkas owner memang statis. *How to apply:* sebelum memasang aset animasi, cek jumlah frame (`PIL Image.open(p).n_frames`); bila 1 padahal owner bilang animasi, minta berkas lewat repo/folder/link, bukan lampiran chat. Animated WebP selalu lewat `<img>` biasa, jangan next/image.
+
+### FND-053 · 2026-10-23 · Model `:free` OpenRouter bisa dicabut tanpa pemberitahuan di aplikasi
+`minimax/minimax-m3.1-flash:free` hanya gratis 72 jam setelah rilis (berakhir 22 Okt 12:00 UTC); setelah itu OpenRouter membalas 404 "Provider returned error", dan karena parameter `models` mengembalikan galat model terakhir, seluruh Tanya Lab AI ikut gagal. *Why:* daftar model gratis berubah mingguan. *How to apply:* coba model satu per satu (lihat `askOpenRouter`), simpan cadangan Groq, dan saat memilih model cek halaman `openrouter.ai/<slug>` (catatan "Free launch period ends"/"Going away") atau daftar `openrouter.ai/models?max_price=0`. Dari sesi cloud, openrouter.ai diblokir proxy → baca lewat Exa `web_fetch_exa` (halaman HTML, bukan /api/v1/models).
+
+### FND-054 · 2026-10-23 · Uji E2E OCR gagal di container cloud
+`lab.spec.ts` "Foto dari galeri … OCR" gagal di sesi cloud bahkan tanpa perubahan kode (kartu AI hanya "JAWABAN: apa artinya?") — data bahasa tesseract tidak bisa diunduh lewat proxy. *How to apply:* di sesi cloud anggap tes ini tidak bisa dijalankan; verifikasi OCR di laptop owner.
