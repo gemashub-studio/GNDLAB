@@ -244,3 +244,4 @@
 
 ## 2026-10-23 · Claude (sesi cloud) — Ringkasan tanpa kartu Kapasitas Container
 - DEC-138: kelas `card` dihapus dari section Kapasitas Container (isi tetap). Ditafsirkan "hapus card" = hapus bingkai kartu, bukan isi tabel.
+- Deploy production DEC-138: dpl_EKxGmQH1Su8gh4cTywvcX4S1CUhd (eaa6cb2) READY → gemas-rnd.vercel.app; HTML production: section cap-h tanpa kelas card, tabel tetap ada. Uji: typecheck 0, run_all_checks LULUS, screenshot desktop 1440 & ponsel 390.
