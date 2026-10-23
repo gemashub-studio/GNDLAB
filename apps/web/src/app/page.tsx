@@ -102,7 +102,7 @@ export default async function Home() {
       />
 
       <div className="flex flex-wrap items-stretch gap-6">
-        <section aria-labelledby="cap-h" className="card flex min-w-0 flex-[3_1_520px] flex-col gap-3.5">
+        <section aria-labelledby="cap-h" data-testid="capacity-section" className="flex min-w-0 flex-[3_1_520px] flex-col gap-3.5">
           <div className="flex flex-wrap items-baseline justify-between gap-2">
             <h2 id="cap-h" className="text-2xl">
               Kapasitas Container

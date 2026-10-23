@@ -241,3 +241,6 @@
 - Catatan: owner meminta berkas animasi dipasang TANPA diproses (400×496, `/kelapa-kora.webp`), sedangkan DEC-136 memangkas jadi 192×240 di `public/assets/mascot/`. Menunggu keputusan owner apakah berkas asli tanpa pangkas perlu dipasang.
 - Pelajaran: sebelum memberi nomor DEC/FND, `git fetch` dulu — beberapa sesi Claude bekerja paralel di main.
 - Deploy production DEC-137: dpl_D2X1kRuSZPUaveSDbfFwKUynQqtp (343713a) READY → gemas-rnd.vercel.app. Berkas production /assets/mascot/kelapa-kora.webp: image/webp, 2.214.922 byte (sama dengan repo), 288 chunk ANMF + ANIM (beranimasi). Uji: typecheck 0, unit 160/74/187 (19 skip), E2E mascot+voice 6/6, run_all_checks LULUS.
+
+## 2026-10-23 · Claude (sesi cloud) — Ringkasan tanpa kartu Kapasitas Container
+- DEC-138: kelas `card` dihapus dari section Kapasitas Container (isi tetap). Ditafsirkan "hapus card" = hapus bingkai kartu, bukan isi tabel.

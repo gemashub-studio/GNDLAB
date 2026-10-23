@@ -3,6 +3,10 @@
 Format: [Keep a Changelog](https://keepachangelog.com/id/1.1.0/) · Versi dataset mengikuti SemVer (ADR-002).
 Waktu dalam WIB (UTC+7).
 
+## [Ringkasan: Kapasitas Container tanpa kartu] — 2026-10-23
+### Diubah
+- Tabel Kapasitas Container di halaman Ringkasan tampil langsung tanpa bingkai kartu.
+
 ## [Maskot kelapa KORA beranimasi] — 2026-10-23
 ### Diubah
 - Maskot asisten suara kini benar-benar beranimasi (animated WebP 192×240, 288 frame / 14,4 s, 2,2 MB): melambai dengan papan selancar, lalu kickflip skateboard KORA, berulang. Pengguna yang memilih "kurangi gerakan" melihat gambar diam.
