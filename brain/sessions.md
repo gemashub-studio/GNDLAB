@@ -228,5 +228,5 @@
 
 ## 2026-10-23 · Claude (sesi cloud) — maskot kelapa KORA
 - DEC-134: maskot diganti `kelapa-kora.webp` (gambar owner, statis → animasi CSS lama). Uji: typecheck lulus, unit 160 + 74 + 187 (19 skip), E2E mascot-dock + voice-assistant 6/6 (Chromium Linux). FND-051 (cek di container cloud).
-- Belum deploy & push dari sesi ini (GitHub App belum terpasang di org; token Vercel tidak ada di container) → owner push/deploy dari komputer lokal, atau pasang Claude GitHub App.
+- Push GitHub dari sesi cloud BERHASIL (818b218..3ae7b60) walau add_repo sempat memperingatkan push ditolak. Deploy Vercel: tidak ada token Vercel CLI di container.
 - Masih menunggu owner: koreksi Rantai → Arang "Drum pirolisis" + Kombi/pengasapan kopra (SOP KORA), daftar barang Gudang Bio Leather & Cuka, M5.
