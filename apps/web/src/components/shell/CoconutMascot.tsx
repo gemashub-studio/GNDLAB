@@ -1,9 +1,8 @@
 /**
- * Maskot kelapa KORA (DEC-111 → DEC-133 → DEC-134 → DEC-136): animated WebP dari owner (public/assets/mascot/kelapa-kora.webp,
- * 288 frame / 14,4 s: melambai dgn papan selancar → kickflip skateboard KORA, loop) ditambah
- * animasi CSS per keadaan — idle (melayang & bergoyang pelan), listening (berdenyut + cahaya mint), thinking (miring
- * menoleh), talking (memantul cepat). Bila pengguna memilih "kurangi gerakan", CSS mati dan <picture> memakai
- * frame diam (kelapa-kora-diam.webp).
+ * Maskot kelapa KORA (DEC-111 → DEC-134 → DEC-136 → DEC-137): animated WebP dari owner (public/assets/mascot/kelapa-kora.webp,
+ * 288 frame / 14,4 s: melambai dgn papan selancar → kickflip skateboard KORA, loop). Gerakan HANYA dari WebP itu —
+ * animasi CSS dimatikan atas permintaan owner (DEC-137); keadaan `listening` cukup diberi cahaya mint (globals.css).
+ * Bila pengguna memilih "kurangi gerakan", <picture> memakai frame diam (kelapa-kora-diam.webp).
  */
 export type MascotMood = 'idle' | 'listening' | 'thinking' | 'talking';
 

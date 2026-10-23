@@ -20,6 +20,8 @@ for (const [name, w, h] of [['desktop', 1440, 900], ['ponsel', 390, 844]] as con
     await expect(fab).toBeVisible();
     // gambar maskot baru
     await expect(fab.locator('img')).toHaveAttribute('src', '/assets/mascot/kelapa-kora.webp');
+    // gerakan hanya dari animated WebP — tanpa animasi CSS (DEC-136)
+    expect(await fab.locator('.coco-surf').evaluate((el) => getComputedStyle(el).animationName)).toBe('none');
     await page.waitForTimeout(800);
     const b0 = await box(page);
     expect(b0.right).toBeGreaterThan(b0.vw + b0.width * 0.3);

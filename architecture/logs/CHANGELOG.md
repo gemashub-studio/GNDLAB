@@ -9,6 +9,7 @@ Waktu dalam WIB (UTC+7).
 
 ## [Maskot kelapa KORA] — 2026-10-23
 ### Diubah
+- Animasi CSS maskot (melayang/miring/memantul) dimatikan supaya gerakan dari file animasi maskot terlihat.
 - Maskot asisten suara memakai gambar baru "kelapa KORA" (kelapa peselancar melambai) dengan animasi melayang/berdenyut/miring/memantul seperti sebelumnya.
 
 ## [Menu GnD Lab ringkas, flowchart, perintah "isi kolom", bingkai listrik] — 2026-10-20

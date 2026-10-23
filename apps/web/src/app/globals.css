@@ -150,21 +150,14 @@
 .electric-border__canvas { position: absolute; z-index: 1; display: block; pointer-events: none; }
 .voice-spark { position: absolute; pointer-events: none; z-index: 95; transition: opacity 0.5s ease; }
 
-/* maskot kelapa asisten suara (DEC-111 → DEC-133): gambar kelapa peselancar + animasi per keadaan */
-.coco-surf { transform-origin: 50% 92%; }
-.coco-surf--idle { animation: cocoFloat 3.4s ease-in-out infinite; }
-.coco-surf--listening { animation: cocoFloat 1.4s ease-in-out infinite; filter: drop-shadow(0 0 6px rgba(99, 230, 207, 0.85)); }
-.coco-surf--thinking { animation: cocoTilt 1s ease-in-out infinite; }
-.coco-surf--talking { animation: cocoHop 0.42s ease-in-out infinite alternate; }
-@keyframes cocoFloat { 0%, 100% { transform: translateY(0) rotate(-2deg); } 50% { transform: translateY(-5px) rotate(2deg); } }
-@keyframes cocoTilt { 0%, 100% { transform: rotate(-6deg); } 50% { transform: rotate(6deg); } }
-@keyframes cocoHop { from { transform: translateY(0) scale(1); } to { transform: translateY(-4px) scale(1.04, 0.97); } }
+/* maskot kelapa asisten suara (DEC-111 → DEC-136): gerakan berasal dari animated WebP kelapa KORA, tanpa animasi CSS;
+   keadaan "mendengar" hanya diberi cahaya mint (bukan gerakan) */
+.coco-surf--listening { filter: drop-shadow(0 0 6px rgba(99, 230, 207, 0.85)); }
 /* dok maskot di sisi kanan layar: sebagian badan bersembunyi, meluncur keluar saat diklik (seperti pohon kelapa) */
 .coco-dock { touch-action: none; transition: transform 0.55s cubic-bezier(0.2, 0.8, 0.2, 1); }
 .coco-dock[data-out='0']:hover { transform: translateX(var(--dock-peek-hover)) !important; }
 .coco-dock--drag { transition: none; cursor: grabbing; }
 @media (prefers-reduced-motion: reduce) {
-  .coco-surf { animation: none !important; }
   .coco-dock { transition: none; }
 }
 
