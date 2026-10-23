@@ -2,8 +2,8 @@
 
 > File ini **dibuat otomatis** oleh `scripts/validate_dataset.py`. Jangan diedit manual.
 
-- Waktu run: 2026-10-22 17:00 WIB
-- Dataset: `00-research\data\coconut_inventory_dataset.json` (versi 1.0.4)
+- Waktu run: 2026-10-23 09:09 WIB
+- Dataset: `00-research/data/coconut_inventory_dataset.json` (versi 1.0.4)
 - Toleransi uji silang: 10%
 - Ringkasan: **105 PASS · 1 WARN · 0 FAIL · 2 INFO**
 - Status akhir: **LULUS**

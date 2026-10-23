@@ -19,7 +19,7 @@ for (const [name, w, h] of [['desktop', 1440, 900], ['ponsel', 390, 844]] as con
     const fab = page.getByTestId('va-fab');
     await expect(fab).toBeVisible();
     // gambar maskot baru
-    await expect(fab.locator('img')).toHaveAttribute('src', '/assets/mascot/coco-surf.webp');
+    await expect(fab.locator('img')).toHaveAttribute('src', '/assets/mascot/kelapa-kora.webp');
     await page.waitForTimeout(800);
     const b0 = await box(page);
     expect(b0.right).toBeGreaterThan(b0.vw + b0.width * 0.3);
@@ -44,7 +44,7 @@ for (const [name, w, h] of [['desktop', 1440, 900], ['ponsel', 390, 844]] as con
     const b2 = await box(page);
     expect(b2.right).toBeLessThanOrEqual(b2.vw + 1);
     await expect(page.getByTestId('va-panel')).toBeVisible({ timeout: 10_000 });
-    await expect(page.getByTestId('va-panel').locator('img')).toHaveAttribute('src', '/assets/mascot/coco-surf.webp');
+    await expect(page.getByTestId('va-panel').locator('img')).toHaveAttribute('src', '/assets/mascot/kelapa-kora.webp');
     // hentikan → kembali ke dok, bersembunyi sebagian
     await page.getByTestId('va-stop').click();
     await expect(fab).toHaveAttribute('data-out', '0');

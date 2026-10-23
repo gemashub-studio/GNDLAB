@@ -226,3 +226,7 @@
 - 2026-10-22: owner "push" → push GitHub selesai (11825ac..ea2a0a8, 21 commit; merge 2bfac98 membatalkan penghapusan 14 berkas dari 11825ac). Catatan SOP KORA (FND-037) ikut terbit atas keputusan owner. Tidak ada lagi yang tertahan.
 - DEC-133: maskot kelapa peselancar (gambar diam + animasi CSS) + dok kanan yang bisa diseret; owner sempat mengirim installer .exe ("atau yang ini") — tidak dijalankan, diminta berkas animasi (.gif/.webp/.webm/Lottie) bila ada.
 
+## 2026-10-23 · Claude (sesi cloud) — maskot kelapa KORA
+- DEC-134: maskot diganti `kelapa-kora.webp` (gambar owner, statis → animasi CSS lama). Uji: typecheck lulus, unit 160 + 74 + 187 (19 skip), E2E mascot-dock + voice-assistant 6/6 (Chromium Linux). FND-051 (cek di container cloud).
+- Belum deploy & push dari sesi ini (GitHub App belum terpasang di org; token Vercel tidak ada di container) → owner push/deploy dari komputer lokal, atau pasang Claude GitHub App.
+- Masih menunggu owner: koreksi Rantai → Arang "Drum pirolisis" + Kombi/pengasapan kopra (SOP KORA), daftar barang Gudang Bio Leather & Cuka, M5.

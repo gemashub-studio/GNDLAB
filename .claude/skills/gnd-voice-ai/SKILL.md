@@ -14,7 +14,7 @@ description: Mengubah asisten suara kelapa (VoiceAssistant), pengisian form deng
 - **TTS**: `/api/voice-tts` → `canopylabs/orpheus-v1-english`, suara `autumn` (perintah) atau `austin` (jawaban Lab AI);
   batas 300 karakter → teks panjang lewat `speakLong` (dipecah per kalimat ≤ 280). Teks khusus suara: `lib/ttsText.ts`
   (angka → kata, "maaf" → "ma ap, ", tanda baca intonasi).
-- **Maskot & dok** (DEC-133): `CoconutMascot` = gambar `public/assets/mascot/coco-surf.webp` + kelas animasi
+- **Maskot & dok** (DEC-133): `CoconutMascot` = gambar `public/assets/mascot/kelapa-kora.webp` + kelas animasi
   `coco-surf--<mood>` (globals.css); `MascotDock` = tombol `va-fab` di sisi kanan (sebagian bersembunyi, seret naik-turun,
   posisi `localStorage gnd-va:dock-y`, klik → keluar 0,55 dtk lalu `start()` setelah 0,7 dtk); panel memakai `bottom` dok.
 - **Asisten kelapa** (`components/shell/VoiceAssistant.tsx`): sukses → `successText` (kalimat owner bergiliran, isi angka →

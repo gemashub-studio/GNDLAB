@@ -3,6 +3,10 @@
 Format: [Keep a Changelog](https://keepachangelog.com/id/1.1.0/) · Versi dataset mengikuti SemVer (ADR-002).
 Waktu dalam WIB (UTC+7).
 
+## [Maskot kelapa KORA] — 2026-10-23
+### Diubah
+- Maskot asisten suara memakai gambar baru "kelapa KORA" (kelapa peselancar melambai) dengan animasi melayang/berdenyut/miring/memantul seperti sebelumnya.
+
 ## [Menu GnD Lab ringkas, flowchart, perintah "isi kolom", bingkai listrik] — 2026-10-20
 ### Dihapus
 - Menu GnD Lab: Ringkasan, Eksperimen, Library, Standar.

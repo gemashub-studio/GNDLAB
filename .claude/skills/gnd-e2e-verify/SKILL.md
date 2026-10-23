@@ -16,6 +16,8 @@ description: Menjalankan & menulis uji Playwright E2E GnD Lab / gemasSTUDIO di s
   `rm -rf apps/web/.next-e2e`, `preview_start web-e2e` lagi (FND-046).
 
 ## Menjalankan
+- **Container cloud Linux** (tanpa Edge): `npx prisma generate` di apps/web dulu; config sementara yang menghapus `channel: 'msedge'`
+  + symlink headless shell 1248 → 1194 (lihat FND-051). Server: `node e2e/dev-server.mjs &` lalu hangatkan rute dengan curl.
 - Dari `apps/web`: `npx playwright test e2e/<file>.spec.ts --project=desktop --reporter=line`.
 - Suite penuh desktop ±15 menit → jalankan di latar (run_in_background) dan tulis keluaran ke scratchpad; jangan ubah kode
   saat suite berjalan (server mengompilasi ulang → flake).
