@@ -879,7 +879,7 @@ function TreatmentFields({ value, onChange, hide = [], legend = 'Perlakuan (opsi
                   voice={say(['metode', 'perlakuan'], g.key, i)}
                   value={e.method}
                   onChange={(v) => edit(g.key, i, { method: v })}
-                  options={[{ value: '', label: '— pilih —' }, ...g.methods.map((m) => ({ value: m, label: m }))]}
+                  options={[{ value: '', label: '— pilih —' }, ...g.methods.map((m) => ({ value: m, label: m, note: TREATMENT_INFO[g.key].methods[m] ?? '' }))]}
                 />
               </div>
               {i > 0 && (

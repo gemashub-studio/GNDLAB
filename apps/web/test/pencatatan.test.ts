@@ -135,6 +135,20 @@ describe('pencatatan data awal & akhir (DEC-074)', () => {
     expect(info).toHaveLength(1);
     for (const m of ['GreenHouse', 'Oven Briket', 'A - PH 40', 'CUKA 3 - GULA 50', 'Bio Leather B - Gula 50g']) expect(info[0]).toContain(m);
     expect(info[0]).toContain('bukan protokol');
+    // perlakuan bio leather baru (DEC-140) ikut slide penjelasan + data perlakuan, dengan takaran dari owner
+    const NEW_BIO = ['Bio Leather 2L - 50g Gula (Molase) ZA 10g', 'Bio Leather 2L - 25g Gula ZA 20g', 'Bio Leather 2L - 50g Gula (Molase) ZA 20g', 'Bio Leather 2L - 100g Gula ZA 20g'];
+    const bio = TREATMENT_GROUPS.find((g) => g.key === 'bio')!.methods as readonly string[];
+    for (const m of NEW_BIO) expect(bio).toContain(m);
+    const esc = (t: string) => t.replace(/&/g, '&amp;');
+    for (const m of [...NEW_BIO, 'Bio Leather Rumput', 'Bio Leather Kunyit']) expect(info[0]).toContain(esc(m));
+    expect(info[0]).toContain('rumput 132 g, air kelapa 500 g');
+    expect(info[0]).toContain('bunga 74 g, air kelapa 500 g');
+    expect(info[0]).toContain('2 L, gula (molase) 50 g, ZA 10 g');
+    // setiap perlakuan punya penjelasan sendiri (tidak jatuh ke "sesuai label")
+    expect(info[0]).not.toContain('sesuai label<');
+    const r2 = buildCatatReport({ ...rec(), treatments: { bio: [{ count: '2', method: NEW_BIO[3]! }] } }, 'x');
+    const akhir2 = new TextDecoder().decode(buildPptx(r2)).split('<p:sld ').slice(1).find((x) => x.includes('>Data akhir<'))!;
+    expect(akhir2).toContain(NEW_BIO[3]);
   });
 
   it('PPTX: perbandingan = grafik garis native + penjelasan di bawahnya + tabel (DEC-087)', async () => {

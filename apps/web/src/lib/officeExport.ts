@@ -885,10 +885,15 @@ export function buildPptx(r: ResearchReport, charts: ChartPngs = new Map(), vide
       const top = BODY_TOP + (b.lines.length ? 380000 : 0);
       if (b.lines.length) sh += pTextBox(id++, M, BODY_TOP, CW, 340000, b.lines.map((l) => ({ t: l, sz: 1100, color: MUTED })), { autofit: false });
       const rowsN = Math.ceil(b.cards.length / 2);
-      const ch = (BODY_BOTTOM - top - gap * (rowsN - 1)) / rowsN;
+      // tinggi baris mengikuti isi kartu terpanjang di baris itu (judul + baris), agar kartu panjang tidak terpotong (DEC-140)
+      const weight = Array.from({ length: rowsN }, (_, r) => Math.max(...b.cards!.slice(r * 2, r * 2 + 2).map((c) => c.lines.length + 2)));
+      const free = BODY_BOTTOM - top - gap * (rowsN - 1);
+      const rowH = weight.map((w) => (free * w) / weight.reduce((a, v) => a + v, 0));
+      const rowY = rowH.map((_, r) => top + rowH.slice(0, r).reduce((a, v) => a + v + gap, 0));
       b.cards.forEach((c, k) => {
         const x = M + (k % 2) * (cw + gap);
-        const yy = top + Math.floor(k / 2) * (ch + gap);
+        const ch = rowH[Math.floor(k / 2)]!;
+        const yy = rowY[Math.floor(k / 2)]!;
         sh += pRect(id++, x, yy, cw, ch, PAPER, 'rect') + pRect(id++, x, yy + 150000, 60000, ch - 300000, MINT_D);
         sh += pTextBox(id++, x + 200000, yy + 90000, cw - 300000, ch - 180000, [{ t: c.title, sz: 1300, b: true }, ...c.lines.map((l, j) => (j === 0 ? { t: l, sz: 1000, color: BODY2 } : [{ t: '• ', sz: 1000, b: true, color: MINT_D }, { t: l, sz: 1000 }]))], { autofit: false });
       });

@@ -33,6 +33,9 @@ description: Mengubah / memeriksa desain laporan PPTX & DOCX GnD Lab (pencatatan
   rusak: backspace / newline asli). Regex escape lebih aman diganti `startsWith`/logika biasa.
 
 ## Cek visual (wajib setelah ubah desain)
+- **Sesi cloud Linux** (tanpa PowerPoint): tulis PPTX lewat vitest sementara, lalu
+  `soffice --headless --convert-to pdf cek.pptx` dan `pdftoppm -f N -l N -r 80 -png cek.pdf slide`, baca PNG. Cari nomor
+  slide dengan `pdftotext -f i -l i`. Rekaman catat harus punya `finishedAt` + nilai akhir agar slide Data akhir/penjelasan ikut.
 1. Buat contoh berkas lewat uji vitest sementara (`apps/web/test/zz_render.test.ts`, hapus setelahnya) yang menulis
    `cek-*.pptx` ke scratchpad: riset (`buildResearchReport` dengan JPG contoh di `scratchpad/jpg/s0..2.jpg`),
    pencatatan (`buildCatatReport` 6 baris + foto), belanja (`buildTreePptx(lpjTreeSlides(...))`), gabungan.

@@ -38,7 +38,22 @@ export const TREATMENT_GROUPS = [
   { key: 'kopra', title: 'Jumlah perlakuan kopra', methods: ['GreenHouse', 'Oven Gas', 'Oven Briket'] },
   { key: 'bibit', title: 'Jumlah perlakuan bibit bio leather', methods: ['A - PH 40', 'B - PH 40'] },
   { key: 'cuka', title: 'Jumlah perlakuan cuka', methods: ['CUKA 1 - GULA 25g', 'CUKA 2 - GULA 75g', 'CUKA 3 - GULA 50'] },
-  { key: 'bio', title: 'Jumlah perlakuan bio leather', methods: ['Bio Leather A - Gula 25g', 'Bio Leather B - Gula 50g', 'Bio Leather Rumput', 'Bio Leather Bunga', 'Bio Leather Kunyit'] },
+  {
+    key: 'bio',
+    title: 'Jumlah perlakuan bio leather',
+    methods: [
+      'Bio Leather A - Gula 25g',
+      'Bio Leather B - Gula 50g',
+      'Bio Leather Rumput',
+      'Bio Leather Bunga',
+      'Bio Leather Kunyit',
+      // tambahan owner 2026-10-26 (DEC-140)
+      'Bio Leather 2L - 50g Gula (Molase) ZA 10g',
+      'Bio Leather 2L - 25g Gula ZA 20g',
+      'Bio Leather 2L - 50g Gula (Molase) ZA 20g',
+      'Bio Leather 2L - 100g Gula ZA 20g',
+    ],
+  },
 ] as const;
 export type TreatmentKey = (typeof TREATMENT_GROUPS)[number]['key'];
 
@@ -60,14 +75,19 @@ export const TREATMENT_INFO: Record<TreatmentKey, { about: string; methods: Reco
     methods: { 'CUKA 1 - GULA 25g': 'tambahan gula 25 g', 'CUKA 2 - GULA 75g': 'tambahan gula 75 g', 'CUKA 3 - GULA 50': 'tambahan gula 50 (satuan sesuai label)' },
   },
   bio: {
-    about: 'Lembaran bio leather (selulosa hasil fermentasi). Perlakuan dibedakan dari jumlah gula (sesuai label).',
+    about: 'Lembaran bio leather (selulosa hasil fermentasi). Perlakuan dibedakan dari jumlah gula, ZA, atau bahan tambahan (rumput, bunga, kunyit) sesuai label.',
     methods: {
       'Bio Leather A - Gula 25g': 'varian A, gula 25 g',
       'Bio Leather B - Gula 50g': 'varian B, gula 50 g',
-      // tambahan owner (DEC-110) — takaran sesuai isian owner
-      'Bio Leather Rumput': 'rumput 132 gram, air kelapa 500 ml',
-      'Bio Leather Bunga': 'bunga 74 gram, air kelapa 500 ml',
+      // tambahan owner (DEC-110; Rumput & Bunga diperbarui DEC-140) — takaran sesuai isian owner
+      'Bio Leather Rumput': 'rumput 132 g, air kelapa 500 g',
+      'Bio Leather Bunga': 'bunga 74 g, air kelapa 500 g',
       'Bio Leather Kunyit': 'kunyit 212 gram, air kelapa 500 ml',
+      // DEC-140 — "2L" sesuai label owner
+      'Bio Leather 2L - 50g Gula (Molase) ZA 10g': '2 L, gula (molase) 50 g, ZA 10 g',
+      'Bio Leather 2L - 25g Gula ZA 20g': '2 L, gula 25 g, ZA 20 g',
+      'Bio Leather 2L - 50g Gula (Molase) ZA 20g': '2 L, gula (molase) 50 g, ZA 20 g',
+      'Bio Leather 2L - 100g Gula ZA 20g': '2 L, gula 100 g, ZA 20 g',
     },
   },
 };

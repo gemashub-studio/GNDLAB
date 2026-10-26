@@ -3,6 +3,12 @@
 Format: [Keep a Changelog](https://keepachangelog.com/id/1.1.0/) · Versi dataset mengikuti SemVer (ADR-002).
 Waktu dalam WIB (UTC+7).
 
+## [Perlakuan bio leather 2L] — 2026-10-26
+### Ditambahkan
+- Pilihan perlakuan bio leather: 2L - 50g Gula (Molase) ZA 10g, 2L - 25g Gula ZA 20g, 2L - 50g Gula (Molase) ZA 20g, 2L - 100g Gula ZA 20g (ikut tabel & slide penjelasan PPTX).
+### Diubah
+- Takaran Bio Leather Rumput & Bunga: air kelapa 500 g. Pilihan perlakuan non-kopra menampilkan takarannya.
+
 ## [Lab AI pulih & suara maskot hemat limit] — 2026-10-23
 ### Diperbaiki
 - Tanya Lab AI tidak lagi galat "404: Provider returned error": model gratis diganti yang masih aktif, dicoba bergantian, dengan cadangan Groq.

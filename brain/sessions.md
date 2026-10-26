@@ -251,3 +251,8 @@
 - Uji: typecheck 0; unit 160/74/190 (19 skip; +3 tes baru); E2E voice-assistant 5/5 termasuk tes baru (putaran kedua setelah muat ulang: 3 kalimat sama, 0 panggilan /api/voice-tts); mascot-dock 2/2 (sekali flake saat suite gabungan); lab "Lab AI tanpa pilihan model" lulus; lab OCR gagal juga tanpa perubahan (FND-054).
 - Belum terverifikasi dengan kunci asli: OpenRouter & Groq dari production (sesi cloud tidak bisa memanggil openrouter.ai) → owner coba Tanya Lab AI setelah deploy.
 - Deploy production DEC-139: dpl_9LwKX7HG2RsF3w1QMk7WPnqks42n (268e423) READY → gemas-rnd.vercel.app. /api/lab-ai wajib login → belum bisa diuji dengan kunci asli dari sesi cloud; owner diminta mencoba Tanya Lab AI.
+
+## 2026-10-26 · Claude (sesi cloud) — perlakuan bio leather 2L
+- DEC-140: 4 perlakuan Bio Leather 2L + takaran Rumput/Bunga diperbarui; dropdown non-kopra menampilkan takaran; kartu PPTX tinggi adaptif. Render cek via LibreOffice (`soffice --headless --convert-to pdf` + `pdftoppm`) di container cloud: slide Penjelasan perlakuan & Data akhir rapi.
+- Uji: typecheck 0; unit 160/74/190 (19 skip). E2E tidak dijalankan (perubahan data + note dropdown generik).
+- Catatan: "2L" ditulis apa adanya dari label owner (tidak diartikan sebagai volume air kelapa).
