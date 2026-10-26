@@ -256,3 +256,4 @@
 - DEC-140: 4 perlakuan Bio Leather 2L + takaran Rumput/Bunga diperbarui; dropdown non-kopra menampilkan takaran; kartu PPTX tinggi adaptif. Render cek via LibreOffice (`soffice --headless --convert-to pdf` + `pdftoppm`) di container cloud: slide Penjelasan perlakuan & Data akhir rapi.
 - Uji: typecheck 0; unit 160/74/190 (19 skip). E2E tidak dijalankan (perubahan data + note dropdown generik).
 - Catatan: "2L" ditulis apa adanya dari label owner (tidak diartikan sebagai volume air kelapa).
+- Deploy production DEC-140: dpl_8L3rt3bm4kXCqZhh8Gu6jCBNsCMJ (3cdbf5b) READY → gemas-rnd.vercel.app.
