@@ -116,23 +116,37 @@ export function jpegSize(b: Uint8Array): { w: number; h: number } {
 const EMU_PER_PX = 9525;
 const EMU_PER_IN = 914400;
 const CT_HEAD = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>';
-// palet template infografik Canva owner (DEC-121 → DEC-123): kertas putih, cokelat tua, karat, zaitun, marun, taupe
-const INK = '2B2320';
-const MINT = 'A64B2A';
-const MINT_D = '5E7B3A';
-const PAPER = 'F1EDE8';
-const GRID = 'DCD4CC';
-const MUTED = '7D6E66';
-const AMBER = '7B3B34';
-/** Warna kertas slide, teks isi kedua, angka tipis besar, bilah abu kepala. */
-const BG = 'FBFAF7';
-const BODY2 = '4A3F3A';
-const TAUPE = 'A58E83';
-const BAR = 'ECE8E3';
-/** Komponen infografik referensi owner (DEC-126): bilah kicker abu bertulisan putih, label tegak abu muda, angka tipis. */
-const KICK_BAR = 'A8A29E';
-const SIDE = 'CFC8C3';
-const THIN_NUM = 'B3A6A0';
+// palet PPTX hijau muda & hijau tua (DEC-141, owner) — menggantikan palet tanah DEC-121 → DEC-127 (nama konstanta tetap)
+const INK = '1C3A28';
+/** Aksen utama: hijau tua. */
+const MINT = '1F6B3A';
+/** Aksen kedua: hijau sedang (bilah, judul kolom bertulisan kertas). */
+const MINT_D = '3D8B4F';
+/** Kartu & latar blok: hijau muda. */
+const PAPER = 'E8F3E4';
+const GRID = 'C9E2C1';
+const MUTED = '5E7565';
+/** Kepala tabel & lingkaran keterangan: hijau paling tua. */
+const AMBER = '14532D';
+/** Warna kertas slide, teks isi kedua, angka tipis besar, bilah kepala. */
+const BG = 'F7FBF5';
+const BODY2 = '32493A';
+const TAUPE = '9FCB98';
+const BAR = 'E1F0DC';
+/** Komponen infografik referensi owner (DEC-126): bilah kicker bertulisan putih, label tegak, angka tipis — versi hijau. */
+const KICK_BAR = '4E9A5C';
+const SIDE = 'C2DFBB';
+const THIN_NUM = '9CC59A';
+/** Garis/batang seri "awal" di grafik PPTX: hijau muda (seri "akhir" = MINT, hijau tua). */
+const LIGHT_SERIES = '6BBF6E';
+/** DOCX (Word) tetap memakai palet tanah lama — owner hanya meminta PPTX diubah (DEC-141). */
+const D_INK = '2B2320';
+const D_MINT = 'A64B2A';
+const D_MINT_D = '5E7B3A';
+const D_PAPER = 'F1EDE8';
+const D_GRID = 'DCD4CC';
+const D_MUTED = '7D6E66';
+const D_AMBER = '7B3B34';
 const LIGHT_FONT = 'Segoe UI Light';
 
 /** Gambar grafik (PNG) per `ChartSpec.id`, dibuat di browser dari SVG yang sama dengan PDF (DEC-058). */
@@ -176,12 +190,12 @@ const cellPr = (fill?: string, extra = '') => `<w:tcPr>${extra}${fill ? `<w:shd 
 
 function wLine(t: string): string {
   const [label, val] = splitLabel(t);
-  return label ? wP(wRun(`${label}  `, { b: true, sz: 17, color: MUTED }) + wRun(val, { sz: 20, ...(val === 'belum dicatat' && { i: true, color: MUTED }) })) : wPara(t, { sz: 20 });
+  return label ? wP(wRun(`${label}  `, { b: true, sz: 17, color: D_MUTED }) + wRun(val, { sz: 20, ...(val === 'belum dicatat' && { i: true, color: D_MUTED }) })) : wPara(t, { sz: 20 });
 }
 
 function wTable(head: string[], rows: string[][]): string {
-  const border = '<w:tblBorders>' + ['top', 'bottom'].map((s) => `<w:${s} w:val="single" w:sz="6" w:color="${GRID}"/>`).join('') + `<w:insideH w:val="single" w:sz="4" w:color="${GRID}"/></w:tblBorders>`;
-  const cell = (t: string, h: boolean, zebra: boolean) => `<w:tc>${cellPr(h ? INK : zebra ? PAPER : undefined)}<w:p><w:pPr><w:spacing w:after="0"/></w:pPr>${wRun(t || '–', h ? { b: true, sz: 16, color: MINT, mono: true } : { sz: 18 })}</w:p></w:tc>`;
+  const border = '<w:tblBorders>' + ['top', 'bottom'].map((s) => `<w:${s} w:val="single" w:sz="6" w:color="${D_GRID}"/>`).join('') + `<w:insideH w:val="single" w:sz="4" w:color="${D_GRID}"/></w:tblBorders>`;
+  const cell = (t: string, h: boolean, zebra: boolean) => `<w:tc>${cellPr(h ? D_INK : zebra ? D_PAPER : undefined)}<w:p><w:pPr><w:spacing w:after="0"/></w:pPr>${wRun(t || '–', h ? { b: true, sz: 16, color: D_MINT, mono: true } : { sz: 18 })}</w:p></w:tc>`;
   return `<w:tbl><w:tblPr><w:tblW w:w="5000" w:type="pct"/>${border}</w:tblPr>${[head, ...rows]
     .map((r, i) => `<w:tr>${i === 0 ? '<w:trPr><w:tblHeader/></w:trPr>' : '<w:trPr><w:cantSplit/></w:trPr>'}${r.map((c) => cell(c, i === 0, i % 2 === 0)).join('')}</w:tr>`)
     .join('')}</w:tbl>${wPara('', { after: 120 })}`;
@@ -217,28 +231,28 @@ export function buildDocx(r: ResearchReport, charts: ChartPngs = new Map()): Uin
   let sec = 0;
   const section = (title: string) =>
     body.push(
-      wP(wRun(` ${pad2(++sec)} `, { b: true, sz: 20, color: MINT, shade: INK, mono: true }) + wRun(`  ${title}`, { b: true, sz: 30, color: INK }), {
+      wP(wRun(` ${pad2(++sec)} `, { b: true, sz: 20, color: D_MINT, shade: D_INK, mono: true }) + wRun(`  ${title}`, { b: true, sz: 30, color: D_INK }), {
         before: 360,
         after: 160,
         keepNext: true,
-        border: `<w:pBdr><w:bottom w:val="single" w:sz="12" w:space="4" w:color="${MINT}"/></w:pBdr>`,
+        border: `<w:pBdr><w:bottom w:val="single" w:sz="12" w:space="4" w:color="${D_MINT}"/></w:pBdr>`,
       }),
     );
 
   // sampul
-  body.push(wPara('GnD LAB · RISET PRODUK', { b: true, sz: 18, color: MINT_D, mono: true, after: 240 }));
-  body.push(wP(wRun(r.title, { b: true, sz: 52, color: INK }), { after: 200, border: `<w:pBdr><w:bottom w:val="single" w:sz="24" w:space="8" w:color="${MINT}"/></w:pBdr>` }));
-  body.push(wP(wRun(`  ${r.cover.status}  `, { b: true, sz: 20, color: INK, shade: r.cover.done ? MINT : AMBER }), { after: 280 }));
+  body.push(wPara('GnD LAB · RISET PRODUK', { b: true, sz: 18, color: D_MINT_D, mono: true, after: 240 }));
+  body.push(wP(wRun(r.title, { b: true, sz: 52, color: D_INK }), { after: 200, border: `<w:pBdr><w:bottom w:val="single" w:sz="24" w:space="8" w:color="${D_MINT}"/></w:pBdr>` }));
+  body.push(wP(wRun(`  ${r.cover.status}  `, { b: true, sz: 20, color: D_INK, shade: r.cover.done ? D_MINT : D_AMBER }), { after: 280 }));
   body.push(
-    `<w:tbl><w:tblPr><w:tblW w:w="5000" w:type="pct"/><w:tblBorders><w:insideH w:val="single" w:sz="4" w:color="${GRID}"/><w:bottom w:val="single" w:sz="4" w:color="${GRID}"/><w:top w:val="single" w:sz="4" w:color="${GRID}"/></w:tblBorders></w:tblPr>${r.cover.meta
-      .map(([k, v]) => `<w:tr><w:tc>${cellPr(undefined, '<w:tcW w:w="1400" w:type="pct"/>')}<w:p><w:pPr><w:spacing w:after="0"/></w:pPr>${wRun(k.toUpperCase(), { sz: 15, color: MUTED, mono: true })}</w:p></w:tc><w:tc>${cellPr()}<w:p><w:pPr><w:spacing w:after="0"/></w:pPr>${wRun(v, { sz: 22 })}</w:p></w:tc></w:tr>`)
+    `<w:tbl><w:tblPr><w:tblW w:w="5000" w:type="pct"/><w:tblBorders><w:insideH w:val="single" w:sz="4" w:color="${D_GRID}"/><w:bottom w:val="single" w:sz="4" w:color="${D_GRID}"/><w:top w:val="single" w:sz="4" w:color="${D_GRID}"/></w:tblBorders></w:tblPr>${r.cover.meta
+      .map(([k, v]) => `<w:tr><w:tc>${cellPr(undefined, '<w:tcW w:w="1400" w:type="pct"/>')}<w:p><w:pPr><w:spacing w:after="0"/></w:pPr>${wRun(k.toUpperCase(), { sz: 15, color: D_MUTED, mono: true })}</w:p></w:tc><w:tc>${cellPr()}<w:p><w:pPr><w:spacing w:after="0"/></w:pPr>${wRun(v, { sz: 22 })}</w:p></w:tc></w:tr>`)
       .join('')}</w:tbl>`,
   );
   if (r.cover.image?.dataUrl) {
     const d = photo(r.cover.image.dataUrl, 6.5, 3.4, r.cover.image.name);
-    if (d) body.push(wP(d, { before: 240, after: 60 }), wPara(imgCaption(r.cover.image), { sz: 16, color: MUTED }));
+    if (d) body.push(wP(d, { before: 240, after: 60 }), wPara(imgCaption(r.cover.image), { sz: 16, color: D_MUTED }));
   }
-  body.push(wPara(`Dibuat ${r.generatedAt} dari catatan tersimpan di perangkat. Isi = catatan pengguna; bukan klaim produk aman/memenuhi standar.`, { sz: 16, color: MUTED, after: 0 }), PAGE_BREAK);
+  body.push(wPara(`Dibuat ${r.generatedAt} dari catatan tersimpan di perangkat. Isi = catatan pengguna; bukan klaim produk aman/memenuhi standar.`, { sz: 16, color: D_MUTED, after: 0 }), PAGE_BREAK);
 
   // ringkasan KPI (3 per baris)
   section('Ringkasan');
@@ -247,7 +261,7 @@ export function buildDocx(r: ResearchReport, charts: ChartPngs = new Map()): Uin
     rows.push(
       `<w:tr>${r.kpis
         .slice(i, i + 3)
-        .map((k) => `<w:tc>${cellPr(PAPER, `<w:tcW w:w="1666" w:type="pct"/><w:tcBorders><w:left w:val="single" w:sz="24" w:color="${MINT_D}"/><w:top w:val="single" w:sz="18" w:color="FFFFFF"/><w:bottom w:val="single" w:sz="18" w:color="FFFFFF"/><w:right w:val="single" w:sz="18" w:color="FFFFFF"/></w:tcBorders>`)}<w:p><w:pPr><w:spacing w:after="0"/></w:pPr>${wRun(k.value, { b: true, sz: 40, color: INK })}</w:p><w:p><w:pPr><w:spacing w:after="40"/></w:pPr>${wRun(k.label.toUpperCase(), { sz: 15, color: MUTED, mono: true })}</w:p></w:tc>`)
+        .map((k) => `<w:tc>${cellPr(D_PAPER, `<w:tcW w:w="1666" w:type="pct"/><w:tcBorders><w:left w:val="single" w:sz="24" w:color="${D_MINT_D}"/><w:top w:val="single" w:sz="18" w:color="FFFFFF"/><w:bottom w:val="single" w:sz="18" w:color="FFFFFF"/><w:right w:val="single" w:sz="18" w:color="FFFFFF"/></w:tcBorders>`)}<w:p><w:pPr><w:spacing w:after="0"/></w:pPr>${wRun(k.value, { b: true, sz: 40, color: D_INK })}</w:p><w:p><w:pPr><w:spacing w:after="40"/></w:pPr>${wRun(k.label.toUpperCase(), { sz: 15, color: D_MUTED, mono: true })}</w:p></w:tc>`)
         .join('')}</w:tr>`,
     );
   }
@@ -255,26 +269,26 @@ export function buildDocx(r: ResearchReport, charts: ChartPngs = new Map()): Uin
 
   for (const b of r.blocks.filter((x) => !x.pptxOnly)) {
     if (b.level === 1) section(b.heading);
-    else body.push(wP(wRun(b.heading, { b: true, sz: 23, color: MINT_D }), { before: 240, after: 100, keepNext: true, border: `<w:pBdr><w:left w:val="single" w:sz="24" w:space="6" w:color="${MINT}"/></w:pBdr>` }));
+    else body.push(wP(wRun(b.heading, { b: true, sz: 23, color: D_MINT_D }), { before: 240, after: 100, keepNext: true, border: `<w:pBdr><w:left w:val="single" w:sz="24" w:space="6" w:color="${D_MINT}"/></w:pBdr>` }));
     for (const l of b.lines) body.push(wLine(l));
     if (b.table) body.push(wTable(b.table.head, b.table.rows));
     for (const c of b.charts ?? []) {
-      body.push(wP(wRun(c.title, { b: true, sz: 21, color: INK }), { before: 160, after: 60, keepNext: true }));
+      body.push(wP(wRun(c.title, { b: true, sz: 21, color: D_INK }), { before: 160, after: 60, keepNext: true }));
       const png = charts.get(c.id);
       if (png) {
         const { p, id } = addPic(png.bytes, 'png', png.w, png.h, c.title);
         const f = fit(png.w, png.h, 6.5, 3.5);
         body.push(wP(wDrawing(p.rid, id, p.file, f.cx, f.cy), { after: 40, keepNext: true }));
       } else {
-        body.push(wPara('(gambar grafik tidak tersedia — lihat tabel ringkasan di atas)', { sz: 16, color: MUTED, i: true }));
+        body.push(wPara('(gambar grafik tidak tersedia — lihat tabel ringkasan di atas)', { sz: 16, color: D_MUTED, i: true }));
       }
-      body.push(wPara(c.note, { sz: 15, color: MUTED, after: 160 }));
+      body.push(wPara(c.note, { sz: 15, color: D_MUTED, after: 160 }));
     }
     // galeri 3 kolom
     for (let i = 0; i < b.images.length; i += 3) {
       const cells = b.images.slice(i, i + 3).map((im) => {
         const d = im.dataUrl ? photo(im.dataUrl, 2.05, 1.6, im.name) : '';
-        return `<w:tc>${cellPr(undefined, '<w:tcW w:w="1666" w:type="pct"/>')}${d ? wP(d, { after: 40 }) : wPara('(tanpa pratinjau)', { sz: 15, color: MUTED, i: true })}${wPara(imgCaption(im), { sz: 15, after: 0 })}${wPara(im.name, { sz: 13, color: MUTED, mono: true, after: 60 })}</w:tc>`;
+        return `<w:tc>${cellPr(undefined, '<w:tcW w:w="1666" w:type="pct"/>')}${d ? wP(d, { after: 40 }) : wPara('(tanpa pratinjau)', { sz: 15, color: D_MUTED, i: true })}${wPara(imgCaption(im), { sz: 15, after: 0 })}${wPara(im.name, { sz: 13, color: D_MUTED, mono: true, after: 60 })}</w:tc>`;
       });
       while (cells.length < 3) cells.push(`<w:tc>${cellPr(undefined, '<w:tcW w:w="1666" w:type="pct"/>')}<w:p/></w:tc>`);
       body.push(`<w:tbl><w:tblPr><w:tblW w:w="5000" w:type="pct"/>${noBorders}</w:tblPr><w:tr><w:trPr><w:cantSplit/></w:trPr>${cells.join('')}</w:tr></w:tbl>`);
@@ -282,7 +296,7 @@ export function buildDocx(r: ResearchReport, charts: ChartPngs = new Map()): Uin
     if (b.images.length) body.push(wPara('', { after: 80 }));
   }
 
-  const footer = `${CT_HEAD}<w:ftr ${W_NS}><w:p><w:pPr><w:pBdr><w:top w:val="single" w:sz="4" w:space="4" w:color="${GRID}"/></w:pBdr><w:tabs><w:tab w:val="right" w:pos="9638"/></w:tabs></w:pPr>${wRun(r.footer, { sz: 14, color: MUTED, mono: true })}<w:r><w:tab/></w:r>${wRun('Hal. ', { sz: 14, color: MUTED, mono: true })}<w:r><w:rPr><w:sz w:val="14"/><w:color w:val="${MUTED}"/></w:rPr><w:fldChar w:fldCharType="begin"/></w:r><w:r><w:rPr><w:sz w:val="14"/></w:rPr><w:instrText xml:space="preserve"> PAGE </w:instrText></w:r><w:r><w:rPr><w:sz w:val="14"/></w:rPr><w:fldChar w:fldCharType="separate"/></w:r><w:r><w:rPr><w:sz w:val="14"/><w:color w:val="${MUTED}"/></w:rPr><w:t>1</w:t></w:r><w:r><w:rPr><w:sz w:val="14"/></w:rPr><w:fldChar w:fldCharType="end"/></w:r></w:p></w:ftr>`;
+  const footer = `${CT_HEAD}<w:ftr ${W_NS}><w:p><w:pPr><w:pBdr><w:top w:val="single" w:sz="4" w:space="4" w:color="${D_GRID}"/></w:pBdr><w:tabs><w:tab w:val="right" w:pos="9638"/></w:tabs></w:pPr>${wRun(r.footer, { sz: 14, color: D_MUTED, mono: true })}<w:r><w:tab/></w:r>${wRun('Hal. ', { sz: 14, color: D_MUTED, mono: true })}<w:r><w:rPr><w:sz w:val="14"/><w:color w:val="${D_MUTED}"/></w:rPr><w:fldChar w:fldCharType="begin"/></w:r><w:r><w:rPr><w:sz w:val="14"/></w:rPr><w:instrText xml:space="preserve"> PAGE </w:instrText></w:r><w:r><w:rPr><w:sz w:val="14"/></w:rPr><w:fldChar w:fldCharType="separate"/></w:r><w:r><w:rPr><w:sz w:val="14"/><w:color w:val="${D_MUTED}"/></w:rPr><w:t>1</w:t></w:r><w:r><w:rPr><w:sz w:val="14"/></w:rPr><w:fldChar w:fldCharType="end"/></w:r></w:p></w:ftr>`;
   const doc = `${CT_HEAD}<w:document ${W_NS}><w:body>${body.join('')}<w:sectPr><w:footerReference w:type="default" r:id="rIdFtr1"/><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="1134" w:right="1134" w:bottom="1134" w:left="1134" w:header="567" w:footer="567" w:gutter="0"/><w:titlePg/></w:sectPr></w:body></w:document>`;
   const rels = `${CT_HEAD}<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rIdFtr1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/footer" Target="footer1.xml"/>${pics.map((p) => `<Relationship Id="${p.rid}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/${p.file}"/>`).join('')}</Relationships>`;
   return zipStore([
@@ -435,7 +449,7 @@ export function iconFor(title: string): IconKind {
  * Panel "Jalur produk kelapa" ala "ESPECIES DE MANGLE" (DEC-127): judul karat + keterangan, siluet taupe di atas pita
  * tanah coklat berlabel putih, dan lingkaran keterangan marun bertulisan putih di kanan.
  */
-const GROUND = '5B4636';
+const GROUND = '2E5E3B';
 function productPanel(x: number, y: number, w: number): string {
   const items: [IconKind, string, number][] = [
     ['palm', 'Kelapa', 1150000],
@@ -723,7 +737,7 @@ export function buildPptx(r: ResearchReport, charts: ChartPngs = new Map(), vide
       cols.forEach((c, k) => {
         const cap = caps[k] ?? 3;
         const x = M + k * (colW + gap);
-        shapes += pTextBox(id++, x, BODY_TOP, colW, 300000, [{ t: `${c.title.toUpperCase()} · ${c.items.length} FOTO`, sz: 1000, b: true, color: k === 0 ? BG : INK, mono: true }], { fill: k === 0 ? MINT_D : k === 1 ? 'E3E8D8' : 'EFE1DC', geom: 'rect', anchor: 'ctr', autofit: false });
+        shapes += pTextBox(id++, x, BODY_TOP, colW, 300000, [{ t: `${c.title.toUpperCase()} · ${c.items.length} FOTO`, sz: 1000, b: true, color: k === 0 ? BG : INK, mono: true }], { fill: k === 0 ? MINT_D : k === 1 ? 'DDEFD6' : 'EEF6EA', geom: 'rect', anchor: 'ctr', autofit: false });
         const items = c.items.slice(pg * cap, pg * cap + cap);
         const top = BODY_TOP + 380000;
         const rowH = (BODY_BOTTOM - top) / 4;
@@ -1007,7 +1021,7 @@ export function buildPptx(r: ResearchReport, charts: ChartPngs = new Map(), vide
       const onSlide = b.nativeChart ? charts0.slice(0, 1) : charts0.slice(0, 2);
       if (b.nativeChart && onSlide.length) {
         // grafik garis native + teks penjelasan singkat di bawahnya (DEC-087)
-        const cap = b.chartCaption ? [{ t: b.chartCaption, sz: 1100 }] : [];
+        const cap = b.chartCaption ? [{ t: pptxCaption(b.chartCaption), sz: 1100 }] : [];
         const capH = b.chartCaption ? Math.ceil(b.chartCaption.length / 185) * 240000 + 90000 : 0;
         // sisakan tempat agar minimal beberapa baris tabel muat di bawah grafik & penjelasan (DEC-086/087)
         const keep = rows.length ? (Math.min(rows.length, 5) + 1) * TROW : 0;
@@ -1168,7 +1182,7 @@ function packPptx(slides: Slide[], vidExts: ReadonlyMap<string, string> = new Ma
     for (const v of s.vids ?? []) files.push({ name: `ppt/media/${v.file}`, data: v.bytes });
   });
 
-  const theme = `${CT_HEAD}<a:theme xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" name="GEMA"><a:themeElements><a:clrScheme name="GEMA"><a:dk1><a:srgbClr val="2B2320"/></a:dk1><a:lt1><a:srgbClr val="FBFAF7"/></a:lt1><a:dk2><a:srgbClr val="4A3F3A"/></a:dk2><a:lt2><a:srgbClr val="F1EDE8"/></a:lt2><a:accent1><a:srgbClr val="A64B2A"/></a:accent1><a:accent2><a:srgbClr val="7B3B34"/></a:accent2><a:accent3><a:srgbClr val="5E7B3A"/></a:accent3><a:accent4><a:srgbClr val="A58E83"/></a:accent4><a:accent5><a:srgbClr val="7D6E66"/></a:accent5><a:accent6><a:srgbClr val="DCD4CC"/></a:accent6><a:hlink><a:srgbClr val="5E7B3A"/></a:hlink><a:folHlink><a:srgbClr val="7D6E66"/></a:folHlink></a:clrScheme><a:fontScheme name="GEMA"><a:majorFont><a:latin typeface="Georgia"/><a:ea typeface=""/><a:cs typeface=""/></a:majorFont><a:minorFont><a:latin typeface="Arial Narrow"/><a:ea typeface=""/><a:cs typeface=""/></a:minorFont></a:fontScheme><a:fmtScheme name="GEMA"><a:fillStyleLst><a:solidFill><a:schemeClr val="phClr"/></a:solidFill><a:solidFill><a:schemeClr val="phClr"/></a:solidFill><a:solidFill><a:schemeClr val="phClr"/></a:solidFill></a:fillStyleLst><a:lnStyleLst><a:ln w="6350"><a:solidFill><a:schemeClr val="phClr"/></a:solidFill></a:ln><a:ln w="12700"><a:solidFill><a:schemeClr val="phClr"/></a:solidFill></a:ln><a:ln w="19050"><a:solidFill><a:schemeClr val="phClr"/></a:solidFill></a:ln></a:lnStyleLst><a:effectStyleLst><a:effectStyle><a:effectLst/></a:effectStyle><a:effectStyle><a:effectLst/></a:effectStyle><a:effectStyle><a:effectLst/></a:effectStyle></a:effectStyleLst><a:bgFillStyleLst><a:solidFill><a:schemeClr val="phClr"/></a:solidFill><a:solidFill><a:schemeClr val="phClr"/></a:solidFill><a:solidFill><a:schemeClr val="phClr"/></a:solidFill></a:bgFillStyleLst></a:fmtScheme></a:themeElements></a:theme>`;
+  const theme = `${CT_HEAD}<a:theme xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" name="GEMA"><a:themeElements><a:clrScheme name="GEMA"><a:dk1><a:srgbClr val="${INK}"/></a:dk1><a:lt1><a:srgbClr val="${BG}"/></a:lt1><a:dk2><a:srgbClr val="${BODY2}"/></a:dk2><a:lt2><a:srgbClr val="${PAPER}"/></a:lt2><a:accent1><a:srgbClr val="${MINT}"/></a:accent1><a:accent2><a:srgbClr val="${AMBER}"/></a:accent2><a:accent3><a:srgbClr val="${MINT_D}"/></a:accent3><a:accent4><a:srgbClr val="${TAUPE}"/></a:accent4><a:accent5><a:srgbClr val="${MUTED}"/></a:accent5><a:accent6><a:srgbClr val="${GRID}"/></a:accent6><a:hlink><a:srgbClr val="${MINT_D}"/></a:hlink><a:folHlink><a:srgbClr val="${MUTED}"/></a:folHlink></a:clrScheme><a:fontScheme name="GEMA"><a:majorFont><a:latin typeface="Georgia"/><a:ea typeface=""/><a:cs typeface=""/></a:majorFont><a:minorFont><a:latin typeface="Arial Narrow"/><a:ea typeface=""/><a:cs typeface=""/></a:minorFont></a:fontScheme><a:fmtScheme name="GEMA"><a:fillStyleLst><a:solidFill><a:schemeClr val="phClr"/></a:solidFill><a:solidFill><a:schemeClr val="phClr"/></a:solidFill><a:solidFill><a:schemeClr val="phClr"/></a:solidFill></a:fillStyleLst><a:lnStyleLst><a:ln w="6350"><a:solidFill><a:schemeClr val="phClr"/></a:solidFill></a:ln><a:ln w="12700"><a:solidFill><a:schemeClr val="phClr"/></a:solidFill></a:ln><a:ln w="19050"><a:solidFill><a:schemeClr val="phClr"/></a:solidFill></a:ln></a:lnStyleLst><a:effectStyleLst><a:effectStyle><a:effectLst/></a:effectStyle><a:effectStyle><a:effectLst/></a:effectStyle><a:effectStyle><a:effectLst/></a:effectStyle></a:effectStyleLst><a:bgFillStyleLst><a:solidFill><a:schemeClr val="phClr"/></a:solidFill><a:solidFill><a:schemeClr val="phClr"/></a:solidFill><a:solidFill><a:schemeClr val="phClr"/></a:solidFill></a:bgFillStyleLst></a:fmtScheme></a:themeElements></a:theme>`;
   const master = `${CT_HEAD}<p:sldMaster ${P_NS}><p:cSld><p:bg><p:bgPr><a:solidFill><a:srgbClr val="${BG}"/></a:solidFill><a:effectLst/></p:bgPr></p:bg><p:spTree>${emptyTree}</p:spTree></p:cSld><p:clrMap bg1="lt1" tx1="dk1" bg2="lt2" tx2="dk2" accent1="accent1" accent2="accent2" accent3="accent3" accent4="accent4" accent5="accent5" accent6="accent6" hlink="hlink" folHlink="folHlink"/><p:sldLayoutIdLst><p:sldLayoutId id="2147483649" r:id="rId1"/></p:sldLayoutIdLst><p:txStyles><p:titleStyle><a:lvl1pPr><a:defRPr sz="3200"/></a:lvl1pPr></p:titleStyle><p:bodyStyle><a:lvl1pPr><a:defRPr sz="1800"/></a:lvl1pPr></p:bodyStyle><p:otherStyle><a:lvl1pPr><a:defRPr sz="1800"/></a:lvl1pPr></p:otherStyle></p:txStyles></p:sldMaster>`;
   const layout = `${CT_HEAD}<p:sldLayout ${P_NS} type="blank" preserve="1"><p:cSld name="Kosong"><p:spTree>${emptyTree}</p:spTree></p:cSld><p:clrMapOvr><a:masterClrMapping/></p:clrMapOvr></p:sldLayout>`;
   const pres = `${CT_HEAD}<p:presentation ${P_NS} saveSubsetFonts="1"><p:sldMasterIdLst><p:sldMasterId id="2147483648" r:id="rId1"/></p:sldMasterIdLst><p:sldIdLst>${slides.map((_, i) => `<p:sldId id="${256 + i}" r:id="rId${i + 3}"/>`).join('')}</p:sldIdLst><p:sldSz cx="${SW}" cy="${SH}"/><p:notesSz cx="6858000" cy="9144000"/></p:presentation>`;
@@ -1196,11 +1210,14 @@ const pSeg = (id: number, x1: number, y1: number, x2: number, y2: number, color:
 };
 
 /** Warna seri aplikasi (mint/amber) → palet tanah slide (DEC-121); warna lain dipakai apa adanya. */
-const EARTH: Record<string, string> = { '1FA88F': MINT_D, '63E6CF': MINT_D, F5A524: MINT };
+const EARTH: Record<string, string> = { '1FA88F': LIGHT_SERIES, '63E6CF': LIGHT_SERIES, F5A524: MINT };
 const earth = (c: string) => {
   const h = c.replace('#', '').toUpperCase();
   return EARTH[h] ?? h;
 };
+
+/** Keterangan grafik di PPTX: seri hijau/oranye (web & PDF) tampil hijau muda/hijau tua di tema hijau (DEC-141). */
+export const pptxCaption = (t: string) => t.replace(/Garis hijau\b/g, 'Garis hijau muda').replace(/garis oranye\b/g, 'garis hijau tua');
 
 /** Angka sumbu ringkas (koma desimal). */
 const axisNum = (v: number) => {

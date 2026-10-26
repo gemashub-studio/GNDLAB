@@ -163,7 +163,10 @@ export function VoiceAssistant({ show, userKey, pages }: { show: boolean; userKe
   const talking = useRef(0);
   const mutedUntil = useRef(0);
   /** Putar suara (TTS / rekaman) dengan mikrofon dibisukan selama & sesaat sesudahnya. */
+  // asisten sedang terbuka? Setelah panel ditutup, respons yang datang terlambat tidak lagi bersuara (DEC-141)
+  const active = useRef(false);
   const talk = useCallback((play: () => Promise<void>) => {
+    if (!active.current) return Promise.resolve();
     talking.current++;
     setMood('talking');
     return play()
@@ -340,6 +343,7 @@ export function VoiceAssistant({ show, userKey, pages }: { show: boolean; userKe
   );
 
   const start = async () => {
+    active.current = true;
     setErr('');
     setOn(true);
     setMood('listening');
@@ -357,6 +361,7 @@ export function VoiceAssistant({ show, userKey, pages }: { show: boolean; userKe
   };
   const closeIdle = useRef(() => {});
   const stop = () => {
+    active.current = false;
     stopSpeaking();
     stopRef.current?.();
     stopRef.current = null;
@@ -365,7 +370,14 @@ export function VoiceAssistant({ show, userKey, pages }: { show: boolean; userKe
     setStatus('');
   };
   closeIdle.current = stop;
-  useEffect(() => () => stopRef.current?.(), []);
+  useEffect(
+    () => () => {
+      active.current = false;
+      stopSpeaking();
+      stopRef.current?.();
+    },
+    [],
+  );
   useEffect(() => {
     if (!on) return;
     lastCmd.current = Date.now();

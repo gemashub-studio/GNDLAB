@@ -154,7 +154,10 @@ let current: HTMLAudioElement | null = null;
 /** Putar suara teks; selesai saat audio selesai / dihentikan. Satu suara pada satu waktu (yang lama dihentikan). */
 export async function speak(text: string, onStart?: () => void, voice?: TtsVoice): Promise<void> {
   if (!text.trim()) return;
+  const gen = speakGen;
   const blob = await ttsAudio(text, voice);
+  // dihentikan (stopSpeaking) selagi suara dimuat → jangan diputar (DEC-141)
+  if (gen !== speakGen) return;
   current?.pause();
   const url = URL.createObjectURL(blob);
   const audio = new Audio(url);

@@ -227,3 +227,23 @@ describe('perlakuan: foto & keterangan (DEC-089)', () => {
     expect(slides.find((x) => x.includes('>Data akhir<'))).toContain('Keterangan');
   });
 });
+
+describe('tema PPTX hijau muda & hijau tua (DEC-141)', () => {
+  it('PPTX memakai palet hijau; DOCX tetap palet lama; keterangan garis grafik ikut warna hijau', async () => {
+    const { pptxCaption } = await import('@/lib/officeExport');
+    const r = buildCatatReport(rec(), 'x');
+    const pptx = new TextDecoder().decode(buildPptx(r));
+    expect(pptx).toContain('<a:accent1><a:srgbClr val="1F6B3A"/>');
+    expect(pptx).toContain('val="14532D"'); // kepala tabel hijau tua
+    expect(pptx).toContain('val="E8F3E4"'); // hijau muda
+    for (const old of ['A64B2A', '7B3B34', '5E7B3A', 'F1EDE8']) expect(pptx).not.toContain(`val="${old}"`);
+    expect(pptx).toContain('Garis hijau muda');
+    expect(pptx).toContain('garis hijau tua');
+    expect(pptx).not.toContain('oranye');
+    const docx = new TextDecoder().decode(buildDocx(r));
+    expect(docx).toContain('A64B2A');
+    expect(docx).not.toContain('1F6B3A');
+    expect(pptxCaption('Garis hijau = awal, garis oranye = akhir')).toBe('Garis hijau muda = awal, garis hijau tua = akhir');
+  });
+});
+

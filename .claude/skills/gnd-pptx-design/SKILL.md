@@ -13,9 +13,11 @@ description: Mengubah / memeriksa desain laporan PPTX & DOCX GnD Lab (pencatatan
   (`lib/gabungData.ts`, menu Gabungkan Data).
 - Satuan EMU: slide 12192000 × 6858000; `M = 500000` margin; `CW = SW − 2M`. `BODY_TOP = 1300000` (di bawah kepala judul).
 
-## Tema saat ini (DEC-121 → DEC-127, infografik "Ciencia" referensi owner)
-- Warna: `INK 2B2320`, `MINT` (=karat) `A64B2A`, `MINT_D` (=zaitun) `5E7B3A`, `AMBER` (=marun) `7B3B34`, `TAUPE A58E83`,
-  `BG FBFAF7` (kertas), `PAPER F1EDE8`, `GRID DCD4CC`, `KICK_BAR A8A29E`, `SIDE CFC8C3`, `THIN_NUM B3A6A0`, `GROUND 5B4636`.
+## Tema saat ini (komponen DEC-121 → DEC-127; warna hijau DEC-141)
+- PPTX hijau muda & hijau tua: `INK 1C3A28`, `MINT` (hijau tua) `1F6B3A`, `MINT_D` (hijau sedang) `3D8B4F`, `AMBER` (kepala
+  tabel, hijau paling tua) `14532D`, `TAUPE 9FCB98`, `BG F7FBF5`, `PAPER E8F3E4`, `GRID C9E2C1`, `KICK_BAR 4E9A5C`, `SIDE C2DFBB`,
+  `THIN_NUM 9CC59A`, `GROUND 2E5E3B`, seri grafik awal `LIGHT_SERIES 6BBF6E` / akhir `MINT`. Tema XML (`clrScheme`) memakai konstanta ini.
+- **DOCX tetap palet tanah lama** lewat konstanta `D_*` (owner hanya meminta PPTX). Keterangan grafik PPTX lewat `pptxCaption()`.
 - Font: tema mayor Georgia (judul serif), minor Arial Narrow (isi); angka besar `Segoe UI Light` (`PRun.font`).
   Font koran asli tidak diketahui/berlisensi → jelaskan ke owner bila diminta "persis".
 - Komponen: `masthead()` (kotak putih "GnD Lab" + kalimat pembuka tebal karat), `kickerBar(id,cx,y,teks,ikon?)` (bilah abu,

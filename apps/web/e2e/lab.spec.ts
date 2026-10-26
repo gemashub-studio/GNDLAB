@@ -308,7 +308,7 @@ test.describe('Hapus hasil riset', () => {
     await akhir.getByTestId('catat-tr-method-kopra-1').click();
     await akhir.getByTestId('catat-tr-method-kopra-1-opt-Oven Briket').click();
     await akhir.getByTestId('catat-tr-method-cuka-0').click();
-    await expect(akhir.getByTestId('catat-tr-method-cuka-0-list').getByRole('option')).toHaveText(['— pilih —', 'CUKA 1 - GULA 25g', 'CUKA 2 - GULA 75g', 'CUKA 3 - GULA 50']);
+    await expect(akhir.getByTestId('catat-tr-method-cuka-0-list').getByRole('option')).toHaveText(['— pilih —', /^CUKA 1 - GULA 25g/, /^CUKA 2 - GULA 75g/, /^CUKA 3 - GULA 50/]);
     await akhir.getByTestId('catat-tr-method-cuka-0-opt-CUKA 2 - GULA 75g').click();
     await akhir.getByTestId('catat-tr-count-cuka-0').fill('2');
     // foto & keterangan per perlakuan (DEC-089)
@@ -402,6 +402,26 @@ test.describe('Hapus hasil riset', () => {
     // revisi: bagian Perlakuan sama seperti form data awal (DEC-106), terisi dari data yang sama
     await expect(rev.getByTestId('catat-revisi-perlakuan-title')).toHaveText('Perlakuan kopra');
     await expect(rev.getByTestId('catat-treatments-legend')).toHaveText('Perlakuan lainnya (Non Kopra)');
+    // ＋ Tambah perlakuan (DEC-141): modal pilihan bio leather → kartu baru dengan metode terisi
+    const bioCards = rev.getByTestId(/^catat-tr-method-bio-\d+$/);
+    const before = await bioCards.count();
+    await rev.getByTestId('catat-tr-pick-open').click();
+    const picker = page.getByTestId('catat-tr-picker');
+    await expect(picker.getByTestId(/^catat-tr-pick-\d+$/)).toHaveCount(7);
+    await expect(picker).toContainText('Bio Leather 2L - 100g Gula ZA 20g');
+    await expect(picker).toContainText('rumput 132 g, air kelapa 500 g');
+    // Esc menutup modal pilihan saja, form revisi tetap terbuka
+    await page.keyboard.press('Escape');
+    await expect(picker).toHaveCount(0);
+    await expect(rev).toBeVisible();
+    await rev.getByTestId('catat-tr-pick-open').click();
+    await picker.getByTestId('catat-tr-pick-3').click();
+    await expect(picker).toHaveCount(0);
+    await expect(rev).toContainText('Bio Leather 2L - 50g Gula (Molase) ZA 10g');
+    await rev.getByTestId('catat-tr-pick-open').click();
+    await picker.getByTestId('catat-tr-pick-0').click();
+    await expect(bioCards).toHaveCount(Math.max(before, 1) + 1);
+    await expect(bioCards.last()).toContainText('Bio Leather Rumput');
     await expect(rev.getByTestId('catat-perl-0')).toContainText('Oven Gas');
     await expect(rev.getByTestId('catat-perl-count-0')).toHaveValue('3');
     await expect(rev.getByTestId('catat-tr-note-kopra-0')).toHaveValue('suhu oven 60 C, dibalik tiap 2 jam');

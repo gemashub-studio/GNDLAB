@@ -188,3 +188,9 @@ File animasi owner (kelapa-kora.webp, 288 frame) sampai ke sesi lain sebagai 1 f
 
 ### FND-054 · 2026-10-23 · Uji E2E OCR gagal di container cloud
 `lab.spec.ts` "Foto dari galeri … OCR" gagal di sesi cloud bahkan tanpa perubahan kode (kartu AI hanya "JAWABAN: apa artinya?") — data bahasa tesseract tidak bisa diunduh lewat proxy. *How to apply:* di sesi cloud anggap tes ini tidak bisa dijalankan; verifikasi OCR di laptop owner.
+
+### FND-055 · 2026-10-26 · speak() memutar suara yang sudah dibatalkan
+`stopSpeaking()` hanya menjeda audio yang sedang diputar; `speak()` yang masih menunggu `ttsAudio` (fetch Groq) tetap memutar suaranya setelah selesai dimuat → suara maskot terdengar walau panel sudah ditutup. *How to apply:* setiap pemutar suara async harus menyimpan `speakGen` di awal dan batal bila berubah setelah `await`; komponen yang memanggil TTS perlu flag aktif agar respons terlambat tidak bersuara. Uji: tahan respons `/api/voice-tts` 3 dtk, tutup panel, pastikan tidak ada `HTMLAudioElement.play` baru (patch prototype di addInitScript).
+
+### FND-056 · 2026-10-26 · Teks opsi Dropdown ikut memuat `note`
+Sejak dropdown perlakuan non-kopra menampilkan takaran (DEC-140), `getByRole('option')` berisi "nama + keterangan" → uji `toHaveText([...])` persis gagal. *How to apply:* cocokkan awal teks dengan regex (`/^CUKA 1 - GULA 25g/`) atau pilih lewat testId `<id>-opt-<value>`. Jalankan E2E lab setelah mengubah opsi Dropdown.

@@ -213,3 +213,60 @@ test('DEC-139: suara TTS disimpan di perangkat → kalimat yang sama (juga setel
   // putaran kedua memang mengucapkan kalimat yang sudah pernah dibuat (jadi suaranya dari simpanan)
   expect(shown.slice(3).some((t) => first.includes(t))).toBe(true);
 });
+
+test('DEC-141: panel maskot ditutup → suara TTS berhenti (sedang diputar maupun masih dimuat)', async ({ page }) => {
+  test.setTimeout(180_000);
+  spoken = [];
+  await page.addInitScript(() => {
+    window.localStorage.setItem('gnd-va-force', '1');
+    // catat semua <audio> yang diputar
+    const w = window as unknown as { __audios: HTMLAudioElement[] };
+    w.__audios = [];
+    const play = HTMLAudioElement.prototype.play;
+    HTMLAudioElement.prototype.play = function (this: HTMLAudioElement) {
+      w.__audios.push(this);
+      return play.call(this);
+    };
+  });
+  // WAV hening 4 dtk supaya masih diputar saat panel ditutup; respons TTS kedua ditahan 3 dtk
+  const n = 24000 * 4;
+  const wav = Buffer.alloc(44 + n * 2);
+  wav.write('RIFF', 0); wav.writeUInt32LE(36 + n * 2, 4); wav.write('WAVEfmt ', 8); wav.writeUInt32LE(16, 16); wav.writeUInt16LE(1, 20); wav.writeUInt16LE(1, 22);
+  wav.writeUInt32LE(24000, 24); wav.writeUInt32LE(48000, 28); wav.writeUInt16LE(2, 32); wav.writeUInt16LE(16, 34); wav.write('data', 36); wav.writeUInt32LE(n * 2, 40);
+  let slow = false;
+  await page.route('**/api/voice-transcribe', (r) => r.fulfill({ json: { ok: true, text: '' } }));
+  await page.route('**/api/voice-tts', async (r) => {
+    spoken.push((r.request().postDataJSON() as { text: string }).text);
+    if (slow) await new Promise((res) => setTimeout(res, 3000));
+    await r.fulfill({ body: wav, contentType: 'audio/wav' });
+  });
+  await page.route('**/api/voice-assistant', (r) => r.fulfill({ json: { ok: true, actions: [], reply: 'Maaf, aku belum paham. Coba ucapkan lagi ya.' } }));
+  const audios = () => page.evaluate(() => (window as unknown as { __audios: HTMLAudioElement[] }).__audios.map((a) => ({ paused: a.paused, src: a.src })));
+  const panel = page.getByTestId('va-panel');
+  const ask = async () => {
+    await panel.getByTestId('va-text').fill('nyanyikan lagu dong');
+    await panel.getByTestId('va-text').press('Enter');
+  };
+
+  // 1. sedang diputar → tutup → berhenti
+  await page.goto('/konversi');
+  await page.getByTestId('va-yes').click();
+  await expect(panel).toContainText('Aku mendengarkan');
+  await ask();
+  await expect.poll(async () => (await audios()).filter((a) => !a.paused).length, { timeout: 30_000 }).toBe(1);
+  await panel.getByTestId('va-stop').click();
+  await expect.poll(async () => (await audios()).filter((a) => !a.paused).length).toBe(0);
+
+  // 2. suara masih dimuat (respons TTS lambat) → tutup → tidak pernah diputar
+  slow = true;
+  await page.getByTestId('va-fab').click();
+  await expect(panel).toContainText('Aku mendengarkan', { timeout: 15_000 });
+  const before = (await audios()).length;
+  const asked = spoken.length;
+  await ask();
+  await expect.poll(() => spoken.length, { timeout: 30_000 }).toBeGreaterThan(asked);
+  await panel.getByTestId('va-stop').click();
+  await page.waitForTimeout(4500);
+  expect((await audios()).length).toBe(before);
+});
+

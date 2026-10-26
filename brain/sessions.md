@@ -257,3 +257,7 @@
 - Uji: typecheck 0; unit 160/74/190 (19 skip). E2E tidak dijalankan (perubahan data + note dropdown generik).
 - Catatan: "2L" ditulis apa adanya dari label owner (tidak diartikan sebagai volume air kelapa).
 - Deploy production DEC-140: dpl_8L3rt3bm4kXCqZhh8Gu6jCBNsCMJ (3cdbf5b) READY → gemas-rnd.vercel.app.
+
+## 2026-10-26 · Claude (sesi cloud) — tombol + perlakuan revisi, PPTX hijau, TTS maskot berhenti
+- DEC-141 (FND-055, FND-056). Uji: typecheck 0; unit 160/74/191 (19 skip); E2E lab Pencatatan Data (termasuk modal ＋) lulus; voice-assistant 6/6 termasuk tes baru (gagal tanpa perbaikan, lulus dengan perbaikan); mascot-dock: flake sesekali saat suite gabungan (1 dari 6 ulangan; sudah terlihat sebelum DEC-141), 6/6 di ulangan berikutnya. Render PPTX 9 slide via LibreOffice: tema hijau terbaca.
+- Berikutnya: permintaan owner modal Resep baru (Riset produk) + bahan/alat pindah ke pencatatan (DEC-142).

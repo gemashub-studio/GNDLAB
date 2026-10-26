@@ -56,6 +56,21 @@ export const TREATMENT_GROUPS = [
   },
 ] as const;
 export type TreatmentKey = (typeof TREATMENT_GROUPS)[number]['key'];
+/** Pilihan modal "＋ Tambah perlakuan" di form revisi, bagian Perlakuan lainnya (Non Kopra) — daftar owner 2026-10-26 (DEC-141). */
+export const BIO_PICK_METHODS = [
+  'Bio Leather Rumput',
+  'Bio Leather Bunga',
+  'Bio Leather Kunyit',
+  'Bio Leather 2L - 50g Gula (Molase) ZA 10g',
+  'Bio Leather 2L - 25g Gula ZA 20g',
+  'Bio Leather 2L - 50g Gula (Molase) ZA 20g',
+  'Bio Leather 2L - 100g Gula ZA 20g',
+] as const;
+/** Tambah kartu perlakuan bio leather dengan metode terpilih; kolom bio yang masih kosong dipakai lebih dulu. */
+export function addBioCard(list: readonly TreatmentEntry[], method: string): TreatmentEntry[] {
+  const blank = list.findIndex((e) => !e.method && !e.count && !e.photo && !e.note);
+  return blank >= 0 ? list.map((e, j) => (j === blank ? { ...e, method } : e)) : [...list, { count: '', method }];
+}
 
 /**
  * Penjelasan UMUM tiap perlakuan untuk slide PPTX (DEC-087) — diturunkan dari nama perlakuan yang dipakai owner,

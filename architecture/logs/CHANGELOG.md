@@ -3,6 +3,14 @@
 Format: [Keep a Changelog](https://keepachangelog.com/id/1.1.0/) · Versi dataset mengikuti SemVer (ADR-002).
 Waktu dalam WIB (UTC+7).
 
+## [Tambah perlakuan di revisi, PPTX hijau, suara maskot] — 2026-10-26
+### Ditambahkan
+- Form revisi: tombol ＋ Tambah perlakuan (bio leather) di bagian Perlakuan lainnya (Non Kopra).
+### Diubah
+- Laporan PowerPoint bertema hijau muda & hijau tua (Word tetap).
+### Diperbaiki
+- Suara maskot kelapa langsung berhenti saat panel asisten ditutup.
+
 ## [Perlakuan bio leather 2L] — 2026-10-26
 ### Ditambahkan
 - Pilihan perlakuan bio leather: 2L - 50g Gula (Molase) ZA 10g, 2L - 25g Gula ZA 20g, 2L - 50g Gula (Molase) ZA 20g, 2L - 100g Gula ZA 20g (ikut tabel & slide penjelasan PPTX).

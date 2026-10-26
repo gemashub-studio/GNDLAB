@@ -30,6 +30,8 @@ import {
   type TreatmentKey,
   type CatatRecord,
   type CatatRow,
+  addBioCard,
+  BIO_PICK_METHODS,
 } from '@/lib/pencatatan';
 import { photoDataUrl } from '@/lib/photo';
 import { CatatResult, DownloadButtons } from './CatatResult';
@@ -832,7 +834,7 @@ function AkhirModal({ pending, onClose, onConfirm, onDraft, onFinish, revision =
                 title="Perlakuan kopra"
               />
             )}
-            <TreatmentFields value={tr} onChange={(fn) => { setTouched(true); setTr(fn); }} {...(revision && { hide: ['kopra' as TreatmentKey], legend: 'Perlakuan lainnya (Non Kopra)' })} />
+            <TreatmentFields value={tr} onChange={(fn) => { setTouched(true); setTr(fn); }} {...(revision && { hide: ['kopra' as TreatmentKey], legend: 'Perlakuan lainnya (Non Kopra)', picker: true })} />
           </>
         )}
         {err && <p className="text-sm" role="alert"><span className="bg-safety px-1">{err}</span></p>}
@@ -847,13 +849,21 @@ type TreatmentState = Record<TreatmentKey, TreatmentEntry[]>;
  * Perlakuan (opsional) di form data akhir (DEC-081): tiap jenis berisi kolom "jumlah perlakuan" + dropdown
  * "Perlakuan/metode"; tombol + menambah pasangan kolom baru di bawahnya, ✕ menghapus kolom tambahan.
  */
-function TreatmentFields({ value, onChange, hide = [], legend = 'Perlakuan (opsional)' }: { value: TreatmentState; onChange: (fn: (x: TreatmentState) => TreatmentState) => void; hide?: TreatmentKey[]; legend?: string }) {
+function TreatmentFields({ value, onChange, hide = [], legend = 'Perlakuan (opsional)', picker = false }: { value: TreatmentState; onChange: (fn: (x: TreatmentState) => TreatmentState) => void; hide?: TreatmentKey[]; legend?: string; picker?: boolean }) {
   const edit = (key: TreatmentKey, i: number, patch: Partial<TreatmentEntry>) => onChange((x) => ({ ...x, [key]: x[key].map((e, j) => (j === i ? { ...e, ...patch } : e)) }));
+  const [picking, setPicking] = useState(false);
+  const bioBox = useRef<HTMLDivElement>(null);
+  // kartu perlakuan bio leather baru dari modal ＋ (DEC-141) → tampilkan kartunya
+  const pick = (method: string) => {
+    onChange((x) => ({ ...x, bio: addBioCard(x.bio, method) }));
+    setPicking(false);
+    requestAnimationFrame(() => bioBox.current?.scrollIntoView({ block: 'nearest', behavior: 'smooth' }));
+  };
   return (
     <fieldset className="grid grid-cols-1 gap-3 rounded-xl bg-paper p-3 sm:grid-cols-2" data-testid="catat-treatments">
       <legend className="label-mono px-1" data-testid="catat-treatments-legend">{legend}</legend>
       {TREATMENT_GROUPS.filter((g) => !hide.includes(g.key)).map((g) => (
-        <div key={g.key} className="flex flex-col gap-2 rounded-xl bg-white p-3" data-testid={`catat-tr-${g.key}`}>
+        <div key={g.key} ref={g.key === 'bio' ? bioBox : undefined} className="flex flex-col gap-2 rounded-xl bg-white p-3" data-testid={`catat-tr-${g.key}`}>
           <span className="label-mono">{g.title}</span>
           {value[g.key].map((e, i) => (
             <div key={i} className={`flex flex-col gap-2 ${i > 0 ? 'border-t border-ink/10 pt-2' : ''}`}>
@@ -930,6 +940,56 @@ function TreatmentFields({ value, onChange, hide = [], legend = 'Perlakuan (opsi
           </button>
         </div>
       ))}
+      {picker && (
+        <button
+          type="button"
+          className="inline-flex items-center gap-2 self-start rounded-full bg-white px-3 py-1.5 font-mono text-xs font-bold text-ink shadow-sm hover:bg-acid sm:col-span-2"
+          onClick={() => setPicking(true)}
+          aria-label="Tambah kartu perlakuan baru"
+          aria-haspopup="dialog"
+          data-testid="catat-tr-pick-open"
+        >
+          <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-ink text-lg leading-none text-paper">+</span>
+          Tambah perlakuan
+        </button>
+      )}
+      {picking && <TreatmentPicker onPick={pick} onClose={() => setPicking(false)} />}
     </fieldset>
+  );
+}
+
+/** Modal pilihan perlakuan bio leather (DEC-141) — lapisan di atas form revisi; menutupnya tidak menutup form. */
+function TreatmentPicker({ onPick, onClose }: { onPick: (method: string) => void; onClose: () => void }) {
+  const box = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    box.current?.querySelector<HTMLElement>('button[data-pick]')?.focus({ preventScroll: true });
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return;
+      e.stopImmediatePropagation();
+      onClose();
+    };
+    window.addEventListener('keydown', onKey, true);
+    return () => window.removeEventListener('keydown', onKey, true);
+  }, [onClose]);
+  return createPortal(
+    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-ink/40 px-3" onClick={(e) => e.target === e.currentTarget && onClose()} data-testid="catat-tr-picker-backdrop">
+      <div ref={box} role="dialog" aria-modal="true" aria-label="Tambah perlakuan baru" className="w-full max-w-md rounded-2xl bg-surface shadow-2xl" data-testid="catat-tr-picker">
+        <div className="flex items-center justify-between gap-3 border-b border-paper-grid px-5 py-3">
+          <h3 className="text-base">Tambah perlakuan baru</h3>
+          <button type="button" className="font-mono text-sm underline" onClick={onClose} data-testid="catat-tr-picker-close">Tutup</button>
+        </div>
+        <ul className="flex max-h-[60vh] flex-col gap-1 overflow-y-auto p-3">
+          {BIO_PICK_METHODS.map((m, i) => (
+            <li key={m}>
+              <button type="button" data-pick className="flex w-full flex-col items-start rounded-xl px-3 py-2 text-left hover:bg-acid focus:bg-acid focus:outline-none" onClick={() => onPick(m)} data-testid={`catat-tr-pick-${i}`}>
+                <span className="text-sm font-semibold">{m}</span>
+                <span className="text-xs text-muted">{TREATMENT_INFO.bio.methods[m]}</span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </div>,
+    document.body,
   );
 }
