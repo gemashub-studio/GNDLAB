@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
+import { Fragment, useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import type { RawRecord } from '@/lib/bahanBaku';
 import { RAW_ITEMS } from '@/lib/labStore';
@@ -32,6 +32,11 @@ import {
   type CatatRow,
   addBioCard,
   BIO_PICK_METHODS,
+  blankItem,
+  extrasOf,
+  withExtras,
+  type CatatExtras,
+  type CatatItem,
 } from '@/lib/pencatatan';
 import { photoDataUrl } from '@/lib/photo';
 import { CatatResult, DownloadButtons } from './CatatResult';
@@ -95,7 +100,7 @@ export function PencatatanTab({ records, oldRaw, onChanged }: { records: CatatRe
   const [revised, setRevised] = useState<CatatRecord>();
   const [ask, dialog] = useConfirm();
   // Selesaikan (DEC-098): ketik "Selesai" → simpan (bila dari form) → kartu hijau → petasan
-  const [finishing, setFinishing] = useState<{ rec: CatatRecord; akhir?: AkhirInput[]; tr?: Treatments }>();
+  const [finishing, setFinishing] = useState<{ rec: CatatRecord; akhir?: AkhirInput[]; tr?: Treatments; ex?: CatatExtras }>();
   const [success, setSuccess] = useState(false);
   // mode pilih (DEC-076): hanya catatan lengkap (awal & akhir) yang bisa dipilih
   const [selecting, setSelecting] = useState(false);
@@ -128,7 +133,7 @@ export function PencatatanTab({ records, oldRaw, onChanged }: { records: CatatRe
   const ordered = [...pending, ...live.filter((r) => r.finishedAt)];
   const complete = live.filter((r) => r.finishedAt);
 
-  const finish = async (f: { rec: CatatRecord; akhir?: AkhirInput[]; tr?: Treatments }) => {
+  const finish = async (f: { rec: CatatRecord; akhir?: AkhirInput[]; tr?: Treatments; ex?: CatatExtras }) => {
     setFinishing(undefined);
     setMode('');
     setRevise(undefined);
@@ -136,7 +141,7 @@ export function PencatatanTab({ records, oldRaw, onChanged }: { records: CatatRe
     setToast('finishing');
     const started = Date.now();
     try {
-      if (f.akhir) await saveCatatAkhir(f.rec.id, f.akhir, f.tr, true);
+      if (f.akhir) await saveCatatAkhir(f.rec.id, f.akhir, f.tr, true, f.ex);
       await closeCatat(f.rec.id);
       await onChanged();
       window.setTimeout(() => {
@@ -149,20 +154,20 @@ export function PencatatanTab({ records, oldRaw, onChanged }: { records: CatatRe
     }
   };
 
-  const saveAwal = async (item: string, rows: CatatRow[], treatments?: Treatments) => {
+  const saveAwal = async (item: string, rows: CatatRow[], treatments?: Treatments, ex?: CatatExtras) => {
     setMode('');
     setToast('saving');
     const started = Date.now();
-    await addCatatAwal(item, rows, treatments);
+    await addCatatAwal(item, rows, treatments, ex);
     await onChanged();
     window.setTimeout(() => setToast(''), Math.max(0, SAVE_MS - (Date.now() - started)));
   };
-  const saveAkhir = async (id: string, akhir: AkhirInput[], treatments: Treatments, isRevision = false) => {
+  const saveAkhir = async (id: string, akhir: AkhirInput[], treatments: Treatments, ex: CatatExtras, isRevision = false) => {
     setMode('');
     setRevise(undefined);
     setToast('finishing');
     const started = Date.now();
-    const rec = await saveCatatAkhir(id, akhir, treatments);
+    const rec = await saveCatatAkhir(id, akhir, treatments, true, ex);
     await onChanged();
     window.setTimeout(() => {
       setToast('');
@@ -171,11 +176,11 @@ export function PencatatanTab({ records, oldRaw, onChanged }: { records: CatatRe
     }, Math.max(0, SAVE_MS - (Date.now() - started)));
   };
   // "Simpan dulu": data akhir belum lengkap disimpan sebagai pembaruan terbaru (DEC-082)
-  const saveDraft = async (id: string, akhir: AkhirInput[], treatments: Treatments) => {
+  const saveDraft = async (id: string, akhir: AkhirInput[], treatments: Treatments, ex: CatatExtras) => {
     setMode('');
     setToast('saving');
     const started = Date.now();
-    const rec = await saveCatatAkhir(id, akhir, treatments, false);
+    const rec = await saveCatatAkhir(id, akhir, treatments, false, ex);
     await onChanged();
     window.setTimeout(() => {
       setToast('');
@@ -298,9 +303,9 @@ export function PencatatanTab({ records, oldRaw, onChanged }: { records: CatatRe
         </details>
       )}
 
-      {mode === 'awal' && <AwalModal onClose={() => setMode('')} onConfirm={(item, rows, t) => void saveAwal(item, rows, t)} />}
-      {mode === 'akhir' && <AkhirModal pending={pending} onClose={() => setMode('')} onConfirm={(id, a, t) => void saveAkhir(id, a, t)} onDraft={(id, a, t) => void saveDraft(id, a, t)} onFinish={(rec, akhir, tr) => setFinishing({ rec, akhir, tr })} />}
-      {revise && <AkhirModal key={revise.id} pending={[revise]} revision onClose={() => setRevise(undefined)} onConfirm={(id, a, t) => void saveAkhir(id, a, t, true)} onDraft={() => undefined} onFinish={(rec, akhir, tr) => setFinishing({ rec, akhir, tr })} />}
+      {mode === 'awal' && <AwalModal onClose={() => setMode('')} onConfirm={(item, rows, t, ex) => void saveAwal(item, rows, t, ex)} />}
+      {mode === 'akhir' && <AkhirModal pending={pending} onClose={() => setMode('')} onConfirm={(id, a, t, ex) => void saveAkhir(id, a, t, ex)} onDraft={(id, a, t, ex) => void saveDraft(id, a, t, ex)} onFinish={(rec, akhir, tr, ex) => setFinishing({ rec, akhir, tr, ex })} />}
+      {revise && <AkhirModal key={revise.id} pending={[revise]} revision onClose={() => setRevise(undefined)} onConfirm={(id, a, t, ex) => void saveAkhir(id, a, t, ex, true)} onDraft={() => undefined} onFinish={(rec, akhir, tr, ex) => setFinishing({ rec, akhir, tr, ex })} />}
       {preview && (
         <PageModal title={`Pratinjau ${preview.id}`} onClose={() => setPreview(undefined)} testId="catat-preview" wide>
           <CatatResult rec={preview} />
@@ -496,8 +501,9 @@ function PageModal({ title, onClose, children, footer, testId, wide = false, ent
 }
 
 /** Form catatan awal: item + jumlah → baris bernomor sebanyak jumlah. */
-function AwalModal({ onClose, onConfirm }: { onClose: () => void; onConfirm: (item: string, rows: CatatRow[], treatments?: Treatments) => void }) {
+function AwalModal({ onClose, onConfirm }: { onClose: () => void; onConfirm: (item: string, rows: CatatRow[], treatments: Treatments | undefined, extras: CatatExtras) => void }) {
   const [item, setItem] = useState<string>(RAW_ITEMS[0]);
+  const [ex, setEx] = useState<CatatExtras>(() => extrasOf());
   // perlakuan (DEC-101): Green House / Oven Gas / Oven Briket + jumlah produksi; item dibagi berurutan ke tiap perlakuan
   const [perl, setPerl] = useState<TreatmentEntry[]>([{ method: '', count: '' }]);
   const perlFilled = perlFilledOf(perl);
@@ -525,7 +531,7 @@ function AwalModal({ onClose, onConfirm }: { onClose: () => void; onConfirm: (it
     if (miss.length) return setErr(`Masih kosong (${hasThickness(item) ? 'berat awal / tebal daging' : 'berat awal'}) di nomor: ${miss.slice(0, 12).join(', ')}${miss.length > 12 ? `, … (${miss.length} nomor)` : ''}.`);
     const keep = new Set(cols.map(([k]) => k as string));
     const treatments: Treatments | undefined = perlFilled.length ? { kopra: perlFilled.map((e) => ({ method: e.method, count: e.count.trim() })) } : undefined;
-    onConfirm(item, rows.map((r) => ({ no: r.no, beratAwal: r.beratAwal.trim(), volAir: keep.has('volAir') ? r.volAir.trim() : '', beratAir: keep.has('beratAir') ? r.beratAir.trim() : '', tebalAwal: keep.has('tebalAwal') ? r.tebalAwal.trim() : '', ...(r.fotoAwal && { fotoAwal: r.fotoAwal }) })), treatments);
+    onConfirm(item, rows.map((r) => ({ no: r.no, beratAwal: r.beratAwal.trim(), volAir: keep.has('volAir') ? r.volAir.trim() : '', beratAir: keep.has('beratAir') ? r.beratAir.trim() : '', tebalAwal: keep.has('tebalAwal') ? r.tebalAwal.trim() : '', ...(r.fotoAwal && { fotoAwal: r.fotoAwal }) })), treatments, ex);
   };
 
   return (
@@ -534,7 +540,7 @@ function AwalModal({ onClose, onConfirm }: { onClose: () => void; onConfirm: (it
       onClose={onClose}
       testId="catat-awal-modal"
       enterNext
-      dirty={!!countText || perl.some((e) => !!(e.method || e.count)) || rows.some((r) => !!(r.beratAwal || r.volAir || r.beratAir || r.tebalAwal || r.fotoAwal))}
+      dirty={!!countText || perl.some((e) => !!(e.method || e.count)) || rows.some((r) => !!(r.beratAwal || r.volAir || r.beratAir || r.tebalAwal || r.fotoAwal)) || [...ex.bahan, ...ex.alat].some((x) => !!(x.name || x.amount || x.photo))}
       footer={
         <>
           <button type="button" className="btn-ghost" onClick={onClose}>Batal</button>
@@ -552,6 +558,8 @@ function AwalModal({ onClose, onConfirm }: { onClose: () => void; onConfirm: (it
           }}
           itemCount={rows.length}
         />
+        {/* bahan & alat (DEC-142): sesudah perlakuan kopra */}
+        <BahanAlatFields value={ex} onChange={setEx} />
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <Dropdown label="Item / barang" required testId="catat-item" voice="item|barang" value={item} onChange={setItem} options={RAW_ITEMS.map((i) => ({ value: i, label: i }))} />
           <label className="flex flex-col gap-1.5">
@@ -721,10 +729,15 @@ const trOf = (rec?: CatatRecord): TreatmentState =>
     return [g.key, e.length ? e.map((x) => ({ ...x })) : [{ count: '', method: '' }]];
   })) as TreatmentState;
 
-function AkhirModal({ pending, onClose, onConfirm, onDraft, onFinish, revision = false }: { pending: CatatRecord[]; revision?: boolean; onClose: () => void; onConfirm: (id: string, akhir: AkhirInput[], treatments: Treatments) => void; onDraft: (id: string, akhir: AkhirInput[], treatments: Treatments) => void; onFinish: (rec: CatatRecord, akhir: AkhirInput[], treatments: Treatments) => void }) {
+function AkhirModal({ pending, onClose, onConfirm, onDraft, onFinish, revision = false }: { pending: CatatRecord[]; revision?: boolean; onClose: () => void; onConfirm: (id: string, akhir: AkhirInput[], treatments: Treatments, extras: CatatExtras) => void; onDraft: (id: string, akhir: AkhirInput[], treatments: Treatments, extras: CatatExtras) => void; onFinish: (rec: CatatRecord, akhir: AkhirInput[], treatments: Treatments, extras: CatatExtras) => void }) {
   const [id, setId] = useState(pending.length === 1 ? pending[0]!.id : '');
   const rec = pending.find((p) => p.id === id);
   const [tr, setTr] = useState<TreatmentState>(() => trOf(rec));
+  const [ex, setEx] = useState<CatatExtras>(() => extrasOf(rec));
+  const editEx = (fn: (x: CatatExtras) => CatatExtras) => {
+    setTouched(true);
+    setEx(fn);
+  };
   const [vals, setVals] = useState<AkhirVals>(() => valsOf(rec));
   const [err, setErr] = useState('');
   const coco = rec ? hasThickness(rec.item) : false;
@@ -742,17 +755,17 @@ function AkhirModal({ pending, onClose, onConfirm, onDraft, onFinish, revision =
     if (revision && tr.kopra.some((e) => (e.method && !e.count.trim()) || (!e.method && e.count.trim()))) return setErr(perlError(tr.kopra, rec.count));
     const miss = missingAkhir(rec.item, merged);
     if (miss.length) return setErr(`Data akhir masih kosong di nomor: ${miss.slice(0, 12).join(', ')}${miss.length > 12 ? `, … (${miss.length} nomor)` : ''}.`);
-    onConfirm(rec.id, akhirOut(), tr);
+    onConfirm(rec.id, akhirOut(), tr, ex);
   };
   const akhirOut = () => merged.map((r) => ({ no: r.no, beratAkhir: r.beratAkhir, tebalAkhir: r.tebalAkhir, ...(r.fotoAkhir && { fotoAkhir: r.fotoAkhir }) }));
   const draft = () => {
     if (!rec) return setErr('Pilih catatan awal dulu.');
-    onDraft(rec.id, akhirOut(), tr);
+    onDraft(rec.id, akhirOut(), tr, ex);
   };
   const ro = 'field min-h-[40px] w-full bg-paper-grid/60 px-2 text-sm text-muted';
   // isian form saat ini (belum tentu tersimpan) → unduhan Excel & tombol Selesaikan (DEC-098)
   const complete = !!rec && !missingAkhir(rec.item, merged).length;
-  const current = (): CatatRecord | undefined => (rec ? { ...rec, rows: merged, treatments: tr, finishedAt: rec.finishedAt ?? (complete ? new Date().toISOString() : undefined) } : undefined);
+  const current = (): CatatRecord | undefined => (rec ? withExtras({ ...rec, rows: merged, treatments: tr, finishedAt: rec.finishedAt ?? (complete ? new Date().toISOString() : undefined) }, ex) : undefined);
 
   return (
     <PageModal
@@ -766,7 +779,7 @@ function AkhirModal({ pending, onClose, onConfirm, onDraft, onFinish, revision =
           <button type="button" className="btn-ghost" onClick={onClose}>Batal</button>
           {rec && <XlsxButton rec={current} testId="catat-akhir-xlsx" />}
           {rec && complete && !rec.closedAt && (
-            <button type="button" className="btn-acid" onClick={() => onFinish(rec, akhirOut(), tr)} title="Simpan data akhir & tandai pencatatan selesai" data-testid="catat-akhir-finish">
+            <button type="button" className="btn-acid" onClick={() => onFinish(rec, akhirOut(), tr, ex)} title="Simpan data akhir & tandai pencatatan selesai" data-testid="catat-akhir-finish">
               Selesaikan
             </button>
           )}
@@ -787,6 +800,7 @@ function AkhirModal({ pending, onClose, onConfirm, onDraft, onFinish, revision =
               const next = pending.find((p) => p.id === v);
               setVals(valsOf(next));
               setTr(trOf(next));
+              setEx(extrasOf(next));
             }}
             placeholder="— pilih catatan awal —"
             options={pending.map((p) => ({ value: p.id, label: `${p.item} · ${p.count} item`, note: `${p.id} · ${p.createdAt.slice(0, 10)}` }))}
@@ -834,7 +848,9 @@ function AkhirModal({ pending, onClose, onConfirm, onDraft, onFinish, revision =
                 title="Perlakuan kopra"
               />
             )}
-            <TreatmentFields value={tr} onChange={(fn) => { setTouched(true); setTr(fn); }} {...(revision && { hide: ['kopra' as TreatmentKey], legend: 'Perlakuan lainnya (Non Kopra)', picker: true })} />
+            {/* bahan & alat (DEC-142): sesudah perlakuan kopra, sebelum perlakuan non-kopra */}
+            {revision && <BahanAlatFields value={ex} onChange={editEx} />}
+            <TreatmentFields value={tr} onChange={(fn) => { setTouched(true); setTr(fn); }} {...(revision ? { hide: ['kopra' as TreatmentKey], legend: 'Perlakuan lainnya (Non Kopra)', picker: true } : { afterKopra: <BahanAlatFields value={ex} onChange={editEx} /> })} />
           </>
         )}
         {err && <p className="text-sm" role="alert"><span className="bg-safety px-1">{err}</span></p>}
@@ -849,7 +865,7 @@ type TreatmentState = Record<TreatmentKey, TreatmentEntry[]>;
  * Perlakuan (opsional) di form data akhir (DEC-081): tiap jenis berisi kolom "jumlah perlakuan" + dropdown
  * "Perlakuan/metode"; tombol + menambah pasangan kolom baru di bawahnya, ✕ menghapus kolom tambahan.
  */
-function TreatmentFields({ value, onChange, hide = [], legend = 'Perlakuan (opsional)', picker = false }: { value: TreatmentState; onChange: (fn: (x: TreatmentState) => TreatmentState) => void; hide?: TreatmentKey[]; legend?: string; picker?: boolean }) {
+function TreatmentFields({ value, onChange, hide = [], legend = 'Perlakuan (opsional)', picker = false, afterKopra }: { value: TreatmentState; onChange: (fn: (x: TreatmentState) => TreatmentState) => void; hide?: TreatmentKey[]; legend?: string; picker?: boolean; afterKopra?: ReactNode }) {
   const edit = (key: TreatmentKey, i: number, patch: Partial<TreatmentEntry>) => onChange((x) => ({ ...x, [key]: x[key].map((e, j) => (j === i ? { ...e, ...patch } : e)) }));
   const [picking, setPicking] = useState(false);
   const bioBox = useRef<HTMLDivElement>(null);
@@ -863,7 +879,8 @@ function TreatmentFields({ value, onChange, hide = [], legend = 'Perlakuan (opsi
     <fieldset className="grid grid-cols-1 gap-3 rounded-xl bg-paper p-3 sm:grid-cols-2" data-testid="catat-treatments">
       <legend className="label-mono px-1" data-testid="catat-treatments-legend">{legend}</legend>
       {TREATMENT_GROUPS.filter((g) => !hide.includes(g.key)).map((g) => (
-        <div key={g.key} ref={g.key === 'bio' ? bioBox : undefined} className="flex flex-col gap-2 rounded-xl bg-white p-3" data-testid={`catat-tr-${g.key}`}>
+        <Fragment key={g.key}>
+        <div ref={g.key === 'bio' ? bioBox : undefined} className="flex flex-col gap-2 rounded-xl bg-white p-3" data-testid={`catat-tr-${g.key}`}>
           <span className="label-mono">{g.title}</span>
           {value[g.key].map((e, i) => (
             <div key={i} className={`flex flex-col gap-2 ${i > 0 ? 'border-t border-ink/10 pt-2' : ''}`}>
@@ -939,6 +956,8 @@ function TreatmentFields({ value, onChange, hide = [], legend = 'Perlakuan (opsi
             +
           </button>
         </div>
+        {g.key === 'kopra' && afterKopra && <div className="sm:col-span-2">{afterKopra}</div>}
+        </Fragment>
       ))}
       {picker && (
         <button
@@ -955,6 +974,46 @@ function TreatmentFields({ value, onChange, hide = [], legend = 'Perlakuan (opsi
       )}
       {picking && <TreatmentPicker onPick={pick} onClose={() => setPicking(false)} />}
     </fieldset>
+  );
+}
+
+/** Bahan & alat yang dipakai (DEC-142, pindah dari form resep): nama, jumlah, satuan, foto; ＋ menambah baris. */
+function BahanAlatFields({ value, onChange }: { value: CatatExtras; onChange: (fn: (x: CatatExtras) => CatatExtras) => void }) {
+  const kinds: { key: keyof CatatExtras; title: string; add: string; ph: string }[] = [
+    { key: 'bahan', title: 'Bahan yang digunakan', add: '+ Bahan', ph: 'Bahan' },
+    { key: 'alat', title: 'Alat yang digunakan', add: '+ Alat', ph: 'Alat' },
+  ];
+  const edit = (k: keyof CatatExtras, i: number, patch: Partial<CatatItem>) => onChange((x) => ({ ...x, [k]: x[k].map((e, j) => (j === i ? { ...e, ...patch } : e)) }));
+  return (
+    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2" data-testid="catat-bahan-alat">
+      {kinds.map((k) => (
+        <fieldset key={k.key} className="flex flex-col gap-2 rounded-xl bg-paper p-3" data-testid={`catat-${k.key}`}>
+          <legend className="label-mono px-1">{k.title}</legend>
+          {value[k.key].map((e, i) => (
+            <div key={i} className={`flex items-start gap-2 ${i > 0 ? 'border-t border-ink/10 pt-2' : ''}`}>
+              <RowPhoto value={e.photo} label={`Foto ${k.ph.toLowerCase()} ${i + 1}`} onChange={(v) => edit(k.key, i, { photo: v })} testId={`catat-${k.key}-photo-${i}`} />
+              <div className="grid min-w-0 flex-1 grid-cols-[1fr_4.5rem_4.5rem] gap-1.5">
+                <input className="field min-h-[40px] bg-white text-sm" placeholder={k.ph} value={e.name} onChange={(ev) => edit(k.key, i, { name: ev.target.value })} aria-label={`${k.ph} ${i + 1}`} data-testid={`catat-${k.key}-name-${i}`} data-enter-skip />
+                <input className="field min-h-[40px] bg-white text-sm" placeholder="Jumlah" value={e.amount} onChange={(ev) => edit(k.key, i, { amount: ev.target.value })} aria-label={`Jumlah ${k.ph.toLowerCase()} ${i + 1}`} data-testid={`catat-${k.key}-amount-${i}`} data-enter-skip />
+                <input className="field min-h-[40px] bg-white text-sm" placeholder="Satuan" value={e.unit} onChange={(ev) => edit(k.key, i, { unit: ev.target.value })} aria-label={`Satuan ${k.ph.toLowerCase()} ${i + 1}`} data-testid={`catat-${k.key}-unit-${i}`} data-enter-skip />
+              </div>
+              <button
+                type="button"
+                className="mt-1 inline-flex h-8 w-8 flex-none items-center justify-center rounded-full text-muted hover:bg-safety hover:text-ink"
+                onClick={() => onChange((x) => ({ ...x, [k.key]: x[k.key].length > 1 ? x[k.key].filter((_, j) => j !== i) : [blankItem()] }))}
+                aria-label={`Hapus ${k.ph.toLowerCase()} ${i + 1}`}
+                data-testid={`catat-${k.key}-del-${i}`}
+              >
+                ✕
+              </button>
+            </div>
+          ))}
+          <button type="button" className="btn-ghost self-start" onClick={() => onChange((x) => ({ ...x, [k.key]: [...x[k.key], blankItem()] }))} data-testid={`catat-${k.key}-add`}>
+            {k.add}
+          </button>
+        </fieldset>
+      ))}
+    </div>
   );
 }
 

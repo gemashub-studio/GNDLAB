@@ -178,7 +178,7 @@ describe('penghitungan bahan baku kelapa (DEC-064)', () => {
   it('laporan: 2 bagian kelapa setelah komposisi bila ada data; tanpa data tidak muncul', async () => {
     const { blankCoconut } = await import('@/lib/labStore');
     const { buildResearchReport } = await import('@/lib/researchReport');
-    const v = { id: 'KE-P01-v1', key: 'KE-P01', version: 1, product: 'KE', name: 'x', author: '', reason: '', createdAt: '2026-10-13T00:00:00Z', ingredients: [], steps: [], coconuts: [{ ...blankCoconut(1), wholeStart: '1200', waterProcess: 'disaring' }] };
+    const v = { id: 'KE-P01-v1', key: 'KE-P01', version: 1, product: 'KE', name: 'x', author: '', reason: '', createdAt: '2026-10-13T00:00:00Z', ingredients: [{ name: 'Air kelapa', amount: '1', unit: 'L' }], steps: [], coconuts: [{ ...blankCoconut(1), wholeStart: '1200', waterProcess: 'disaring' }] };
     const r = buildResearchReport('KE-P01', [v], [], [], 'x');
     const heads = r.blocks.map((b) => b.heading);
     expect(heads.slice(2, 5)).toEqual(['Komposisi bahan (versi 1)', 'Bahan baku kelapa — berat & ukuran', 'Bahan baku kelapa — proses & hasil']);
@@ -186,6 +186,10 @@ describe('penghitungan bahan baku kelapa (DEC-064)', () => {
     expect(r.blocks[3]!.lines[0]).toBe('Utuh awal (g): jumlah 1200 · rata-rata 1200 (n = 1)');
     expect(r.blocks[4]!.table!.rows[0]![1]).toBe('disaring');
     expect(buildResearchReport('KE-P01', [{ ...v, coconuts: undefined }], [], [], 'x').blocks.some((b) => b.heading.startsWith('Bahan baku kelapa'))).toBe(false);
+    // resep tanpa bahan/alat (kini dicatat di pencatatan, DEC-142) → bagian komposisi & alat tidak muncul
+    const heads0 = buildResearchReport('KE-P01', [{ ...v, ingredients: [] }], [], [], 'x').blocks.map((b) => b.heading);
+    expect(heads0).not.toContain('Komposisi bahan (versi 1)');
+    expect(heads0).not.toContain('Alat yang digunakan');
   });
 });
 

@@ -10,17 +10,17 @@ test.describe('GEMA RnD Lab', () => {
     const pid = (await page.getByTestId('proto-id').textContent())!;
     expect(pid).toMatch(/^CK-P\d{2}-v1$/);
     await page.getByTestId('proto-name').fill('Cuka E2E');
-    await page.getByTestId('proto-ing-name-0').fill('Air kelapa');
-    await page.getByTestId('proto-ing-amount-0').fill('2');
-    await page.getByTestId('proto-ing-unit-0').fill('L');
+    // bahan & alat tidak lagi di form resep (pindah ke pencatatan, DEC-142)
+    await expect(page.getByTestId('proto-ing-name-0')).toHaveCount(0);
+    await expect(page.getByTestId('proto-tools')).toHaveCount(0);
     await page.getByTestId('proto-step-0').fill('Saring');
     await page.getByTestId('proto-finish').click();
     const key = pid.replace(/-v1$/, '');
     await expect(page.getByTestId(`proto-${key}`)).toContainText('1 versi');
     await page.getByTestId(`proto-newver-${key}`).click();
     await expect(page.getByTestId('proto-id')).toHaveText(`${key}-v2`);
-    await expect(page.getByTestId('proto-ing-amount-0')).toHaveValue('2');
-    await page.getByTestId('proto-ing-amount-0').fill('3');
+    await expect(page.getByTestId('proto-step-0')).toHaveValue('Saring');
+    await page.getByTestId('proto-step-0').fill('Saring dua kali');
     await page.getByTestId('proto-finish').click();
     await expect(page.getByTestId('proto-form')).toContainText('Tulis alasan');
     await page.getByTestId('proto-reason').fill('naikkan volume');
@@ -41,16 +41,13 @@ test.describe('GEMA RnD Lab', () => {
     await page.getByTestId('proto-start').fill('2026-10-11');
     await page.getByTestId('proto-author').fill('Owner');
     await page.getByTestId('proto-assistants').fill('Rina, Budi');
-    await page.getByTestId('proto-ing-name-0').fill('Daging kelapa');
-    await page.getByTestId('proto-ing-amount-0').fill('2');
-    await page.getByTestId('proto-ing-unit-0').fill('kg');
-    await page.getByTestId('proto-ing-files-0').setInputFiles({ name: 'daging.png', mimeType: 'image/png', buffer: png });
-    await page.getByTestId('proto-tool-name-0').fill('Oven listrik');
-    await page.getByTestId('proto-tool-amount-0').fill('1');
-    await page.getByTestId('proto-tool-unit-0').fill('unit');
-    await page.getByTestId('proto-tool-files-0').setInputFiles({ name: 'oven.png', mimeType: 'image/png', buffer: png });
-    await page.getByTestId('proto-tool-add').click();
-    await page.getByTestId('proto-tool-name-1').fill('Timbangan digital');
+    // tanggal mulai produksi di bawah kolom jalur produk (DEC-142)
+    await page.getByTestId('proto-jalur-start-0').fill('2026-10-11');
+    // Urutan hari tepat sesudah Asisten, lalu Catatan Laporan (DEC-142)
+    const yOf = async (t: string) => (await page.getByTestId(t).boundingBox())!.y;
+    expect(await yOf('proto-assistants')).toBeLessThan(await yOf('proto-step-0'));
+    expect(await yOf('proto-step-0')).toBeLessThan(await yOf('proto-report-note'));
+    await page.getByTestId('proto-report-note').fill('Catatan laporan E2E: kopra kering merata.\nOven stabil 60 C.');
     await page.getByTestId('proto-step-0').fill('Belah dan tiriskan');
     await page.getByTestId('proto-day-add').click();
     await expect(page.getByTestId('proto-day-1')).toHaveText('Hari ke-2');
@@ -61,9 +58,10 @@ test.describe('GEMA RnD Lab', () => {
 
     await page.getByTestId(`proto-open-${key}`).click();
     const latest = page.getByTestId('rp-latest');
-    await expect(latest).toContainText('Oven listrik');
-    await expect(latest.locator('img')).toHaveCount(3);
-    await expect(latest).toContainText('Timbangan digital');
+    await expect(latest).toContainText('Belah dan tiriskan');
+    await expect(latest.locator('img')).toHaveCount(1);
+    await expect(latest.getByTestId('rp-notes')).toContainText('Tanggal mulai produksi: Kopra Edibel 2026-10-11');
+    await expect(latest.getByTestId('rp-notes')).toContainText('Oven stabil 60 C.');
     await expect(page.getByTestId('rp-dates')).toContainText('Rina, Budi');
     await expect(page.getByTestId('rp-end')).toHaveText('belum selesai');
     await page.getByTestId('day-new').click();
@@ -114,6 +112,12 @@ test.describe('GEMA RnD Lab', () => {
       const out = `test-results/riset-produk.${k}`;
       await d.saveAs(out);
       expect(readFileSync(out).subarray(0, magic.length).toString()).toBe(magic);
+      // Catatan Laporan → slide terakhir "Laporan" (DEC-142)
+      if (k === 'pptx') {
+        const x = readFileSync(out).toString('utf8');
+        expect(x).toContain('>Laporan<');
+        expect(x).toContain('Catatan laporan E2E: kopra kering merata.');
+      }
     }
   });
   test('resep: Simpan = draf (buka lagi besok lewat On going proses) → Selesai = versi resmi', async ({ page }) => {
@@ -123,8 +127,9 @@ test.describe('GEMA RnD Lab', () => {
     await page.getByTestId('proto-jalur').click();
     await page.getByTestId('proto-jalur-opt-Arang').click();
     await page.getByTestId('proto-name').fill('Arang draf E2E');
-    await page.getByTestId('proto-ing-name-0').fill('Batok kelapa');
-    await page.getByTestId('proto-ing-files-0').setInputFiles({ name: 'batok.png', mimeType: 'image/png', buffer: png });
+    await page.getByTestId('proto-step-0').fill('Bakar batok kelapa');
+    await page.getByTestId('proto-step-files-0').setInputFiles({ name: 'batok.png', mimeType: 'image/png', buffer: png });
+    await page.getByTestId('proto-report-note').fill('Draf catatan laporan');
     await page.getByTestId('proto-save').click();
     await expect(page.getByRole('status').filter({ hasText: 'On going proses' })).toBeVisible();
 
@@ -135,10 +140,9 @@ test.describe('GEMA RnD Lab', () => {
     await expect(list).toContainText('DRAF');
     await list.getByRole('button', { name: 'Lanjutkan' }).first().click();
     await expect(page.getByTestId('proto-name')).toHaveValue('Arang draf E2E');
-    await expect(page.getByTestId('proto-ing-name-0')).toHaveValue('Batok kelapa');
+    await expect(page.getByTestId('proto-step-0')).toHaveValue('Bakar batok kelapa');
     await expect(page.getByTestId('proto-form')).toContainText('batok.png');
-    await page.getByTestId('proto-ing-amount-0').fill('10');
-    await page.getByTestId('proto-ing-unit-0').fill('kg');
+    await expect(page.getByTestId('proto-report-note')).toHaveValue('Draf catatan laporan');
     await page.getByTestId('proto-finish').click();
     await expect(page.getByTestId('proto-list')).toContainText('Arang draf E2E');
     await page.getByTestId('proto-ongoing').click();
@@ -153,22 +157,22 @@ test.describe('GEMA RnD Lab', () => {
     await page.getByTestId('proto-save').click();
     await expect(page.getByTestId('proto-ongoing')).toContainText('(2)');
   });
-  test('kamera: ambil foto & rekam video dari webcam (kamera palsu) ke bahan; tombol Foto/Video memakai kamera HP', async ({ page }) => {
+  test('kamera: ambil foto & rekam video dari webcam (kamera palsu) ke urutan hari; tombol Foto/Video memakai kamera HP', async ({ page }) => {
     await page.goto('/lab?t=protokol');
     await page.getByTestId('proto-new').click();
-    await expect(page.getByTestId('proto-ing-files-0-photo')).toHaveAttribute('capture', 'environment');
-    await expect(page.getByTestId('proto-ing-files-0-video')).toHaveAttribute('accept', 'video/*');
-    await page.getByTestId('proto-ing-files-0-cam').click();
-    const dlg = page.getByTestId('proto-ing-files-0-camdlg');
+    await expect(page.getByTestId('proto-step-files-0-photo')).toHaveAttribute('capture', 'environment');
+    await expect(page.getByTestId('proto-step-files-0-video')).toHaveAttribute('accept', 'video/*');
+    await page.getByTestId('proto-step-files-0-cam').click();
+    const dlg = page.getByTestId('proto-step-files-0-camdlg');
     await expect(dlg).toBeVisible();
     await expect.poll(() => dlg.locator('video').evaluate((v: HTMLVideoElement) => v.videoWidth)).toBeGreaterThan(0);
-    await page.getByTestId('proto-ing-files-0-camdlg-snap').click();
-    await page.getByTestId('proto-ing-files-0-camdlg-rec').click();
+    await page.getByTestId('proto-step-files-0-camdlg-snap').click();
+    await page.getByTestId('proto-step-files-0-camdlg-rec').click();
     await expect(dlg).toContainText('MEREKAM');
     await page.waitForTimeout(1500);
-    await page.getByTestId('proto-ing-files-0-camdlg-rec').click();
-    await expect(page.getByTestId('proto-ing-files-0-camdlg-close')).toContainText('(2)');
-    await page.getByTestId('proto-ing-files-0-camdlg-close').click();
+    await page.getByTestId('proto-step-files-0-camdlg-rec').click();
+    await expect(page.getByTestId('proto-step-files-0-camdlg-close')).toContainText('(2)');
+    await page.getByTestId('proto-step-files-0-camdlg-close').click();
     await expect(dlg).toHaveCount(0);
     const form = page.getByTestId('proto-form');
     await expect(form).toContainText(/foto-\d{8}-\d{6}\.jpg/);
@@ -402,6 +406,11 @@ test.describe('Hapus hasil riset', () => {
     // revisi: bagian Perlakuan sama seperti form data awal (DEC-106), terisi dari data yang sama
     await expect(rev.getByTestId('catat-revisi-perlakuan-title')).toHaveText('Perlakuan kopra');
     await expect(rev.getByTestId('catat-treatments-legend')).toHaveText('Perlakuan lainnya (Non Kopra)');
+    // revisi: bahan & alat di antara perlakuan kopra dan Perlakuan lainnya (Non Kopra) (DEC-142)
+    const ry = async (t: string) => (await rev.getByTestId(t).boundingBox())!.y;
+    expect(await ry('catat-revisi-perlakuan')).toBeLessThan(await ry('catat-bahan-alat'));
+    expect(await ry('catat-bahan-alat')).toBeLessThan(await ry('catat-treatments'));
+    await rev.getByTestId('catat-bahan-name-0').fill('Garam');
     // ＋ Tambah perlakuan (DEC-141): modal pilihan bio leather → kartu baru dengan metode terisi
     const bioCards = rev.getByTestId(/^catat-tr-method-bio-\d+$/);
     const before = await bioCards.count();
@@ -686,7 +695,7 @@ test.describe('Pengisian suara pencatatan (DEC-099)', () => {
 
 test.describe('Perlakuan di data awal & Resep baru dari data pencatatan (DEC-101)', () => {
   const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==', 'base64');
-  test('form awal: perlakuan + jumlah produksi → resep: Pilih Data yang tersedia, jalur Green House → foto awal & akhir di Komposisi bahan', async ({ page }) => {
+  test('form awal: perlakuan + jumlah produksi → resep: Pilih Data yang tersedia → keterangan saja (tanpa jalur, nama, galeri), laporan tetap berisi foto per perlakuan (DEC-142)', async ({ page }) => {
     test.setTimeout(240_000);
     await page.goto('/lab?t=bahan');
     await page.getByTestId('catat-new').click();
@@ -705,6 +714,14 @@ test.describe('Perlakuan di data awal & Resep baru dari data pencatatan (DEC-101
     await expect(m.getByTestId('catat-perl-1-list')).not.toContainText('Green House');
     await m.getByTestId('catat-perl-1-opt-Oven Gas').click();
     await m.getByTestId('catat-perl-count-1').fill('5');
+    // bahan & alat (DEC-142): sesudah perlakuan kopra
+    expect((await m.getByTestId('catat-awal-perlakuan').boundingBox())!.y).toBeLessThan((await m.getByTestId('catat-bahan-alat').boundingBox())!.y);
+    await m.getByTestId('catat-bahan-name-0').fill('Gula aren');
+    await m.getByTestId('catat-bahan-amount-0').fill('50');
+    await m.getByTestId('catat-bahan-unit-0').fill('g');
+    await m.getByTestId('catat-alat-name-0').fill('Panci');
+    await m.getByTestId('catat-alat-add').click();
+    await m.getByTestId('catat-alat-name-1').fill('Termometer');
     await m.getByTestId('catat-count').fill('3');
     for (const n of [1, 2, 3]) {
       await m.getByTestId(`catat-awal-beratAwal-${n}`).fill('1000');
@@ -726,6 +743,12 @@ test.describe('Perlakuan di data awal & Resep baru dari data pencatatan (DEC-101
     await page.getByTestId('catat-akhir').click();
     const ak = page.getByTestId('catat-akhir-modal');
     await expect(ak.getByTestId('catat-tr-count-kopra-0')).toHaveValue('2');
+    // bahan & alat dari data awal ikut terbuka di data akhir, di antara perlakuan kopra & non-kopra (DEC-142)
+    await expect(ak.getByTestId('catat-bahan-name-0')).toHaveValue('Gula aren');
+    await expect(ak.getByTestId('catat-alat-name-1')).toHaveValue('Termometer');
+    const yy = async (t: string) => (await ak.getByTestId(t).boundingBox())!.y;
+    expect(await yy('catat-tr-kopra')).toBeLessThan(await yy('catat-bahan-alat'));
+    expect(await yy('catat-bahan-alat')).toBeLessThan(await yy('catat-tr-cuka'));
     await ak.getByTestId('catat-akhir-berat-1').fill('600');
     await ak.getByTestId('catat-akhir-foto-1').setInputFiles({ name: 'k1.png', mimeType: 'image/png', buffer: png });
     await expect(ak.getByTestId('catat-akhir-foto-1-img')).toBeVisible();
@@ -745,9 +768,7 @@ test.describe('Perlakuan di data awal & Resep baru dari data pencatatan (DEC-101
     await page.goto('/lab?t=protokol');
     await page.getByTestId('proto-new').click();
     const f = page.getByTestId('proto-form');
-    await f.getByTestId('proto-catat').click();
-    await expect(f.getByTestId('proto-catat-list')).toContainText('disimpan (belum lengkap)');
-    await f.getByTestId(`proto-catat-opt-${id}`).click();
+    // tanpa data: dropdown jalur + tanggal mulai produksi di bawah tiap kolom jalur (DEC-142)
     await f.getByTestId('proto-jalur').click();
     await expect(f.getByTestId('proto-jalur-list')).toContainText('CUKA 2 - GULA 75g');
     await expect(f.getByTestId('proto-jalur-list')).toContainText('Bio Leather A - Gula 25g');
@@ -755,41 +776,37 @@ test.describe('Perlakuan di data awal & Resep baru dari data pencatatan (DEC-101
     await expect(f.getByTestId('proto-jalur-list')).toContainText('kunyit 212 gram, air kelapa 500 ml');
     await expect(f.getByTestId('proto-jalur-list')).toContainText('Bio Leather Rumput');
     await f.getByTestId('proto-jalur-opt-Green House').click();
-    await expect(f.getByTestId('proto-jalur')).toContainText('Green House');
-    const ph = f.getByTestId('proto-catat-photos');
-    await expect(ph).toContainText(`${id} (2 foto)`);
-    await expect(ph.getByRole('img')).toHaveCount(2);
-    await expect(f.getByTestId('proto-catat-group-0')).toContainText('Green House · 2 item (no 1–2)');
-    // ＋ kolom jalur produk: Oven Gas lanjut dari nomor 3 (DEC-105)
+    await expect(f.getByTestId('proto-jalur-start-0')).toBeVisible();
     await f.getByTestId('proto-jalur-add').click();
-    await f.getByTestId('proto-jalur-extra-0').click();
-    await f.getByTestId('proto-jalur-extra-0-opt-Oven Gas').click();
-    await expect(f.getByTestId('proto-catat-group-1')).toContainText('Oven Gas · 1 item (no 3–3)');
-    // ✕ hapus foto dari resep → bisa dikembalikan
-    await f.getByTestId('proto-catat-del-1-awal').click();
-    await expect(f.getByTestId('proto-catat-group-0').getByRole('img')).toHaveCount(1);
-    await expect(f.getByTestId('proto-catat-photos')).toContainText('(1 foto)');
-    await f.getByTestId('proto-catat-restore').click();
-    await expect(f.getByTestId('proto-catat-group-0').getByRole('img')).toHaveCount(2);
-    // jalur non-kopra (cuka) → foto perlakuan cuka sesuai jenis, tanpa nomor urut (DEC-109)
-    await f.getByTestId('proto-jalur-add').click();
-    await f.getByTestId('proto-jalur-extra-1').click();
-    await f.getByTestId('proto-jalur-extra-1-opt-CUKA 2 - GULA 75g').click();
-    const cg = f.getByTestId('proto-catat-group-2');
-    await expect(cg).toContainText('CUKA 2 - GULA 75g · Perlakuan cuka · 1 kolom · 1 foto');
-    await expect(cg).toContainText('CUKA 2 - GULA 75g · jumlah 2');
-    await expect(cg).not.toContainText('No ');
-    await cg.getByTestId('proto-catat-del-tr-cuka-0').click();
-    await expect(f.getByTestId('proto-catat-group-2').getByRole('img')).toHaveCount(0);
-    await f.getByTestId('proto-catat-restore').click();
-    await expect(f.getByTestId('proto-catat-group-2').getByRole('img')).toHaveCount(1);
-    await f.getByTestId('proto-jalur-extra-del-1').click();
+    await expect(f.getByTestId('proto-jalur-start-1')).toBeVisible();
     await f.getByTestId('proto-jalur-extra-del-0').click();
-    await expect(f.getByTestId('proto-catat-group-1')).toHaveCount(0);
-    // jalur non-kopra → foto disembunyikan
-    await f.getByTestId('proto-jalur').click();
-    await f.getByTestId('proto-jalur-opt-CUKA 1 - GULA 25g').click();
+    await expect(f.getByTestId('proto-jalur-start-1')).toHaveCount(0);
+    // pilih data tersedia → hanya keterangan; kolom jalur, nama, dan galeri foto tidak tampil (DEC-142)
+    await f.getByTestId('proto-catat').click();
+    await expect(f.getByTestId('proto-catat-list')).toContainText('disimpan (belum lengkap)');
+    await f.getByTestId(`proto-catat-opt-${id}`).click();
+    await expect(f.getByTestId('proto-catat-picked')).toContainText(`(${id}) telah dipilih, silakan lanjutkan data progres produksi untuk jalur non kopra`);
+    await expect(f.getByTestId('proto-jalur-block')).toHaveCount(0);
+    await expect(f.getByTestId('proto-name')).toHaveCount(0);
     await expect(f.getByTestId('proto-catat-photos')).toHaveCount(0);
+    await expect(f.getByRole('img')).toHaveCount(0);
+    await f.getByTestId('proto-step-0').fill('Lanjut fermentasi cuka');
+    // jalur otomatis dari data (perlakuan pertama = Green House) → kode resep GH
+    const pid = (await f.getByTestId('proto-id').textContent())!;
+    expect(pid).toMatch(/^GH-P\d{2}-v1$/);
+    await f.getByTestId('proto-finish').click();
+    // nama otomatis dari data; laporan tetap memuat foto per perlakuan (Green House + cuka)
+    const key = pid.replace(/-v1$/, '');
+    await expect(page.getByTestId(`proto-${key}`)).toContainText(`Progres`);
+    const dl = page.waitForEvent('download');
+    await page.getByTestId(`hr-pptx-${key}`).click();
+    const out = 'test-results/resep-data-tersedia.pptx';
+    await (await dl).saveAs(out);
+    const { readFileSync } = await import('node:fs');
+    const x = readFileSync(out).toString('utf8');
+    expect(x).toContain('Green House · 2 item (no 1–2)');
+    expect(x).toContain('CUKA 2 - GULA 75g · Perlakuan cuka');
+    expect(x).toContain('Bahan &amp; alat');
   });
 });
 

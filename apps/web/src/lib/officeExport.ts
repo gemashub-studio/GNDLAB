@@ -270,7 +270,7 @@ export function buildDocx(r: ResearchReport, charts: ChartPngs = new Map()): Uin
   for (const b of r.blocks.filter((x) => !x.pptxOnly)) {
     if (b.level === 1) section(b.heading);
     else body.push(wP(wRun(b.heading, { b: true, sz: 23, color: D_MINT_D }), { before: 240, after: 100, keepNext: true, border: `<w:pBdr><w:left w:val="single" w:sz="24" w:space="6" w:color="${D_MINT}"/></w:pBdr>` }));
-    for (const l of b.lines) body.push(wLine(l));
+    for (const l of b.lines) body.push(b.plainLines ? wPara(l, { sz: 20 }) : wLine(l));
     if (b.table) body.push(wTable(b.table.head, b.table.rows));
     for (const c of b.charts ?? []) {
       body.push(wP(wRun(c.title, { b: true, sz: 21, color: D_INK }), { before: 160, after: 60, keepNext: true }));
@@ -854,6 +854,7 @@ export function buildPptx(r: ResearchReport, charts: ChartPngs = new Map(), vide
 
   for (const b0 of r.blocks.filter((x) => !x.pptxSkip)) {
     const b = b0.pptxTable ? { ...b0, table: b0.pptxTable } : b0;
+    if (b.pptxNewSlide) pack = null;
     let num = b.level === 1 ? ++sec : undefined;
     let head = b.heading;
     // DEC-093: bagian tanpa isi (mis. "Laporan harian") tidak dibuatkan slide sendiri → awalan judul slide berikutnya
@@ -867,7 +868,7 @@ export function buildPptx(r: ResearchReport, charts: ChartPngs = new Map(), vide
       num = num ?? sectionPrefix.num;
       sectionPrefix = undefined;
     }
-    const lines = b.lines.map(linePara);
+    const lines = b.lines.map((l): PPara => (b.plainLines ? [{ t: l, sz: 1500 }] : linePara(l)));
     const tableRows = b.table?.rows ?? [];
     const lineChunks: PPara[][] = [];
     for (let i = 0; i < lines.length; i += LINES_PER_SLIDE) lineChunks.push(lines.slice(i, i + LINES_PER_SLIDE));

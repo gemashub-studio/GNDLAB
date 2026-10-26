@@ -194,3 +194,9 @@ File animasi owner (kelapa-kora.webp, 288 frame) sampai ke sesi lain sebagai 1 f
 
 ### FND-056 · 2026-10-26 · Teks opsi Dropdown ikut memuat `note`
 Sejak dropdown perlakuan non-kopra menampilkan takaran (DEC-140), `getByRole('option')` berisi "nama + keterangan" → uji `toHaveText([...])` persis gagal. *How to apply:* cocokkan awal teks dengan regex (`/^CUKA 1 - GULA 25g/`) atau pilih lewat testId `<id>-opt-<value>`. Jalankan E2E lab setelah mengubah opsi Dropdown.
+
+### FND-057 · 2026-10-26 · Callback kamera memakai daftar berkas lama
+`CameraDialog` memanggil `onFile` dari closure saat rekaman dimulai; foto (`canvas.toBlob`, async) bisa selesai SETELAH rekaman dimulai → saat video selesai, `onChange([...list, video])` memakai `list` lama dan menimpa foto. *How to apply:* komponen yang menambah ke daftar lewat callback async harus membaca daftar & onChange terbaru (ref `latest.current`) atau memakai updater fungsional. Uji: kamera palsu → Foto lalu langsung Rekam → kedua berkas harus ada.
+
+### FND-058 · 2026-10-26 · Baris "Label: isi" otomatis jadi label tebal di semua format laporan
+PPTX (`splitLabel`), Word (`wLine`), PDF (`Line_`), HTML (`line`) memecah baris `^[A-Za-z][^:·]{1,34}: ` menjadi label + nilai (titik dua hilang). Teks bebas pengguna (Catatan Laporan) harus memakai `plainLines: true` di ReportBlock. Blok teks pendek di PPTX juga DITUMPUK ke slide sebelumnya; pakai `pptxNewSlide: true` bila harus slide sendiri.

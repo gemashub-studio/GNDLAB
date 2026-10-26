@@ -109,7 +109,7 @@ export async function buildReportHtml(r: ResearchReport, media: readonly MediaIt
   for (const b of r.blocks.filter((x) => !x.pptxOnly)) {
     const parts: string[] = [];
     parts.push(b.level === 1 ? `<h2><span class="n">${String(++n).padStart(2, '0')}</span>${esc(b.heading)}</h2>` : `<h2>${esc(b.heading)}</h2>`);
-    parts.push(...b.lines.map(line));
+    parts.push(...b.lines.map((l) => (b.plainLines ? `<p class="line">${esc(l)}</p>` : line(l))));
     if (b.table) parts.push(`<div class="tbl"><table><thead><tr>${b.table.head.map((h) => `<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${b.table.rows.map((row) => `<tr>${row.map((x) => `<td>${esc(x || '–')}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`);
     for (const ch of b.charts ?? []) parts.push(`<div class="chart"><h3>${esc(ch.title)}</h3>${chartSvg(ch)}<div class="note">${esc(ch.note)}</div></div>`);
     if (b.images.length) {

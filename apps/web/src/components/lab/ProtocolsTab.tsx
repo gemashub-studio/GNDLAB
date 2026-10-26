@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { downloadBlob, fmtBytes, makeThumb } from '@/lib/labMedia';
 import {
   addProtocolVersion,
@@ -34,13 +34,14 @@ import {
   type ProtocolStep,
   type ProtocolTool,
   type ProtocolVersion,
+  jalurStartLines,
 } from '@/lib/labStore';
 import { DailyLog } from './DailyLog';
 import { MediaPicker } from './MediaPicker';
 import { ProductMark, Section, TextInput } from './ui';
 import { Dropdown } from './Dropdown';
 import { ImagePreview } from './Overlays';
-import { jalurGroups, listCatat, methodLabel, TREATMENT_GROUPS, TREATMENT_INFO, type CatatRecord } from '@/lib/pencatatan';
+import { catatJalurs, jalurGroups, listCatat, methodLabel, TREATMENT_GROUPS, TREATMENT_INFO, type CatatRecord } from '@/lib/pencatatan';
 
 /** Pilihan jalur produk dari daftar perlakuan pencatatan (DEC-101) + keterangannya; tetap bisa diketik manual. */
 const JALUR_OPTIONS = [
@@ -318,6 +319,8 @@ function Thumbs({ ids, media }: { ids?: string[]; media: MediaItem[] }) {
 function VersionView({ v, media }: { v: ProtocolVersion; media: MediaItem[] }) {
   return (
     <div className="flex flex-col gap-3 text-sm">
+      {/* bahan & alat kini dicatat di pencatatan (DEC-142) — resep lama yang punya isinya tetap ditampilkan */}
+      {v.ingredients.length > 0 && (
       <div>
         <span className="label-mono">Komposisi bahan</span>
         {v.ingredients.length ? (
@@ -332,8 +335,10 @@ function VersionView({ v, media }: { v: ProtocolVersion; media: MediaItem[] }) {
               ))}
             </tbody>
           </table>
-        ) : <p className="italic text-muted">belum dicatat</p>}
+        ) : null}
       </div>
+      )}
+      {toolList(v).length > 0 && (
       <div>
         <span className="label-mono">Alat yang digunakan</span>
         {toolList(v).length ? (
@@ -348,8 +353,20 @@ function VersionView({ v, media }: { v: ProtocolVersion; media: MediaItem[] }) {
               ))}
             </tbody>
           </table>
-        ) : <p className="italic text-muted">belum dicatat</p>}
+        ) : null}
       </div>
+      )}
+      {(jalurStartLines(v).length > 0 || v.reportNote) && (
+        <div className="flex flex-col gap-1" data-testid="rp-notes">
+          {jalurStartLines(v).map((l) => <p key={l} className="font-mono text-xs">{l}</p>)}
+          {v.reportNote && (
+            <>
+              <span className="label-mono">Catatan Laporan</span>
+              <p className="whitespace-pre-line">{v.reportNote}</p>
+            </>
+          )}
+        </div>
+      )}
       {v.raw && (
         <div data-testid="rp-raw">
           <span className="label-mono">Bahan baku</span>
@@ -554,11 +571,25 @@ function RawFieldset({ raw, setRaw, protocols, entries }: { raw: RawMaterial; se
   );
 }
 
+/** Tanggal mulai produksi di bawah kolom jalur produk (DEC-142). */
+function JalurStart({ value, onChange, testId }: { value: string; onChange: (v: string) => void; testId: string }) {
+  return (
+    <label className="flex flex-col gap-1">
+      <span className="text-xs text-muted">Tanggal mulai produksi</span>
+      <input type="date" className="field min-h-[40px] text-sm" value={value} onChange={(e) => onChange(e.target.value)} data-testid={testId} />
+    </label>
+  );
+}
+
 function FilePick({ list, onChange, testId }: { list: Pending[]; onChange: (l: Pending[]) => void; testId: string }) {
+  // kamera mengirim foto (toBlob, async) & video (onstop) lewat callback lama → selalu tambah ke daftar TERBARU,
+  // jangan ke daftar saat callback dibuat (foto tertimpa video, DEC-142)
+  const latest = useRef({ list, onChange });
+  latest.current = { list, onChange };
   return (
     <div className="flex flex-col gap-1.5">
       <div className="flex flex-wrap items-center gap-2">
-        <MediaPicker compact testId={testId} onFiles={(fs) => onChange([...list, ...fs.map((file) => ({ file, caption: '' }))])} />
+        <MediaPicker compact testId={testId} onFiles={(fs) => latest.current.onChange([...latest.current.list, ...fs.map((file) => ({ file, caption: '' }))])} />
         {list.length > 0 && <span className="font-mono text-[11px] text-muted">{list.length} berkas dipilih</span>}
       </div>
       {list.map((p, i) => (
@@ -603,11 +634,11 @@ function ProtocolForm({ protocols, entries, media, base, draft, onDraftSaved, in
   const [assistants, setAssistants] = useState(draft?.assistants ?? (base?.assistants ?? []).join(', '));
   const [startDate, setStartDate] = useState(draft?.startDate ?? base?.startDate ?? new Date().toISOString().slice(0, 10));
   const [reason, setReason] = useState(draft?.reason ?? (base ? '' : 'versi awal'));
-  const [ings, setIngs] = useState<ProtocolIngredient[]>(draft?.ingredients ?? (base ? base.ingredients.map((i) => ({ ...i })) : [blankIng()]));
+  const [ings] = useState<ProtocolIngredient[]>(draft?.ingredients ?? (base ? base.ingredients.map((i) => ({ ...i })) : [blankIng()]));
   const [steps, setSteps] = useState<ProtocolStep[]>(draft?.steps ?? (base ? base.steps.map((s) => ({ ...s })) : [blankStep()]));
-  const [tools, setTools] = useState<ProtocolTool[]>(draft?.tools ?? (base && toolList(base).length ? toolList(base).map((t) => ({ ...t })) : [{ name: '' }]));
-  const [toolFiles, setToolFiles] = useState<Pending[][]>(() => (draft ? fromDraft(draft.pending.tools) : base && toolList(base).length ? toolList(base).map(() => []) : [[]]));
-  const [ingFiles, setIngFiles] = useState<Pending[][]>(() => (draft ? fromDraft(draft.pending.ingredients) : base ? base.ingredients.map(() => []) : [[]]));
+  const [tools] = useState<ProtocolTool[]>(draft?.tools ?? (base && toolList(base).length ? toolList(base).map((t) => ({ ...t })) : [{ name: '' }]));
+  const [toolFiles] = useState<Pending[][]>(() => (draft ? fromDraft(draft.pending.tools) : base && toolList(base).length ? toolList(base).map(() => []) : [[]]));
+  const [ingFiles] = useState<Pending[][]>(() => (draft ? fromDraft(draft.pending.ingredients) : base ? base.ingredients.map(() => []) : [[]]));
   const [coco] = useState<CoconutRow[]>(draft?.coconuts ?? (base?.coconuts?.length ? base.coconuts.map(({ mediaIds: _m, ...c }) => ({ ...c })) : []));
   const [cocoFiles] = useState<Pending[][]>(() => (draft?.pending.coconuts ? fromDraft(draft.pending.coconuts) : (draft?.coconuts ?? base?.coconuts ?? []).map(() => [])));
   const [stepFiles, setStepFiles] = useState<Pending[][]>(() => (draft ? fromDraft(draft.pending.steps) : base ? base.steps.map(() => []) : [[]]));
@@ -624,9 +655,27 @@ function ProtocolForm({ protocols, entries, media, base, draft, onDraftSaved, in
   const catatRec = catatList.find((r) => r.id === catatId);
   // kolom jalur produk tambahan (＋) & foto yang dihapus (✕), DEC-105
   const [jalurExtra, setJalurExtra] = useState<string[]>(draft?.jalurExtra ?? base?.jalurExtra ?? []);
-  const [exclude, setExclude] = useState<string[]>(draft?.catatExclude ?? base?.catatExclude ?? []);
-  // tiap kolom jalur = perlakuan di form data awal → foto nomor dalam rentangnya (GH 15 → no 1–15, berikutnya mulai no 16)
-  const groups = catatRec ? jalurGroups(catatRec, [productText, ...jalurExtra], new Set(exclude)) : [];
+  const [exclude] = useState<string[]>(draft?.catatExclude ?? base?.catatExclude ?? []);
+  // tanggal mulai produksi per kolom jalur (indeks 0 = jalur utama) & Catatan Laporan (DEC-142)
+  const [jalurStart, setJalurStart] = useState<string[]>(draft?.jalurStart ?? base?.jalurStart ?? []);
+  const [reportNote, setReportNote] = useState(draft?.reportNote ?? base?.reportNote ?? '');
+  const setStartAt = (i: number, v: string) => setJalurStart((cur) => Array.from({ length: Math.max(cur.length, i + 1) }, (_, k) => (k === i ? v : cur[k] ?? '')));
+  const starts = (): string[] | undefined => {
+    const list = Array.from({ length: 1 + jalurExtra.length }, (_, k) => jalurStart[k] ?? '');
+    return list.some((d) => d) ? list : undefined;
+  };
+  // data tersedia dipilih → jalur = semua perlakuan di data itu, nama otomatis; kolom jalur & nama tidak ditampilkan (DEC-142)
+  const pickCatat = (v: string) => {
+    setCatatId(v);
+    const rec = catatList.find((r) => r.id === v);
+    if (!rec || base) return;
+    const js = catatJalurs(rec);
+    if (js.length) {
+      setProductText(js[0]!);
+      setJalurExtra(js.slice(1));
+    }
+    setName((n) => n.trim() || `Progres ${rec.item} · ${rec.id}`);
+  };
   const jalurValue = (t: string) => JALUR_OPTIONS.find((o) => o.value.toLowerCase() === t.trim().toLowerCase())?.value ?? '';
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState('');
@@ -644,7 +693,7 @@ function ProtocolForm({ protocols, entries, media, base, draft, onDraftSaved, in
       };
       await saveDraft({
         id: draftId, ...(base && { baseId: base.id }), ...(draft && { createdAt: draft.createdAt }),
-        product, ...(productName && { productName }), name, author, assistants, startDate, reason, ingredients: ings, tools, steps, coconuts: coco, ...(raw && { raw }), ...(catatId && { catatId }), ...(jalurExtra.some((j) => j.trim()) && { jalurExtra: jalurExtra.filter((j) => j.trim()) }), ...(exclude.length && { catatExclude: exclude }),
+        product, ...(productName && { productName }), name, author, assistants, startDate, reason, ingredients: ings, tools, steps, coconuts: coco, ...(raw && { raw }), ...(catatId && { catatId }), ...(jalurExtra.some((j) => j.trim()) && { jalurExtra: jalurExtra.filter((j) => j.trim()) }), ...(exclude.length && { catatExclude: exclude }), ...(starts() && { jalurStart: starts() }), ...(reportNote.trim() && { reportNote: reportNote.trim() }),
         pending: { ingredients: await pend(ingFiles), tools: await pend(toolFiles), steps: await pend(stepFiles), coconuts: await pend(cocoFiles) },
       });
       await onDraftSaved();
@@ -658,7 +707,7 @@ function ProtocolForm({ protocols, entries, media, base, draft, onDraftSaved, in
 
   /** "Selesai" = jadi versi resmi (tidak bisa diubah); draf dihapus. */
   const save = async () => {
-    if (!name.trim()) return setMsg('Beri nama resep/proses.');
+    if (!name.trim() && !catatRec) return setMsg('Beri nama resep/proses.');
     if (!/^\d{4}-\d{2}-\d{2}$/.test(startDate)) return setMsg('Isi tanggal mulai.');
     if (base && !reason.trim()) return setMsg('Tulis alasan perubahan untuk versi baru.');
     setBusy(true);
@@ -677,7 +726,7 @@ function ProtocolForm({ protocols, entries, media, base, draft, onDraftSaved, in
       for (const k of keepT) tMedia.push(await toMedia(k.f));
       await addProtocolVersion(
         {
-          id, key, version, product, ...(productName && { productName }), name: name.trim(), author: author.trim(), reason: reason.trim(), startDate,
+          id, key, version, product, ...(productName && { productName }), name: name.trim() || `Progres ${catatRec?.item ?? ''} · ${catatId}`, author: author.trim(), reason: reason.trim(), startDate,
           assistants: assistants.split(',').map((a) => a.trim()).filter(Boolean),
           ingredients: keepI.map(({ x }) => x),
           steps: keepS.map(({ x }) => x),
@@ -687,6 +736,8 @@ function ProtocolForm({ protocols, entries, media, base, draft, onDraftSaved, in
           ...(catatId && { catatId }),
           ...(jalurExtra.some((j) => j.trim()) && { jalurExtra: jalurExtra.filter((j) => j.trim()) }),
           ...(exclude.length && { catatExclude: exclude }),
+          ...(starts() && { jalurStart: starts() }),
+          ...(reportNote.trim() && { reportNote: reportNote.trim() }),
         },
         { ingredients: iMedia, steps: sMedia, tools: tMedia, coconuts: kMedia, draftId },
       );
@@ -709,13 +760,19 @@ function ProtocolForm({ protocols, entries, media, base, draft, onDraftSaved, in
         optional
         testId="proto-catat"
         value={catatId}
-        onChange={setCatatId}
+        onChange={pickCatat}
         placeholder={catatList.length ? '— pilih data pencatatan —' : 'Belum ada pencatatan lengkap / tersimpan'}
         options={[{ value: '', label: '— tanpa data pencatatan —' }, ...catatList.map((r) => ({ value: r.id, label: `${r.id} · ${r.item} · ${r.count} item`, note: catatStatus(r) }))]}
       />
       {raw && <RawFieldset raw={raw} setRaw={setRaw} protocols={protocols} entries={entries} />}
+      {catatRec && (
+        <p className="rounded-xl border-3 border-acid bg-acid/10 px-3 py-2 text-sm font-semibold" role="status" data-testid="proto-catat-picked">
+          Data {catatRec.item} ({catatRec.id}) telah dipilih, silakan lanjutkan data progres produksi untuk jalur non kopra.
+        </p>
+      )}
       <div className="grid gap-3 sm:grid-cols-2">
-        <div className="flex flex-col gap-1.5">
+        {!catatRec && (
+        <div className="flex flex-col gap-1.5" data-testid="proto-jalur-block">
           {!base && (
             <Dropdown
               label="Jalur produk"
@@ -734,9 +791,11 @@ function ProtocolForm({ protocols, entries, media, base, draft, onDraftSaved, in
             </label>
           )}
           <span className="text-xs text-muted" data-testid="proto-product-code">Kode jalur: {product}</span>
+          <JalurStart value={jalurStart[0] ?? ''} onChange={(v) => setStartAt(0, v)} testId="proto-jalur-start-0" />
           {/* kolom jalur produk tambahan (DEC-105) */}
           {jalurExtra.map((j, i) => (
-            <div key={i} className="flex items-end gap-2" data-testid={`proto-jalur-extra-row-${i}`}>
+            <div key={i} className="flex flex-col gap-1.5">
+            <div className="flex items-end gap-2" data-testid={`proto-jalur-extra-row-${i}`}>
               <div className="min-w-0 flex-1">
                 <Dropdown
                   label={`Jalur produk ${i + 2}`}
@@ -747,111 +806,29 @@ function ProtocolForm({ protocols, entries, media, base, draft, onDraftSaved, in
                   options={JALUR_OPTIONS}
                 />
               </div>
-              <button type="button" className="mb-1 inline-flex h-9 w-9 flex-none items-center justify-center rounded-full text-muted hover:bg-safety hover:text-ink" onClick={() => setJalurExtra((cur) => cur.filter((_, k) => k !== i))} aria-label={`Hapus kolom jalur produk ${i + 2}`} data-testid={`proto-jalur-extra-del-${i}`}>
+              <button type="button" className="mb-1 inline-flex h-9 w-9 flex-none items-center justify-center rounded-full text-muted hover:bg-safety hover:text-ink" onClick={() => { setJalurExtra((cur) => cur.filter((_, k) => k !== i)); setJalurStart((cur) => cur.filter((_, k) => k !== i + 1)); }} aria-label={`Hapus kolom jalur produk ${i + 2}`} data-testid={`proto-jalur-extra-del-${i}`}>
                 ✕
               </button>
+            </div>
+            <JalurStart value={jalurStart[i + 1] ?? ''} onChange={(v) => setStartAt(i + 1, v)} testId={`proto-jalur-start-${i + 1}`} />
             </div>
           ))}
           <button type="button" className="inline-flex h-9 items-center gap-1.5 self-start rounded-full border border-ink/20 bg-white px-3 text-sm font-semibold hover:border-acid" onClick={() => setJalurExtra((cur) => [...cur, ''])} aria-label="Tambah kolom jalur produk" data-testid="proto-jalur-add">
             <span className="text-lg leading-none" aria-hidden>＋</span> Tambah kolom
           </button>
         </div>
-        <TextInput label="Nama resep/proses" value={name} onChange={setName} placeholder="mis. Kopra oven bertahap" testId="proto-name" />
+        )}
+        {!catatRec && <TextInput label="Nama resep/proses" value={name} onChange={setName} placeholder="mis. Kopra oven bertahap" testId="proto-name" />}
         <label className="flex flex-col gap-1.5">
           <span className="label-mono">Tanggal mulai</span>
           <input type="date" className="field" value={startDate} disabled={!!base?.startDate} onChange={(e) => setStartDate(e.target.value)} data-testid="proto-start" />
           <span className="text-xs text-muted">Tanggal selesai terisi otomatis dari laporan penutup.</span>
         </label>
         <TextInput label="Pembuat" value={author} onChange={setAuthor} placeholder="nama kamu" testId="proto-author" />
-        <TextInput label="Asisten (pisahkan dengan koma)" value={assistants} onChange={setAssistants} placeholder="mis. Rina, Budi" testId="proto-assistants" />
         <TextInput label={base ? 'Alasan perubahan (wajib)' : 'Catatan versi'} value={reason} onChange={setReason} testId="proto-reason" />
+        <TextInput label="Asisten (pisahkan dengan koma)" value={assistants} onChange={setAssistants} placeholder="mis. Rina, Budi" testId="proto-assistants" />
       </div>
-
-      <fieldset className="flex flex-col gap-2">
-        <legend className="label-mono mb-2">Komposisi bahan — jumlah persis seperti kamu tentukan</legend>
-        {catatRec && groups.length > 0 && (
-          <div className="flex flex-col gap-3 rounded-xl border-3 border-acid bg-acid/5 p-2" data-testid="proto-catat-photos">
-            <span className="text-sm font-semibold">Foto data awal & akhir · {catatRec.id} ({groups.reduce((n, g) => n + g.photos.length, 0)} foto)</span>
-            {groups.map((g, gi) => (
-              <div key={g.jalur} className="flex flex-col gap-1.5" data-testid={`proto-catat-group-${gi}`}>
-                <span className="font-mono text-xs">
-                  {g.jalur}
-                  {g.treatment ? ` · ${g.treatment.title} · ${g.treatment.entries.length} kolom` : g.range ? ` · ${g.range.count} item (no ${g.rows[0]?.no ?? '–'}–${g.rows[g.rows.length - 1]?.no ?? '–'})` : ''} · {g.photos.length} foto
-                </span>
-                {g.photos.length ? (
-                  <div className="grid grid-cols-4 gap-1.5 sm:grid-cols-8">
-                    {g.photos.map((ph) => (
-                      <div key={ph.key} className="relative flex flex-col items-center gap-0.5">
-                        <button type="button" className="w-full" onClick={() => setZoom({ src: ph.src, alt: ph.label ?? `No ${ph.no} · ${ph.kind}` })} aria-label={`Lihat foto ${ph.label ?? `no ${ph.no} ${ph.kind}`}`}>
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img src={ph.src} alt={ph.label ?? `No ${ph.no} · ${ph.kind}`} className="aspect-[3/4] w-full rounded-lg object-cover" />
-                        </button>
-                        {/* hapus foto dari resep ini (data pencatatan tidak berubah) */}
-                        <button
-                          type="button"
-                          className="absolute right-0.5 top-0.5 inline-flex h-5 w-5 items-center justify-center rounded-full bg-ink/80 text-[11px] leading-none text-paper hover:bg-safety hover:text-ink"
-                          onClick={() => setExclude((cur) => [...cur, ph.key])}
-                          aria-label={`Hapus foto ${ph.label ?? `no ${ph.no} ${ph.kind}`} dari resep`}
-                          data-testid={ph.kind === 'perlakuan' ? `proto-catat-del-${ph.key.replace(/:/g, '-')}` : `proto-catat-del-${ph.no}-${ph.kind}`}
-                        >
-                          ✕
-                        </button>
-                        <span className="text-center font-mono text-[10px] leading-tight text-muted">{ph.kind === 'perlakuan' ? ph.label : `No ${ph.no} · ${ph.kind}`}</span>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-xs italic text-muted">{g.treatment ? 'Belum ada foto untuk perlakuan ini (isi foto di Perlakuan lainnya (Non Kopra) pada data akhir / revisi).' : 'Belum ada foto untuk nomor ini.'}</p>
-                )}
-                {g.treatment && g.photos.some((p) => p.note) && (
-                  <ul className="text-xs text-muted">
-                    {g.photos.filter((p) => p.note).map((p) => <li key={p.key}>{p.label}: {p.note}</li>)}
-                  </ul>
-                )}
-              </div>
-            ))}
-            {exclude.length > 0 && (
-              <button type="button" className="self-start font-mono text-xs underline" onClick={() => setExclude([])} data-testid="proto-catat-restore">
-                Kembalikan {exclude.length} foto yang dihapus
-              </button>
-            )}
-          </div>
-        )}
-        {ings.map((it, i) => (
-          <div key={i} className="flex flex-col gap-2 rounded-xl border-3 border-ink p-2">
-            <div className="grid grid-cols-[1fr_6rem_5rem_auto] items-center gap-2">
-              <input className="field min-h-[44px] font-sans text-sm font-normal" placeholder="Bahan" value={it.name} onChange={(e) => setIngs(ings.map((x, j) => (j === i ? { ...x, name: e.target.value } : x)))} data-testid={`proto-ing-name-${i}`} />
-              <input className="field min-h-[44px] text-sm" placeholder="Jumlah" value={it.amount} onChange={(e) => setIngs(ings.map((x, j) => (j === i ? { ...x, amount: e.target.value } : x)))} data-testid={`proto-ing-amount-${i}`} />
-              <input className="field min-h-[44px] text-sm" placeholder="Satuan" value={it.unit} onChange={(e) => setIngs(ings.map((x, j) => (j === i ? { ...x, unit: e.target.value } : x)))} data-testid={`proto-ing-unit-${i}`} />
-              <button type="button" aria-label="Hapus bahan" className="font-mono text-xs underline" onClick={() => { setIngs(ings.length > 1 ? ings.filter((_, j) => j !== i) : [blankIng()]); setIngFiles(ingFiles.length > 1 ? ingFiles.filter((_, j) => j !== i) : [[]]); }}>×</button>
-            </div>
-            <Thumbs ids={it.mediaIds} media={media} />
-            <FilePick list={ingFiles[i] ?? []} onChange={(l) => setIngFiles(ingFiles.map((x, j) => (j === i ? l : x)))} testId={`proto-ing-files-${i}`} />
-          </div>
-        ))}
-        <button type="button" className="btn-ghost self-start" onClick={() => { setIngs([...ings, blankIng()]); setIngFiles([...ingFiles, []]); }}>+ Bahan</button>
-      </fieldset>
-
-      {/* Penghitungan per butir (DEC-064) diganti menu Bahan Baku (DEC-068); data lama tetap ikut tersimpan. */}
-
-      {zoom && <ImagePreview src={zoom.src} alt={zoom.alt} onClose={() => setZoom(undefined)} />}
-      <fieldset className="flex flex-col gap-2" data-testid="proto-tools">
-        <legend className="label-mono mb-2">Alat yang digunakan — sama seperti bahan: nama, jumlah, satuan, foto/video</legend>
-        {tools.map((t, i) => (
-          <div key={i} className="flex flex-col gap-2 rounded-xl border-3 border-ink p-2">
-            <div className="grid grid-cols-[1fr_6rem_5rem_auto] items-center gap-2">
-              <input className="field min-h-[44px] font-sans text-sm font-normal" placeholder="Alat" value={t.name} onChange={(e) => setTools(tools.map((x, j) => (j === i ? { ...x, name: e.target.value } : x)))} data-testid={`proto-tool-name-${i}`} />
-              <input className="field min-h-[44px] text-sm" placeholder="Jumlah" value={t.amount ?? ''} onChange={(e) => setTools(tools.map((x, j) => (j === i ? { ...x, amount: e.target.value } : x)))} data-testid={`proto-tool-amount-${i}`} />
-              <input className="field min-h-[44px] text-sm" placeholder="Satuan" value={t.unit ?? ''} onChange={(e) => setTools(tools.map((x, j) => (j === i ? { ...x, unit: e.target.value } : x)))} data-testid={`proto-tool-unit-${i}`} />
-              <button type="button" aria-label="Hapus alat" className="font-mono text-xs underline" onClick={() => { setTools(tools.length > 1 ? tools.filter((_, j) => j !== i) : [{ name: '' }]); setToolFiles(toolFiles.length > 1 ? toolFiles.filter((_, j) => j !== i) : [[]]); }}>×</button>
-            </div>
-            <Thumbs ids={t.mediaIds} media={media} />
-            <FilePick list={toolFiles[i] ?? []} onChange={(l) => setToolFiles(toolFiles.map((x, j) => (j === i ? l : x)))} testId={`proto-tool-files-${i}`} />
-          </div>
-        ))}
-        <button type="button" className="btn-ghost self-start" onClick={() => { setTools([...tools, { name: '' }]); setToolFiles([...toolFiles, []]); }} data-testid="proto-tool-add">+ Alat</button>
-      </fieldset>
-
+      {/* Urutan hari dipindah ke sesudah Asisten (DEC-142) */}
       <fieldset className="flex flex-col gap-2">
         <legend className="label-mono mb-2">Urutan hari — kegiatan tiap hari, lanjut ke hari berikutnya</legend>
         {steps.map((st, i) => (
@@ -869,6 +846,20 @@ function ProtocolForm({ protocols, entries, media, base, draft, onDraftSaved, in
         ))}
         <button type="button" className="btn-ghost self-start" onClick={() => { setSteps([...steps, blankStep()]); setStepFiles([...stepFiles, []]); }} data-testid="proto-day-add">+ Hari ke-{steps.length + 1}</button>
       </fieldset>
+      <label className="flex flex-col gap-1.5">
+        <span className="label-mono">Catatan Laporan</span>
+        <textarea className="field min-h-[180px] w-full resize-y bg-white font-sans text-sm font-normal" rows={8} value={reportNote} onChange={(e) => setReportNote(e.target.value)} placeholder="Catatan laporan tambahan — jadi slide terakhir “Laporan” di PowerPoint." data-testid="proto-report-note" />
+      </label>
+
+      {/* Komposisi bahan & alat pindah ke form pencatatan data awal/akhir/revisi (DEC-142); bahan/alat resep lama tetap tersimpan
+          & ikut laporan. Foto data terpilih tidak lagi ditampilkan di sini (DEC-142) — tetap ikut laporan lewat jalurGroups. */}
+
+      {/* Penghitungan per butir (DEC-064) diganti menu Bahan Baku (DEC-068); data lama tetap ikut tersimpan. */}
+
+      {zoom && <ImagePreview src={zoom.src} alt={zoom.alt} onClose={() => setZoom(undefined)} />}
+
+
+
 
       <div className="flex flex-wrap items-center gap-3">
         <button type="button" className="btn-ghost" disabled={busy} onClick={() => void keepDraft()} data-testid="proto-save">{busy ? 'Menyimpan…' : 'Simpan'}</button>

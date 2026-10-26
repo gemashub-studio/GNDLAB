@@ -3,6 +3,17 @@
 Format: [Keep a Changelog](https://keepachangelog.com/id/1.1.0/) · Versi dataset mengikuti SemVer (ADR-002).
 Waktu dalam WIB (UTC+7).
 
+## [Resep baru lebih ringkas, Catatan Laporan, bahan & alat di pencatatan] — 2026-10-26
+### Diubah
+- Resep baru: setelah memilih data tersedia, cukup keterangan data terpilih (tanpa galeri foto, kolom jalur, dan nama resep).
+- Urutan hari dipindah ke sesudah Asisten.
+- Kolom bahan & alat pindah ke form pencatatan data awal, akhir, dan revisi.
+### Ditambahkan
+- Tanggal mulai produksi di bawah tiap kolom jalur produk.
+- Kolom Catatan Laporan → slide terakhir "Laporan" di PowerPoint.
+### Diperbaiki
+- Foto dari kamera tidak lagi tertimpa saat langsung merekam video.
+
 ## [Tambah perlakuan di revisi, PPTX hijau, suara maskot] — 2026-10-26
 ### Ditambahkan
 - Form revisi: tombol ＋ Tambah perlakuan (bio leather) di bagian Perlakuan lainnya (Non Kopra).

@@ -335,6 +335,10 @@ export interface ProtocolDraft {
   jalurExtra?: string[];
   /** Foto pencatatan yang dihapus dari resep (✕), kunci "no:awal" / "no:akhir" (DEC-105). */
   catatExclude?: string[];
+  /** Tanggal mulai produksi tiap kolom jalur produk (indeks 0 = jalur utama, lalu jalurExtra), YYYY-MM-DD (DEC-142). */
+  jalurStart?: string[];
+  /** Catatan Laporan — teks bebas panjang, jadi slide terakhir "Laporan" di PPTX (DEC-142). */
+  reportNote?: string;
   /** Foto/video yang sudah dipilih tapi belum jadi versi resmi (per baris). */
   pending: { ingredients: NewMedia[][]; tools: NewMedia[][]; steps: NewMedia[][]; coconuts?: NewMedia[][] };
   createdAt: string;
@@ -371,6 +375,10 @@ export interface ProtocolVersion {
   jalurExtra?: string[];
   /** Foto pencatatan yang dihapus dari resep (✕), kunci "no:awal" / "no:akhir" (DEC-105). */
   catatExclude?: string[];
+  /** Tanggal mulai produksi tiap kolom jalur produk (indeks 0 = jalur utama, lalu jalurExtra), YYYY-MM-DD (DEC-142). */
+  jalurStart?: string[];
+  /** Catatan Laporan — teks bebas panjang, jadi slide terakhir "Laporan" di PPTX (DEC-142). */
+  reportNote?: string;
   reason: string;
   author: string;
   createdAt: string;
@@ -417,6 +425,13 @@ export function resolveProduct(text: string): { product: string; productName?: s
 
 /** Nama jalur untuk tampilan: isian manual, nama preset, atau kodenya. */
 export const protocolProductName = (p: { product: string; productName?: string }) => p.productName || LAB_PRODUCTS.find((x) => x.id === p.product)?.name || p.product;
+
+/** Tanggal mulai produksi per kolom jalur produk (DEC-142). */
+export function jalurStartLines(v: Pick<ProtocolVersion, 'product' | 'productName' | 'jalurExtra' | 'jalurStart'>): string[] {
+  const names = [protocolProductName(v), ...(v.jalurExtra ?? [])];
+  const items = names.map((n, i) => [n, v.jalurStart?.[i] ?? ''] as const).filter(([, d]) => d);
+  return items.length ? [`Tanggal mulai produksi: ${items.map(([n, d]) => `${n} ${d}`).join(' · ')}`] : [];
+}
 
 export function nextProtocolKey(product: string, existing: readonly ProtocolVersion[], tag = deviceTag()): string {
   const prefix = `${product}-P`;

@@ -218,6 +218,18 @@ export function jalurGroups(rec: Pick<CatatRecord, 'rows' | 'treatments'>, jalur
   return out;
 }
 
+/**
+ * Semua jalur perlakuan di satu catatan (DEC-142): rentang perlakuan kopra lalu metode perlakuan non-kopra yang terisi,
+ * dalam nama tampil (methodLabel). Dipakai Resep baru saat "Pilih Data yang tersedia" diisi — kolom jalur tidak ditampilkan.
+ */
+export function catatJalurs(rec: Pick<CatatRecord, 'rows' | 'treatments'>): string[] {
+  const out: string[] = [];
+  const push = (m: string) => m && !out.some((x) => sameJalur(x, m)) && out.push(methodLabel(m));
+  for (const r of perlakuanRanges(rec)) push(r.method);
+  for (const g of TREATMENT_GROUPS) if (g.key !== 'kopra') for (const e of treatmentEntries(rec.treatments, g.key)) push(e.method);
+  return out;
+}
+
 /** Baris tabel perlakuan yang terisi (jumlah atau metode), satu baris per kolom. */
 /** Kolom perlakuan dianggap terisi bila ada jumlah, metode, keterangan, atau foto. */
 const trFilled = (e: TreatmentEntry) => !!(e.count.trim() || e.method || e.note?.trim() || e.photo);
@@ -264,7 +276,42 @@ export interface CatatRecord {
   treatments?: Treatments;
   /** Diselesaikan pengguna (tombol "Selesaikan", DEC-098) — kartu hijau. Tanpa batas jumlah catatan (DEC-101). */
   closedAt?: string;
+  /** Bahan yang dipakai (DEC-142, pindah dari form resep): nama, jumlah, satuan, foto. */
+  bahan?: CatatItem[];
+  /** Alat yang dipakai (DEC-142). */
+  alat?: CatatItem[];
 }
+
+/** Satu baris bahan / alat di pencatatan (DEC-142). */
+export interface CatatItem {
+  name: string;
+  amount: string;
+  unit: string;
+  /** JPEG data URL potret 3:4. */
+  photo?: string;
+}
+/** Bahan & alat dari form pencatatan (awal, akhir, revisi). */
+export interface CatatExtras {
+  bahan: CatatItem[];
+  alat: CatatItem[];
+}
+export const blankItem = (): CatatItem => ({ name: '', amount: '', unit: '' });
+/** Baris bahan/alat yang terisi (nama wajib), dirapikan. */
+export const cleanItems = (list: readonly CatatItem[] = []): CatatItem[] =>
+  list.filter((x) => x.name.trim()).map((x) => ({ name: x.name.trim(), amount: x.amount.trim(), unit: x.unit.trim(), ...(x.photo && { photo: x.photo }) }));
+/** Pasang bahan & alat ke catatan (kosong → dihapus). */
+export function withExtras(rec: CatatRecord, extras?: CatatExtras): CatatRecord {
+  if (!extras) return rec;
+  const { bahan: _b, alat: _a, ...rest } = rec;
+  const bahan = cleanItems(extras.bahan);
+  const alat = cleanItems(extras.alat);
+  return { ...rest, ...(bahan.length && { bahan }), ...(alat.length && { alat }) };
+}
+/** Isian awal form bahan/alat dari catatan (minimal satu baris kosong). */
+export const extrasOf = (rec?: Pick<CatatRecord, 'bahan' | 'alat'>): CatatExtras => ({
+  bahan: rec?.bahan?.length ? rec.bahan.map((x) => ({ ...x })) : [blankItem()],
+  alat: rec?.alat?.length ? rec.alat.map((x) => ({ ...x })) : [blankItem()],
+});
 
 export type ProgressStage = 'harian' | 'mingguan' | 'bulanan';
 export const PROGRESS_STAGES: readonly { key: ProgressStage; label: string }[] = [
@@ -502,10 +549,10 @@ export async function closeCatat(id: string): Promise<CatatRecord> {
   return next;
 }
 
-export async function addCatatAwal(item: string, rows: CatatRow[], treatments?: Treatments): Promise<CatatRecord> {
+export async function addCatatAwal(item: string, rows: CatatRow[], treatments?: Treatments, extras?: CatatExtras): Promise<CatatRecord> {
   const d = await catatDb();
   const now = new Date().toISOString();
-  const rec: CatatRecord = { id: nextCatatId((await d.getAllKeys('records')).map(String)), item, count: rows.length, rows, createdAt: now, updatedAt: now, ...(treatments && treatmentRows(treatments).length && { treatments }) };
+  const rec: CatatRecord = withExtras({ id: nextCatatId((await d.getAllKeys('records')).map(String)), item, count: rows.length, rows, createdAt: now, updatedAt: now, ...(treatments && treatmentRows(treatments).length && { treatments }) }, extras);
   await d.add('records', rec);
   return rec;
 }
@@ -526,13 +573,13 @@ export const akhirFilled = (rec: CatatRecord) => rec.rows.filter((r) => (r.berat
  * Simpan data akhir. `final` = konfirmasi lengkap (finishedAt); tanpa itu = "Simpan dulu" (akhirSavedAt):
  * catatan tetap menunggu data akhir, isian & perlakuan terbaru tersimpan dan ikut unduhan (DEC-082).
  */
-export async function saveCatatAkhir(id: string, akhir: AkhirInput[], treatments?: Treatments, final = true): Promise<CatatRecord> {
+export async function saveCatatAkhir(id: string, akhir: AkhirInput[], treatments?: Treatments, final = true, extras?: CatatExtras): Promise<CatatRecord> {
   const d = await catatDb();
   const rec = await d.get('records', id);
   if (!rec) throw new Error(`Catatan ${id} tidak ditemukan`);
   const by = new Map(akhir.map((a) => [a.no, a]));
   const next: CatatRecord = {
-    ...rec,
+    ...withExtras(rec, extras),
     rows: rec.rows.map((r) => {
       const a = by.get(r.no);
       const { fotoAkhir: _old, ...rest } = r;
@@ -608,6 +655,26 @@ const photos = (rec: CatatRecord, k: 'awal' | 'akhir') =>
   rec.rows
     .filter((r) => (k === 'awal' ? r.fotoAwal : r.fotoAkhir))
     .map((r) => ({ name: `${rec.id}-${String(r.no).padStart(3, '0')}-${k}.jpg`, caption: `No ${r.no} · data ${k}`, dataUrl: (k === 'awal' ? r.fotoAwal : r.fotoAkhir)!, video: false }));
+
+/** Bahan & alat pencatatan (DEC-142): tabel di semua format + foto berjajar di PowerPoint. */
+export function bahanAlatBlocks(rec: Pick<CatatRecord, 'bahan' | 'alat'>): ReportBlock[] {
+  const items = [...(rec.bahan ?? []).map((x) => ['Bahan', x] as const), ...(rec.alat ?? []).map((x) => ['Alat', x] as const)];
+  if (!items.length) return [];
+  const photos = items.filter(([, x]) => x.photo);
+  return [
+    {
+      heading: 'Bahan & alat',
+      level: 1,
+      lines: [],
+      table: { head: ['Jenis', 'Nama', 'Jumlah', 'Satuan'], rows: items.map(([k, x]) => [k, x.name, x.amount || '–', x.unit || '–']) },
+      images: photos.map(([k, x]) => ({ dataUrl: x.photo!, name: `${k} · ${x.name}`, caption: `${k} · ${x.name}${x.amount ? ` · ${x.amount} ${x.unit}`.trimEnd() : ''}`, video: false })),
+      pptxOmitImages: true,
+    },
+    ...(photos.length
+      ? [{ heading: 'Foto bahan & alat', level: 1 as const, lines: [], images: [], pptxOnly: true, photoCards: photos.map(([k, x]) => ({ image: x.photo, lines: [x.name, k, ...(x.amount ? [`${x.amount} ${x.unit}`.trim()] : [])] })) }]
+      : []),
+  ];
+}
 
 /** Slide penjelasan semua perlakuan yang tersedia (PPTX saja). */
 function treatmentInfoBlock(): ReportBlock {
@@ -718,6 +785,7 @@ export function buildCatatReport(rec: CatatRecord, generatedAt = new Date().toLo
       images: tPhotos.map((i) => ({ dataUrl: i.photo!, name: `${i.title} · ${i.method}`, caption: [i.method, `jumlah ${i.count}`, ...(i.note !== '–' ? [i.note] : [])].join(' · '), video: false })),
       pptxSkip: true,
     });
+  blocks.push(...bahanAlatBlocks(rec));
   blocks.push({
     heading: 'Kesimpulan',
     level: 1,

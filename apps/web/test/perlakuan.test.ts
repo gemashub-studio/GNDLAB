@@ -130,3 +130,45 @@ describe('perlakuan bio leather baru (DEC-110)', () => {
   });
 });
 
+
+describe('Resep baru disederhanakan & bahan/alat di pencatatan (DEC-142)', () => {
+  const withBio: CatatRecord = { ...rec(30), treatments: { kopra: [{ method: 'GreenHouse', count: '15' }], bio: [{ method: 'Bio Leather Rumput', count: '2', photo: jpg }, { method: '', count: '' }] } };
+  it('catatJalurs: perlakuan kopra lalu non-kopra yang terisi (nama tampil, tanpa duplikat)', async () => {
+    const { catatJalurs } = await import('@/lib/pencatatan');
+    expect(catatJalurs(withBio)).toEqual(['Green House', 'Bio Leather Rumput']);
+    expect(catatJalurs({ rows: [], treatments: undefined })).toEqual([]);
+  });
+  it('bahan & alat: baris kosong dibuang, ikut laporan pencatatan (tabel + foto PPTX)', async () => {
+    const { withExtras, extrasOf, bahanAlatBlocks } = await import('@/lib/pencatatan');
+    const r = withExtras(rec(3), { bahan: [{ name: ' Gula ', amount: '50', unit: 'g', photo: jpg }, { name: '', amount: '', unit: '' }], alat: [{ name: 'Panci', amount: '1', unit: 'buah' }] });
+    expect(r.bahan).toEqual([{ name: 'Gula', amount: '50', unit: 'g', photo: jpg }]);
+    expect(r.alat).toEqual([{ name: 'Panci', amount: '1', unit: 'buah' }]);
+    expect(withExtras(r, { bahan: [], alat: [] }).bahan).toBeUndefined();
+    expect(extrasOf(undefined).bahan).toHaveLength(1);
+    const blocks = bahanAlatBlocks(r);
+    expect(blocks[0]!.table!.rows).toEqual([['Bahan', 'Gula', '50', 'g'], ['Alat', 'Panci', '1', 'buah']]);
+    expect(blocks[1]!.photoCards).toHaveLength(1);
+    const pptx = new TextDecoder().decode(buildPptx(buildCatatReport(r, 'x')));
+    expect(pptx).toContain('Bahan &amp; alat');
+    expect(pptx).toContain('Panci');
+  });
+  it('resep: tanggal mulai produksi per jalur di identitas; Catatan Laporan = slide PPTX terakhir "Laporan"', async () => {
+    const { jalurStartLines } = await import('@/lib/labStore');
+    const v: ProtocolVersion = {
+      id: 'GH-P01-v1', key: 'GH-P01', version: 1, product: 'GH', productName: 'Green House', name: 'Progres', author: 'Owner', reason: 'awal', createdAt: '2026-10-26T11:00:00.000Z', ingredients: [], steps: [],
+      catatId: withBio.id, jalurExtra: ['Bio Leather Rumput'], jalurStart: ['2026-10-20', '2026-10-22'], reportNote: 'Paragraf pertama laporan.\n\nParagraf kedua: hasil fermentasi baik.',
+    };
+    expect(jalurStartLines(v)).toEqual(['Tanggal mulai produksi: Green House 2026-10-20 · Bio Leather Rumput 2026-10-22']);
+    const report = buildResearchReport('GH-P01', [v], [], [], 'x', undefined, [withBio]);
+    const last = report.blocks.at(-1)!;
+    expect(last.heading).toBe('Laporan');
+    expect(last.lines).toEqual(['Paragraf pertama laporan.', 'Paragraf kedua: hasil fermentasi baik.']);
+    const slides = new TextDecoder().decode(buildPptx(report)).split('<p:sld ').slice(1);
+    const lap = slides.at(-1)!;
+    expect(lap).toContain('>Laporan<');
+    expect(lap).toContain('Paragraf kedua: hasil fermentasi baik.');
+    // slide "Laporan" berdiri sendiri (tidak ditumpuk dengan Penutup)
+    expect(lap).not.toContain('Riset belum ditandai selesai');
+    expect(buildResearchReport('GH-P01', [{ ...v, reportNote: '  ' }], [], [], 'x', undefined, [withBio]).blocks.some((b) => b.heading === 'Laporan')).toBe(false);
+  });
+});

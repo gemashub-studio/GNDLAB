@@ -525,7 +525,7 @@ function ResearchDoc({ r: rep }: { r: ResearchReport }) {
                 <Text style={r.secNum}>{String(++sec).padStart(2, '0')}</Text>
                 <Text style={r.secTitle}>{b.heading}</Text>
               </View>
-              {b.lines.map((l, k) => <Line_ key={k} text={l} />)}
+              {b.lines.map((l, k) => (b.plainLines ? <Text key={k} style={{ marginBottom: 3 }}>{l}</Text> : <Line_ key={k} text={l} />))}
               {b.table && <ZebraTable head={b.table.head} rows={b.table.rows} />}
               {b.charts?.map((c) => (
                 <View key={c.id} style={r.chartCard} wrap={false}>
@@ -539,7 +539,7 @@ function ResearchDoc({ r: rep }: { r: ResearchReport }) {
           ) : (
             <View key={i} style={r.day}>
               <Text style={r.dayHead} minPresenceAhead={150}>{b.heading}</Text>
-              {b.lines.map((l, k) => <Line_ key={k} text={l} />)}
+              {b.lines.map((l, k) => (b.plainLines ? <Text key={k} style={{ marginBottom: 3 }}>{l}</Text> : <Line_ key={k} text={l} />))}
               {b.table && <ZebraTable head={b.table.head} rows={b.table.rows} />}
               {b.images.length > 0 && <Gallery images={b.images} />}
             </View>

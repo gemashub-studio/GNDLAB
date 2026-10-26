@@ -27,6 +27,8 @@ description: Mengubah / memeriksa desain laporan PPTX & DOCX GnD Lab (pencatatan
 - Menambah ikon: tambahkan entri di `ICONS` (koordinat 0–100), jenisnya di `IconKind`, lalu (opsional) kata kunci di `iconFor`.
 
 ## Jebakan
+- Baris `Label: isi` otomatis jadi label tebal (titik dua hilang) di PPTX/Word/PDF/HTML; teks bebas → `plainLines: true`.
+  Blok teks pendek ditumpuk ke slide sebelumnya; slide sendiri → `pptxNewSlide: true` (mis. slide "Laporan", DEC-142).
 - **ID bentuk (`cNvPr id`) harus unik per slide.** Pemakaian: judul 2–8, KPI 20+, grid foto/progres 100+, paket blok 200+,
   belanja 400+, folio 89–92, ikon kicker 9100–9101, panel produk 9200–9260. Pakai ≥ 9000 untuk komponen baru.
 - `pSeg`/`pLine` didefinisikan setelah `buildPptx` (const) — aman karena dipanggil saat runtime, bukan saat modul dimuat.

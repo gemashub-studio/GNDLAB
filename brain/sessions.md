@@ -261,3 +261,8 @@
 ## 2026-10-26 · Claude (sesi cloud) — tombol + perlakuan revisi, PPTX hijau, TTS maskot berhenti
 - DEC-141 (FND-055, FND-056). Uji: typecheck 0; unit 160/74/191 (19 skip); E2E lab Pencatatan Data (termasuk modal ＋) lulus; voice-assistant 6/6 termasuk tes baru (gagal tanpa perbaikan, lulus dengan perbaikan); mascot-dock: flake sesekali saat suite gabungan (1 dari 6 ulangan; sudah terlihat sebelum DEC-141), 6/6 di ulangan berikutnya. Render PPTX 9 slide via LibreOffice: tema hijau terbaca.
 - Berikutnya: permintaan owner modal Resep baru (Riset produk) + bahan/alat pindah ke pencatatan (DEC-142).
+
+## 2026-10-26 · Claude (sesi cloud) — Resep baru ringkas, Catatan Laporan, bahan & alat di pencatatan
+- DEC-142 (FND-057, FND-058). Uji: typecheck 0; unit 160/74/194 (19 skip; tes baru catatJalurs, bahan/alat, jalurStart, slide Laporan); next build lulus (lint bersih); E2E lab 14/15 di suite penuh + ulang 7/7 untuk tes terdampak (OCR gagal = lingkungan cloud, FND-054). Render PPTX riset via LibreOffice: Identitas (tanggal mulai produksi), Bahan & alat, Laporan (slide terakhir) rapi.
+- Catatan desain: saat data dipilih, jalur & nama resep diisi otomatis (perlakuan pertama → kode resep, mis. GH-…). Bahan/alat resep lama tetap tersimpan & dilaporkan; form resep tidak lagi punya kolom bahan/alat.
+- DEC-141 & DEC-142 belum di-deploy saat entri ini ditulis (Vercel MCP sempat terputus).

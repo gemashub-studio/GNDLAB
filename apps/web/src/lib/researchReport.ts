@@ -4,8 +4,8 @@
  * Hanya dari data tercatat; kosong = "belum dicatat".
  */
 import { fmtNum, researchCharts, type ChartSpec } from './reportCharts';
-import { jalurGroups, methodLabel, perlakuanRanges, photoPairsOf, type CatatRecord } from './pencatatan';
-import { coconutSummary, dayNumber, protocolProductName, variantLabel, type CoconutRow, type RawMaterial, NOT_RECORDED, researchDates, researchStatus, toolList, type DailyEntry, type MediaItem, type ProtocolVersion } from './labStore';
+import { bahanAlatBlocks, jalurGroups, methodLabel, perlakuanRanges, photoPairsOf, type CatatRecord } from './pencatatan';
+import { coconutSummary, dayNumber, protocolProductName, variantLabel, type CoconutRow, type RawMaterial, NOT_RECORDED, researchDates, researchStatus, toolList, type DailyEntry, type MediaItem, type ProtocolVersion, jalurStartLines } from './labStore';
 
 export interface ReportImage {
   name: string;
@@ -30,6 +30,10 @@ export interface ReportBlock {
   photoPairs?: PhotoPair[];
   /** Blok hanya untuk PowerPoint (PDF/Word/HTML melewatinya). */
   pptxOnly?: boolean;
+  /** PowerPoint: selalu mulai di slide baru (tidak ditumpuk ke slide sebelumnya), mis. slide "Laporan" (DEC-142). */
+  pptxNewSlide?: boolean;
+  /** Baris = paragraf bebas apa adanya (tanpa pemisahan "Label: isi" menjadi label tebal), mis. Catatan Laporan (DEC-142). */
+  plainLines?: boolean;
   /** PowerPoint tidak membuat slide galeri dari `images` blok ini (fotonya sudah di grid). */
   pptxOmitImages?: boolean;
   /** Blok dilewati di PowerPoint (isinya digabung ke blok lain, mis. perlakuan → Kesimpulan). */
@@ -183,11 +187,11 @@ export function catatBlocks(v: Pick<ProtocolVersion, 'catatId' | 'product' | 'pr
     photoCards: g.photos.map((p) => ({ image: p.src, lines: [p.label ?? g.jalur, ...(p.note ? [p.note] : [])] })),
   });
   const grids: ReportBlock[] = groups.length
-    ? groups.map((g) => (g.treatment ? card(g) : grid(g.range ? `${g.jalur} · ${g.range.count} item (no ${g.rows[0]?.no ?? '–'}–${g.rows[g.rows.length - 1]?.no ?? '–'})` : `${g.jalur} · ${rec.id}`, g.rows)))
+    ? groups.filter((g) => !g.treatment || g.photos.length).map((g) => (g.treatment ? card(g) : grid(g.range ? `${g.jalur} · ${g.range.count} item (no ${g.rows[0]?.no ?? '–'}–${g.rows[g.rows.length - 1]?.no ?? '–'})` : `${g.jalur} · ${rec.id}`, g.rows)))
     : ranges.length
       ? ranges.map((r) => grid(`Perlakuan ${r.label} · ${r.count} item`, r.rows))
       : [grid(`${jalur} · ${rec.id}`, rec.rows)];
-  return [summary, ...grids];
+  return [summary, ...grids, ...bahanAlatBlocks(rec)];
 }
 
 export function buildResearchReport(
@@ -242,27 +246,37 @@ export function buildResearchReport(
         `Pembuat: ${or(latest.author)} · Asisten: ${latest.assistants?.length ? latest.assistants.join(', ') : NOT_RECORDED}`,
         `Tanggal mulai: ${or(dates.start)} · Tanggal selesai: ${dates.end ? `${dates.end} (otomatis dari laporan penutup)` : 'belum selesai'}${dates.days ? ` · Durasi: ${dates.days} hari` : ''}`,
         `Versi terakhir: ${latest.id} (${latest.createdAt.slice(0, 10)}) · Laporan harian: ${days.length}`,
+        ...jalurStartLines(latest),
       ],
       images: [],
     },
     ringkasan,
-    {
-      heading: `Komposisi bahan (versi ${latest.version})`,
-      level: 1,
-      lines: latest.ingredients.length ? [] : [NOT_RECORDED],
-      ...(latest.ingredients.length && { table: { head: ['No', 'Bahan', 'Jumlah', 'Satuan'], rows: latest.ingredients.map((x, i) => [String(i + 1), x.name, x.amount || '–', x.unit || '–']) } }),
-      images: latest.ingredients.flatMap((x, i) => pics(x.mediaIds).map((p) => ({ ...p, caption: `Bahan ${i + 1} · ${x.name}${p.caption ? ` — ${p.caption}` : ''}` }))),
-    },
+    // bahan & alat kini dicatat di pencatatan (DEC-142, blok "Bahan & alat"); bagian resep hanya untuk resep lama yang berisi
+    ...(latest.ingredients.length
+      ? [
+          {
+            heading: `Komposisi bahan (versi ${latest.version})`,
+            level: 1 as const,
+            lines: [],
+            table: { head: ['No', 'Bahan', 'Jumlah', 'Satuan'], rows: latest.ingredients.map((x, i) => [String(i + 1), x.name, x.amount || '–', x.unit || '–']) },
+            images: latest.ingredients.flatMap((x, i) => pics(x.mediaIds).map((p) => ({ ...p, caption: `Bahan ${i + 1} · ${x.name}${p.caption ? ` — ${p.caption}` : ''}` }))),
+          },
+        ]
+      : []),
     ...(latest.raw ? [rawBlock(latest.raw, versions)] : []),
     ...catatBlocks(latest, catat),
     ...(latest.coconuts?.length ? coconutBlocks(latest.coconuts, pics) : []),
-    {
-      heading: 'Alat yang digunakan',
-      level: 1,
-      lines: toolList(latest).length ? [] : [NOT_RECORDED],
-      ...(toolList(latest).length && { table: { head: ['No', 'Alat', 'Jumlah', 'Satuan'], rows: toolList(latest).map((t, i) => [String(i + 1), t.name, t.amount || '–', t.unit || '–']) } }),
-      images: toolList(latest).flatMap((t) => pics(t.mediaIds).map((p) => ({ ...p, caption: `Alat · ${t.name}${p.caption ? ` — ${p.caption}` : ''}` }))),
-    },
+    ...(toolList(latest).length
+      ? [
+          {
+            heading: 'Alat yang digunakan',
+            level: 1 as const,
+            lines: [],
+            table: { head: ['No', 'Alat', 'Jumlah', 'Satuan'], rows: toolList(latest).map((t, i) => [String(i + 1), t.name, t.amount || '–', t.unit || '–']) },
+            images: toolList(latest).flatMap((t) => pics(t.mediaIds).map((p) => ({ ...p, caption: `Alat · ${t.name}${p.caption ? ` — ${p.caption}` : ''}` }))),
+          },
+        ]
+      : []),
     {
       heading: 'Urutan hari',
       level: 1,
@@ -306,6 +320,8 @@ export function buildResearchReport(
       ],
       images: [],
     },
+    // Catatan Laporan dari form resep → slide baru paling akhir berjudul "Laporan" (DEC-142)
+    ...(latest.reportNote?.trim() ? [{ heading: 'Laporan', level: 1 as const, lines: latest.reportNote.split(/\n+/).map((l) => l.trim()).filter(Boolean), images: [], pptxNewSlide: true, plainLines: true }] : []),
   ];
   const allImages = blocks.flatMap((b) => b.images);
   const coverImage = allImages.find((im) => im.dataUrl && !im.video) ?? allImages.find((im) => im.dataUrl);
