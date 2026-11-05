@@ -31,7 +31,9 @@ description: Menjalankan & menulis uji Playwright E2E GnD Lab / gemasSTUDIO di s
 - Mikrofon palsu: `launchOptions.args ['--use-fake-device-for-media-stream','--use-fake-ui-for-media-stream']`.
 - Isi data tanpa UI: `indexedDB.open('gemas-catat', 1)` store `records` (keyPath `id`); belanja `gemas-belanja` store `reports`
   (objek LPJ lengkap — lebih aman dibuat lewat UI).
-- Menu GnD Lab = OptionWheel: opsi `lab-tab-<id>` (role option, `aria-selected`); klik lewat kode pakai `dispatchEvent('click')`.
+- Menu GnD Lab = anak menu navbar (DEC-143): desktop `nav-lab-toggle` → `nav-lab-<id>` (role menuitem, `aria-current`);
+  ponsel menu ☰ `nav-lab` → `navm-lab-<id>`. Menu aktif di halaman: `lab-section-title` / `lab-section[data-tab]`. Roda
+  `lab-tab-*` sudah tidak ada. Cara cepat dalam uji: `page.goto('/lab?t=<id>')`.
 - Dropdown: buka `<testId>`, pilih `<testId>-opt-<value>`.
 - Tur sambutan menutupi layar di kunjungan pertama → `localStorage['gemas.tour.v1']='done'` di addInitScript.
 - Hitungan waktu (mis. tampil 10 detik): `page.clock.install()` lalu `page.clock.pauseAt(Date.now()+1000)` sebelum aksi,

@@ -200,3 +200,6 @@ Sejak dropdown perlakuan non-kopra menampilkan takaran (DEC-140), `getByRole('op
 
 ### FND-058 · 2026-10-26 · Baris "Label: isi" otomatis jadi label tebal di semua format laporan
 PPTX (`splitLabel`), Word (`wLine`), PDF (`Line_`), HTML (`line`) memecah baris `^[A-Za-z][^:·]{1,34}: ` menjadi label + nilai (titik dua hilang). Teks bebas pengguna (Catatan Laporan) harus memakai `plainLines: true` di ReportBlock. Blok teks pendek di PPTX juga DITUMPUK ke slide sebelumnya; pakai `pptxNewSlide: true` bila harus slide sendiri.
+
+### FND-059 · 2026-11-05 · Halaman lab: ?t= dibaca sebelum router Next memperbarui alamat
+`router.push('/lab?t=x')` dari halaman lain memasang LabPage SEBELUM `window.location` berisi `?t=x`, dan di mode dev efek berjalan dua kali → efek penulis alamat sempat menulis `t=bahan` lalu pembacaan kedua membaca nilai itu. *How to apply:* jangan bergantung pada `window.location.search` saat mount untuk navigasi klien — titipkan tujuan (`takePendingLabTab`), baca menu awal sekali (ref), dan tulis alamat hanya setelah state menu awal terpasang. Di /lab sendiri pindah menu lewat event `gnd-lab-tab`.

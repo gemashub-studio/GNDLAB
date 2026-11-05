@@ -3,6 +3,10 @@
 Format: [Keep a Changelog](https://keepachangelog.com/id/1.1.0/) · Versi dataset mengikuti SemVer (ADR-002).
 Waktu dalam WIB (UTC+7).
 
+## [Menu GnD Lab di navbar] — 2026-11-05
+### Diubah
+- Menu GnD Lab (Pencatatan Data, Riset Produk, Laporan Belanja, Gabungkan Data) pindah ke navbar: klik GnD Lab → anak menu. Roda menu di halaman dihapus.
+
 ## [Resep baru lebih ringkas, Catatan Laporan, bahan & alat di pencatatan] — 2026-10-26
 ### Diubah
 - Resep baru: setelah memilih data tersedia, cukup keterangan data terpilih (tanpa galeri foto, kolom jalur, dan nama resep).

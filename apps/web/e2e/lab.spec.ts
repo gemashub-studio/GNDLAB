@@ -31,7 +31,7 @@ test.describe('GEMA RnD Lab', () => {
     test.setTimeout(180_000); // 8 unduhan (laporan gabungan + harian, 4 format)
     const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==', 'base64');
     await page.goto('/lab?t=protokol');
-    await expect(page.getByTestId('lab-tab-protokol')).toHaveText('Riset Produk');
+    await expect(page.getByTestId('lab-section-title')).toHaveText('Riset Produk');
     await page.getByTestId('proto-new').click();
     await page.getByTestId('proto-jalur').click();
     await page.getByTestId('proto-jalur-opt-Kopra Edibel').click();
@@ -213,9 +213,8 @@ test.describe('Hapus hasil riset', () => {
     test.setTimeout(480_000);
     const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==', 'base64');
     await page.goto('/lab?t=bahan');
-    // urutan menu (DEC-112 → DEC-126): Pencatatan Data → Riset Produk → Laporan Belanja → Gabungkan Data
-    await expect(page.getByTestId('lab-wheel').getByRole('option')).toHaveText(['Pencatatan Data', 'Riset Produk', 'Laporan Belanja', 'Gabungkan Data']);
-    await expect(page.getByTestId('lab-tab-bahan')).toHaveText('Pencatatan Data');
+    // menu GnD Lab kini anak menu navbar (DEC-143); urutan diuji di lab-menu.spec
+    await expect(page.getByTestId('lab-section-title')).toHaveText('Pencatatan Data');
     // Tanya Lab AI: sambutan + pesan otomatis saat membuka Pencatatan Data (DEC-087)
     await expect(page.getByTestId('lab-ai').getByTestId('lab-ai-auto').first()).toContainText('Selamat datang di GnD Lab');
     await expect(page.getByTestId('lab-ai')).toContainText('kamu mau buat pencatatan data baru? aku bisa bantu kapan pun kamu mau!');

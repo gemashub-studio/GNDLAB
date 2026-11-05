@@ -1,74 +1,70 @@
-import { test, expect, type Page } from '@playwright/test';
+import { test, expect } from '@playwright/test';
 
-/** Menu GnD Lab = roda pilihan OptionWheel + menu & halaman Gabungkan Data (DEC-126). */
-const opacity = (page: Page, id: string) => page.getByTestId(id).evaluate((el) => Number(getComputedStyle(el).opacity));
+/** Menu GnD Lab = anak menu "GnD Lab" di navbar & menu ☰ (DEC-143; dulu roda OptionWheel di halaman, DEC-126) + Gabungkan Data. */
+const MENU = ['Pencatatan Data', 'Riset Produk', 'Laporan Belanja', 'Gabungkan Data'];
 
-test.describe('Menu GnD Lab — roda pilihan (DEC-126)', () => {
-  test('4 menu dengan setelan bawaan, tanpa kartu; panah / klik berpindah; tautan lama → Pencatatan Data', async ({ page }) => {
-    test.setTimeout(180_000);
-    await page.goto('/lab?t=eksperimen');
-    const wheel = page.getByTestId('lab-wheel');
-    await expect(wheel.getByRole('option')).toHaveText(['Pencatatan Data', 'Riset Produk', 'Laporan Belanja', 'Gabungkan Data']);
-    await expect(page.getByTestId('lab-tab-bahan')).toHaveAttribute('aria-selected', 'true');
-    await expect(page).toHaveURL(/t=bahan/);
-    for (const gone of ['ringkasan', 'eksperimen', 'library', 'standar']) await expect(page.getByTestId(`lab-tab-${gone}`)).toHaveCount(0);
-    // tanpa kartu: latar transparan; setelan bawaan → menu tetangga memudar 25% per langkah, warna aktif hijau
-    expect(await page.getByTestId('lab-menu').evaluate((el) => getComputedStyle(el).backgroundColor)).toBe('rgba(0, 0, 0, 0)');
-    await expect.poll(() => opacity(page, 'lab-tab-bahan')).toBeGreaterThan(0.95);
-    await expect.poll(() => opacity(page, 'lab-tab-protokol')).toBeCloseTo(0.75, 1);
-    expect(await page.getByTestId('lab-wheel').evaluate((el) => getComputedStyle(el).getPropertyValue('--ow-active-color').trim())).toBe('#10b97f');
-    // klik menu → Riset Produk
-    await page.getByTestId('lab-tab-protokol').click();
-    await expect(page).toHaveURL(/t=protokol/);
-    await expect(page.getByTestId('lab-tab-protokol')).toHaveAttribute('aria-selected', 'true');
-    await expect.poll(() => opacity(page, 'lab-tab-protokol')).toBeGreaterThan(0.95);
-    // tombol panah di roda → Laporan Belanja
-    await wheel.focus();
-    await page.keyboard.press('ArrowDown');
-    await expect(page).toHaveURL(/t=belanja/);
-    // klik (mis. dari asisten suara) → Gabungkan Data
-    await page.getByTestId('lab-tab-gabung').dispatchEvent('click');
-    await expect(page).toHaveURL(/t=gabung/);
-    await expect(page.getByTestId('gabung-page')).toBeVisible();
-  });
-
-  test('gulir di atas teks menu → ganti menu; gulir di luar menu / di ujung daftar → halaman yang bergulir; jendela roda rapat (DEC-127)', async ({ page }) => {
+test.describe('Menu GnD Lab — anak menu navbar (DEC-143)', () => {
+  test('desktop: klik GnD Lab → 4 anak menu; pilih → menu halaman berganti tanpa muat ulang; tautan lama → Pencatatan Data', async ({ page }) => {
     test.setTimeout(180_000);
     await page.setViewportSize({ width: 1440, height: 900 });
-    await page.goto('/lab?t=protokol');
-    const nav = page.getByTestId('lab-menu');
-    await nav.scrollIntoViewIfNeeded();
-    await page.waitForTimeout(800);
-    // rapat: jendela roda tidak lebih tinggi dari menu yang tampak (+ sebaran blur); ditunggu sampai label terukur
-    const gaps = () =>
-      page.evaluate(() => {
-        const n = document.querySelector('[data-testid="lab-menu"]')!.getBoundingClientRect();
-        const it = [...document.querySelectorAll('[data-testid="lab-wheel"] .option-wheel__item')].map((e) => e.getBoundingClientRect());
-        return [Math.round(Math.min(...it.map((r) => r.top)) - n.top), Math.round(n.bottom - Math.max(...it.map((r) => r.bottom)))];
-      });
-    await expect.poll(async () => { const [t = 99, b = 99] = await gaps(); return t >= -1 && t < 24 && b >= -1 && b < 24; }, { timeout: 15_000 }).toBe(true);
-    // di luar menu (sebelah kanan) → halaman bergulir, menu tetap
-    let box = (await nav.boundingBox())!;
-    const y0 = await page.evaluate(() => scrollY);
-    await page.mouse.move(box.x + box.width + 150, box.y + box.height / 2);
-    await page.mouse.wheel(0, 200);
-    await expect.poll(() => page.evaluate(() => scrollY)).toBeGreaterThan(y0);
-    await expect(page.getByTestId('lab-tab-protokol')).toHaveAttribute('aria-selected', 'true');
-    // di atas teks menu → menu berganti
-    box = (await nav.boundingBox())!;
-    await page.mouse.move(box.x + 160, box.y + box.height / 2);
-    await page.mouse.wheel(0, 120);
+    await page.goto('/lab?t=eksperimen');
+    await expect(page).toHaveURL(/t=bahan/);
+    await expect(page.getByTestId('lab-section-title')).toHaveText('Pencatatan Data');
+    // roda menu di halaman sudah tidak ada
+    await expect(page.getByTestId('lab-menu')).toHaveCount(0);
+    await expect(page.locator('[data-testid^="lab-tab-"]')).toHaveCount(0);
+    const toggle = page.getByTestId('nav-lab-toggle');
+    await expect(page.getByTestId('nav-lab-menu')).toHaveCount(0);
+    await toggle.click();
+    await expect(toggle).toHaveAttribute('aria-expanded', 'true');
+    const menu = page.getByTestId('nav-lab-menu');
+    await expect(menu.getByRole('menuitem')).toHaveCount(4);
+    for (const [i, label] of MENU.entries()) await expect(menu.getByRole('menuitem').nth(i)).toContainText(label);
+    await expect(page.getByTestId('nav-lab-bahan')).toHaveAttribute('aria-current', 'page');
+    // tanpa muat ulang halaman: penanda di window tetap ada
+    await page.evaluate(() => ((window as unknown as { __stay: number }).__stay = 1));
+    await page.getByTestId('nav-lab-protokol').click();
+    await expect(menu).toHaveCount(0);
+    await expect(page).toHaveURL(/\/lab\?t=protokol/);
+    await expect(page.getByTestId('lab-section-title')).toHaveText('Riset Produk');
+    await expect(page.getByTestId('proto-new')).toBeVisible();
+    expect(await page.evaluate(() => (window as unknown as { __stay?: number }).__stay)).toBe(1);
+    await toggle.click();
+    await expect(page.getByTestId('nav-lab-protokol')).toHaveAttribute('aria-current', 'page');
+    // Esc / klik di luar menutup anak menu
+    await page.keyboard.press('Escape');
+    await expect(page.getByTestId('nav-lab-menu')).toHaveCount(0);
+    await toggle.click();
+    await page.mouse.click(40, 500);
+    await expect(page.getByTestId('nav-lab-menu')).toHaveCount(0);
+    // dari halaman lain → membuka /lab dengan menu terpilih
+    await page.goto('/gudang');
+    await page.getByTestId('nav-lab-toggle').click();
+    await page.getByTestId('nav-lab-gabung').click();
+    await expect(page).toHaveURL(/\/lab\?t=gabung/, { timeout: 120_000 });
+    await expect(page.getByTestId('gabung-page')).toBeVisible({ timeout: 60_000 });
+  });
+
+  test('ponsel: menu ☰ → GnD Lab membuka anak menu → pilih Laporan Belanja', async ({ page }) => {
+    test.setTimeout(180_000);
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto('/lab?t=bahan');
+    await expect(page.getByTestId('lab-section-title')).toHaveText('Pencatatan Data');
+    await page.getByTestId('menu-open').click();
+    const drawer = page.getByTestId('menu-drawer');
+    await expect(drawer).toBeInViewport();
+    // di halaman GnD Lab anak menu langsung terbuka; klik GnD Lab menutup/membuka
+    const lab = drawer.getByTestId('nav-lab');
+    await expect(lab).toHaveAttribute('aria-expanded', 'true');
+    await lab.click();
+    await expect(drawer.getByTestId('navm-lab-menu')).toHaveCount(0);
+    await lab.click();
+    await expect(drawer.getByTestId('navm-lab-menu').getByRole('button')).toHaveText(MENU);
+    await expect(drawer.getByTestId('navm-lab-bahan')).toHaveAttribute('aria-current', 'page');
+    await drawer.getByTestId('navm-lab-belanja').click();
+    await expect(drawer).not.toBeInViewport();
     await expect(page).toHaveURL(/t=belanja/);
-    // di ujung daftar (menu terakhir) gulir ke bawah → halaman bergulir
-    await page.getByTestId('lab-tab-gabung').dispatchEvent('click');
-    await expect(page).toHaveURL(/t=gabung/);
-    await page.waitForTimeout(600);
-    box = (await nav.boundingBox())!;
-    const y1 = await page.evaluate(() => scrollY);
-    await page.mouse.move(box.x + 160, box.y + box.height - 30);
-    await page.mouse.wheel(0, 200);
-    await expect.poll(() => page.evaluate(() => scrollY)).toBeGreaterThan(y1);
-    await expect(page).toHaveURL(/t=gabung/);
+    await expect(page.getByTestId('lab-section-title')).toHaveText('Laporan Belanja');
   });
 
   test('Gabungkan Data: pilih pencatatan → Konfirmasi → "Tunggu ya data sedang di gabungkan" → unduh PPTX, Word, PDF, TXT', async ({ page }) => {

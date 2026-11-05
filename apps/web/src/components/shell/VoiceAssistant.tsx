@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { ElectricBorder } from '@/components/ui/ElectricBorder';
+import { isLabTab, LAB_MENU, openLabTab } from '@/lib/labMenu';
 import { authHeader, playClip, speak, startSegmenter, stopSpeaking, transcribe, VOICE_FORM_EVENT, type FilledField } from '@/lib/voiceClient';
 import { CoconutMascot, type MascotMood } from './CoconutMascot';
 import { DOCK_DEFAULT, MascotDock, readDockY } from './MascotDock';
@@ -15,11 +16,8 @@ interface Plan {
   reply: string;
 }
 
-const LAB_TABS = [
-  ['bahan', 'GnD Lab · Pencatatan Data'],
-  ['protokol', 'GnD Lab · Riset Produk'],
-  ['belanja', 'GnD Lab · Laporan Belanja'],
-] as const;
+/** Menu GnD Lab untuk perencana suara (DEC-143: semua anak menu navbar "GnD Lab"). */
+const LAB_TABS = LAB_MENU.map((m) => [m.id, `GnD Lab · ${m.label}`] as const);
 /** Tombol yang tidak boleh ditekan asisten (hapus data, keluar akun, konfirmasi berbahaya). */
 const DANGER = /hapus|delete|del-|logout|keluar|sign-?out|remove|finish-ok|confirm-ok|va-/i;
 const ROW_FIELDS = ['berat awal', 'volume air', 'berat air', 'tebal daging', 'berat akhir', 'tebal akhir'];
@@ -224,13 +222,11 @@ export function VoiceAssistant({ show, userKey, pages }: { show: boolean; userKe
         if (a.type === 'navigate') {
           dest = `halaman ${pagesRef.current.find((x) => x.href === a.target)?.label ?? a.target}`;
           const tab = /^\/lab\?t=(\w+)$/.exec(a.target)?.[1];
-          if (tab) {
-            // tab GnD Lab: buka /lab dulu (bila perlu), lalu klik tabnya — halaman lab membaca ?t= hanya saat dimuat
-            if (window.location.pathname !== '/lab') router.push('/lab');
-            const btn = await waitFor(() => document.querySelector<HTMLElement>(`[data-testid="lab-tab-${tab}"]`), 60_000);
-            if (!btn) throw new Error('Menu GnD Lab belum terbuka.');
-            btn.click();
-            await waitFor(() => window.location.search.includes(`t=${tab}`), 3000);
+          if (tab && isLabTab(tab)) {
+            // menu GnD Lab (anak menu navbar, DEC-143): di /lab ganti lewat event, dari halaman lain buka /lab?t=<menu>
+            openLabTab(tab, router.push);
+            const ok = await waitFor(() => window.location.pathname === '/lab' && document.querySelector(`[data-testid="lab-section"][data-tab="${tab}"]`), 60_000);
+            if (!ok) throw new Error('Menu GnD Lab belum terbuka.');
             await sleep(300);
           } else {
             router.push(a.target);

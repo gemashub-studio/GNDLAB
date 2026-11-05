@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Icon, type IconName } from './icons';
 import { LogoMark, Wordmark } from './Logo';
@@ -10,6 +10,7 @@ import { HomeDriftBg } from '@/components/home/HomeDriftBg';
 import { VoiceAssistant } from './VoiceAssistant';
 import { PalmCorner } from './PalmCorner';
 import { useAuth } from '@/lib/useAuth';
+import { currentLabTab, LAB_MENU, LAB_TAB_SHOWN, openLabTab, type LabTabId } from '@/lib/labMenu';
 
 interface NavItem {
   href: string;
@@ -109,7 +110,42 @@ export function Shell({ children, datasetVersion, profile }: { children: ReactNo
   }, []);
   const neon = (href: string) => (href === '/lab' && pendingCatat > 0 ? ' neon-blink' : '');
   const online = useOnline();
+  const router = useRouter();
   const [open, setOpen] = useState(false);
+  // anak menu "GnD Lab" (DEC-143): dropdown di bilah atas (layar lebar) & daftar terbuka di menu ☰
+  const onLab = path === '/lab';
+  const [labOpen, setLabOpen] = useState(false);
+  const [drawerLab, setDrawerLab] = useState(onLab);
+  const [labTab, setLabTab] = useState<LabTabId>('bahan');
+  const labBox = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    setLabTab(currentLabTab());
+    setLabOpen(false);
+    if (path === '/lab') setDrawerLab(true);
+  }, [path]);
+  useEffect(() => {
+    const on = (e: Event) => setLabTab((e as CustomEvent<LabTabId>).detail);
+    window.addEventListener(LAB_TAB_SHOWN, on);
+    return () => window.removeEventListener(LAB_TAB_SHOWN, on);
+  }, []);
+  // klik di luar / Esc menutup dropdown
+  useEffect(() => {
+    if (!labOpen) return;
+    const onDown = (e: PointerEvent) => !labBox.current?.contains(e.target as Node) && setLabOpen(false);
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setLabOpen(false);
+    window.addEventListener('pointerdown', onDown);
+    window.addEventListener('keydown', onKey);
+    return () => {
+      window.removeEventListener('pointerdown', onDown);
+      window.removeEventListener('keydown', onKey);
+    };
+  }, [labOpen]);
+  const pickLab = (id: LabTabId) => {
+    setLabOpen(false);
+    setOpen(false);
+    setLabTab(id);
+    openLabTab(id, router.push);
+  };
   const burger = useRef<HTMLButtonElement>(null);
   const closeBtn = useRef<HTMLButtonElement>(null);
 
@@ -168,12 +204,52 @@ export function Shell({ children, datasetVersion, profile }: { children: ReactNo
           <nav aria-label="Pintasan" className="ml-auto hidden items-center gap-1 lg:flex">
             {NAV.filter((n) => n.quick).map((n) => {
               const active = isActive(path, n.href);
+              const cls = `rounded-full px-3.5 py-2 text-sm font-semibold no-underline transition ${active ? 'bg-acid text-ink' : scrolled ? 'text-paper hover:bg-line-ink' : 'text-ink hover:bg-ink/10'}${neon(n.href)}`;
+              if (n.href === '/lab')
+                return (
+                  <div key={n.href} ref={labBox} className="relative">
+                    <button
+                      type="button"
+                      onClick={() => setLabOpen((v) => !v)}
+                      aria-haspopup="menu"
+                      aria-expanded={labOpen}
+                      aria-current={active ? 'page' : undefined}
+                      className={`${cls} inline-flex items-center gap-1`}
+                      data-testid="nav-lab-toggle"
+                      {...(neon(n.href) && { title: `${pendingCatat} pencatatan data belum lengkap`, 'data-pending': pendingCatat })}
+                    >
+                      {n.label}
+                      <Chevron open={labOpen} />
+                    </button>
+                    {labOpen && (
+                      <div role="menu" aria-label="Menu GnD Lab" className="absolute right-0 top-full z-50 mt-2 flex w-80 flex-col gap-1 rounded-2xl border border-line-ink bg-ink p-2 text-paper shadow-2xl" data-testid="nav-lab-menu">
+                        {LAB_MENU.map((m) => {
+                          const cur = onLab && labTab === m.id;
+                          return (
+                            <button
+                              key={m.id}
+                              type="button"
+                              role="menuitem"
+                              onClick={() => pickLab(m.id)}
+                              aria-current={cur ? 'page' : undefined}
+                              className={`flex flex-col items-start rounded-xl px-3 py-2 text-left transition ${cur ? 'bg-acid text-ink' : 'hover:bg-line-ink'}`}
+                              data-testid={`nav-lab-${m.id}`}
+                            >
+                              <span className="text-sm font-bold">{m.label}</span>
+                              <span className={`text-xs ${cur ? 'text-ink/70' : 'text-muted-ink'}`}>{m.note}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                );
               return (
                 <Link
                   key={n.href}
                   href={n.href}
                   aria-current={active ? 'page' : undefined}
-                  className={`rounded-full px-3.5 py-2 text-sm font-semibold no-underline transition ${active ? 'bg-acid text-ink' : scrolled ? 'text-paper hover:bg-line-ink' : 'text-ink hover:bg-ink/10'}${neon(n.href)}`}
+                  className={cls}
                   {...(neon(n.href) && { title: `${pendingCatat} pencatatan data belum lengkap`, 'data-pending': pendingCatat })}
                 >
                   {n.label}
@@ -243,6 +319,45 @@ export function Shell({ children, datasetVersion, profile }: { children: ReactNo
                   {g.items.map((n) => {
                     const active = isActive(path, n.href);
                     const IconC = Icon[n.icon];
+                    if (n.href === '/lab')
+                      return (
+                        <li key={n.href}>
+                          <button
+                            type="button"
+                            onClick={() => setDrawerLab((v) => !v)}
+                            aria-expanded={drawerLab}
+                            aria-controls="menu-lab-anak"
+                            aria-current={active ? 'page' : undefined}
+                            className={`flex min-h-touch w-full items-center gap-3 rounded-xl px-3 text-left text-[15px] transition ${active ? 'bg-acid font-bold text-ink' : 'font-semibold text-paper hover:bg-line-ink'}${neon(n.href)}`}
+                            data-testid="nav-lab"
+                          >
+                            <IconC />
+                            <span className="flex-1">{n.label}</span>
+                            {neon(n.href) && <span className="rounded-full bg-acid px-2 py-0.5 font-mono text-[10px] font-bold text-ink">{pendingCatat} belum lengkap</span>}
+                            <Chevron open={drawerLab} />
+                          </button>
+                          {drawerLab && (
+                            <ul id="menu-lab-anak" className="ml-6 mt-1 flex flex-col gap-1 border-l border-line-ink pl-3" data-testid="navm-lab-menu">
+                              {LAB_MENU.map((m) => {
+                                const cur = onLab && labTab === m.id;
+                                return (
+                                  <li key={m.id}>
+                                    <button
+                                      type="button"
+                                      onClick={() => pickLab(m.id)}
+                                      aria-current={cur ? 'page' : undefined}
+                                      className={`flex min-h-[44px] w-full items-center rounded-xl px-3 text-left text-sm transition ${cur ? 'bg-acid/90 font-bold text-ink' : 'font-semibold text-paper hover:bg-line-ink'}`}
+                                      data-testid={`navm-lab-${m.id}`}
+                                    >
+                                      {m.label}
+                                    </button>
+                                  </li>
+                                );
+                              })}
+                            </ul>
+                          )}
+                        </li>
+                      );
                     return (
                       <li key={n.href}>
                         <Link
@@ -278,5 +393,14 @@ export function Shell({ children, datasetVersion, profile }: { children: ReactNo
       <PalmCorner />
       <VoiceAssistant show={signedIn || vaForce} userKey={auth.email ?? 'local'} pages={NAV.map((n) => ({ href: n.href, label: n.label }))} />
     </div>
+  );
+}
+
+/** Panah kecil untuk menu yang punya anak menu (DEC-143). */
+function Chevron({ open }: { open: boolean }) {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden className={`flex-none transition-transform duration-200 ${open ? 'rotate-180' : ''}`}>
+      <path d="m6 9 6 6 6-6" />
+    </svg>
   );
 }

@@ -2,8 +2,7 @@
 
 import { BelanjaTab } from './BelanjaTab';
 import { GabungTab } from './GabungTab';
-import OptionWheel from '@/components/ui/OptionWheel';
-import { useMediaQuery } from '@/lib/useMediaQuery';
+import { isLabTab, LAB_MENU, LAB_TAB_EVENT, LAB_TAB_SHOWN, takePendingLabTab, type LabTabId } from '@/lib/labMenu';
 import Link from 'next/link';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { GEMA_SOURCES, sourceCounts } from '@/lib/gemaSources';
@@ -20,45 +19,13 @@ import { PencatatanTab } from './PencatatanTab';
 import { listCatat, type CatatRecord } from '@/lib/pencatatan';
 import { listRaw, type RawRecord } from '@/lib/bahanBaku';
 
-// menu Ringkasan, Eksperimen, Library, dan Standar dihapus (DEC-112) — datanya tetap tersimpan & tersinkron
-// menu Gabungkan Data ditambahkan (DEC-126); menu tampil sebagai roda pilihan OptionWheel
-const TABS = [
-  { id: 'bahan', label: 'Pencatatan Data', note: 'Data awal & akhir per nomor, perlakuan, foto, dan kesimpulan.' },
-  { id: 'protokol', label: 'Riset Produk', note: 'Resep berversi, laporan harian sampai riset selesai.' },
-  { id: 'belanja', label: 'Laporan Belanja', note: 'Nota & foto barang, LPJ siap unduh.' },
-  { id: 'gabung', label: 'Gabungkan Data', note: 'Satukan pencatatan, riset, dan laporan belanja dalam satu berkas.' },
-] as const;
-type TabId = (typeof TABS)[number]['id'];
+// menu Ringkasan, Eksperimen, Library, dan Standar dihapus (DEC-112) — datanya tetap tersimpan & tersinkron.
+// Menu GnD Lab pindah ke navbar sebagai anak menu "GnD Lab" (DEC-143; dulu roda OptionWheel di halaman ini, DEC-126/127).
+const TABS = LAB_MENU;
+type TabId = LabTabId;
 /** Menu yang perlu mengambil data dulu → pakai skeleton saat pertama dimuat. */
 const DATA_TABS = new Set<string>(['bahan', 'protokol', 'belanja']);
-const isTab = (s: string | null): s is TabId => TABS.some((t) => t.id === s);
-
-/**
- * Jendela roda menu (DEC-127). Rumus tata letak OptionWheel: pilihan berjarak d dari tengah bergeser tegak R·sin(d·tilt)
- * (R = tinggi baris / tilt) lalu diputar d·tilt dengan titik putar di tepi kiri-tengah. Tepi atas/bawah kotak teks yang
- * diputar = geser + (x·sin θ ± h/2·cos θ) untuk sudut kiri/kanan; ditambah sebaran blur (2 px per langkah, ×2).
- * above/below = jarak tengah → tepi terluar menu yang tampak; full = setengah tinggi roda dalam (cukup untuk ujung mana pun).
- */
-export function wheelWindow(w: { fontSize: number; spacing: number; tilt: number; inset: number }, sel: number, widths: readonly number[], rem = 16) {
-  const px = w.fontSize * rem;
-  const tiltRad = (w.tilt * Math.PI) / 180;
-  const R = (px * w.spacing) / tiltRad;
-  const h = px;
-  const span = (i: number, from: number): [number, number] => {
-    const d = i - from;
-    const ang = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, d * tiltRad));
-    const cy = R * Math.sin(ang);
-    const ys = [0, widths[i]!].flatMap((x) => [x * Math.sin(ang) - (h / 2) * Math.cos(ang), x * Math.sin(ang) + (h / 2) * Math.cos(ang)]);
-    const blur = Math.abs(d) * 4 + 2;
-    return [cy + Math.min(...ys) - blur, cy + Math.max(...ys) + blur];
-  };
-  const idx = widths.map((_, i) => i);
-  const spans = idx.map((i) => span(i, sel));
-  const above = Math.max(...spans.map(([t]) => -t));
-  const below = Math.max(...spans.map(([, b]) => b));
-  const full = Math.max(...[0, widths.length - 1].flatMap((from) => idx.flatMap((i) => span(i, from).map(Math.abs))));
-  return { above: Math.ceil(above), below: Math.ceil(below), full: Math.ceil(full), width: Math.ceil(w.inset + Math.max(...widths) + 40) };
-}
+const isTab = isLabTab;
 
 export function LabPage() {
   const [items, setItems] = useState<Experiment[]>([]);
@@ -69,39 +36,15 @@ export function LabPage() {
   const [catat, setCatat] = useState<CatatRecord[]>([]);
   const [draftCount, setDraftCount] = useState(0);
   const [tab, setTab] = useState<TabId>('bahan');
-  const wide = useMediaQuery('(min-width: 640px)');
-  const tabIdx = TABS.findIndex((t) => t.id === tab);
-  const WHEEL = wide ? { fontSize: 3, spacing: 1.4, tilt: 6, inset: 80 } : { fontSize: 2, spacing: 1.4, tilt: 6, inset: 24 };
+  const current = TABS.find((t) => t.id === tab)!;
   const auth = useAuth();
   // semua pendataan butuh login bila Supabase aktif (DEC-087); tanpa Supabase (offline) tetap terbuka
   const locked = needsLogin(auth);
-  // lebar asli tiap label (offsetWidth tidak terpengaruh transform) → jendela roda pas; taksiran sebelum terukur
-  const [labelW, setLabelW] = useState<number[]>();
-  useEffect(() => {
-    const measure = () => {
-      const els = [...document.querySelectorAll<HTMLElement>('[data-testid="lab-wheel"] .option-wheel__item')];
-      if (els.length === TABS.length && els.every((e) => e.offsetWidth)) setLabelW(els.map((e) => e.offsetWidth));
-    };
-    measure();
-    const t = setTimeout(measure, 300);
-    document.fonts?.ready.then(measure).catch(() => undefined);
-    // ukur ulang bila lebar label berubah (font termuat, ukuran layar berubah)
-    const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(measure) : undefined;
-    document.querySelectorAll('[data-testid="lab-wheel"] .option-wheel__item').forEach((el) => ro?.observe(el));
-    window.addEventListener('resize', measure);
-    return () => {
-      clearTimeout(t);
-      ro?.disconnect();
-      window.removeEventListener('resize', measure);
-    };
-  }, [wide, locked]);
-  const win = wheelWindow(WHEEL, tabIdx, labelW ?? TABS.map((t) => t.label.length * WHEEL.fontSize * 16 * 0.52));
-
   // skeleton saat pertama membuka GnD Lab: sampai data perangkat terbaca, dan — bila perangkat masih kosong —
   // sampai sinkron pertama dari database selesai (maks. 10 dtk) (DEC-095)
   const [loaded, setLoaded] = useState(false);
   // pindah menu → layar diarahkan ke menu yang dibuka (bukan saat halaman pertama dimuat)
-  const tabsRef = useRef<HTMLElement>(null);
+  const tabsRef = useRef<HTMLDivElement>(null);
   const firstTab = useRef(true);
   useEffect(() => {
     if (firstTab.current) {
@@ -144,19 +87,39 @@ export function LabPage() {
   }, []);
   // sinkron otomatis Supabase selama halaman lab terbuka; muat ulang bila ada data dari perangkat lain
   useEffect(() => startAutoSync(() => void refresh()), [refresh]);
+  // menu awal dibaca SEKALI (efek bisa jalan dua kali di mode dev): titipan anak menu navbar dari halaman lain
+  // (alamat router belum diperbarui saat ini, DEC-143) atau ?t= di alamat; alamat baru ditulis setelah menu awal terpasang
+  const initTab = useRef<TabId | null>(null);
+  const urlSynced = useRef(false);
   useEffect(() => {
     void refresh();
-    const p = new URLSearchParams(window.location.search);
-    const t = p.get('t');
+    if (initTab.current) return;
+    const t = takePendingLabTab() ?? new URLSearchParams(window.location.search).get('t');
     // tautan lama (?t=ringkasan / eksperimen / library / standar) → Pencatatan Data
-    if (isTab(t)) setTab(t);
+    initTab.current = isTab(t) ? t : 'bahan';
+    setTab(initTab.current);
   }, [refresh]);
   useEffect(() => {
+    if (!initTab.current) return;
+    if (!urlSynced.current) {
+      if (tab !== initTab.current) return;
+      urlSynced.current = true;
+    }
     const url = new URL(window.location.href);
     url.searchParams.set('t', tab);
     url.searchParams.delete('e');
     window.history.replaceState(null, '', url);
+    window.dispatchEvent(new CustomEvent(LAB_TAB_SHOWN, { detail: tab }));
   }, [tab]);
+  // anak menu "GnD Lab" di navbar / asisten suara → ganti menu tanpa memuat ulang (DEC-143)
+  useEffect(() => {
+    const on = (e: Event) => {
+      const id = (e as CustomEvent<string>).detail;
+      if (isTab(id)) setTab(id);
+    };
+    window.addEventListener(LAB_TAB_EVENT, on);
+    return () => window.removeEventListener(LAB_TAB_EVENT, on);
+  }, []);
 
   // Statistik nyata (DEC-071): Bahan baku = catatan menu Bahan Baku; Berjalan = riset produk belum selesai + draf on going.
   const researchKeys = [...new Set(protocols.map((p) => p.key))];
@@ -238,34 +201,12 @@ export function LabPage() {
         <>
       <AskLabAI tab={tab} username={auth.username} />
 
-      {/* menu GnD Lab: roda pilihan React Bits OptionWheel dengan setelan bawaan (DEC-126), tanpa kartu. Jendela roda pas
-          setinggi menu yang tampak (atas/bawah menu terpilih) & selebar teks menu → rapat dengan kartu di atas & bawahnya,
-          dan gulir di luar teks menu tetap menggulir halaman (DEC-127) */}
-      <nav ref={tabsRef} style={{ scrollMarginTop: 80, height: win.above + win.below, maxWidth: '100%', width: win.width }} aria-label="Menu GnD Lab" className="relative -my-3 overflow-hidden transition-[height] duration-300 ease-out" data-testid="lab-menu">
-        <div className="absolute inset-x-0 transition-[top] duration-300 ease-out" style={{ top: win.above - win.full, height: win.full * 2 }}>
-          <OptionWheel
-            items={TABS.map((t) => t.label)}
-            selected={tabIdx}
-            onChange={(i) => setTab(TABS[i]!.id)}
-            itemTestId={(i) => `lab-tab-${TABS[i]!.id}`}
-            label="Menu GnD Lab"
-            data-testid="lab-wheel"
-            textColor="#778598"
-            activeColor="#10b97f"
-            side="left"
-            fontSize={WHEEL.fontSize}
-            spacing={WHEEL.spacing}
-            curve={1}
-            tilt={WHEEL.tilt}
-            blur={2}
-            fade={0.25}
-            smoothing={200}
-            inset={WHEEL.inset}
-            loop={false}
-            draggable
-          />
-        </div>
-      </nav>
+      {/* judul menu yang sedang dibuka; pilihan menu ada di navbar → GnD Lab (DEC-143) */}
+      <div ref={tabsRef} style={{ scrollMarginTop: 80 }} className="flex flex-col gap-1" data-testid="lab-section" data-tab={tab}>
+        <span className="label-mono">GnD Lab · menu</span>
+        <h2 className="text-2xl" data-testid="lab-section-title">{current.label}</h2>
+        <p className="text-sm text-muted">{current.note}</p>
+      </div>
 
       {/* skeleton hanya untuk menu yang mengambil data dulu (DEC-095) */}
       {showSkel && DATA_TABS.has(tab) ? (

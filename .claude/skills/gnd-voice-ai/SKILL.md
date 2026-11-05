@@ -28,6 +28,7 @@ description: Mengubah asisten suara kelapa (VoiceAssistant), pengisian form deng
   — `lib/voiceAnswer.ts`), tombol 🔊/🔇 (`gnd-labai:voice`).
 
 ## Jebakan
+- Navigasi ke menu GnD Lab (`/lab?t=<id>`) memakai `openLabTab` (lib/labMenu.ts, DEC-143), bukan klik tombol menu.
 - Model `:free` OpenRouter bisa dicabut (mis. MiniMax M3.1 Flash, 22 Okt 2026 → 404 "Provider returned error") —
   perbarui `OR_FREE_MODELS` dari `openrouter.ai/models?max_price=0` (FND-053).
 - Model "uncensored" gratis tidak tersedia di OpenRouter (2026-10-21; Dolphin Venice & Cydonia berbayar) — cek
