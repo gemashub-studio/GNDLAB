@@ -267,3 +267,7 @@
 - Catatan desain: saat data dipilih, jalur & nama resep diisi otomatis (perlakuan pertama → kode resep, mis. GH-…). Bahan/alat resep lama tetap tersimpan & dilaporkan; form resep tidak lagi punya kolom bahan/alat.
 - DEC-141 & DEC-142 belum di-deploy saat entri ini ditulis (Vercel MCP sempat terputus).
 - DEC-143: menu GnD Lab → anak menu navbar (desktop dropdown + menu ☰). Uji: typecheck 0, unit lulus, next build lulus, E2E lab-menu 3/3 (baru), voice+mascot 8/8, lab 14/15 (OCR = lingkungan), calculator: tes API /api/v1 butuh DATABASE_URL (tidak ada di container) gagal 500, bukan karena perubahan ini. FND-059.
+
+## 2026-11-06 · Claude (sesi cloud) — Daily Report R&D (Pencatatan harian by Drive)
+- DEC-144 (FND-060, FND-061). Uji: typecheck 0; unit 160/74/198 (19 skip; +dailyDrive 4); next build lulus; E2E daily-report 1/1, lab-menu 3/3 (5 anak menu), voice + lab terdampak 8/8.
+- MENUNGGU: migrasi Supabase daily_report harus diterapkan sebelum deploy; push GitHub sempat 403 (DEC-143 belum naik).

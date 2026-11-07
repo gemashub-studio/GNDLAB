@@ -3,6 +3,10 @@
 Format: [Keep a Changelog](https://keepachangelog.com/id/1.1.0/) · Versi dataset mengikuti SemVer (ADR-002).
 Waktu dalam WIB (UTC+7).
 
+## [Daily Report R&D] — 2026-11-06
+### Ditambahkan
+- Anak menu GnD Lab "Daily Report R&D": tempel tautan Google Drive, lihat pratinjau, Upload (tanggal otomatis), daftar laporan harian sebagai kartu.
+
 ## [Menu GnD Lab di navbar] — 2026-11-05
 ### Diubah
 - Menu GnD Lab (Pencatatan Data, Riset Produk, Laporan Belanja, Gabungkan Data) pindah ke navbar: klik GnD Lab → anak menu. Roda menu di halaman dihapus.

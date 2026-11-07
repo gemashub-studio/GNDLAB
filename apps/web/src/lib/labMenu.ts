@@ -7,6 +7,8 @@ export const LAB_MENU = [
   { id: 'protokol', label: 'Riset Produk', note: 'Resep berversi, laporan harian sampai riset selesai.' },
   { id: 'belanja', label: 'Laporan Belanja', note: 'Nota & foto barang, LPJ siap unduh.' },
   { id: 'gabung', label: 'Gabungkan Data', note: 'Satukan pencatatan, riset, dan laporan belanja dalam satu berkas.' },
+  // DEC-144
+  { id: 'harian', label: 'Daily Report R&D', note: 'Pencatatan harian by Drive: tautan Drive + tanggal otomatis.' },
 ] as const;
 export type LabTabId = (typeof LAB_MENU)[number]['id'];
 export const isLabTab = (s: string | null | undefined): s is LabTabId => LAB_MENU.some((t) => t.id === s);

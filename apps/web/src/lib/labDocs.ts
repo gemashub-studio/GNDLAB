@@ -7,7 +7,7 @@
 import type { LabBackup } from './labBackup';
 import { catatRev, type Tomb, type TombKind } from './labSync';
 
-export type DocKind = 'experiment' | 'entry' | 'protocol' | 'media' | 'draft' | 'belanja' | 'bahan' | 'catat' | 'progres' | 'tomb';
+export type DocKind = 'experiment' | 'entry' | 'protocol' | 'media' | 'draft' | 'belanja' | 'bahan' | 'catat' | 'progres' | 'harian' | 'tomb';
 
 export interface LabDoc {
   kind: DocKind;
@@ -47,6 +47,7 @@ export function docsFromBackup(b: LabBackup): LabDoc[] {
   for (const x of b.bahan ?? []) push('bahan', x.id, x.createdAt, x);
   for (const x of b.catat ?? []) push('catat', x.id, catatRev(x), x);
   for (const x of b.progres ?? []) push('progres', x.id, x.createdAt, x);
+  for (const x of b.harian ?? []) push('harian', x.id, x.createdAt, x);
   for (const t of b.deleted ?? []) push('tomb', tombId(t), t.at, t);
   return out;
 }
@@ -67,6 +68,7 @@ export function backupFromDocs(docs: readonly LabDoc[]): LabBackup {
     bahan: of('bahan'),
     catat: of('catat'),
     progres: of('progres'),
+    harian: of('harian'),
     deleted: of<Tomb>('tomb'),
   } as LabBackup;
 }
@@ -161,7 +163,7 @@ export async function restoreBlobs(v: unknown, get: (path: string) => Promise<st
 
 // ------------------------------------------------------------------ tabel bersama rnd_data (DEC-090)
 
-export type RndMenu = 'pencatatan_data' | 'riset_produk' | 'eksperimen' | 'catatan_harian' | 'laporan_belanja' | 'bahan_baku' | 'media' | 'draf_riset' | 'progres_perlakuan' | 'penghapusan';
+export type RndMenu = 'pencatatan_data' | 'riset_produk' | 'eksperimen' | 'catatan_harian' | 'laporan_belanja' | 'bahan_baku' | 'media' | 'draf_riset' | 'progres_perlakuan' | 'daily_report' | 'penghapusan';
 
 /** Jenis dokumen → menu GnD Lab (= nilai kolom `menu`). */
 export const MENU_OF: Record<DocKind, RndMenu> = {
@@ -174,12 +176,13 @@ export const MENU_OF: Record<DocKind, RndMenu> = {
   media: 'media',
   draft: 'draf_riset',
   progres: 'progres_perlakuan',
+  harian: 'daily_report',
   tomb: 'penghapusan',
 };
 export const KIND_OF = Object.fromEntries(Object.entries(MENU_OF).map(([k, m]) => [m, k])) as Record<RndMenu, DocKind>;
 
 /** Kolom isi; Pencatatan Data dipecah ke empat kolom, menu lain satu kolom bernama sama dengan menunya. */
-export const RND_COLS = ['data_awal', 'data_akhir', 'perlakuan', 'progres_harian', 'riset_produk', 'eksperimen', 'catatan_harian', 'laporan_belanja', 'bahan_baku', 'media', 'draf_riset', 'progres_perlakuan', 'penghapusan'] as const;
+export const RND_COLS = ['data_awal', 'data_akhir', 'perlakuan', 'progres_harian', 'riset_produk', 'eksperimen', 'catatan_harian', 'laporan_belanja', 'bahan_baku', 'media', 'draf_riset', 'progres_perlakuan', 'daily_report', 'penghapusan'] as const;
 export type RndCol = (typeof RND_COLS)[number];
 
 export type RndRow = { menu: RndMenu; id: string; rev: string; deleted: boolean } & Partial<Record<RndCol, unknown>>;

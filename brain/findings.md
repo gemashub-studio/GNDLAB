@@ -203,3 +203,9 @@ PPTX (`splitLabel`), Word (`wLine`), PDF (`Line_`), HTML (`line`) memecah baris 
 
 ### FND-059 · 2026-11-05 · Halaman lab: ?t= dibaca sebelum router Next memperbarui alamat
 `router.push('/lab?t=x')` dari halaman lain memasang LabPage SEBELUM `window.location` berisi `?t=x`, dan di mode dev efek berjalan dua kali → efek penulis alamat sempat menulis `t=bahan` lalu pembacaan kedua membaca nilai itu. *How to apply:* jangan bergantung pada `window.location.search` saat mount untuk navigasi klien — titipkan tujuan (`takePendingLabTab`), baca menu awal sekali (ref), dan tulis alamat hanya setelah state menu awal terpasang. Di /lab sendiri pindah menu lewat event `gnd-lab-tab`.
+
+### FND-060 · 2026-11-06 · Menu GnD Lab baru = kolom rnd_data baru + migrasi SEBELUM deploy
+`supabaseSync` menarik `select(menu,id,rev,deleted,updated_at,<semua RND_COLS>)` dan mengirim baris dengan semua kolom RND_COLS → menambah menu (DocKind) tanpa kolom di database membuat SELURUH sinkron gagal untuk semua pengguna. *How to apply:* tambah menu = DocKind + MENU_OF + RND_COLS + labBackup/labSync/supabaseSync (contoh `progres`, `harian`) + migrasi `ALTER TABLE rnd_data ADD COLUMN … ; CHECK menu IN (…)`; terapkan migrasi dulu, baru deploy.
+
+### FND-061 · 2026-11-06 · Uji tanggal/jam di Playwright: tetapkan zona waktu
+Browser uji di container cloud memakai UTC sehingga jam tampil beda dari WIB. *How to apply:* `test.use({ timezoneId: 'Asia/Jakarta' })` + `page.clock.setFixedTime(...)`; urutan item dengan waktu sama perlu kunci cadangan (ID).

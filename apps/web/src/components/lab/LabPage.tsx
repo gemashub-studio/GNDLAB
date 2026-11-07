@@ -2,6 +2,7 @@
 
 import { BelanjaTab } from './BelanjaTab';
 import { GabungTab } from './GabungTab';
+import { DailyReportTab } from './DailyReportTab';
 import { isLabTab, LAB_MENU, LAB_TAB_EVENT, LAB_TAB_SHOWN, takePendingLabTab, type LabTabId } from '@/lib/labMenu';
 import Link from 'next/link';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -217,6 +218,7 @@ export function LabPage() {
       {tab === 'protokol' && <ProtocolsTab protocols={protocols} entries={entries} media={media} refresh={refresh} />}
       {tab === 'belanja' && <BelanjaTab />}
       {tab === 'gabung' && <GabungTab catat={catat} protocols={protocols} entries={entries} media={media} />}
+      {tab === 'harian' && <DailyReportTab onChanged={refresh} />}
         </>
       )}
 

@@ -1,10 +1,10 @@
 import { test, expect } from '@playwright/test';
 
 /** Menu GnD Lab = anak menu "GnD Lab" di navbar & menu ☰ (DEC-143; dulu roda OptionWheel di halaman, DEC-126) + Gabungkan Data. */
-const MENU = ['Pencatatan Data', 'Riset Produk', 'Laporan Belanja', 'Gabungkan Data'];
+const MENU = ['Pencatatan Data', 'Riset Produk', 'Laporan Belanja', 'Gabungkan Data', 'Daily Report R&D'];
 
 test.describe('Menu GnD Lab — anak menu navbar (DEC-143)', () => {
-  test('desktop: klik GnD Lab → 4 anak menu; pilih → menu halaman berganti tanpa muat ulang; tautan lama → Pencatatan Data', async ({ page }) => {
+  test('desktop: klik GnD Lab → 5 anak menu; pilih → menu halaman berganti tanpa muat ulang; tautan lama → Pencatatan Data', async ({ page }) => {
     test.setTimeout(180_000);
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.goto('/lab?t=eksperimen');
@@ -18,7 +18,7 @@ test.describe('Menu GnD Lab — anak menu navbar (DEC-143)', () => {
     await toggle.click();
     await expect(toggle).toHaveAttribute('aria-expanded', 'true');
     const menu = page.getByTestId('nav-lab-menu');
-    await expect(menu.getByRole('menuitem')).toHaveCount(4);
+    await expect(menu.getByRole('menuitem')).toHaveCount(MENU.length);
     for (const [i, label] of MENU.entries()) await expect(menu.getByRole('menuitem').nth(i)).toContainText(label);
     await expect(page.getByTestId('nav-lab-bahan')).toHaveAttribute('aria-current', 'page');
     // tanpa muat ulang halaman: penanda di window tetap ada
