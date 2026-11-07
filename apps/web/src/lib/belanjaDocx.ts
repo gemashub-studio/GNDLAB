@@ -3,7 +3,7 @@
  * Tiap alokasi: judul ALOKASI → tabel (kiri foto bukti bayar/nota, kanan foto barang) → baris total Rp +
  * terbilang → keterangan di bawah tabel.
  */
-import { fmtRp, parseRp, realizationTotal, terbilang, type LpjPhoto, type LpjReport } from './belanja';
+import { fmtRp, parseRp, realizationTotal, terbilang, type LpjPhoto, type LpjReport, revisionLines } from './belanja';
 import { jpegSize, xml, zipStore } from './officeExport';
 
 const enc = new TextEncoder();
@@ -77,6 +77,11 @@ export function buildLpjDocx(r: LpjReport): Uint8Array {
     body.push(p(pr.description.trim() ? `Keterangan: ${pr.description.trim()}` : 'Keterangan: –', { before: 80, after: 120, jc: 'both' }));
   });
   if (r.proofs.length > 1) body.push(p(`Total seluruh alokasi: ${fmtRp(realizationTotal(r))} (${terbilang(realizationTotal(r))}).`, { b: true, before: 200 }));
+  // riwayat revisi (DEC-145)
+  if (r.revisions?.length) {
+    body.push(p('RIWAYAT REVISI', { b: true, sz: 22, before: 280, after: 80 }));
+    for (const l of revisionLines(r)) body.push(p(l, { sz: 18, after: 40 }));
+  }
 
   const footer = `${CT}<w:ftr ${NS}><w:p><w:pPr><w:jc w:val="right"/></w:pPr>${run(`${r.id} · Hal. `, { sz: 16, color: '7F7F7F' })}<w:r><w:rPr><w:sz w:val="16"/></w:rPr><w:fldChar w:fldCharType="begin"/></w:r><w:r><w:rPr><w:sz w:val="16"/></w:rPr><w:instrText xml:space="preserve"> PAGE </w:instrText></w:r><w:r><w:rPr><w:sz w:val="16"/></w:rPr><w:fldChar w:fldCharType="separate"/></w:r><w:r><w:rPr><w:sz w:val="16"/></w:rPr><w:t>1</w:t></w:r><w:r><w:rPr><w:sz w:val="16"/></w:rPr><w:fldChar w:fldCharType="end"/></w:r></w:p></w:ftr>`;
   const doc = `${CT}<w:document ${NS}><w:body>${body.join('')}<w:sectPr><w:footerReference w:type="default" r:id="rIdFtr1"/><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="1134" w:right="1134" w:bottom="1134" w:left="1134" w:header="567" w:footer="567" w:gutter="0"/></w:sectPr></w:body></w:document>`;

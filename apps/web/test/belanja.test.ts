@@ -104,3 +104,29 @@ describe('laporan belanja: nama barang, PPTX diagram cabang, PDF (DEC-078)', () 
     expect(new TextDecoder().decode(buildLpjDocx(r()))).toContain('Barang: Natrium bisulfit, Kertas pH');
   });
 });
+
+describe('revisi laporan belanja (DEC-145)', () => {
+  it('alasan wajib; nomor revisi berurutan; riwayat ikut PDF/PPTX/Word', async () => {
+    const { withRevision, lastRevision, revisionLines } = await import('@/lib/belanja');
+    const { lpjReport, lpjTreeSlides } = await import('@/lib/belanjaExport');
+    const base = { ...newLpj('LPJ-202611-01'), proofs: [{ title: 'Toko A', total: '10.000', description: '', receipts: [], goods: [] }] };
+    expect(() => withRevision(base, '   ')).toThrow(/alasan revisi/);
+    expect(lastRevision(base)).toBeUndefined();
+    const r1 = withRevision(base, ' harga nota diperbaiki ', new Date('2026-11-07T03:00:00Z'));
+    const r2 = withRevision(r1, 'tambah foto barang', new Date('2026-11-08T03:00:00Z'));
+    expect(r2.revisions!.map((v) => [v.no, v.reason])).toEqual([[1, 'harga nota diperbaiki'], [2, 'tambah foto barang']]);
+    expect(lastRevision(r2)).toMatchObject({ no: 2, at: '2026-11-08T03:00:00.000Z' });
+    expect(base.revisions).toBeUndefined(); // tidak mengubah objek asal
+    expect(revisionLines(r2)).toEqual(['Revisi ke-1 · 2026-11-07 · harga nota diperbaiki', 'Revisi ke-2 · 2026-11-08 · tambah foto barang']);
+    const rep = lpjReport(r2, 'x');
+    const hist = rep.blocks.find((b) => b.heading === 'Riwayat revisi')!;
+    expect(hist.lines).toHaveLength(2);
+    expect(hist.plainLines).toBe(true);
+    expect(rep.cover.meta).toContainEqual(['Revisi', 'ke-2 (2026-11-08)']);
+    expect(lpjTreeSlides(r2, 'x')[0]!.footer).toContain('revisi ke-2 (2026-11-08)');
+    const docx = new TextDecoder().decode(buildLpjDocx(r2));
+    expect(docx).toContain('RIWAYAT REVISI');
+    expect(docx).toContain('Revisi ke-2 · 2026-11-08 · tambah foto barang');
+    expect(lpjReport(base, 'x').blocks.some((b) => b.heading === 'Riwayat revisi')).toBe(false);
+  });
+});

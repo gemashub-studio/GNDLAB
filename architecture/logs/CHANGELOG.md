@@ -3,6 +3,10 @@
 Format: [Keep a Changelog](https://keepachangelog.com/id/1.1.0/) · Versi dataset mengikuti SemVer (ADR-002).
 Waktu dalam WIB (UTC+7).
 
+## [Revisi Laporan Belanja] — 2026-11-07
+### Ditambahkan
+- Tombol Revisi di Laporan Belanja: ubah laporan dengan alasan revisi; tercatat "Revisi ke-N" dan ikut di berkas unduhan.
+
 ## [Daily Report R&D] — 2026-11-06
 ### Ditambahkan
 - Anak menu GnD Lab "Daily Report R&D": tempel tautan Google Drive, lihat pratinjau, Upload (tanggal otomatis), daftar laporan harian sebagai kartu.

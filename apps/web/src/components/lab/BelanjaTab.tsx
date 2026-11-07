@@ -14,6 +14,9 @@ import {
   terbilang,
   type LpjPhoto,
   type LpjReport,
+  lastRevision,
+  revisionLines,
+  withRevision,
 } from '@/lib/belanja';
 import { downloadBlob } from '@/lib/labMedia';
 import { MediaPicker } from './MediaPicker';
@@ -109,10 +112,16 @@ function MenuButton({ label, items, testId, primary = false }: { label: string; 
 export function BelanjaTab() {
   const [list, setList] = useState<LpjReport[]>([]);
   const [editing, setEditing] = useState<LpjReport>();
+  // Revisi (DEC-145): form terisi data lama + alasan revisi wajib → tercatat "Revisi ke-N"
+  const [revising, setRevising] = useState(false);
   const load = () => void listLpj().then(setList);
   useEffect(load, []);
+  const open = (r: LpjReport, revise = false) => {
+    setRevising(revise);
+    setEditing(r);
+  };
 
-  if (editing) return <LpjForm key={editing.id} initial={editing} onClose={() => { setEditing(undefined); load(); }} />;
+  if (editing) return <LpjForm key={`${editing.id}-${revising}`} initial={editing} revise={revising} onClose={() => { setEditing(undefined); setRevising(false); load(); }} />;
 
   return (
     <div className="flex flex-col gap-4" data-testid="lpj-tab">
@@ -121,7 +130,7 @@ export function BelanjaTab() {
           <h2 className="text-xl">Laporan belanja ({list.length})</h2>
           <p className="text-sm text-muted">Tiap bukti alokasi: nama toko, foto nota, foto barang &amp; nama tiap barang. Unduh sebagai PPTX (diagram nota → barang), Word, atau PDF.</p>
         </div>
-        <button type="button" className="btn-primary" onClick={() => setEditing(newLpj(nextLpjId(list.map((x) => x.id))))} data-testid="lpj-new">+ Laporan belanja baru</button>
+        <button type="button" className="btn-primary" onClick={() => open(newLpj(nextLpjId(list.map((x) => x.id))))} data-testid="lpj-new">+ Laporan belanja baru</button>
       </div>
       {list.length ? (
         <ul className="flex flex-col gap-3" data-testid="lpj-list">
@@ -131,9 +140,15 @@ export function BelanjaTab() {
                 <p className="font-mono text-xs text-muted">{r.id} · diubah {r.updatedAt.slice(0, 10)}</p>
                 <p className="font-semibold">{r.purpose.trim() || 'Bukti alokasi'}</p>
                 <p className="text-sm">{r.proofs.length} alokasi · total {fmtRp(realizationTotal(r))}</p>
+                {lastRevision(r) && (
+                  <p className="mt-1 inline-flex rounded-full bg-acid/20 px-2 py-0.5 font-mono text-[11px] font-semibold" title={lastRevision(r)!.reason} data-testid={`lpj-rev-${r.id}`}>
+                    Revisi ke-{lastRevision(r)!.no} · {lastRevision(r)!.at.slice(0, 10)}
+                  </p>
+                )}
               </div>
               <div className="flex flex-wrap gap-2">
-                <button type="button" className="btn-primary" onClick={() => setEditing(r)} data-testid={`lpj-open-${r.id}`}>Buka</button>
+                <button type="button" className="btn-primary" onClick={() => open(r)} data-testid={`lpj-open-${r.id}`}>Buka</button>
+                <button type="button" className="btn-acid" onClick={() => open(r, true)} data-testid={`lpj-revise-${r.id}`}>Revisi</button>
                 <MenuButton label="Unduh" testId={`lpj-dl-${r.id}`} items={LPJ_KINDS.map(([k, l]) => ({ key: k, label: l, run: () => void downloadLpj(r, k) }))} />
                 <button
                   type="button"
@@ -207,14 +222,27 @@ const Money = ({ label, n }: { label: string; n: number }) => (
   </div>
 );
 
-function LpjForm({ initial, onClose }: { initial: LpjReport; onClose: () => void }) {
+function LpjForm({ initial, onClose, revise = false }: { initial: LpjReport; onClose: () => void; revise?: boolean }) {
   const [r, setR] = useState(initial);
   const [msg, setMsg] = useState('');
+  const [reason, setReason] = useState('');
+  const revNo = (initial.revisions?.length ?? 0) + 1;
   const set = <K extends keyof LpjReport>(k: K, v: LpjReport[K]) => setR((x) => ({ ...x, [k]: v }));
   const upd = <T,>(arr: T[], i: number, v: Partial<T>) => arr.map((x, k) => (k === i ? { ...x, ...v } : x));
-  const save = async () => {
-    await saveLpj(r);
-    setMsg(`Tersimpan ${new Date().toLocaleTimeString('id-ID')}`);
+  /** Simpan; mode revisi → alasan wajib & satu entri "Revisi ke-N" per sesi revisi (simpan ulang memperbarui entri itu). */
+  const save = async (): Promise<LpjReport | undefined> => {
+    let out = r;
+    if (revise) {
+      if (!reason.trim()) {
+        setMsg('Tulis alasan revisi dulu.');
+        return undefined;
+      }
+      out = withRevision({ ...r, revisions: initial.revisions ?? [] }, reason);
+      setR(out);
+    }
+    await saveLpj(out);
+    setMsg(`${revise ? `Revisi ke-${revNo} tersimpan` : 'Tersimpan'} ${new Date().toLocaleTimeString('id-ID')}`);
+    return out;
   };
 
   return (
@@ -228,12 +256,25 @@ function LpjForm({ initial, onClose }: { initial: LpjReport; onClose: () => void
             testId="lpj-save"
             items={[
               { key: 'only', label: 'Simpan saja', note: 'tanpa unduh', run: () => void save() },
-              ...LPJ_KINDS.map(([k, l]) => ({ key: k, label: l, note: `simpan lalu unduh ${l}`, run: () => void save().then(() => downloadLpj(r, k)) })),
+              ...LPJ_KINDS.map(([k, l]) => ({ key: k, label: l, note: `simpan lalu unduh ${l}`, run: () => void save().then((x) => x && downloadLpj(x, k)) })),
             ]}
           />
           <button type="button" className="btn-ghost" onClick={onClose}>Tutup</button>
         </div>
       </div>
+
+      {revise && (
+        <section className="flex flex-col gap-2 rounded-2xl border-3 border-acid bg-acid/10 p-3" data-testid="lpj-revise-box">
+          <p className="font-semibold">Revisi ke-{revNo} · {r.id}</p>
+          <p className="text-sm text-muted">Ubah data di bawah, tulis alasan revisi, lalu Simpan. Riwayat revisi ikut di laporan unduhan.</p>
+          <TextArea label="Alasan revisi (wajib)" value={reason} onChange={setReason} testId="lpj-rev-reason" />
+          {(initial.revisions?.length ?? 0) > 0 && (
+            <ul className="text-xs text-muted" data-testid="lpj-rev-history">
+              {revisionLines(initial).map((l) => <li key={l}>{l}</li>)}
+            </ul>
+          )}
+        </section>
+      )}
 
       <TextInput label="Nama laporan (opsional)" value={r.purpose} onChange={(v) => set('purpose', v)} placeholder="Belanja R&D Oktober 2026" testId="lpj-purpose" />
 

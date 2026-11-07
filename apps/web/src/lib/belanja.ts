@@ -74,6 +74,8 @@ export interface LpjReport {
   reconciliationNote: string;
   timelineIntro: string;
   timeline: LpjActivity[];
+  /** Riwayat revisi (DEC-145): tiap simpan dari tombol Revisi menambah satu entri. */
+  revisions?: LpjRevision[];
   timelineNote: string;
   output: string;
 }
@@ -215,6 +217,24 @@ export async function listLpj(): Promise<LpjReport[]> {
 export async function saveLpj(r: LpjReport): Promise<void> {
   await (await belanjaDb()).put('reports', { ...r, updatedAt: new Date().toISOString() });
 }
+
+/** Satu revisi laporan belanja: nomor urut, waktu simpan, alasan (DEC-145). */
+export interface LpjRevision {
+  no: number;
+  at: string;
+  reason: string;
+}
+/** Laporan + revisi baru (alasan wajib). Nomor = jumlah revisi + 1. */
+export function withRevision(r: LpjReport, reason: string, at = new Date()): LpjReport {
+  const why = reason.trim();
+  if (!why) throw new Error('Tulis alasan revisi dulu.');
+  const revisions = r.revisions ?? [];
+  return { ...r, revisions: [...revisions, { no: revisions.length + 1, at: at.toISOString(), reason: why }] };
+}
+/** Revisi terakhir (bila ada). */
+export const lastRevision = (r: Pick<LpjReport, 'revisions'>) => r.revisions?.at(-1);
+/** Baris riwayat revisi untuk laporan unduhan, mis. "Revisi ke-2 · 2026-11-07 · harga nota diperbaiki". */
+export const revisionLines = (r: Pick<LpjReport, 'revisions'>) => (r.revisions ?? []).map((v) => `Revisi ke-${v.no} · ${v.at.slice(0, 10)} · ${v.reason}`);
 
 export async function deleteLpj(id: string): Promise<void> {
   await (await belanjaDb()).delete('reports', id);

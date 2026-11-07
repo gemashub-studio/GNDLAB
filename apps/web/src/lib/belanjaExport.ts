@@ -2,7 +2,7 @@
  * Ekspor laporan belanja (DEC-078): PPTX diagram cabang (foto nota di atas → cabang ke foto barang + nama barang)
  * dan PDF (model laporan yang sama dengan laporan riset). Word tetap belanjaDocx.
  */
-import { fmtRp, parseRp, realizationTotal, terbilang, type LpjReport } from './belanja';
+import { fmtRp, lastRevision, parseRp, realizationTotal, revisionLines, terbilang, type LpjReport } from './belanja';
 import type { TreeSlide } from './officeExport';
 import type { ReportBlock, ResearchReport } from './researchReport';
 
@@ -16,7 +16,7 @@ export function lpjTreeSlides(r: LpjReport, generatedAt = new Date().toLocaleStr
     roots: p.receipts.map((ph) => ({ image: ph.dataUrl, label: ph.name })),
     rootLabel: `Nota / bukti bayar — ${toko(p.title, i)}`,
     leaves: p.goods.map((g) => ({ image: g.dataUrl, label: g.label?.trim() || '' })),
-    footer: `GnD Lab · laporan belanja ${r.id} · dibuat ${generatedAt}`,
+    footer: `GnD Lab · laporan belanja ${r.id}${lastRevision(r) ? ` · revisi ke-${lastRevision(r)!.no} (${lastRevision(r)!.at.slice(0, 10)})` : ''} · dibuat ${generatedAt}`,
   }));
 }
 
@@ -38,6 +38,8 @@ export function lpjReport(r: LpjReport, generatedAt = new Date().toLocaleString(
     ],
   }));
   blocks.push({ heading: 'Total seluruh alokasi', level: 1, lines: [`Total: ${fmtRp(total)}`, `Terbilang: ${terbilang(total)}`], images: [] });
+  // riwayat revisi (DEC-145)
+  if (r.revisions?.length) blocks.push({ heading: 'Riwayat revisi', level: 1, lines: revisionLines(r), images: [], plainLines: true });
   return {
     title: `Laporan belanja${r.purpose.trim() ? ` — ${r.purpose.trim()}` : ''}`,
     subtitle: `${r.id} · ${r.proofs.length} toko`,
@@ -52,6 +54,7 @@ export function lpjReport(r: LpjReport, generatedAt = new Date().toLocaleString(
         ['Jumlah toko', String(r.proofs.length)],
         ['Total', fmtRp(total)],
         ['Diubah', r.updatedAt.slice(0, 10)],
+        ...(lastRevision(r) ? [['Revisi', `ke-${lastRevision(r)!.no} (${lastRevision(r)!.at.slice(0, 10)})`] as [string, string]] : []),
       ],
     },
     kpis: [

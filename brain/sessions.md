@@ -271,3 +271,7 @@
 ## 2026-11-06 · Claude (sesi cloud) — Daily Report R&D (Pencatatan harian by Drive)
 - DEC-144 (FND-060, FND-061). Uji: typecheck 0; unit 160/74/198 (19 skip; +dailyDrive 4); next build lulus; E2E daily-report 1/1, lab-menu 3/3 (5 anak menu), voice + lab terdampak 8/8.
 - MENUNGGU: migrasi Supabase daily_report harus diterapkan sebelum deploy; push GitHub sempat 403 (DEC-143 belum naik).
+
+## 2026-11-07 · Claude (sesi cloud) — Revisi Laporan Belanja
+- DEC-145. Uji: typecheck 0; unit 160/74/199 (19 skip; +revisi belanja); next build lulus; E2E belanja-revisi 1/1 (baru) + laporan belanja lama 1/1.
+- Push GitHub pulih (DEC-143 & DEC-144 naik di 1d8d433). MENUNGGU sebelum deploy: migrasi Supabase daily_report (DEC-144) + izin tim Vercel.
